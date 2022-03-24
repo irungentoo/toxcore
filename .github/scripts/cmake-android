@@ -51,22 +51,6 @@ autoreconf -fi
 make -j"$(nproc)" install
 cd ..
 
-# Build msgpack
-if [ ! -d msgpack-c ]; then
-  git clone --branch=c-4.0.0 https://github.com/msgpack/msgpack-c.git
-fi
-rm -rf msgpack-c/build
-mkdir -p msgpack-c/build
-cd msgpack-c/build
-cmake .. \
-  -DMSGPACK_BUILD_EXAMPLES=OFF \
-  -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
-  -DANDROID_ABI="$ABI" \
-  -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-  -DCMAKE_PREFIX_PATH="$PREFIX"
-cmake --build . --target install
-cd ../..
-
 # Build c-toxcore
 rm -rf _build
 mkdir -p _build

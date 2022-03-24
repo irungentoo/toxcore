@@ -17,11 +17,6 @@ WORKDIR $SRC/libsodium
 RUN ./autogen.sh && ./configure --enable-shared=no && make install
 WORKDIR $SRC
 
-# msgpack-c
-RUN git clone --depth 1 --branch c_master https://github.com/msgpack/msgpack-c.git msgpack
-WORKDIR $SRC/msgpack
-RUN cmake -DBUILD_SHARED_LIBS=OFF . && make && make install
-
 # Copy your project's source code.
 COPY . $SRC/c-toxcore
 # Working directory for build.sh.

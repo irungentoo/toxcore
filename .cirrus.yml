@@ -5,6 +5,7 @@ bazel-opt_task:
     cpu: 2
     memory: 2G
   configure_script:
+    - git submodule update --init --recursive
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
     - cd /src/workspace && bazel test -k
@@ -22,6 +23,7 @@ bazel-dbg_task:
     cpu: 2
     memory: 2G
   configure_script:
+    - git submodule update --init --recursive
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
     - cd /src/workspace && bazel test -k
@@ -39,6 +41,7 @@ bazel-asan_task:
     cpu: 2
     memory: 4G
   configure_script:
+    - git submodule update --init --recursive
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
     - cd /src/workspace && bazel test -k
@@ -57,6 +60,7 @@ bazel-asan_task:
 #    cpu: 2
 #    memory: 4G
 #  configure_script:
+#    - git submodule update --init --recursive
 #    - /src/workspace/tools/inject-repo c-toxcore
 #  test_all_script:
 #    - cd /src/workspace && bazel test -k
@@ -75,6 +79,7 @@ bazel-tsan_task:
     cpu: 2
     memory: 4G
   configure_script:
+    - git submodule update --init --recursive
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
     - cd /src/workspace && bazel test -k
@@ -98,6 +103,7 @@ bazel-valgrind_task:
     cpu: 2
     memory: 4G
   configure_script:
+    - git submodule update --init --recursive
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
     - cd /src/workspace && bazel test -k
@@ -123,6 +129,7 @@ cimple_task:
     cpu: 2
     memory: 4G
   configure_script:
+    - git submodule update --init --recursive
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
     - cd /src/workspace && bazel test -k

@@ -4,7 +4,6 @@ RUN ["apk", "add", "--no-cache", \
  "bash", \
  "gcc", \
  "linux-headers", \
- "msgpack-c-dev", \
  "musl-dev", \
  "libsodium-dev", \
  "libvpx-dev", \

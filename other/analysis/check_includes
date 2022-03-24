@@ -11,8 +11,6 @@ ALLOWLIST: Tuple[str, ...] = (
     "stddef.h",
     "stdint.h",
     "time.h",  # time_t used in Messenger.h TODO(iphydf): maybe don't?
-    # msgpack, currently not abstracted away
-    "msgpack.h",
     # toxav stuff, maybe not worth abstracting away
     "opus.h",
     "vpx/vp8cx.h",

@@ -5,7 +5,7 @@ set -eux
 TEST=${1:-conference_test}
 OUTPUT="/work/c-toxcore/test.perf"
 
-readarray -t FLAGS <<<"$(pkg-config --cflags --libs libsodium msgpack opus vpx | sed -e 's/ /\n/g')"
+readarray -t FLAGS <<<"$(pkg-config --cflags --libs libsodium opus vpx | sed -e 's/ /\n/g')"
 readarray -t SRCS <<<"$(find /work/c-toxcore/tox* -name "*.c")"
 
 gcc -pthread -g \

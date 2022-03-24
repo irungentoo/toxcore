@@ -5,7 +5,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
  ca-certificates \
  gcc \
  git \
- libmsgpack-dev \
  libopus-dev \
  libsodium-dev \
  libvpx-dev \
@@ -18,4 +17,5 @@ RUN ["git", "clone", "--depth=1", "https://github.com/TokTok/hs-tokstyle", "/src
 COPY toxav/ /src/workspace/c-toxcore/toxav/
 COPY toxcore/ /src/workspace/c-toxcore/toxcore/
 COPY toxencryptsave/ /src/workspace/c-toxcore/toxencryptsave/
+COPY third_party/cmp/cmp.h /src/workspace/c-toxcore/third_party/cmp/cmp.h
 RUN /bin/check-c $(find /src/workspace/c-toxcore -name "*.c")

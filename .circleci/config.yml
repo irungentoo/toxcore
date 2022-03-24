@@ -28,12 +28,12 @@ jobs:
           apt-get update &&
           DEBIAN_FRONTEND=noninteractive
           apt-get install -y --no-install-recommends
+            ca-certificates
             clang
             cmake
             git
             libconfig-dev
             libgtest-dev
-            libmsgpack-dev
             libopus-dev
             libsodium-dev
             libvpx-dev
@@ -41,6 +41,7 @@ jobs:
             ninja-build
             pkg-config
       - checkout
+      - run: git submodule update --init --recursive
       - run: CC=clang .circleci/cmake-asan
 
   tsan:
@@ -51,6 +52,7 @@ jobs:
     steps:
       - run: *apt_install
       - checkout
+      - run: git submodule update --init --recursive
       - run: CC=clang .circleci/cmake-tsan
 
   ubsan:
@@ -61,6 +63,7 @@ jobs:
     steps:
       - run: *apt_install
       - checkout
+      - run: git submodule update --init --recursive
       - run: CC=clang .circleci/cmake-ubsan
 
   msan:
@@ -70,6 +73,7 @@ jobs:
 
     steps:
       - checkout
+      - run: git submodule update --init --recursive
       - run: rm -rf /src/workspace/c-toxcore/* && mv * /src/workspace/c-toxcore/
       - run: cd /src/workspace && bazel test //c-toxcore/auto_tests:lossless_packet_test
 
@@ -81,6 +85,7 @@ jobs:
     steps:
       - run: *apt_install
       - checkout
+      - run: git submodule update --init --recursive
       - run: infer --no-progress-bar -- cc
           auto_tests/auto_test_support.c
           auto_tests/lossless_packet_test.c
@@ -89,8 +94,9 @@ jobs:
           toxcore/*.c
           toxcore/*/*.c
           toxencryptsave/*.c
+          third_party/cmp/*.c
           -lpthread
-          $(pkg-config --cflags --libs libsodium msgpack opus vpx)
+          $(pkg-config --cflags --libs libsodium opus vpx)
 
   static-analysis:
     working_directory: ~/work
@@ -99,8 +105,14 @@ jobs:
 
     steps:
       - run: *apt_install
-      - run: apt-get install -y --no-install-recommends cppcheck g++ llvm-dev
+      - run:
+          apt-get install -y --no-install-recommends
+            ca-certificates
+            cppcheck
+            g++
+            llvm-dev
       - checkout
+      - run: git submodule update --init --recursive
       - run: other/analysis/check_includes
       - run: other/analysis/check_logger_levels
       - run: other/analysis/run-check-recursion
@@ -116,6 +128,7 @@ jobs:
     steps:
       - run: *apt_install
       - checkout
+      - run: git submodule update --init --recursive
       - run: other/analysis/run-clang-analyze
 
   clang-tidy:
@@ -125,8 +138,12 @@ jobs:
 
     steps:
       - run: *apt_install
-      - run: apt-get install -y --no-install-recommends clang-tidy-12
+      - run:
+          apt-get install -y --no-install-recommends
+            ca-certificates
+            clang-tidy-12
       - checkout
+      - run: git submodule update --init --recursive
       - run: cmake . -B_build -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
       - run:
           other/analysis/run-clang-tidy ||
@@ -140,7 +157,11 @@ jobs:
 
     steps:
       - run: *apt_install
-      - run: apt-get install -y --no-install-recommends python3-pip
+      - run:
+          apt-get install -y --no-install-recommends
+            ca-certificates
+            python3-pip
       - checkout
+      - run: git submodule update --init --recursive
       - run: pip install cpplint
       - run: other/analysis/run-cpplint

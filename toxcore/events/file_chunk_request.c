@@ -94,33 +94,32 @@ uint16_t tox_event_file_chunk_request_get_length(const Tox_Event_File_Chunk_Requ
 }
 
 non_null()
-static void tox_event_file_chunk_request_pack(
-    const Tox_Event_File_Chunk_Request *event, msgpack_packer *mp)
+static bool tox_event_file_chunk_request_pack(
+    const Tox_Event_File_Chunk_Request *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    bin_pack_array(mp, 2);
-    bin_pack_u32(mp, TOX_EVENT_FILE_CHUNK_REQUEST);
-    bin_pack_array(mp, 4);
-    bin_pack_u32(mp, event->friend_number);
-    bin_pack_u32(mp, event->file_number);
-    bin_pack_u64(mp, event->position);
-    bin_pack_u16(mp, event->length);
+    return bin_pack_array(bp, 2)
+           && bin_pack_u32(bp, TOX_EVENT_FILE_CHUNK_REQUEST)
+           && bin_pack_array(bp, 4)
+           && bin_pack_u32(bp, event->friend_number)
+           && bin_pack_u32(bp, event->file_number)
+           && bin_pack_u64(bp, event->position)
+           && bin_pack_u16(bp, event->length);
 }
 
 non_null()
 static bool tox_event_file_chunk_request_unpack(
-    Tox_Event_File_Chunk_Request *event, const msgpack_object *obj)
+    Tox_Event_File_Chunk_Request *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-
-    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 4) {
+    if (!bin_unpack_array_fixed(bu, 4)) {
         return false;
     }
 
-    return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
-           && bin_unpack_u32(&event->file_number, &obj->via.array.ptr[1])
-           && bin_unpack_u64(&event->position, &obj->via.array.ptr[2])
-           && bin_unpack_u16(&event->length, &obj->via.array.ptr[3]);
+    return bin_unpack_u32(bu, &event->friend_number)
+           && bin_unpack_u32(bu, &event->file_number)
+           && bin_unpack_u64(bu, &event->position)
+           && bin_unpack_u16(bu, &event->length);
 }
 
 
@@ -189,16 +188,19 @@ const Tox_Event_File_Chunk_Request *tox_events_get_file_chunk_request(const Tox_
     return &events->file_chunk_request[index];
 }
 
-void tox_events_pack_file_chunk_request(const Tox_Events *events, msgpack_packer *mp)
+bool tox_events_pack_file_chunk_request(const Tox_Events *events, Bin_Pack *bp)
 {
     const uint32_t size = tox_events_get_file_chunk_request_size(events);
 
     for (uint32_t i = 0; i < size; ++i) {
-        tox_event_file_chunk_request_pack(tox_events_get_file_chunk_request(events, i), mp);
+        if (!tox_event_file_chunk_request_pack(tox_events_get_file_chunk_request(events, i), bp)) {
+            return false;
+        }
     }
+    return true;
 }
 
-bool tox_events_unpack_file_chunk_request(Tox_Events *events, const msgpack_object *obj)
+bool tox_events_unpack_file_chunk_request(Tox_Events *events, Bin_Unpack *bu)
 {
     Tox_Event_File_Chunk_Request *event = tox_events_add_file_chunk_request(events);
 
@@ -206,7 +208,7 @@ bool tox_events_unpack_file_chunk_request(Tox_Events *events, const msgpack_obje
         return false;
     }
 
-    return tox_event_file_chunk_request_unpack(event, obj);
+    return tox_event_file_chunk_request_unpack(event, bu);
 }
 
 
@@ -222,6 +224,10 @@ void tox_events_handle_file_chunk_request(Tox *tox, uint32_t friend_number, uint
 {
     Tox_Events_State *state = tox_events_alloc(user_data);
     assert(state != nullptr);
+
+    if (state->events == nullptr) {
+        return;
+    }
 
     Tox_Event_File_Chunk_Request *file_chunk_request = tox_events_add_file_chunk_request(state->events);
 

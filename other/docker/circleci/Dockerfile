@@ -8,7 +8,6 @@ RUN apt-get update && \
  cmake \
  libconfig-dev \
  libgtest-dev \
- libmsgpack-dev \
  libopus-dev \
  libsodium-dev \
  libvpx-dev \

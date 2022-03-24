@@ -3,8 +3,7 @@
 set -eux
 
 docker_build() {
-  readarray -t FILES <<<"$(git ls-files)"
-  tar c "${FILES[@]}" | docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node -
+  docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node .
 }
 
 # Run Docker build once. If it succeeds, we're good.

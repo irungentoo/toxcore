@@ -4,11 +4,11 @@
 
 #include "tox_events.h"
 
-#include <msgpack.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "bin_unpack.h"
 #include "ccompat.h"
 #include "events/events_alloc.h"
 #include "tox.h"
@@ -63,7 +63,7 @@ Tox_Events *tox_events_iterate(Tox *tox, bool fail_hard, Tox_Err_Events_Iterate 
     return state.events;
 }
 
-void tox_events_pack(const Tox_Events *events, msgpack_packer *mp)
+bool tox_events_pack(const Tox_Events *events, Bin_Pack *bp)
 {
     const uint32_t count = tox_events_get_conference_connected_size(events)
                            + tox_events_get_conference_invite_size(events)
@@ -87,104 +87,110 @@ void tox_events_pack(const Tox_Events *events, msgpack_packer *mp)
                            + tox_events_get_friend_typing_size(events)
                            + tox_events_get_self_connection_status_size(events);
 
-    msgpack_pack_array(mp, count);
-
-    tox_events_pack_conference_connected(events, mp);
-    tox_events_pack_conference_invite(events, mp);
-    tox_events_pack_conference_message(events, mp);
-    tox_events_pack_conference_peer_list_changed(events, mp);
-    tox_events_pack_conference_peer_name(events, mp);
-    tox_events_pack_conference_title(events, mp);
-    tox_events_pack_file_chunk_request(events, mp);
-    tox_events_pack_file_recv_chunk(events, mp);
-    tox_events_pack_file_recv_control(events, mp);
-    tox_events_pack_file_recv(events, mp);
-    tox_events_pack_friend_connection_status(events, mp);
-    tox_events_pack_friend_lossless_packet(events, mp);
-    tox_events_pack_friend_lossy_packet(events, mp);
-    tox_events_pack_friend_message(events, mp);
-    tox_events_pack_friend_name(events, mp);
-    tox_events_pack_friend_read_receipt(events, mp);
-    tox_events_pack_friend_request(events, mp);
-    tox_events_pack_friend_status_message(events, mp);
-    tox_events_pack_friend_status(events, mp);
-    tox_events_pack_friend_typing(events, mp);
-    tox_events_pack_self_connection_status(events, mp);
+    return bin_pack_array(bp, count)
+           && tox_events_pack_conference_connected(events, bp)
+           && tox_events_pack_conference_invite(events, bp)
+           && tox_events_pack_conference_message(events, bp)
+           && tox_events_pack_conference_peer_list_changed(events, bp)
+           && tox_events_pack_conference_peer_name(events, bp)
+           && tox_events_pack_conference_title(events, bp)
+           && tox_events_pack_file_chunk_request(events, bp)
+           && tox_events_pack_file_recv_chunk(events, bp)
+           && tox_events_pack_file_recv_control(events, bp)
+           && tox_events_pack_file_recv(events, bp)
+           && tox_events_pack_friend_connection_status(events, bp)
+           && tox_events_pack_friend_lossless_packet(events, bp)
+           && tox_events_pack_friend_lossy_packet(events, bp)
+           && tox_events_pack_friend_message(events, bp)
+           && tox_events_pack_friend_name(events, bp)
+           && tox_events_pack_friend_read_receipt(events, bp)
+           && tox_events_pack_friend_request(events, bp)
+           && tox_events_pack_friend_status_message(events, bp)
+           && tox_events_pack_friend_status(events, bp)
+           && tox_events_pack_friend_typing(events, bp)
+           && tox_events_pack_self_connection_status(events, bp);
 }
 
 non_null()
-static bool tox_event_unpack(Tox_Events *events, const msgpack_object *obj)
+static bool tox_event_unpack(Tox_Events *events, Bin_Unpack *bu)
 {
-    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size != 2 ||
-            obj->via.array.ptr[0].type != MSGPACK_OBJECT_POSITIVE_INTEGER) {
+    uint32_t size;
+    if (!bin_unpack_array(bu, &size)) {
         return false;
     }
 
-    const msgpack_object *inner = &obj->via.array.ptr[1];
+    if (size != 2) {
+        return false;
+    }
 
-    switch (obj->via.array.ptr[0].via.u64) {
+    uint8_t type;
+    if (!bin_unpack_u08(bu, &type)) {
+        return false;
+    }
+
+    switch (type) {
         case TOX_EVENT_CONFERENCE_CONNECTED:
-            return tox_events_unpack_conference_connected(events, inner);
+            return tox_events_unpack_conference_connected(events, bu);
 
         case TOX_EVENT_CONFERENCE_INVITE:
-            return tox_events_unpack_conference_invite(events, inner);
+            return tox_events_unpack_conference_invite(events, bu);
 
         case TOX_EVENT_CONFERENCE_MESSAGE:
-            return tox_events_unpack_conference_message(events, inner);
+            return tox_events_unpack_conference_message(events, bu);
 
         case TOX_EVENT_CONFERENCE_PEER_LIST_CHANGED:
-            return tox_events_unpack_conference_peer_list_changed(events, inner);
+            return tox_events_unpack_conference_peer_list_changed(events, bu);
 
         case TOX_EVENT_CONFERENCE_PEER_NAME:
-            return tox_events_unpack_conference_peer_name(events, inner);
+            return tox_events_unpack_conference_peer_name(events, bu);
 
         case TOX_EVENT_CONFERENCE_TITLE:
-            return tox_events_unpack_conference_title(events, inner);
+            return tox_events_unpack_conference_title(events, bu);
 
         case TOX_EVENT_FILE_CHUNK_REQUEST:
-            return tox_events_unpack_file_chunk_request(events, inner);
+            return tox_events_unpack_file_chunk_request(events, bu);
 
         case TOX_EVENT_FILE_RECV_CHUNK:
-            return tox_events_unpack_file_recv_chunk(events, inner);
+            return tox_events_unpack_file_recv_chunk(events, bu);
 
         case TOX_EVENT_FILE_RECV_CONTROL:
-            return tox_events_unpack_file_recv_control(events, inner);
+            return tox_events_unpack_file_recv_control(events, bu);
 
         case TOX_EVENT_FILE_RECV:
-            return tox_events_unpack_file_recv(events, inner);
+            return tox_events_unpack_file_recv(events, bu);
 
         case TOX_EVENT_FRIEND_CONNECTION_STATUS:
-            return tox_events_unpack_friend_connection_status(events, inner);
+            return tox_events_unpack_friend_connection_status(events, bu);
 
         case TOX_EVENT_FRIEND_LOSSLESS_PACKET:
-            return tox_events_unpack_friend_lossless_packet(events, inner);
+            return tox_events_unpack_friend_lossless_packet(events, bu);
 
         case TOX_EVENT_FRIEND_LOSSY_PACKET:
-            return tox_events_unpack_friend_lossy_packet(events, inner);
+            return tox_events_unpack_friend_lossy_packet(events, bu);
 
         case TOX_EVENT_FRIEND_MESSAGE:
-            return tox_events_unpack_friend_message(events, inner);
+            return tox_events_unpack_friend_message(events, bu);
 
         case TOX_EVENT_FRIEND_NAME:
-            return tox_events_unpack_friend_name(events, inner);
+            return tox_events_unpack_friend_name(events, bu);
 
         case TOX_EVENT_FRIEND_READ_RECEIPT:
-            return tox_events_unpack_friend_read_receipt(events, inner);
+            return tox_events_unpack_friend_read_receipt(events, bu);
 
         case TOX_EVENT_FRIEND_REQUEST:
-            return tox_events_unpack_friend_request(events, inner);
+            return tox_events_unpack_friend_request(events, bu);
 
         case TOX_EVENT_FRIEND_STATUS_MESSAGE:
-            return tox_events_unpack_friend_status_message(events, inner);
+            return tox_events_unpack_friend_status_message(events, bu);
 
         case TOX_EVENT_FRIEND_STATUS:
-            return tox_events_unpack_friend_status(events, inner);
+            return tox_events_unpack_friend_status(events, bu);
 
         case TOX_EVENT_FRIEND_TYPING:
-            return tox_events_unpack_friend_typing(events, inner);
+            return tox_events_unpack_friend_typing(events, bu);
 
         case TOX_EVENT_SELF_CONNECTION_STATUS:
-            return tox_events_unpack_self_connection_status(events, inner);
+            return tox_events_unpack_self_connection_status(events, bu);
 
         default:
             return false;
@@ -193,14 +199,15 @@ static bool tox_event_unpack(Tox_Events *events, const msgpack_object *obj)
     return true;
 }
 
-bool tox_events_unpack(Tox_Events *events, const msgpack_object *obj)
+bool tox_events_unpack(Tox_Events *events, Bin_Unpack *bu)
 {
-    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+    uint32_t size;
+    if (!bin_unpack_array(bu, &size)) {
         return false;
     }
 
-    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
-        if (!tox_event_unpack(events, &obj->via.array.ptr[i])) {
+    for (uint32_t i = 0; i < size; ++i) {
+        if (!tox_event_unpack(events, bu)) {
             return false;
         }
     }
@@ -208,58 +215,34 @@ bool tox_events_unpack(Tox_Events *events, const msgpack_object *obj)
     return true;
 }
 
-non_null()
-static int count_bytes(void *data, const char *buf, size_t len)
+non_null(1) nullable(2)
+static bool tox_events_bin_pack_handler(Bin_Pack *bp, const void *obj)
 {
-    uint32_t *count = (uint32_t *)data;
-    assert(count != nullptr);
-    *count += len;
-    return 0;
+    return tox_events_pack((const Tox_Events *)obj, bp);
 }
 
 uint32_t tox_events_bytes_size(const Tox_Events *events)
 {
-    uint32_t count = 0;
-    msgpack_packer mp;
-    msgpack_packer_init(&mp, &count, count_bytes);
-    tox_events_pack(events, &mp);
-    return count;
-}
-
-non_null()
-static int write_bytes(void *data, const char *buf, size_t len)
-{
-    uint8_t **bytes = (uint8_t **)data;
-    assert(bytes != nullptr && *bytes != nullptr);
-    memcpy(*bytes, buf, len);
-    *bytes += len;
-    return 0;
+    return bin_pack_obj_size(tox_events_bin_pack_handler, events);
 }
 
 void tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes)
 {
-    msgpack_packer mp;
-    msgpack_packer_init(&mp, &bytes, write_bytes);
-    tox_events_pack(events, &mp);
+    bin_pack_obj(tox_events_bin_pack_handler, events, bytes, UINT32_MAX);
 }
 
 Tox_Events *tox_events_load(const uint8_t *bytes, uint32_t bytes_size)
 {
-    msgpack_unpacked msg;
-    msgpack_unpacked_init(&msg);
+    Bin_Unpack *bu = bin_unpack_new(bytes, bytes_size);
 
-    size_t offset = 0;
-    const msgpack_unpack_return result = msgpack_unpack_next(&msg, (const char *)bytes, bytes_size, &offset);
-
-    if (result != MSGPACK_UNPACK_SUCCESS) {
-        msgpack_unpacked_destroy(&msg);
+    if (bu == nullptr) {
         return nullptr;
     }
 
     Tox_Events *events = (Tox_Events *)calloc(1, sizeof(Tox_Events));
 
     if (events == nullptr) {
-        msgpack_unpacked_destroy(&msg);
+        bin_unpack_free(bu);
         return nullptr;
     }
 
@@ -267,59 +250,41 @@ Tox_Events *tox_events_load(const uint8_t *bytes, uint32_t bytes_size)
         nullptr
     };
 
-    if (!tox_events_unpack(events, &msg.data)) {
+    if (!tox_events_unpack(events, bu)) {
         tox_events_free(events);
-        msgpack_unpacked_destroy(&msg);
+        bin_unpack_free(bu);
         return nullptr;
     }
 
-    msgpack_unpacked_destroy(&msg);
+    bin_unpack_free(bu);
     return events;
-}
-
-non_null(2, 3) nullable(1)
-static bool tox_events_to_object(const Tox_Events *events, msgpack_unpacked *msg, msgpack_sbuffer *sbuf)
-{
-    msgpack_sbuffer_init(sbuf);
-    msgpack_packer mp;
-    msgpack_packer_init(&mp, sbuf, msgpack_sbuffer_write);
-
-    tox_events_pack(events, &mp);
-
-    size_t offset = 0;
-    msgpack_unpacked_init(msg);
-    const msgpack_unpack_return result = msgpack_unpack_next(msg, sbuf->data, sbuf->size, &offset);
-
-    return result == MSGPACK_UNPACK_SUCCESS;
-}
-
-void tox_events_print(const Tox_Events *events)
-{
-    msgpack_sbuffer sbuf;
-    msgpack_unpacked msg;
-    tox_events_to_object(events, &msg, &sbuf);
-    msgpack_object_print(stdout, msg.data);
-    fputc('\n', stdout);
-    msgpack_unpacked_destroy(&msg);
-    msgpack_sbuffer_destroy(&sbuf);
 }
 
 bool tox_events_equal(const Tox_Events *a, const Tox_Events *b)
 {
-    msgpack_sbuffer sbuf_a = {0};
-    msgpack_unpacked msg_a = {nullptr};
-    msgpack_sbuffer sbuf_b = {0};
-    msgpack_unpacked msg_b = {nullptr};
+    const uint32_t a_size = tox_events_bytes_size(a);
+    const uint32_t b_size = tox_events_bytes_size(b);
 
-    const bool success = tox_events_to_object(a, &msg_a, &sbuf_a)
-                         && tox_events_to_object(b, &msg_b, &sbuf_b);
+    if (a_size != b_size) {
+        return false;
+    }
 
-    const bool ret = success && msgpack_object_equal(msg_a.data, msg_b.data);
+    uint8_t *a_bytes = (uint8_t *)malloc(a_size);
+    uint8_t *b_bytes = (uint8_t *)malloc(b_size);
 
-    msgpack_unpacked_destroy(&msg_b);
-    msgpack_sbuffer_destroy(&sbuf_a);
-    msgpack_unpacked_destroy(&msg_a);
-    msgpack_sbuffer_destroy(&sbuf_b);
+    if (a_bytes == nullptr || b_bytes == nullptr) {
+        free(b_bytes);
+        free(a_bytes);
+        return false;
+    }
+
+    tox_events_get_bytes(a, a_bytes);
+    tox_events_get_bytes(b, b_bytes);
+
+    const bool ret = memcmp(a_bytes, b_bytes, a_size) == 0;
+
+    free(b_bytes);
+    free(a_bytes);
 
     return ret;
 }

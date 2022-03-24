@@ -5,9 +5,9 @@
 #ifndef C_TOXCORE_TOXCORE_TOX_EVENTS_INTERNAL_H
 #define C_TOXCORE_TOXCORE_TOX_EVENTS_INTERNAL_H
 
-#include <msgpack.h>
-
 #include "../attributes.h"
+#include "../bin_pack.h"
+#include "../bin_unpack.h"
 #include "../tox_events.h"
 
 #ifdef __cplusplus
@@ -153,7 +153,7 @@ tox_events_clear_cb tox_events_clear_friend_typing;
 tox_events_clear_cb tox_events_clear_self_connection_status;
 
 // non_null()
-typedef void tox_events_pack_cb(const Tox_Events *events, msgpack_packer *mp);
+typedef bool tox_events_pack_cb(const Tox_Events *events, Bin_Pack *bp);
 
 tox_events_pack_cb tox_events_pack_conference_connected;
 tox_events_pack_cb tox_events_pack_conference_invite;
@@ -180,7 +180,7 @@ tox_events_pack_cb tox_events_pack_self_connection_status;
 tox_events_pack_cb tox_events_pack;
 
 // non_null()
-typedef bool tox_events_unpack_cb(Tox_Events *events, const msgpack_object *obj);
+typedef bool tox_events_unpack_cb(Tox_Events *events, Bin_Unpack *bu);
 
 tox_events_unpack_cb tox_events_unpack_conference_connected;
 tox_events_unpack_cb tox_events_unpack_conference_invite;

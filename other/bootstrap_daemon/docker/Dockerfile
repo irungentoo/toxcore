@@ -10,7 +10,6 @@ RUN ["apk", "--no-cache", "add",\
  "libconfig-static",\
  "libsodium-dev",\
  "libsodium-static",\
- "msgpack-c-dev",\
  "ninja",\
  "python3"\
 ]
@@ -30,6 +29,7 @@ COPY other/rpm other/rpm
 COPY testing/misc_tools.[ch] testing/
 COPY toxcore toxcore
 COPY toxencryptsave toxencryptsave
+COPY third_party third_party
 COPY CMakeLists.txt so.version ./
 
 RUN cmake -B_build -H. \

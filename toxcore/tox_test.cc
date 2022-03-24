@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+
 #include "crypto_core.h"
 
 namespace {

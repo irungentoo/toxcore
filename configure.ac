@@ -189,8 +189,6 @@ LIBSODIUM_SEARCH_HEADERS=
 LIBSODIUM_SEARCH_LIBS=
 NACL_SEARCH_HEADERS=
 NACL_SEARCH_LIBS=
-MSGPACK_SEARCH_HEADERS=
-MSGPACK_SEARCH_LIBS=
 
 AC_ARG_WITH(dependency-search,
     AC_HELP_STRING([--with-dependency-search=DIR],
@@ -241,24 +239,6 @@ AC_ARG_WITH(libsodium-libs,
         [
             LIBSODIUM_SEARCH_LIBS="$withval"
             AC_MSG_NOTICE([will search for libsodium libraries in $withval])
-        ]
-)
-
-AC_ARG_WITH(msgpack-headers,
-        AC_HELP_STRING([--with-msgpack-headers=DIR],
-                       [search for libmsgpackc header files in DIR]),
-        [
-            MSGPACK_SEARCH_HEADERS="$withval"
-            AC_MSG_NOTICE([will search for libmsgpackc header files in $withval])
-        ]
-)
-
-AC_ARG_WITH(msgpack-libs,
-        AC_HELP_STRING([--with-msgpack-libs=DIR],
-                       [search for libmsgpackc libraries in DIR]),
-        [
-            MSGPACK_SEARCH_LIBS="$withval"
-            AC_MSG_NOTICE([will search for libmsgpackc libraries in $withval])
         ]
 )
 
@@ -451,71 +431,6 @@ elif test "x$LIBSODIUM_FOUND" = "xno"; then
     CFLAGS="$CFLAGS_SAVE"
     CPPFLAGS="$CPPFLAGS_SAVE"
     AC_SUBST(LIBSODIUM_CFLAGS)
-fi
-
-PKG_CHECK_MODULES([MSGPACK], [msgpack],
-    [
-        MSGPACK_FOUND="yes"
-    ],
-    [
-        MSGPACK_FOUND="no"
-    ])
-
-if test "x$MSGPACK_FOUND" = "xno"; then
-    MSGPACK_LIBS=
-    MSGPACK_LDFLAGS=
-    LDFLAGS_SAVE="$LDFLAGS"
-    if test -n "$MSGPACK_SEARCH_LIBS"; then
-        LDFLAGS="-L$MSGPACK_SEARCH_LIBS $LDFLAGS"
-        AC_CHECK_LIB(msgpackc, msgpack_sbuffer_init,
-            [
-                MSGPACK_LDFLAGS="-L$MSGPACK_SEARCH_LIBS"
-                MSGPACK_LIBS="-lmsgpackc"
-            ],
-            [
-                AC_MSG_ERROR([required library libmsgpackc was not found in requested location $MSGPACK_SEARCH_LIBS or library version is too old])
-            ]
-        )
-    else
-        AC_CHECK_LIB(msgpackc, msgpack_sbuffer_init,
-            [],
-            [
-                AC_MSG_ERROR([required library libmsgpackc was not found on your system, please check https://github.com/msgpack/msgpack-c or library version is too old])
-            ]
-        )
-    fi
-
-    LDFLAGS="$LDFLAGS_SAVE"
-    AC_SUBST(MSGPACK_LIBS)
-    AC_SUBST(MSGPACK_LDFLAGS)
-fi
-
-if test "x$MSGPACK_FOUND" = "xno"; then
-    MSGPACK_CFLAGS=
-    CFLAGS_SAVE="$CFLAGS"
-    CPPFLAGS_SAVE="$CPPFLAGS"
-    if test -n "$MSGPACK_SEARCH_HEADERS"; then
-        CFLAGS="-I$MSGPACK_SEARCH_HEADERS $CFLAGS"
-        CPPFLAGS="-I$MSGPACK_SEARCH_HEADERS $CPPFLAGS"
-        AC_CHECK_HEADER(msgpack.h,
-            [
-                MSGPACK_CFLAGS="-I$MSGPACK_SEARCH_HEADERS"
-            ],
-            [
-                AC_MSG_ERROR([header files for required library libmsgpackc were not found in requested location $MSGPACK_SEARCH_HEADERS])
-            ]
-        )
-    else
-        AC_CHECK_HEADER(msgpack.h,
-            [],
-            [
-                AC_MSG_ERROR([header files for required library libmsgpackc was not found on your system, please check https://github.com/msgpack/msgpack-c])
-            ]
-        )
-    fi
-    CFLAGS="$CFLAGS_SAVE"
-    CPPFLAGS="$CPPFLAGS_SAVE"
-    AC_SUBST(MSGPACK_CFLAGS)
 fi
 
 # Checks for library functions.

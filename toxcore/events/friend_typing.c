@@ -66,29 +66,28 @@ bool tox_event_friend_typing_get_typing(const Tox_Event_Friend_Typing *friend_ty
 }
 
 non_null()
-static void tox_event_friend_typing_pack(
-    const Tox_Event_Friend_Typing *event, msgpack_packer *mp)
+static bool tox_event_friend_typing_pack(
+    const Tox_Event_Friend_Typing *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    bin_pack_array(mp, 2);
-    bin_pack_u32(mp, TOX_EVENT_FRIEND_TYPING);
-    bin_pack_array(mp, 2);
-    bin_pack_u32(mp, event->friend_number);
-    bin_pack_bool(mp, event->typing);
+    return bin_pack_array(bp, 2)
+           && bin_pack_u32(bp, TOX_EVENT_FRIEND_TYPING)
+           && bin_pack_array(bp, 2)
+           && bin_pack_u32(bp, event->friend_number)
+           && bin_pack_bool(bp, event->typing);
 }
 
 non_null()
 static bool tox_event_friend_typing_unpack(
-    Tox_Event_Friend_Typing *event, const msgpack_object *obj)
+    Tox_Event_Friend_Typing *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-
-    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 2) {
+    if (!bin_unpack_array_fixed(bu, 2)) {
         return false;
     }
 
-    return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
-           && bin_unpack_bool(&event->typing, &obj->via.array.ptr[1]);
+    return bin_unpack_u32(bu, &event->friend_number)
+           && bin_unpack_bool(bu, &event->typing);
 }
 
 
@@ -157,16 +156,19 @@ const Tox_Event_Friend_Typing *tox_events_get_friend_typing(const Tox_Events *ev
     return &events->friend_typing[index];
 }
 
-void tox_events_pack_friend_typing(const Tox_Events *events, msgpack_packer *mp)
+bool tox_events_pack_friend_typing(const Tox_Events *events, Bin_Pack *bp)
 {
     const uint32_t size = tox_events_get_friend_typing_size(events);
 
     for (uint32_t i = 0; i < size; ++i) {
-        tox_event_friend_typing_pack(tox_events_get_friend_typing(events, i), mp);
+        if (!tox_event_friend_typing_pack(tox_events_get_friend_typing(events, i), bp)) {
+            return false;
+        }
     }
+    return true;
 }
 
-bool tox_events_unpack_friend_typing(Tox_Events *events, const msgpack_object *obj)
+bool tox_events_unpack_friend_typing(Tox_Events *events, Bin_Unpack *bu)
 {
     Tox_Event_Friend_Typing *event = tox_events_add_friend_typing(events);
 
@@ -174,7 +176,7 @@ bool tox_events_unpack_friend_typing(Tox_Events *events, const msgpack_object *o
         return false;
     }
 
-    return tox_event_friend_typing_unpack(event, obj);
+    return tox_event_friend_typing_unpack(event, bu);
 }
 
 
@@ -189,6 +191,10 @@ void tox_events_handle_friend_typing(Tox *tox, uint32_t friend_number, bool typi
 {
     Tox_Events_State *state = tox_events_alloc(user_data);
     assert(state != nullptr);
+
+    if (state->events == nullptr) {
+        return;
+    }
 
     Tox_Event_Friend_Typing *friend_typing = tox_events_add_friend_typing(state->events);
 

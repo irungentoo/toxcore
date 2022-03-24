@@ -26,7 +26,7 @@ struct Tox_Event_Conference_Title {
     uint32_t conference_number;
     uint32_t peer_number;
     uint8_t *title;
-    size_t title_length;
+    uint32_t title_length;
 };
 
 non_null()
@@ -70,7 +70,7 @@ uint32_t tox_event_conference_title_get_peer_number(const Tox_Event_Conference_T
 
 non_null()
 static bool tox_event_conference_title_set_title(Tox_Event_Conference_Title *conference_title, const uint8_t *title,
-        size_t title_length)
+        uint32_t title_length)
 {
     assert(conference_title != nullptr);
 
@@ -90,7 +90,7 @@ static bool tox_event_conference_title_set_title(Tox_Event_Conference_Title *con
     conference_title->title_length = title_length;
     return true;
 }
-size_t tox_event_conference_title_get_title_length(const Tox_Event_Conference_Title *conference_title)
+uint32_t tox_event_conference_title_get_title_length(const Tox_Event_Conference_Title *conference_title)
 {
     assert(conference_title != nullptr);
     return conference_title->title_length;
@@ -102,31 +102,30 @@ const uint8_t *tox_event_conference_title_get_title(const Tox_Event_Conference_T
 }
 
 non_null()
-static void tox_event_conference_title_pack(
-    const Tox_Event_Conference_Title *event, msgpack_packer *mp)
+static bool tox_event_conference_title_pack(
+    const Tox_Event_Conference_Title *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    bin_pack_array(mp, 2);
-    bin_pack_u32(mp, TOX_EVENT_CONFERENCE_TITLE);
-    bin_pack_array(mp, 3);
-    bin_pack_u32(mp, event->conference_number);
-    bin_pack_u32(mp, event->peer_number);
-    bin_pack_bytes(mp, event->title, event->title_length);
+    return bin_pack_array(bp, 2)
+           && bin_pack_u32(bp, TOX_EVENT_CONFERENCE_TITLE)
+           && bin_pack_array(bp, 3)
+           && bin_pack_u32(bp, event->conference_number)
+           && bin_pack_u32(bp, event->peer_number)
+           && bin_pack_bytes(bp, event->title, event->title_length);
 }
 
 non_null()
 static bool tox_event_conference_title_unpack(
-    Tox_Event_Conference_Title *event, const msgpack_object *obj)
+    Tox_Event_Conference_Title *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-
-    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 3) {
+    if (!bin_unpack_array_fixed(bu, 3)) {
         return false;
     }
 
-    return bin_unpack_u32(&event->conference_number, &obj->via.array.ptr[0])
-           && bin_unpack_u32(&event->peer_number, &obj->via.array.ptr[1])
-           && bin_unpack_bytes(&event->title, &event->title_length, &obj->via.array.ptr[2]);
+    return bin_unpack_u32(bu, &event->conference_number)
+           && bin_unpack_u32(bu, &event->peer_number)
+           && bin_unpack_bytes(bu, &event->title, &event->title_length);
 }
 
 
@@ -195,16 +194,19 @@ const Tox_Event_Conference_Title *tox_events_get_conference_title(const Tox_Even
     return &events->conference_title[index];
 }
 
-void tox_events_pack_conference_title(const Tox_Events *events, msgpack_packer *mp)
+bool tox_events_pack_conference_title(const Tox_Events *events, Bin_Pack *bp)
 {
     const uint32_t size = tox_events_get_conference_title_size(events);
 
     for (uint32_t i = 0; i < size; ++i) {
-        tox_event_conference_title_pack(tox_events_get_conference_title(events, i), mp);
+        if (!tox_event_conference_title_pack(tox_events_get_conference_title(events, i), bp)) {
+            return false;
+        }
     }
+    return true;
 }
 
-bool tox_events_unpack_conference_title(Tox_Events *events, const msgpack_object *obj)
+bool tox_events_unpack_conference_title(Tox_Events *events, Bin_Unpack *bu)
 {
     Tox_Event_Conference_Title *event = tox_events_add_conference_title(events);
 
@@ -212,7 +214,7 @@ bool tox_events_unpack_conference_title(Tox_Events *events, const msgpack_object
         return false;
     }
 
-    return tox_event_conference_title_unpack(event, obj);
+    return tox_event_conference_title_unpack(event, bu);
 }
 
 
@@ -228,6 +230,10 @@ void tox_events_handle_conference_title(Tox *tox, uint32_t conference_number, ui
 {
     Tox_Events_State *state = tox_events_alloc(user_data);
     assert(state != nullptr);
+
+    if (state->events == nullptr) {
+        return;
+    }
 
     Tox_Event_Conference_Title *conference_title = tox_events_add_conference_title(state->events);
 

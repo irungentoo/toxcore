@@ -25,7 +25,7 @@
 struct Tox_Event_Friend_Name {
     uint32_t friend_number;
     uint8_t *name;
-    size_t name_length;
+    uint32_t name_length;
 };
 
 non_null()
@@ -56,7 +56,7 @@ uint32_t tox_event_friend_name_get_friend_number(const Tox_Event_Friend_Name *fr
 
 non_null()
 static bool tox_event_friend_name_set_name(Tox_Event_Friend_Name *friend_name, const uint8_t *name,
-        size_t name_length)
+        uint32_t name_length)
 {
     assert(friend_name != nullptr);
 
@@ -76,7 +76,7 @@ static bool tox_event_friend_name_set_name(Tox_Event_Friend_Name *friend_name, c
     friend_name->name_length = name_length;
     return true;
 }
-size_t tox_event_friend_name_get_name_length(const Tox_Event_Friend_Name *friend_name)
+uint32_t tox_event_friend_name_get_name_length(const Tox_Event_Friend_Name *friend_name)
 {
     assert(friend_name != nullptr);
     return friend_name->name_length;
@@ -88,29 +88,28 @@ const uint8_t *tox_event_friend_name_get_name(const Tox_Event_Friend_Name *frien
 }
 
 non_null()
-static void tox_event_friend_name_pack(
-    const Tox_Event_Friend_Name *event, msgpack_packer *mp)
+static bool tox_event_friend_name_pack(
+    const Tox_Event_Friend_Name *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    bin_pack_array(mp, 2);
-    bin_pack_u32(mp, TOX_EVENT_FRIEND_NAME);
-    bin_pack_array(mp, 2);
-    bin_pack_u32(mp, event->friend_number);
-    bin_pack_bytes(mp, event->name, event->name_length);
+    return bin_pack_array(bp, 2)
+           && bin_pack_u32(bp, TOX_EVENT_FRIEND_NAME)
+           && bin_pack_array(bp, 2)
+           && bin_pack_u32(bp, event->friend_number)
+           && bin_pack_bytes(bp, event->name, event->name_length);
 }
 
 non_null()
 static bool tox_event_friend_name_unpack(
-    Tox_Event_Friend_Name *event, const msgpack_object *obj)
+    Tox_Event_Friend_Name *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-
-    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 2) {
+    if (!bin_unpack_array_fixed(bu, 2)) {
         return false;
     }
 
-    return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
-           && bin_unpack_bytes(&event->name, &event->name_length, &obj->via.array.ptr[1]);
+    return bin_unpack_u32(bu, &event->friend_number)
+           && bin_unpack_bytes(bu, &event->name, &event->name_length);
 }
 
 
@@ -179,16 +178,19 @@ const Tox_Event_Friend_Name *tox_events_get_friend_name(const Tox_Events *events
     return &events->friend_name[index];
 }
 
-void tox_events_pack_friend_name(const Tox_Events *events, msgpack_packer *mp)
+bool tox_events_pack_friend_name(const Tox_Events *events, Bin_Pack *bp)
 {
     const uint32_t size = tox_events_get_friend_name_size(events);
 
     for (uint32_t i = 0; i < size; ++i) {
-        tox_event_friend_name_pack(tox_events_get_friend_name(events, i), mp);
+        if (!tox_event_friend_name_pack(tox_events_get_friend_name(events, i), bp)) {
+            return false;
+        }
     }
+    return true;
 }
 
-bool tox_events_unpack_friend_name(Tox_Events *events, const msgpack_object *obj)
+bool tox_events_unpack_friend_name(Tox_Events *events, Bin_Unpack *bu)
 {
     Tox_Event_Friend_Name *event = tox_events_add_friend_name(events);
 
@@ -196,7 +198,7 @@ bool tox_events_unpack_friend_name(Tox_Events *events, const msgpack_object *obj
         return false;
     }
 
-    return tox_event_friend_name_unpack(event, obj);
+    return tox_event_friend_name_unpack(event, bu);
 }
 
 
@@ -212,6 +214,10 @@ void tox_events_handle_friend_name(Tox *tox, uint32_t friend_number, const uint8
 {
     Tox_Events_State *state = tox_events_alloc(user_data);
     assert(state != nullptr);
+
+    if (state->events == nullptr) {
+        return;
+    }
 
     Tox_Event_Friend_Name *friend_name = tox_events_add_friend_name(state->events);
 

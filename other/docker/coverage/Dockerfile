@@ -10,7 +10,6 @@ RUN apt-get update && \
  golang \
  libconfig-dev \
  libgtest-dev \
- libmsgpack-dev \
  libopus-dev \
  libsodium-dev \
  libvpx-dev \

@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Set up Python 3.9
         uses: actions/setup-python@v1
         with:
@@ -52,6 +54,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Run cimplefmt
         run: other/docker/cimplefmt/run -u $(find tox* -name "*.[ch]")
 
@@ -69,6 +73,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Cross compilation
         run: .github/scripts/cmake-win32 script
 
@@ -76,6 +82,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Cross compilation
         run: .github/scripts/cmake-win64 script
 
@@ -84,6 +92,8 @@ jobs:
     container: toxchat/freebsd
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Build on FreeBSD
         run: .github/scripts/cmake-freebsd-stage2
 
@@ -91,6 +101,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Build and test
         run: .github/scripts/cmake-osx
 
@@ -98,6 +110,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Build, test, and upload coverage
         run: .github/scripts/coverage-linux
 
@@ -105,12 +119,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Install dependencies
         run:
           sudo apt-get install -y --no-install-recommends
             tcc
             libconfig-dev
-            libmsgpack-dev
             libopus-dev
             libsodium-dev
             libvpx-dev
@@ -128,7 +143,8 @@ jobs:
             toxcore/*.c
             toxcore/*/*.c
             toxencryptsave/*.c
-            $(pkg-config --cflags --libs libsodium msgpack opus vpx)
+            third_party/cmp/*.c
+            $(pkg-config --cflags --libs libsodium opus vpx)
       - name: Run the test
         run: "./send_message_test | grep 'tox clients connected'"
       - name: Build amalgamation file with TCC
@@ -141,7 +157,7 @@ jobs:
             -o send_message_test
             -Wall -Werror
             -bench -g
-            $(pkg-config --cflags --libs libsodium msgpack opus vpx)
+            $(pkg-config --cflags --libs libsodium opus vpx)
       - name: Run the test again
         run: "./send_message_test | grep 'tox clients connected'"
 
@@ -150,6 +166,8 @@ jobs:
     container: toxchat/compcert
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Build with CompCert
         run:
           ccomp
@@ -166,8 +184,9 @@ jobs:
             toxcore/*.c
             toxcore/*/*.c
             toxencryptsave/*.c
+            third_party/cmp/*.c
             -D__COMPCERT__ -DDISABLE_VLA -Dinline=
-            -lpthread $(pkg-config --cflags --libs libsodium msgpack opus vpx)
+            -lpthread $(pkg-config --cflags --libs libsodium opus vpx)
       - name: Run the test
         run: "./send_message_test | grep 'tox clients connected'"
 
@@ -175,6 +194,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - run: .github/scripts/cmake-android armeabi-v7a
       - run: .github/scripts/cmake-android arm64-v8a
       - run: .github/scripts/cmake-android x86

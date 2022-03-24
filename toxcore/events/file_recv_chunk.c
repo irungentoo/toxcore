@@ -27,7 +27,7 @@ struct Tox_Event_File_Recv_Chunk {
     uint32_t file_number;
     uint64_t position;
     uint8_t *data;
-    size_t data_length;
+    uint32_t data_length;
 };
 
 non_null()
@@ -84,7 +84,7 @@ uint64_t tox_event_file_recv_chunk_get_position(const Tox_Event_File_Recv_Chunk 
 
 non_null()
 static bool tox_event_file_recv_chunk_set_data(Tox_Event_File_Recv_Chunk *file_recv_chunk, const uint8_t *data,
-        size_t data_length)
+        uint32_t data_length)
 {
     assert(file_recv_chunk != nullptr);
 
@@ -104,7 +104,7 @@ static bool tox_event_file_recv_chunk_set_data(Tox_Event_File_Recv_Chunk *file_r
     file_recv_chunk->data_length = data_length;
     return true;
 }
-size_t tox_event_file_recv_chunk_get_length(const Tox_Event_File_Recv_Chunk *file_recv_chunk)
+uint32_t tox_event_file_recv_chunk_get_length(const Tox_Event_File_Recv_Chunk *file_recv_chunk)
 {
     assert(file_recv_chunk != nullptr);
     return file_recv_chunk->data_length;
@@ -116,33 +116,32 @@ const uint8_t *tox_event_file_recv_chunk_get_data(const Tox_Event_File_Recv_Chun
 }
 
 non_null()
-static void tox_event_file_recv_chunk_pack(
-    const Tox_Event_File_Recv_Chunk *event, msgpack_packer *mp)
+static bool tox_event_file_recv_chunk_pack(
+    const Tox_Event_File_Recv_Chunk *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    bin_pack_array(mp, 2);
-    bin_pack_u32(mp, TOX_EVENT_FILE_RECV_CHUNK);
-    bin_pack_array(mp, 4);
-    bin_pack_u32(mp, event->friend_number);
-    bin_pack_u32(mp, event->file_number);
-    bin_pack_u64(mp, event->position);
-    bin_pack_bytes(mp, event->data, event->data_length);
+    return bin_pack_array(bp, 2)
+           && bin_pack_u32(bp, TOX_EVENT_FILE_RECV_CHUNK)
+           && bin_pack_array(bp, 4)
+           && bin_pack_u32(bp, event->friend_number)
+           && bin_pack_u32(bp, event->file_number)
+           && bin_pack_u64(bp, event->position)
+           && bin_pack_bytes(bp, event->data, event->data_length);
 }
 
 non_null()
 static bool tox_event_file_recv_chunk_unpack(
-    Tox_Event_File_Recv_Chunk *event, const msgpack_object *obj)
+    Tox_Event_File_Recv_Chunk *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-
-    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 4) {
+    if (!bin_unpack_array_fixed(bu, 4)) {
         return false;
     }
 
-    return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
-           && bin_unpack_u32(&event->file_number, &obj->via.array.ptr[1])
-           && bin_unpack_u64(&event->position, &obj->via.array.ptr[2])
-           && bin_unpack_bytes(&event->data, &event->data_length, &obj->via.array.ptr[3]);
+    return bin_unpack_u32(bu, &event->friend_number)
+           && bin_unpack_u32(bu, &event->file_number)
+           && bin_unpack_u64(bu, &event->position)
+           && bin_unpack_bytes(bu, &event->data, &event->data_length);
 }
 
 
@@ -211,16 +210,19 @@ const Tox_Event_File_Recv_Chunk *tox_events_get_file_recv_chunk(const Tox_Events
     return &events->file_recv_chunk[index];
 }
 
-void tox_events_pack_file_recv_chunk(const Tox_Events *events, msgpack_packer *mp)
+bool tox_events_pack_file_recv_chunk(const Tox_Events *events, Bin_Pack *bp)
 {
     const uint32_t size = tox_events_get_file_recv_chunk_size(events);
 
     for (uint32_t i = 0; i < size; ++i) {
-        tox_event_file_recv_chunk_pack(tox_events_get_file_recv_chunk(events, i), mp);
+        if (!tox_event_file_recv_chunk_pack(tox_events_get_file_recv_chunk(events, i), bp)) {
+            return false;
+        }
     }
+    return true;
 }
 
-bool tox_events_unpack_file_recv_chunk(Tox_Events *events, const msgpack_object *obj)
+bool tox_events_unpack_file_recv_chunk(Tox_Events *events, Bin_Unpack *bu)
 {
     Tox_Event_File_Recv_Chunk *event = tox_events_add_file_recv_chunk(events);
 
@@ -228,7 +230,7 @@ bool tox_events_unpack_file_recv_chunk(Tox_Events *events, const msgpack_object 
         return false;
     }
 
-    return tox_event_file_recv_chunk_unpack(event, obj);
+    return tox_event_file_recv_chunk_unpack(event, bu);
 }
 
 
@@ -244,6 +246,10 @@ void tox_events_handle_file_recv_chunk(Tox *tox, uint32_t friend_number, uint32_
 {
     Tox_Events_State *state = tox_events_alloc(user_data);
     assert(state != nullptr);
+
+    if (state->events == nullptr) {
+        return;
+    }
 
     Tox_Event_File_Recv_Chunk *file_recv_chunk = tox_events_add_file_recv_chunk(state->events);
 

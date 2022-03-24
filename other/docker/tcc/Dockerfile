@@ -3,7 +3,6 @@ FROM ubuntu:20.04
 RUN apt-get update && \
  DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
  libc-dev \
- libmsgpack-dev \
  libopus-dev \
  libsodium-dev \
  libvpx-dev \
@@ -31,7 +30,8 @@ RUN tcc \
  toxcore/*.c \
  toxcore/*/*.c \
  toxencryptsave/*.c \
- $(pkg-config --cflags --libs libsodium msgpack opus vpx)
+ third_party/cmp/*.c \
+ $(pkg-config --cflags --libs libsodium opus vpx)
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 COPY other/make_single_file /work/other/
@@ -44,4 +44,4 @@ RUN \
    -o send_message_test \
    -Wall -Werror \
    -bench -g \
-   $(pkg-config --cflags --libs libsodium msgpack opus vpx)
+   $(pkg-config --cflags --libs libsodium opus vpx)

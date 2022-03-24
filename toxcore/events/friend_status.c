@@ -68,29 +68,28 @@ Tox_User_Status tox_event_friend_status_get_status(const Tox_Event_Friend_Status
 }
 
 non_null()
-static void tox_event_friend_status_pack(
-    const Tox_Event_Friend_Status *event, msgpack_packer *mp)
+static bool tox_event_friend_status_pack(
+    const Tox_Event_Friend_Status *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    bin_pack_array(mp, 2);
-    bin_pack_u32(mp, TOX_EVENT_FRIEND_STATUS);
-    bin_pack_array(mp, 2);
-    bin_pack_u32(mp, event->friend_number);
-    bin_pack_u32(mp, event->status);
+    return bin_pack_array(bp, 2)
+           && bin_pack_u32(bp, TOX_EVENT_FRIEND_STATUS)
+           && bin_pack_array(bp, 2)
+           && bin_pack_u32(bp, event->friend_number)
+           && bin_pack_u32(bp, event->status);
 }
 
 non_null()
 static bool tox_event_friend_status_unpack(
-    Tox_Event_Friend_Status *event, const msgpack_object *obj)
+    Tox_Event_Friend_Status *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-
-    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 2) {
+    if (!bin_unpack_array_fixed(bu, 2)) {
         return false;
     }
 
-    return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
-           && tox_unpack_user_status(&event->status, &obj->via.array.ptr[1]);
+    return bin_unpack_u32(bu, &event->friend_number)
+           && tox_unpack_user_status(bu, &event->status);
 }
 
 
@@ -159,16 +158,19 @@ const Tox_Event_Friend_Status *tox_events_get_friend_status(const Tox_Events *ev
     return &events->friend_status[index];
 }
 
-void tox_events_pack_friend_status(const Tox_Events *events, msgpack_packer *mp)
+bool tox_events_pack_friend_status(const Tox_Events *events, Bin_Pack *bp)
 {
     const uint32_t size = tox_events_get_friend_status_size(events);
 
     for (uint32_t i = 0; i < size; ++i) {
-        tox_event_friend_status_pack(tox_events_get_friend_status(events, i), mp);
+        if (!tox_event_friend_status_pack(tox_events_get_friend_status(events, i), bp)) {
+            return false;
+        }
     }
+    return true;
 }
 
-bool tox_events_unpack_friend_status(Tox_Events *events, const msgpack_object *obj)
+bool tox_events_unpack_friend_status(Tox_Events *events, Bin_Unpack *bu)
 {
     Tox_Event_Friend_Status *event = tox_events_add_friend_status(events);
 
@@ -176,7 +178,7 @@ bool tox_events_unpack_friend_status(Tox_Events *events, const msgpack_object *o
         return false;
     }
 
-    return tox_event_friend_status_unpack(event, obj);
+    return tox_event_friend_status_unpack(event, bu);
 }
 
 
@@ -192,6 +194,10 @@ void tox_events_handle_friend_status(Tox *tox, uint32_t friend_number, Tox_User_
 {
     Tox_Events_State *state = tox_events_alloc(user_data);
     assert(state != nullptr);
+
+    if (state->events == nullptr) {
+        return;
+    }
 
     Tox_Event_Friend_Status *friend_status = tox_events_add_friend_status(state->events);
 

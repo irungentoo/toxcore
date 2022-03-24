@@ -14,8 +14,6 @@ find_library(SOCKET_LIBRARIES       socket       )
 
 # For toxcore.
 pkg_use_module(LIBSODIUM            libsodium    )
-pkg_use_module(MSGPACK              msgpack      )
-#find_package(msgpack REQUIRED)
 
 # For toxav.
 pkg_use_module(OPUS                 "opus;Opus"  )

@@ -145,6 +145,10 @@ if(BUILD_TOXAV)
   endif()
 endif()
 
+# Disable float/double packing in CMP (C MessagePack library).
+# We don't transfer floats over the network, so we disable this functionality.
+add_definitions(-DCMP_NO_FLOAT=1)
+
 ################################################################################
 #
 # :: Tox Core Library
@@ -253,6 +257,8 @@ set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxcore/tox
 # LAYER 9: New async events API
 # -------------------
 set(toxcore_SOURCES ${toxcore_SOURCES}
+  third_party/cmp/cmp.c
+  third_party/cmp/cmp.h
   toxcore/events/conference_connected.c
   toxcore/events/conference_invite.c
   toxcore/events/conference_message.c
@@ -285,8 +291,6 @@ set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/tox_unpack.c
   toxcore/tox_unpack.h)
 set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxcore/tox_events.h^tox)
-set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${MSGPACK_LIBRARIES})
-set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} msgpack)
 
 # LAYER 10: Dispatch recorded events to callbacks.
 # -------------------
@@ -405,6 +409,7 @@ include(CompileGTest)
 unit_test(toxav ring_buffer)
 unit_test(toxav rtp)
 unit_test(toxcore DHT)
+unit_test(toxcore bin_pack)
 unit_test(toxcore crypto_core)
 unit_test(toxcore mono_time)
 unit_test(toxcore ping_array)

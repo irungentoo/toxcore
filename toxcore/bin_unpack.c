@@ -4,77 +4,181 @@
 
 #include "bin_unpack.h"
 
-#include <msgpack.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
+#include "../third_party/cmp/cmp.h"
 #include "ccompat.h"
 
-bool bin_unpack_bool(bool *val, const msgpack_object *obj)
+struct Bin_Unpack {
+    const uint8_t *bytes;
+    uint32_t bytes_size;
+    cmp_ctx_t ctx;
+};
+
+non_null()
+static bool buf_reader(cmp_ctx_t *ctx, void *data, size_t limit)
 {
-    if (obj->type != MSGPACK_OBJECT_BOOLEAN) {
+    Bin_Unpack *reader = (Bin_Unpack *)ctx->buf;
+    assert(reader != nullptr && reader->bytes != nullptr);
+    if (limit > reader->bytes_size) {
         return false;
     }
-
-    *val = obj->via.boolean;
+    memcpy(data, reader->bytes, limit);
+    reader->bytes += limit;
+    reader->bytes_size -= limit;
     return true;
 }
 
-bool bin_unpack_u16(uint16_t *val, const msgpack_object *obj)
+non_null()
+static bool buf_skipper(cmp_ctx_t *ctx, size_t limit)
 {
-    if (obj->type != MSGPACK_OBJECT_POSITIVE_INTEGER || obj->via.u64 > UINT16_MAX) {
+    Bin_Unpack *reader = (Bin_Unpack *)ctx->buf;
+    assert(reader != nullptr && reader->bytes != nullptr);
+    if (limit > reader->bytes_size) {
         return false;
     }
-
-    *val = (uint16_t)obj->via.u64;
+    reader->bytes += limit;
+    reader->bytes_size -= limit;
     return true;
 }
 
-bool bin_unpack_u32(uint32_t *val, const msgpack_object *obj)
+non_null()
+static size_t null_writer(cmp_ctx_t *ctx, const void *data, size_t count)
 {
-    if (obj->type != MSGPACK_OBJECT_POSITIVE_INTEGER || obj->via.u64 > UINT32_MAX) {
-        return false;
-    }
-
-    *val = (uint32_t)obj->via.u64;
-    return true;
+    assert(count == 0);
+    return 0;
 }
 
-bool bin_unpack_u64(uint64_t *val, const msgpack_object *obj)
+Bin_Unpack *bin_unpack_new(const uint8_t *buf, uint32_t buf_size)
 {
-    if (obj->type != MSGPACK_OBJECT_POSITIVE_INTEGER) {
-        return false;
+    Bin_Unpack *bu = (Bin_Unpack *)calloc(1, sizeof(Bin_Unpack));
+    if (bu == nullptr) {
+        return nullptr;
     }
-
-    *val = obj->via.u64;
-    return true;
+    bu->bytes = buf;
+    bu->bytes_size = buf_size;
+    cmp_init(&bu->ctx, bu, buf_reader, buf_skipper, null_writer);
+    return bu;
 }
 
-bool bin_unpack_bytes(uint8_t **data_ptr, size_t *data_length_ptr, const msgpack_object *obj)
+void bin_unpack_free(Bin_Unpack *bu)
 {
-    if (obj->type != MSGPACK_OBJECT_BIN) {
+    free(bu);
+}
+
+bool bin_unpack_array(Bin_Unpack *bu, uint32_t *size)
+{
+    return cmp_read_array(&bu->ctx, size);
+}
+
+bool bin_unpack_array_fixed(Bin_Unpack *bu, uint32_t required_size)
+{
+    uint32_t size;
+    return cmp_read_array(&bu->ctx, &size) && size == required_size;
+}
+
+bool bin_unpack_bool(Bin_Unpack *bu, bool *val)
+{
+    return cmp_read_bool(&bu->ctx, val);
+}
+
+bool bin_unpack_u08(Bin_Unpack *bu, uint8_t *val)
+{
+    return cmp_read_uchar(&bu->ctx, val);
+}
+
+bool bin_unpack_u16(Bin_Unpack *bu, uint16_t *val)
+{
+    return cmp_read_ushort(&bu->ctx, val);
+}
+
+bool bin_unpack_u32(Bin_Unpack *bu, uint32_t *val)
+{
+    return cmp_read_uint(&bu->ctx, val);
+}
+
+bool bin_unpack_u64(Bin_Unpack *bu, uint64_t *val)
+{
+    return cmp_read_ulong(&bu->ctx, val);
+}
+
+bool bin_unpack_bytes(Bin_Unpack *bu, uint8_t **data_ptr, uint32_t *data_length_ptr)
+{
+    uint32_t bin_size;
+    if (!cmp_read_bin_size(&bu->ctx, &bin_size) || bin_size > bu->bytes_size) {
         return false;
     }
+    uint8_t *const data = (uint8_t *)malloc(bin_size);
 
-    const uint32_t data_length = obj->via.bin.size;
-    uint8_t *const data = (uint8_t *)malloc(data_length);
-
-    if (data == nullptr) {
+    if (!bu->ctx.read(&bu->ctx, data, bin_size)) {
+        free(data);
         return false;
     }
-
-    memcpy(data, obj->via.bin.ptr, data_length);
 
     *data_ptr = data;
-    *data_length_ptr = data_length;
+    *data_length_ptr = bin_size;
     return true;
 }
 
-bool bin_unpack_bytes_fixed(uint8_t *data, uint32_t data_length, const msgpack_object *obj)
+bool bin_unpack_bytes_fixed(Bin_Unpack *bu, uint8_t *data, uint32_t data_length)
 {
-    if (obj->type != MSGPACK_OBJECT_BIN || obj->via.bin.size != data_length) {
+    uint32_t bin_size;
+    if (!cmp_read_bin_size(&bu->ctx, &bin_size) || bin_size != data_length) {
         return false;
     }
 
-    memcpy(data, obj->via.bin.ptr, data_length);
+    return bu->ctx.read(&bu->ctx, data, bin_size);
+}
 
+bool bin_unpack_bin(Bin_Unpack *bu, uint32_t *size)
+{
+    return cmp_read_bin_size(&bu->ctx, size);
+}
+
+bool bin_unpack_u08_b(Bin_Unpack *bu, uint8_t *val)
+{
+    return bu->ctx.read(&bu->ctx, val, 1);
+}
+
+bool bin_unpack_u16_b(Bin_Unpack *bu, uint16_t *val)
+{
+    uint8_t hi = 0;
+    uint8_t lo = 0;
+    if (!(bin_unpack_u08_b(bu, &hi)
+          && bin_unpack_u08_b(bu, &lo))) {
+        return false;
+    }
+    *val = ((uint16_t)hi << 8) | lo;
     return true;
+}
+
+bool bin_unpack_u32_b(Bin_Unpack *bu, uint32_t *val)
+{
+    uint16_t hi = 0;
+    uint16_t lo = 0;
+    if (!(bin_unpack_u16_b(bu, &hi)
+          && bin_unpack_u16_b(bu, &lo))) {
+        return false;
+    }
+    *val = ((uint32_t)hi << 16) | lo;
+    return true;
+}
+
+bool bin_unpack_u64_b(Bin_Unpack *bu, uint64_t *val)
+{
+    uint32_t hi = 0;
+    uint32_t lo = 0;
+    if (!(bin_unpack_u32_b(bu, &hi)
+          && bin_unpack_u32_b(bu, &lo))) {
+        return false;
+    }
+    *val = ((uint64_t)hi << 32) | lo;
+    return true;
+}
+
+bool bin_unpack_bytes_b(Bin_Unpack *bu, uint8_t *data, uint32_t length)
+{
+    return bu->ctx.read(&bu->ctx, data, length);
 }

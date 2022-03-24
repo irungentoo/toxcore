@@ -44,11 +44,11 @@ sub emit {
 
 if (@ARGV and $ARGV[0] eq "-core") {
    shift @ARGV;
-   for my $fn (<toxcore/*.c>) {
+   for my $fn (<toxcore/*.c>, <third_party/cmp/*.c>) {
       emit(abs_path $fn);
    }
 } else {
-   for my $fn (<toxav/*.c>, <toxcore/*.c>, <toxcore/*/*.c>, <toxencryptsave/*.c>) {
+   for my $fn (<toxav/*.c>, <toxcore/*.c>, <toxcore/*/*.c>, <toxencryptsave/*.c>, <third_party/cmp/*.c>) {
       emit(abs_path $fn);
    }
 }

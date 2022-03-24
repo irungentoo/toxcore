@@ -18,7 +18,7 @@ uint32_t tox_event_conference_connected_get_conference_number(
 typedef struct Tox_Event_Conference_Invite Tox_Event_Conference_Invite;
 const uint8_t *tox_event_conference_invite_get_cookie(
     const Tox_Event_Conference_Invite *conference_invite);
-size_t tox_event_conference_invite_get_cookie_length(
+uint32_t tox_event_conference_invite_get_cookie_length(
     const Tox_Event_Conference_Invite *conference_invite);
 Tox_Conference_Type tox_event_conference_invite_get_type(
     const Tox_Event_Conference_Invite *conference_invite);
@@ -28,7 +28,7 @@ uint32_t tox_event_conference_invite_get_friend_number(
 typedef struct Tox_Event_Conference_Message Tox_Event_Conference_Message;
 const uint8_t *tox_event_conference_message_get_message(
     const Tox_Event_Conference_Message *conference_message);
-size_t tox_event_conference_message_get_message_length(
+uint32_t tox_event_conference_message_get_message_length(
     const Tox_Event_Conference_Message *conference_message);
 Tox_Message_Type tox_event_conference_message_get_type(
     const Tox_Event_Conference_Message *conference_message);
@@ -44,7 +44,7 @@ uint32_t tox_event_conference_peer_list_changed_get_conference_number(
 typedef struct Tox_Event_Conference_Peer_Name Tox_Event_Conference_Peer_Name;
 const uint8_t *tox_event_conference_peer_name_get_name(
     const Tox_Event_Conference_Peer_Name *conference_peer_name);
-size_t tox_event_conference_peer_name_get_name_length(
+uint32_t tox_event_conference_peer_name_get_name_length(
     const Tox_Event_Conference_Peer_Name *conference_peer_name);
 uint32_t tox_event_conference_peer_name_get_conference_number(
     const Tox_Event_Conference_Peer_Name *conference_peer_name);
@@ -54,7 +54,7 @@ uint32_t tox_event_conference_peer_name_get_peer_number(
 typedef struct Tox_Event_Conference_Title Tox_Event_Conference_Title;
 const uint8_t *tox_event_conference_title_get_title(
     const Tox_Event_Conference_Title *conference_title);
-size_t tox_event_conference_title_get_title_length(
+uint32_t tox_event_conference_title_get_title_length(
     const Tox_Event_Conference_Title *conference_title);
 uint32_t tox_event_conference_title_get_conference_number(
     const Tox_Event_Conference_Title *conference_title);
@@ -74,7 +74,7 @@ uint64_t tox_event_file_chunk_request_get_position(
 typedef struct Tox_Event_File_Recv Tox_Event_File_Recv;
 const uint8_t *tox_event_file_recv_get_filename(
     const Tox_Event_File_Recv *file_recv);
-size_t tox_event_file_recv_get_filename_length(
+uint32_t tox_event_file_recv_get_filename_length(
     const Tox_Event_File_Recv *file_recv);
 uint32_t tox_event_file_recv_get_file_number(
     const Tox_Event_File_Recv *file_recv);
@@ -88,7 +88,7 @@ uint32_t tox_event_file_recv_get_kind(
 typedef struct Tox_Event_File_Recv_Chunk Tox_Event_File_Recv_Chunk;
 const uint8_t *tox_event_file_recv_chunk_get_data(
     const Tox_Event_File_Recv_Chunk *file_recv_chunk);
-size_t tox_event_file_recv_chunk_get_length(
+uint32_t tox_event_file_recv_chunk_get_length(
     const Tox_Event_File_Recv_Chunk *file_recv_chunk);
 uint32_t tox_event_file_recv_chunk_get_file_number(
     const Tox_Event_File_Recv_Chunk *file_recv_chunk);
@@ -114,7 +114,7 @@ uint32_t tox_event_friend_connection_status_get_friend_number(
 typedef struct Tox_Event_Friend_Lossless_Packet Tox_Event_Friend_Lossless_Packet;
 const uint8_t *tox_event_friend_lossless_packet_get_data(
     const Tox_Event_Friend_Lossless_Packet *friend_lossless_packet);
-size_t tox_event_friend_lossless_packet_get_data_length(
+uint32_t tox_event_friend_lossless_packet_get_data_length(
     const Tox_Event_Friend_Lossless_Packet *friend_lossless_packet);
 uint32_t tox_event_friend_lossless_packet_get_friend_number(
     const Tox_Event_Friend_Lossless_Packet *friend_lossless_packet);
@@ -122,7 +122,7 @@ uint32_t tox_event_friend_lossless_packet_get_friend_number(
 typedef struct Tox_Event_Friend_Lossy_Packet Tox_Event_Friend_Lossy_Packet;
 const uint8_t *tox_event_friend_lossy_packet_get_data(
     const Tox_Event_Friend_Lossy_Packet *friend_lossy_packet);
-size_t tox_event_friend_lossy_packet_get_data_length(
+uint32_t tox_event_friend_lossy_packet_get_data_length(
     const Tox_Event_Friend_Lossy_Packet *friend_lossy_packet);
 uint32_t tox_event_friend_lossy_packet_get_friend_number(
     const Tox_Event_Friend_Lossy_Packet *friend_lossy_packet);
@@ -132,7 +132,7 @@ uint32_t tox_event_friend_message_get_friend_number(
     const Tox_Event_Friend_Message *friend_message);
 Tox_Message_Type tox_event_friend_message_get_type(
     const Tox_Event_Friend_Message *friend_message);
-size_t tox_event_friend_message_get_message_length(
+uint32_t tox_event_friend_message_get_message_length(
     const Tox_Event_Friend_Message *friend_message);
 const uint8_t *tox_event_friend_message_get_message(
     const Tox_Event_Friend_Message *friend_message);
@@ -140,7 +140,7 @@ const uint8_t *tox_event_friend_message_get_message(
 typedef struct Tox_Event_Friend_Name Tox_Event_Friend_Name;
 const uint8_t *tox_event_friend_name_get_name(
     const Tox_Event_Friend_Name *friend_name);
-size_t tox_event_friend_name_get_name_length(
+uint32_t tox_event_friend_name_get_name_length(
     const Tox_Event_Friend_Name *friend_name);
 uint32_t tox_event_friend_name_get_friend_number(
     const Tox_Event_Friend_Name *friend_name);
@@ -156,7 +156,7 @@ const uint8_t *tox_event_friend_request_get_message(
     const Tox_Event_Friend_Request *friend_request);
 const uint8_t *tox_event_friend_request_get_public_key(
     const Tox_Event_Friend_Request *friend_request);
-size_t tox_event_friend_request_get_message_length(
+uint32_t tox_event_friend_request_get_message_length(
     const Tox_Event_Friend_Request *friend_request);
 
 typedef struct Tox_Event_Friend_Status Tox_Event_Friend_Status;
@@ -168,7 +168,7 @@ uint32_t tox_event_friend_status_get_friend_number(
 typedef struct Tox_Event_Friend_Status_Message Tox_Event_Friend_Status_Message;
 const uint8_t *tox_event_friend_status_message_get_message(
     const Tox_Event_Friend_Status_Message *friend_status_message);
-size_t tox_event_friend_status_message_get_message_length(
+uint32_t tox_event_friend_status_message_get_message_length(
     const Tox_Event_Friend_Status_Message *friend_status_message);
 uint32_t tox_event_friend_status_message_get_friend_number(
     const Tox_Event_Friend_Status_Message *friend_status_message);
@@ -346,8 +346,6 @@ void tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes);
 Tox_Events *tox_events_load(const uint8_t *bytes, uint32_t bytes_size);
 
 bool tox_events_equal(const Tox_Events *a, const Tox_Events *b);
-
-void tox_events_print(const Tox_Events *events);
 
 #ifdef __cplusplus
 }

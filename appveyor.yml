@@ -9,6 +9,7 @@ install:
   - py -3 -m pip install conan
 
 before_build:
+  - git submodule update --init --recursive
   - conan install -if _build .
 
 build_script:

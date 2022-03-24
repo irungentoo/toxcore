@@ -37,6 +37,12 @@ static bool await_message(Tox **toxes)
     return false;
 }
 
+static uint64_t get_state_clock_callback(Mono_Time *mono_time, void *user_data)
+{
+    const uint64_t *clock = (const uint64_t *)user_data;
+    return *clock;
+}
+
 static void test_tox_events(void)
 {
     uint8_t message[sizeof("hello")];
@@ -51,6 +57,16 @@ static void test_tox_events(void)
         tox_events_init(toxes[i]);
         ck_assert_msg(toxes[i] != nullptr, "failed to create tox instances %u", i);
     }
+
+    // TODO(iphydf): Don't rely on toxcore internals.
+    uint64_t clock = current_time_monotonic(((Messenger *)toxes[0])->mono_time);
+    Mono_Time *mono_time;
+
+    // TODO(iphydf): Don't rely on toxcore internals.
+    mono_time = ((Messenger *)toxes[0])->mono_time;
+    mono_time_set_current_time_callback(mono_time, get_state_clock_callback, &clock);
+    mono_time = ((Messenger *)toxes[1])->mono_time;
+    mono_time_set_current_time_callback(mono_time, get_state_clock_callback, &clock);
 
     uint8_t pk[TOX_PUBLIC_KEY_SIZE];
     tox_self_get_dht_id(toxes[0], pk);
@@ -70,7 +86,8 @@ static void test_tox_events(void)
         tox_events_free(tox_events_iterate(toxes[0], false, nullptr));
         tox_events_free(tox_events_iterate(toxes[1], false, nullptr));
 
-        c_sleep(tox_iteration_interval(toxes[0]));
+        clock += 100;
+        c_sleep(5);
     }
 
     printf("toxes online, waiting for friend connection\n");
@@ -81,7 +98,8 @@ static void test_tox_events(void)
         tox_events_free(tox_events_iterate(toxes[0], false, nullptr));
         tox_events_free(tox_events_iterate(toxes[1], false, nullptr));
 
-        c_sleep(tox_iteration_interval(toxes[0]));
+        clock += 100;
+        c_sleep(5);
     }
 
     printf("friends are connected via %s, now sending message\n",

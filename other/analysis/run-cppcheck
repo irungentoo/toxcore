@@ -24,6 +24,8 @@ CPPCHECK_C=("--suppress=unusedFunction")
 
 # We actually write C code.
 CPPCHECK_CXX=("--suppress=cstyleCast")
+# False positive in cmp.c.
+CPPCHECK_CXX+=("--suppress=objectIndex")
 # False positive in auto_tests.
 CPPCHECK_CXX+=("--suppress=shadowArgument")
 CPPCHECK_CXX+=("--suppress=shadowFunction")

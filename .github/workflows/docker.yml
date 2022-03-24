@@ -17,6 +17,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Docker Build
         run: .github/scripts/tox-bootstrapd-docker local
       - name: Push latest image to DockerHub

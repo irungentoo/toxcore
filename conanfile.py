@@ -14,7 +14,7 @@ class ToxConan(ConanFile):
     description = "The future of online communications."
     license = "GPL-3.0-only"
     settings = "os", "compiler", "build_type", "arch"
-    requires = "libsodium/1.0.18", "opus/1.3.1", "msgpack/3.3.0", "libvpx/1.9.0"
+    requires = "libsodium/1.0.18", "opus/1.3.1", "libvpx/1.9.0"
     generators = "cmake_find_package"
     scm = {"type": "git", "url": "auto", "revision": "auto"}
 

@@ -9,11 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Install libraries
         run:
           sudo apt-get update &&
           sudo apt-get install -y --no-install-recommends
-            libmsgpack-dev
             libopus-dev
             libsodium-dev
             libvpx-dev

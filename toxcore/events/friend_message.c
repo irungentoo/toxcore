@@ -27,7 +27,7 @@ struct Tox_Event_Friend_Message {
     uint32_t friend_number;
     Tox_Message_Type type;
     uint8_t *message;
-    size_t message_length;
+    uint32_t message_length;
 };
 
 non_null()
@@ -70,7 +70,7 @@ Tox_Message_Type tox_event_friend_message_get_type(const Tox_Event_Friend_Messag
 
 non_null()
 static bool tox_event_friend_message_set_message(Tox_Event_Friend_Message *friend_message, const uint8_t *message,
-        size_t message_length)
+        uint32_t message_length)
 {
     assert(friend_message != nullptr);
 
@@ -90,7 +90,7 @@ static bool tox_event_friend_message_set_message(Tox_Event_Friend_Message *frien
     friend_message->message_length = message_length;
     return true;
 }
-size_t tox_event_friend_message_get_message_length(const Tox_Event_Friend_Message *friend_message)
+uint32_t tox_event_friend_message_get_message_length(const Tox_Event_Friend_Message *friend_message)
 {
     assert(friend_message != nullptr);
     return friend_message->message_length;
@@ -102,31 +102,30 @@ const uint8_t *tox_event_friend_message_get_message(const Tox_Event_Friend_Messa
 }
 
 non_null()
-static void tox_event_friend_message_pack(
-    const Tox_Event_Friend_Message *event, msgpack_packer *mp)
+static bool tox_event_friend_message_pack(
+    const Tox_Event_Friend_Message *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    bin_pack_array(mp, 2);
-    bin_pack_u32(mp, TOX_EVENT_FRIEND_MESSAGE);
-    bin_pack_array(mp, 3);
-    bin_pack_u32(mp, event->friend_number);
-    bin_pack_u32(mp, event->type);
-    bin_pack_bytes(mp, event->message, event->message_length);
+    return bin_pack_array(bp, 2)
+           && bin_pack_u32(bp, TOX_EVENT_FRIEND_MESSAGE)
+           && bin_pack_array(bp, 3)
+           && bin_pack_u32(bp, event->friend_number)
+           && bin_pack_u32(bp, event->type)
+           && bin_pack_bytes(bp, event->message, event->message_length);
 }
 
 non_null()
 static bool tox_event_friend_message_unpack(
-    Tox_Event_Friend_Message *event, const msgpack_object *obj)
+    Tox_Event_Friend_Message *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-
-    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 3) {
+    if (!bin_unpack_array_fixed(bu, 3)) {
         return false;
     }
 
-    return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
-           && tox_unpack_message_type(&event->type, &obj->via.array.ptr[1])
-           && bin_unpack_bytes(&event->message, &event->message_length, &obj->via.array.ptr[2]);
+    return bin_unpack_u32(bu, &event->friend_number)
+           && tox_unpack_message_type(bu, &event->type)
+           && bin_unpack_bytes(bu, &event->message, &event->message_length);
 }
 
 
@@ -195,16 +194,19 @@ const Tox_Event_Friend_Message *tox_events_get_friend_message(const Tox_Events *
     return &events->friend_message[index];
 }
 
-void tox_events_pack_friend_message(const Tox_Events *events, msgpack_packer *mp)
+bool tox_events_pack_friend_message(const Tox_Events *events, Bin_Pack *bp)
 {
     const uint32_t size = tox_events_get_friend_message_size(events);
 
     for (uint32_t i = 0; i < size; ++i) {
-        tox_event_friend_message_pack(tox_events_get_friend_message(events, i), mp);
+        if (!tox_event_friend_message_pack(tox_events_get_friend_message(events, i), bp)) {
+            return false;
+        }
     }
+    return true;
 }
 
-bool tox_events_unpack_friend_message(Tox_Events *events, const msgpack_object *obj)
+bool tox_events_unpack_friend_message(Tox_Events *events, Bin_Unpack *bu)
 {
     Tox_Event_Friend_Message *event = tox_events_add_friend_message(events);
 
@@ -212,7 +214,7 @@ bool tox_events_unpack_friend_message(Tox_Events *events, const msgpack_object *
         return false;
     }
 
-    return tox_event_friend_message_unpack(event, obj);
+    return tox_event_friend_message_unpack(event, bu);
 }
 
 
@@ -228,6 +230,10 @@ void tox_events_handle_friend_message(Tox *tox, uint32_t friend_number, Tox_Mess
 {
     Tox_Events_State *state = tox_events_alloc(user_data);
     assert(state != nullptr);
+
+    if (state->events == nullptr) {
+        return;
+    }
 
     Tox_Event_Friend_Message *friend_message = tox_events_add_friend_message(state->events);
 

@@ -4,17 +4,16 @@
 
 #include "tox_unpack.h"
 
-#include <msgpack.h>
 #include <stdint.h>
 
 #include "bin_unpack.h"
 #include "ccompat.h"
 
-bool tox_unpack_conference_type(Tox_Conference_Type *val, const msgpack_object *obj)
+bool tox_unpack_conference_type(Bin_Unpack *bu, Tox_Conference_Type *val)
 {
     uint32_t u32;
 
-    if (!bin_unpack_u32(&u32, obj)) {
+    if (!bin_unpack_u32(bu, &u32)) {
         return false;
     }
 
@@ -22,11 +21,11 @@ bool tox_unpack_conference_type(Tox_Conference_Type *val, const msgpack_object *
     return true;
 }
 
-bool tox_unpack_connection(Tox_Connection *val, const msgpack_object *obj)
+bool tox_unpack_connection(Bin_Unpack *bu, Tox_Connection *val)
 {
     uint32_t u32;
 
-    if (!bin_unpack_u32(&u32, obj)) {
+    if (!bin_unpack_u32(bu, &u32)) {
         return false;
     }
 
@@ -34,11 +33,11 @@ bool tox_unpack_connection(Tox_Connection *val, const msgpack_object *obj)
     return true;
 }
 
-bool tox_unpack_file_control(Tox_File_Control *val, const msgpack_object *obj)
+bool tox_unpack_file_control(Bin_Unpack *bu, Tox_File_Control *val)
 {
     uint32_t u32;
 
-    if (!bin_unpack_u32(&u32, obj)) {
+    if (!bin_unpack_u32(bu, &u32)) {
         return false;
     }
 
@@ -46,11 +45,11 @@ bool tox_unpack_file_control(Tox_File_Control *val, const msgpack_object *obj)
     return true;
 }
 
-bool tox_unpack_message_type(Tox_Message_Type *val, const msgpack_object *obj)
+bool tox_unpack_message_type(Bin_Unpack *bu, Tox_Message_Type *val)
 {
     uint32_t u32;
 
-    if (!bin_unpack_u32(&u32, obj)) {
+    if (!bin_unpack_u32(bu, &u32)) {
         return false;
     }
 
@@ -58,11 +57,11 @@ bool tox_unpack_message_type(Tox_Message_Type *val, const msgpack_object *obj)
     return true;
 }
 
-bool tox_unpack_user_status(Tox_User_Status *val, const msgpack_object *obj)
+bool tox_unpack_user_status(Bin_Unpack *bu, Tox_User_Status *val)
 {
     uint32_t u32;
 
-    if (!bin_unpack_u32(&u32, obj)) {
+    if (!bin_unpack_u32(bu, &u32)) {
         return false;
     }
 

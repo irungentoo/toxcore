@@ -1,6 +1,7 @@
 #!/bin/bash
 
 CPPFLAGS="-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE"
+CPPFLAGS+=("-DCMP_NO_FLOAT=1")
 CPPFLAGS+=("-isystem" "/usr/include/opus")
 CPPFLAGS+=("-Iauto_tests")
 CPPFLAGS+=("-Iother")
@@ -12,8 +13,9 @@ CPPFLAGS+=("-Itoxcore")
 CPPFLAGS+=("-Itoxcore/events")
 CPPFLAGS+=("-Itoxav")
 CPPFLAGS+=("-Itoxencryptsave")
+CPPFLAGS+=("-Ithird_party/cmp")
 
-LDFLAGS=("-lopus" "-lmsgpackc" "-lsodium" "-lvpx" "-lpthread" "-lconfig" "-lgtest")
+LDFLAGS=("-lopus" "-lsodium" "-lvpx" "-lpthread" "-lconfig" "-lgtest")
 LDFLAGS+=("-fuse-ld=gold")
 LDFLAGS+=("-Wl,--detect-odr-violations")
 LDFLAGS+=("-Wl,--warn-common")
@@ -57,6 +59,8 @@ FIND_QUERY="$FIND_QUERY -and -not -name cracker.c"
 FIND_QUERY="$FIND_QUERY -and -not -name version_test.c"
 FIND_QUERY="$FIND_QUERY -and -not -name '*_fuzz_test.cc'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './testing/fuzzing/*'"
+FIND_QUERY="$FIND_QUERY -and -not -wholename './third_party/cmp/examples/*'"
+FIND_QUERY="$FIND_QUERY -and -not -wholename './third_party/cmp/test/*'"
 
 if [ "$SKIP_GTEST" == 1 ]; then
   FIND_QUERY="$FIND_QUERY -and -not -name '*_test.cc'"
