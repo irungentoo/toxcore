@@ -145,7 +145,8 @@ int main(int argc, char *argv[])
     Mono_Time *mono_time = mono_time_new();
     const uint16_t start_port = PORT;
     const uint16_t end_port = start_port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM);
-    DHT *dht = new_dht(logger, mono_time, new_networking_ex(logger, &ip, start_port, end_port, nullptr), true, true);
+    const Network *ns = system_network();
+    DHT *dht = new_dht(logger, mono_time, new_networking_ex(logger, ns, &ip, start_port, end_port, nullptr), true, true);
     Onion *onion = new_onion(logger, mono_time, dht);
     const Onion_Announce *onion_a = new_onion_announce(logger, mono_time, dht);
 
@@ -166,7 +167,7 @@ int main(int argc, char *argv[])
 #ifdef TCP_RELAY_ENABLED
 #define NUM_PORTS 3
     uint16_t ports[NUM_PORTS] = {443, 3389, PORT};
-    TCP_Server *tcp_s = new_TCP_server(logger, ipv6enabled, NUM_PORTS, ports, dht_get_self_secret_key(dht), onion);
+    TCP_Server *tcp_s = new_TCP_server(logger, ns, ipv6enabled, NUM_PORTS, ports, dht_get_self_secret_key(dht), onion);
 
     if (tcp_s == nullptr) {
         printf("TCP server failed to initialize.\n");
@@ -220,7 +221,7 @@ int main(int argc, char *argv[])
     int is_waiting_for_dht_connection = 1;
 
     uint64_t last_LANdiscovery = 0;
-    const Broadcast_Info *broadcast = lan_discovery_init();
+    const Broadcast_Info *broadcast = lan_discovery_init(ns);
 
     while (1) {
         mono_time_update(mono_time);

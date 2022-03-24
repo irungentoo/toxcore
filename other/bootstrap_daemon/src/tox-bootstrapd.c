@@ -278,14 +278,15 @@ int main(int argc, char *argv[])
     }
 
     const uint16_t end_port = start_port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM);
-    Networking_Core *net = new_networking_ex(logger, &ip, start_port, end_port, nullptr);
+    const Network *ns = system_network();
+    Networking_Core *net = new_networking_ex(logger, ns, &ip, start_port, end_port, nullptr);
 
     if (net == nullptr) {
         if (enable_ipv6 && enable_ipv4_fallback) {
             log_write(LOG_LEVEL_WARNING, "Couldn't initialize IPv6 networking. Falling back to using IPv4.\n");
             enable_ipv6 = 0;
             ip_init(&ip, enable_ipv6);
-            net = new_networking_ex(logger, &ip, start_port, end_port, nullptr);
+            net = new_networking_ex(logger, ns, &ip, start_port, end_port, nullptr);
 
             if (net == nullptr) {
                 log_write(LOG_LEVEL_ERROR, "Couldn't fallback to IPv4. Exiting.\n");
@@ -411,8 +412,8 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        tcp_server = new_TCP_server(logger, enable_ipv6, tcp_relay_port_count, tcp_relay_ports, dht_get_self_secret_key(dht),
-                                    onion);
+        tcp_server = new_TCP_server(logger, ns, enable_ipv6, tcp_relay_port_count, tcp_relay_ports,
+                                    dht_get_self_secret_key(dht), onion);
 
         free(tcp_relay_ports);
 
@@ -478,7 +479,7 @@ int main(int argc, char *argv[])
     Broadcast_Info *broadcast = nullptr;
 
     if (enable_lan_discovery) {
-        broadcast = lan_discovery_init();
+        broadcast = lan_discovery_init(ns);
         log_write(LOG_LEVEL_INFO, "Initialized LAN discovery successfully.\n");
     }
 

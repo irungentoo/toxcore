@@ -896,8 +896,9 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
 }
 
 /** Create new friend_connections instance. */
-Friend_Connections *new_friend_connections(const Logger *logger, const Mono_Time *mono_time, Onion_Client *onion_c,
-        bool local_discovery_enabled)
+Friend_Connections *new_friend_connections(
+        const Logger *logger, const Mono_Time *mono_time, const Network *ns,
+        Onion_Client *onion_c, bool local_discovery_enabled)
 {
     if (onion_c == nullptr) {
         return nullptr;
@@ -921,7 +922,7 @@ Friend_Connections *new_friend_connections(const Logger *logger, const Mono_Time
     new_connection_handler(temp->net_crypto, &handle_new_connections, temp);
 
     if (temp->local_discovery_enabled) {
-        temp->broadcast = lan_discovery_init();
+        temp->broadcast = lan_discovery_init(ns);
 
         if (temp->broadcast == nullptr) {
             LOGGER_ERROR(logger, "could not initialise LAN discovery");

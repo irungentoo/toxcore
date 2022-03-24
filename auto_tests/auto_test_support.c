@@ -208,8 +208,9 @@ static void initialise_autotox(struct Tox_Options *options, AutoTox *autotox, ui
                                const Run_Auto_Options *autotest_opts)
 {
     autotox->index = index;
-    autotox->tox = tox_new_log(options, nullptr, &autotox->index);
-    ck_assert_msg(autotox->tox != nullptr, "failed to create tox instance #%u", index);
+    Tox_Err_New err;
+    autotox->tox = tox_new_log(options, &err, &autotox->index);
+    ck_assert_msg(autotox->tox != nullptr, "failed to create tox instance #%u (error = %d)", index, err);
 
     set_mono_time_callback(autotox);
 

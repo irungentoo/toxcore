@@ -46,6 +46,7 @@ void wipe_priority_list(TCP_Priority_List *p);
 #define MAX_PACKET_SIZE 2048
 
 typedef struct TCP_Connection {
+    const Network *ns;
     Socket sock;
     IP_Port ip_port;  // for debugging.
     uint8_t sent_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of sent packets. */
@@ -78,8 +79,9 @@ int send_pending_data(const Logger *logger, TCP_Connection *con);
  * @retval -1 on failure (connection must be killed).
  */
 non_null()
-int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con, const uint8_t *data, uint16_t length,
-                                       bool priority);
+int write_packet_TCP_secure_connection(
+        const Logger *logger, TCP_Connection *con, const uint8_t *data, uint16_t length,
+        bool priority);
 
 /** @brief Read length bytes from socket.
  *
@@ -87,7 +89,8 @@ int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con
  * return -1 on failure/no data in buffer.
  */
 non_null()
-int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length, const IP_Port *ip_port);
+int read_TCP_packet(
+        const Logger *logger, const Network *ns, Socket sock, uint8_t *data, uint16_t length, const IP_Port *ip_port);
 
 /**
  * @return length of received packet on success.
@@ -95,8 +98,9 @@ int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t l
  * @retval -1 on failure (connection must be killed).
  */
 non_null()
-int read_packet_TCP_secure_connection(const Logger *logger, Socket sock, uint16_t *next_packet_length,
-                                      const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data,
-                                      uint16_t max_len, const IP_Port *ip_port);
+int read_packet_TCP_secure_connection(
+        const Logger *logger, const Network *ns, Socket sock, uint16_t *next_packet_length,
+        const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data,
+        uint16_t max_len, const IP_Port *ip_port);
 
 #endif

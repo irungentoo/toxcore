@@ -53,7 +53,8 @@ struct Broadcast_Info {
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 
-static Broadcast_Info *fetch_broadcast_info(void)
+non_null()
+static Broadcast_Info *fetch_broadcast_info(const Network *ns)
 {
     Broadcast_Info *broadcast = (Broadcast_Info *)calloc(1, sizeof(Broadcast_Info));
 
@@ -118,7 +119,8 @@ static Broadcast_Info *fetch_broadcast_info(void)
 
 #elif !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) && (defined(__linux__) || defined(__FreeBSD__) || defined(__DragonFly__))
 
-static Broadcast_Info *fetch_broadcast_info(void)
+non_null()
+static Broadcast_Info *fetch_broadcast_info(const Network *ns)
 {
     Broadcast_Info *broadcast = (Broadcast_Info *)calloc(1, sizeof(Broadcast_Info));
 
@@ -130,7 +132,7 @@ static Broadcast_Info *fetch_broadcast_info(void)
      * so it's wrapped in `__linux__` for now.
      * Definitely won't work like this on Windows...
      */
-    const Socket sock = net_socket(net_family_ipv4, TOX_SOCK_STREAM, 0);
+    const Socket sock = net_socket(ns, net_family_ipv4, TOX_SOCK_STREAM, 0);
 
     if (!sock_valid(sock)) {
         free(broadcast);
@@ -146,7 +148,7 @@ static Broadcast_Info *fetch_broadcast_info(void)
     ifc.ifc_len = sizeof(i_faces);
 
     if (ioctl(sock.sock, SIOCGIFCONF, &ifc) < 0) {
-        kill_sock(sock);
+        kill_sock(ns, sock);
         free(broadcast);
         return nullptr;
     }
@@ -186,14 +188,15 @@ static Broadcast_Info *fetch_broadcast_info(void)
         ++broadcast->count;
     }
 
-    kill_sock(sock);
+    kill_sock(ns, sock);
 
     return broadcast;
 }
 
 #else // TODO(irungentoo): Other platforms?
 
-static Broadcast_Info *fetch_broadcast_info(void)
+non_null()
+static Broadcast_Info *fetch_broadcast_info(const Network *ns)
 {
     return (Broadcast_Info *)calloc(1, sizeof(Broadcast_Info));
 }
@@ -372,9 +375,9 @@ bool lan_discovery_send(const Networking_Core *net, const Broadcast_Info *broadc
 }
 
 
-Broadcast_Info *lan_discovery_init(void)
+Broadcast_Info *lan_discovery_init(const Network *ns)
 {
-    return fetch_broadcast_info();
+    return fetch_broadcast_info(ns);
 }
 
 void lan_discovery_kill(Broadcast_Info *broadcast)

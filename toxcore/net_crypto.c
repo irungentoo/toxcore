@@ -128,6 +128,7 @@ static const Crypto_Connection empty_crypto_connection = {{0}};
 struct Net_Crypto {
     const Logger *log;
     Mono_Time *mono_time;
+    const Network *ns;
 
     DHT *dht;
     TCP_Connections *tcp_c;
@@ -3073,7 +3074,7 @@ void load_secret_key(Net_Crypto *c, const uint8_t *sk)
 /** @brief Create new instance of Net_Crypto.
  * Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(const Logger *log, Mono_Time *mono_time, DHT *dht, const TCP_Proxy_Info *proxy_info)
+Net_Crypto *new_net_crypto(const Logger *log, Mono_Time *mono_time, const Network *ns, DHT *dht, const TCP_Proxy_Info *proxy_info)
 {
     if (dht == nullptr) {
         return nullptr;
@@ -3087,8 +3088,9 @@ Net_Crypto *new_net_crypto(const Logger *log, Mono_Time *mono_time, DHT *dht, co
 
     temp->log = log;
     temp->mono_time = mono_time;
+    temp->ns = ns;
 
-    temp->tcp_c = new_tcp_connections(log, mono_time, dht_get_self_secret_key(dht), proxy_info);
+    temp->tcp_c = new_tcp_connections(log, mono_time, ns, dht_get_self_secret_key(dht), proxy_info);
 
     if (temp->tcp_c == nullptr) {
         free(temp);

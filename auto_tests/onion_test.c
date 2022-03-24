@@ -182,7 +182,8 @@ static void send_onion_packet(const Networking_Core *net, const Onion_Path *path
  */
 static Networking_Core *new_networking(const Logger *log, const IP *ip, uint16_t port)
 {
-    return new_networking_ex(log, ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), nullptr);
+    const Network *ns = system_network();
+    return new_networking_ex(log, ns, ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), nullptr);
 }
 
 static void test_basic(void)
@@ -426,7 +427,8 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
     }
 
     TCP_Proxy_Info inf = {{{{0}}}};
-    on->onion_c = new_onion_client(on->log, on->mono_time, new_net_crypto(on->log, on->mono_time, dht, &inf));
+    const Network *ns = system_network();
+    on->onion_c = new_onion_client(on->log, on->mono_time, new_net_crypto(on->log, on->mono_time, ns, dht, &inf));
 
     if (!on->onion_c) {
         kill_onion_announce(on->onion_a);
