@@ -1,6 +1,12 @@
-![Project Tox](https://raw.github.com/irungentoo/toxcore/master/other/tox.png "Project Tox")
+<a href="https://tox.chat"><img src="https://raw.github.com/irungentoo/toxcore/master/other/tox.png" height="200"></a>
 ***
+<h2>irungentoo/toxcore is the original Toxcore.<br></h2>
+<b>This repository is not active anymore because irungentoo wants any changes to be reviewed and approved by him, but he has been unable to find time to work on Toxcore to do the said reviews and approvals.<br>
+In order to continue the development of Toxcore, the <a href="https://github.com/TokTok/c-toxcore">TokTok/c-toxcore</a> non-hostile fork has been made by active Toxcore developers where the development is currently ongoing.<br><br>
+If you are deciding which Toxcore to use, <a href="https://github.com/TokTok/c-toxcore">TokTok/c-toxcore</a> is the right one.</b>
+<br>
 
+***
 With the rise of government surveillance programs, Tox, a FOSS initiative, aims to be an easy to use, all-in-one communication platform that ensures full privacy and secure message delivery.<br /> <br />
 
 [**Website**](https://tox.chat) **|** [**Wiki**](https://wiki.tox.chat/) **|** [**Blog**](https://blog.tox.chat/) **|** [**FAQ**](https://wiki.tox.chat/doku.php?id=users:faq) **|** [**Binaries/Downloads**](https://wiki.tox.chat/Binaries) **|** [**Clients**](https://wiki.tox.chat/doku.php?id=clients) **|** [**Compiling**](/INSTALL.md)
