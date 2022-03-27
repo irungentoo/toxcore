@@ -549,6 +549,17 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         m_options.proxy_info.ip_port.port = net_htons(tox_options_get_proxy_port(opts));
     }
 
+    const Random *rng = system_random();
+
+    if (rng == nullptr) {
+        // TODO(iphydf): Not quite right, but similar.
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+        tox_options_free(default_options);
+        free(tox);
+        return nullptr;
+    }
+
+    tox->rng = *rng;
     tox->mono_time = mono_time_new();
 
     if (tox->mono_time == nullptr) {
@@ -581,7 +592,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     tox_lock(tox);
 
     Messenger_Error m_error;
-    tox->m = new_messenger(tox->mono_time, &tox->ns, &m_options, &m_error);
+    tox->m = new_messenger(tox->mono_time, &tox->rng, &tox->ns, &m_options, &m_error);
 
     if (tox->m == nullptr) {
         if (m_error == MESSENGER_ERROR_PORT) {
@@ -1117,7 +1128,7 @@ uint32_t tox_friend_add(Tox *tox, const uint8_t *address, const uint8_t *message
     if (ret >= 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_OK);
         tox_unlock(tox);
-        return ret;
+        return (uint32_t)ret;
     }
 
     set_friend_error(tox->m->log, ret, error);
@@ -1140,7 +1151,7 @@ uint32_t tox_friend_add_norequest(Tox *tox, const uint8_t *public_key, Tox_Err_F
     if (ret >= 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_OK);
         tox_unlock(tox);
-        return ret;
+        return (uint32_t)ret;
     }
 
     set_friend_error(tox->m->log, ret, error);
@@ -1184,7 +1195,8 @@ uint32_t tox_friend_by_public_key(const Tox *tox, const uint8_t *public_key, Tox
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_BY_PUBLIC_KEY_OK);
-    return ret;
+    assert(ret >= 0);
+    return (uint32_t)ret;
 }
 
 bool tox_friend_get_public_key(const Tox *tox, uint32_t friend_number, uint8_t *public_key,
@@ -1685,7 +1697,7 @@ uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t
 
     if (file_id == nullptr) {
         /* Tox keys are 32 bytes like FILE_ID_LENGTH. */
-        new_symmetric_key(f_id);
+        new_symmetric_key(&tox->rng, f_id);
         file_id = f_id;
     }
 
@@ -1840,7 +1852,7 @@ uint32_t tox_conference_new(Tox *tox, Tox_Err_Conference_New *error)
 {
     assert(tox != nullptr);
     tox_lock(tox);
-    const int ret = add_groupchat(tox->m->conferences_object, GROUPCHAT_TYPE_TEXT);
+    const int ret = add_groupchat(tox->m->conferences_object, &tox->rng, GROUPCHAT_TYPE_TEXT);
     tox_unlock(tox);
 
     if (ret == -1) {
@@ -2382,7 +2394,8 @@ uint32_t tox_conference_by_id(const Tox *tox, const uint8_t *id, Tox_Err_Confere
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_ID_OK);
-    return ret;
+    assert(ret >= 0);
+    return (uint32_t)ret;
 }
 
 // TODO(iphydf): Delete in 0.3.0.

@@ -179,12 +179,12 @@ static bool names_propagated(uint32_t tox_count, AutoTox *autotoxes)
  * returns a random index at which a list of booleans is false
  * (some such index is required to exist)
  */
-static uint32_t random_false_index(bool *list, const uint32_t length)
+static uint32_t random_false_index(const Random *rng, bool *list, const uint32_t length)
 {
     uint32_t index;
 
     do {
-        index = random_u32() % length;
+        index = random_u32(rng) % length;
     } while (list[index]);
 
     return index;
@@ -192,6 +192,8 @@ static uint32_t random_false_index(bool *list, const uint32_t length)
 
 static void run_conference_tests(AutoTox *autotoxes)
 {
+    const Random *rng = system_random();
+    ck_assert(rng != nullptr);
     /* disabling name change propagation check for now, as it occasionally
      * fails due to disconnections too short to trigger freezing */
     const bool check_name_change_propagation = false;
@@ -215,7 +217,7 @@ static void run_conference_tests(AutoTox *autotoxes)
     ck_assert(NUM_DISCONNECT < NUM_GROUP_TOX);
 
     for (uint32_t i = 0; i < NUM_DISCONNECT; ++i) {
-        uint32_t disconnect = random_false_index(disconnected, NUM_GROUP_TOX);
+        uint32_t disconnect = random_false_index(rng, disconnected, NUM_GROUP_TOX);
         disconnected[disconnect] = true;
 
         if (i < NUM_DISCONNECT / 2) {
@@ -292,7 +294,7 @@ static void run_conference_tests(AutoTox *autotoxes)
     Tox_Err_Conference_Send_Message err;
     ck_assert_msg(
         tox_conference_send_message(
-            autotoxes[random_u32() % NUM_GROUP_TOX].tox, 0, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)GROUP_MESSAGE,
+            autotoxes[random_u32(rng) % NUM_GROUP_TOX].tox, 0, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)GROUP_MESSAGE,
             sizeof(GROUP_MESSAGE) - 1, &err) != 0, "failed to send group message");
     ck_assert_msg(
         err == TOX_ERR_CONFERENCE_SEND_MESSAGE_OK, "failed to send group message");

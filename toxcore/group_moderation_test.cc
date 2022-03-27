@@ -84,11 +84,14 @@ TEST(ModList, UnpackingFromEmptyBufferFails)
 
 TEST(ModList, HashOfEmptyModListZeroesOutBuffer)
 {
+    const Random *rng = system_random();
+    ASSERT_NE(rng, nullptr);
+
     Moderation mods{};
 
     // Fill with random data, check that it's zeroed.
     ModerationHash hash;
-    random_bytes(hash.data(), hash.size());
+    random_bytes(rng, hash.data(), hash.size());
     EXPECT_TRUE(mod_list_make_hash(&mods, hash.data()));
     EXPECT_EQ(hash, ModerationHash{});
 }

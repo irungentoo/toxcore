@@ -93,13 +93,14 @@ void g_callback_peer_list_changed(Group_Chats *g_c, peer_list_changed_cb *functi
 
 /** @brief Creates a new groupchat and puts it in the chats array.
  *
+ * @param rng Random number generator used for generating the group ID.
  * @param type is one of `GROUPCHAT_TYPE_*`
  *
  * @return group number on success.
  * @retval -1 on failure.
  */
 non_null()
-int add_groupchat(Group_Chats *g_c, uint8_t type);
+int add_groupchat(Group_Chats *g_c, const Random *rng, uint8_t type);
 
 /** @brief Delete a groupchat from the chats array, informing the group first as
  * appropriate.

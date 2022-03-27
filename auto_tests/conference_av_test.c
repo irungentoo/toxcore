@@ -165,12 +165,12 @@ static bool all_connected_to_group(uint32_t tox_count, AutoTox *autotoxes)
  * returns a random index at which a list of booleans is false
  * (some such index is required to exist)
  */
-static uint32_t random_false_index(bool *list, const uint32_t length)
+static uint32_t random_false_index(const Random *rng, bool *list, const uint32_t length)
 {
     uint32_t index;
 
     do {
-        index = random_u32() % length;
+        index = random_u32(rng) % length;
     } while (list[index]);
 
     return index;
@@ -287,6 +287,8 @@ static void do_audio(AutoTox *autotoxes, uint32_t iterations)
 
 static void run_conference_tests(AutoTox *autotoxes)
 {
+    const Random *rng = system_random();
+    ck_assert(rng != nullptr);
     bool disabled[NUM_AV_GROUP_TOX] = {0};
 
     test_audio(autotoxes, disabled, false);
@@ -302,7 +304,7 @@ static void run_conference_tests(AutoTox *autotoxes)
     ck_assert(NUM_AV_DISCONNECT < NUM_AV_GROUP_TOX);
 
     for (uint32_t i = 0; i < NUM_AV_DISCONNECT; ++i) {
-        uint32_t disconnect = random_false_index(disconnected, NUM_AV_GROUP_TOX);
+        uint32_t disconnect = random_false_index(rng, disconnected, NUM_AV_GROUP_TOX);
         disconnected[disconnect] = true;
 
         if (i < NUM_AV_DISCONNECT / 2) {
@@ -358,7 +360,7 @@ static void run_conference_tests(AutoTox *autotoxes)
     ck_assert(NUM_AV_DISABLE < NUM_AV_GROUP_TOX);
 
     for (uint32_t i = 0; i < NUM_AV_DISABLE; ++i) {
-        uint32_t disable = random_false_index(disabled, NUM_AV_GROUP_TOX);
+        uint32_t disable = random_false_index(rng, disabled, NUM_AV_GROUP_TOX);
         disabled[disable] = true;
         printf("Disabling #%u\n", autotoxes[disable].index);
         ck_assert_msg(toxav_groupchat_enable_av(autotoxes[disable].tox, 0, audio_callback, &autotoxes[disable]) != 0,

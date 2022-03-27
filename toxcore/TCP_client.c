@@ -286,11 +286,11 @@ non_null()
 static int generate_handshake(TCP_Client_Connection *tcp_conn)
 {
     uint8_t plain[CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE];
-    crypto_new_keypair(plain, tcp_conn->temp_secret_key);
-    random_nonce(tcp_conn->con.sent_nonce);
+    crypto_new_keypair(tcp_conn->con.rng, plain, tcp_conn->temp_secret_key);
+    random_nonce(tcp_conn->con.rng, tcp_conn->con.sent_nonce);
     memcpy(plain + CRYPTO_PUBLIC_KEY_SIZE, tcp_conn->con.sent_nonce, CRYPTO_NONCE_SIZE);
     memcpy(tcp_conn->con.last_packet, tcp_conn->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    random_nonce(tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE);
+    random_nonce(tcp_conn->con.rng, tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE);
     const int len = encrypt_data_symmetric(tcp_conn->con.shared_key, tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE, plain,
                                      sizeof(plain), tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
 
@@ -529,14 +529,10 @@ void onion_response_handler(TCP_Client_Connection *con, tcp_onion_response_cb *o
 
 /** Create new TCP connection to ip_port/public_key */
 TCP_Client_Connection *new_TCP_connection(
-        const Logger *logger, const Mono_Time *mono_time, const Network *ns, const IP_Port *ip_port,
+        const Logger *logger, const Mono_Time *mono_time, const Random *rng, const Network *ns, const IP_Port *ip_port,
         const uint8_t *public_key, const uint8_t *self_public_key, const uint8_t *self_secret_key,
         const TCP_Proxy_Info *proxy_info)
 {
-    if (networking_at_startup() != 0) {
-        return nullptr;
-    }
-
     if (!net_family_is_ipv4(ip_port->ip.family) && !net_family_is_ipv6(ip_port->ip.family)) {
         return nullptr;
     }
@@ -577,6 +573,7 @@ TCP_Client_Connection *new_TCP_connection(
     }
 
     temp->con.ns = ns;
+    temp->con.rng = rng;
     temp->con.sock = sock;
     temp->con.ip_port = *ip_port;
     memcpy(temp->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
@@ -837,7 +834,7 @@ static int do_confirmed_TCP(const Logger *logger, TCP_Client_Connection *conn, c
     tcp_send_ping_request(logger, conn);
 
     if (mono_time_is_timeout(mono_time, conn->last_pinged, TCP_PING_FREQUENCY)) {
-        uint64_t ping_id = random_u64();
+        uint64_t ping_id = random_u64(conn->con.rng);
 
         if (ping_id == 0) {
             ++ping_id;

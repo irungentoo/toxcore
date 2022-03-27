@@ -162,19 +162,12 @@ static void test_ip_equal(void)
     ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET6, ::1}, {TOX_AF_INET6, ::2} ): expected result 0, got %d.", res);
 }
 
-static void network_suite(void)
-{
-    networking_at_startup();
-
-    test_addr_resolv_localhost();
-    test_ip_equal();
-}
-
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    network_suite();
+    test_addr_resolv_localhost();
+    test_ip_equal();
 
     return 0;
 }

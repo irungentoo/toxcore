@@ -673,7 +673,7 @@ RTPSession *rtp_new(int payload_type, Messenger *m, Tox *tox, uint32_t friendnum
     // First entry is free.
     session->work_buffer_list->next_free_entry = 0;
 
-    session->ssrc = payload_type == RTP_TYPE_VIDEO ? 0 : random_u32();
+    session->ssrc = payload_type == RTP_TYPE_VIDEO ? 0 : random_u32(m->rng);
     session->payload_type = payload_type;
     session->m = m;
     session->tox = tox;

@@ -51,6 +51,8 @@ static bool all_disconnected_from(uint32_t tox_count, AutoTox *autotoxes, uint32
 
 static void test_reconnect(AutoTox *autotoxes)
 {
+    const Random *rng = system_random();
+    ck_assert(rng != nullptr);
     const time_t test_start_time = time(nullptr);
 
     printf("letting connections settle\n");
@@ -59,7 +61,7 @@ static void test_reconnect(AutoTox *autotoxes)
         iterate_all_wait(autotoxes, TOX_COUNT, ITERATION_INTERVAL);
     } while (time(nullptr) - test_start_time < 2);
 
-    uint16_t disconnect = random_u16() % TOX_COUNT;
+    const uint16_t disconnect = random_u16(rng) % TOX_COUNT;
     printf("disconnecting #%u\n", autotoxes[disconnect].index);
 
     do {

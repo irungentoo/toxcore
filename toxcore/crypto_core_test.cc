@@ -50,6 +50,9 @@ TEST(CryptoCore, IncrementNonceNumber)
 
 TEST(CryptoCore, Signatures)
 {
+    const Random *rng = system_random();
+    ASSERT_NE(rng, nullptr);
+
     ExtPublicKey pk;
     ExtSecretKey sk;
 
@@ -59,7 +62,7 @@ TEST(CryptoCore, Signatures)
 
     // Try a few different sizes, including empty 0 length message.
     for (uint8_t i = 0; i < 100; ++i) {
-        message.push_back(random_u08());
+        message.push_back(random_u08(rng));
         Signature signature;
         EXPECT_TRUE(crypto_signature_create(
             signature.data(), message.data(), message.size(), get_sig_sk(sk.data())));

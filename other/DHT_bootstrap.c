@@ -143,12 +143,13 @@ int main(int argc, char *argv[])
     }
 
     Mono_Time *mono_time = mono_time_new();
+    const Random *rng = system_random();
     const uint16_t start_port = PORT;
     const uint16_t end_port = start_port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM);
     const Network *ns = system_network();
-    DHT *dht = new_dht(logger, ns, mono_time, new_networking_ex(logger, ns, &ip, start_port, end_port, nullptr), true, true);
-    Onion *onion = new_onion(logger, mono_time, dht);
-    const Onion_Announce *onion_a = new_onion_announce(logger, mono_time, dht);
+    DHT *dht = new_dht(logger, rng, ns, mono_time, new_networking_ex(logger, ns, &ip, start_port, end_port, nullptr), true, true);
+    Onion *onion = new_onion(logger, mono_time, rng, dht);
+    const Onion_Announce *onion_a = new_onion_announce(logger, rng, mono_time, dht);
 
 #ifdef DHT_NODE_EXTRA_PACKETS
     bootstrap_set_callbacks(dht_get_net(dht), DHT_VERSION_NUMBER, DHT_MOTD, sizeof(DHT_MOTD));
@@ -167,7 +168,7 @@ int main(int argc, char *argv[])
 #ifdef TCP_RELAY_ENABLED
 #define NUM_PORTS 3
     uint16_t ports[NUM_PORTS] = {443, 3389, PORT};
-    TCP_Server *tcp_s = new_TCP_server(logger, ns, ipv6enabled, NUM_PORTS, ports, dht_get_self_secret_key(dht), onion);
+    TCP_Server *tcp_s = new_TCP_server(logger, rng, ns, ipv6enabled, NUM_PORTS, ports, dht_get_self_secret_key(dht), onion);
 
     if (tcp_s == nullptr) {
         printf("TCP server failed to initialize.\n");

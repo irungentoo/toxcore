@@ -75,6 +75,21 @@ extern "C" {
  */
 #define CRYPTO_SHA512_SIZE             64
 
+typedef void crypto_random_bytes_cb(void *obj, uint8_t *bytes, size_t length);
+typedef uint32_t crypto_random_uniform_cb(void *obj, uint32_t upper_bound);
+
+typedef struct Random_Funcs {
+    crypto_random_bytes_cb *random_bytes;
+    crypto_random_uniform_cb *random_uniform;
+} Random_Funcs;
+
+typedef struct Random {
+    const Random_Funcs *funcs;
+    void *obj;
+} Random;
+
+const Random *system_random(void);
+
 /**
  * @brief The number of bytes in an encryption public key used by DHT group chats.
  */
@@ -154,22 +169,26 @@ bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2);
 /**
  * @brief Return a random 8 bit integer.
  */
-uint8_t random_u08(void);
+non_null()
+uint8_t random_u08(const Random *rng);
 
 /**
  * @brief Return a random 16 bit integer.
  */
-uint16_t random_u16(void);
+non_null()
+uint16_t random_u16(const Random *rng);
 
 /**
  * @brief Return a random 32 bit integer.
  */
-uint32_t random_u32(void);
+non_null()
+uint32_t random_u32(const Random *rng);
 
 /**
  * @brief Return a random 64 bit integer.
  */
-uint64_t random_u64(void);
+non_null()
+uint64_t random_u64(const Random *rng);
 
 /**
  * @brief Return a random 32 bit integer between 0 and upper_bound (excluded).
@@ -177,7 +196,8 @@ uint64_t random_u64(void);
  * On libsodium builds this function guarantees a uniform distribution of possible outputs.
  * On vanilla NACL builds this function is equivalent to `random() % upper_bound`.
  */
-uint32_t random_range_u32(uint32_t upper_bound);
+non_null()
+uint32_t random_range_u32(const Random *rng, uint32_t upper_bound);
 
 /** @brief Cryptographically signs a message using the supplied secret key and puts the resulting signature
  * in the supplied buffer.
@@ -213,13 +233,13 @@ bool crypto_signature_verify(const uint8_t *signature, const uint8_t *message, u
  * @brief Fill the given nonce with random bytes.
  */
 non_null()
-void random_nonce(uint8_t *nonce);
+void random_nonce(const Random *rng, uint8_t *nonce);
 
 /**
  * @brief Fill an array of bytes with random values.
  */
 non_null()
-void random_bytes(uint8_t *bytes, size_t length);
+void random_bytes(const Random *rng, uint8_t *bytes, size_t length);
 
 /**
  * @brief Check if a Tox public key CRYPTO_PUBLIC_KEY_SIZE is valid or not.
@@ -248,7 +268,7 @@ bool create_extended_keypair(uint8_t *pk, uint8_t *sk);
  * Every call to this function is likely to generate a different keypair.
  */
 non_null()
-int32_t crypto_new_keypair(uint8_t *public_key, uint8_t *secret_key);
+int32_t crypto_new_keypair(const Random *rng, uint8_t *public_key, uint8_t *secret_key);
 
 /**
  * @brief Derive the public key from a given secret key.
@@ -343,7 +363,7 @@ void increment_nonce_number(uint8_t *nonce, uint32_t increment);
  * @brief Fill a key @ref CRYPTO_SYMMETRIC_KEY_SIZE big with random bytes.
  */
 non_null()
-void new_symmetric_key(uint8_t *key);
+void new_symmetric_key(const Random *rng, uint8_t *key);
 
 /**
  * @brief Locks `length` bytes of memory pointed to by `data`.

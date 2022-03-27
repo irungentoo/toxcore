@@ -101,7 +101,7 @@ Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t passphrase_l
                                   Tox_Err_Key_Derivation *error)
 {
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
-    random_bytes(salt, sizeof(salt));
+    random_bytes(system_random(), salt, sizeof(salt));
     return tox_pass_key_derive_with_salt(passphrase, passphrase_len, salt, error);
 }
 
@@ -185,7 +185,7 @@ bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *plaintext, siz
     ciphertext += crypto_pwhash_scryptsalsa208sha256_SALTBYTES;
 
     uint8_t nonce[crypto_box_NONCEBYTES];
-    random_nonce(nonce);
+    random_nonce(system_random(), nonce);
     memcpy(ciphertext, nonce, crypto_box_NONCEBYTES);
     ciphertext += crypto_box_NONCEBYTES;
 

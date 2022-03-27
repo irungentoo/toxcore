@@ -46,6 +46,7 @@ void wipe_priority_list(TCP_Priority_List *p);
 #define MAX_PACKET_SIZE 2048
 
 typedef struct TCP_Connection {
+    const Random *rng;
     const Network *ns;
     Socket sock;
     IP_Port ip_port;  // for debugging.

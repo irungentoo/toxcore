@@ -58,6 +58,7 @@ typedef struct TCP_Secure_Connection {
 
 struct TCP_Server {
     const Logger *logger;
+    const Random *rng;
     const Network *ns;
     Onion *onion;
 
@@ -327,13 +328,13 @@ static int handle_TCP_handshake(const Logger *logger, TCP_Secure_Connection *con
     memcpy(con->public_key, data, CRYPTO_PUBLIC_KEY_SIZE);
     uint8_t temp_secret_key[CRYPTO_SECRET_KEY_SIZE];
     uint8_t resp_plain[TCP_HANDSHAKE_PLAIN_SIZE];
-    crypto_new_keypair(resp_plain, temp_secret_key);
-    random_nonce(con->con.sent_nonce);
+    crypto_new_keypair(con->con.rng, resp_plain, temp_secret_key);
+    random_nonce(con->con.rng, con->con.sent_nonce);
     memcpy(resp_plain + CRYPTO_PUBLIC_KEY_SIZE, con->con.sent_nonce, CRYPTO_NONCE_SIZE);
     memcpy(con->recv_nonce, plain + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_NONCE_SIZE);
 
     uint8_t response[TCP_SERVER_HANDSHAKE_SIZE];
-    random_nonce(response);
+    random_nonce(con->con.rng, response);
 
     len = encrypt_data_symmetric(shared_key, response, resp_plain, TCP_HANDSHAKE_PLAIN_SIZE,
                                  response + CRYPTO_NONCE_SIZE);
@@ -801,6 +802,7 @@ static int accept_connection(TCP_Server *tcp_server, Socket sock)
 
     conn->status = TCP_STATUS_CONNECTED;
     conn->con.ns = tcp_server->ns;
+    conn->con.rng = tcp_server->rng;
     conn->con.sock = sock;
     conn->next_packet_length = 0;
 
@@ -843,8 +845,9 @@ static Socket new_listening_TCP_socket(const Logger *logger, const Network *ns, 
     return sock;
 }
 
-TCP_Server *new_TCP_server(const Logger *logger, const Network *ns, bool ipv6_enabled, uint16_t num_sockets,
-                           const uint16_t *ports, const uint8_t *secret_key, Onion *onion)
+TCP_Server *new_TCP_server(const Logger *logger, const Random *rng, const Network *ns,
+                           bool ipv6_enabled, uint16_t num_sockets, const uint16_t *ports,
+                           const uint8_t *secret_key, Onion *onion)
 {
     if (num_sockets == 0 || ports == nullptr) {
         LOGGER_ERROR(logger, "no sockets");
@@ -853,11 +856,6 @@ TCP_Server *new_TCP_server(const Logger *logger, const Network *ns, bool ipv6_en
 
     if (ns == nullptr) {
         LOGGER_ERROR(logger, "NULL network");
-        return nullptr;
-    }
-
-    if (networking_at_startup() != 0) {
-        LOGGER_ERROR(logger, "network initialisation failed");
         return nullptr;
     }
 
@@ -870,6 +868,7 @@ TCP_Server *new_TCP_server(const Logger *logger, const Network *ns, bool ipv6_en
 
     temp->logger = logger;
     temp->ns = ns;
+    temp->rng = rng;
 
     temp->socks_listening = (Socket *)calloc(num_sockets, sizeof(Socket));
 
@@ -1089,7 +1088,7 @@ static void do_TCP_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
         if (mono_time_is_timeout(mono_time, conn->last_pinged, TCP_PING_FREQUENCY)) {
             uint8_t ping[1 + sizeof(uint64_t)];
             ping[0] = TCP_PACKET_PING;
-            uint64_t ping_id = random_u64();
+            uint64_t ping_id = random_u64(conn->con.rng);
 
             if (ping_id == 0) {
                 ++ping_id;

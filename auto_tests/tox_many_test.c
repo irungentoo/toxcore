@@ -26,6 +26,8 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
 
 static void test_many_clients(void)
 {
+    const Random *rng = system_random();
+    ck_assert(rng != nullptr);
     time_t cur_time = time(nullptr);
     Tox *toxes[TCP_TEST_NUM_TOXES];
     uint32_t index[TCP_TEST_NUM_TOXES];
@@ -54,8 +56,8 @@ static void test_many_clients(void)
 
     for (uint32_t i = 0; i < TCP_TEST_NUM_FRIENDS; ++i) {
 loop_top:
-        pairs[i].tox1 = random_u32() % TCP_TEST_NUM_TOXES;
-        pairs[i].tox2 = (pairs[i].tox1 + random_u32() % (TCP_TEST_NUM_TOXES - 1) + 1) % TCP_TEST_NUM_TOXES;
+        pairs[i].tox1 = random_u32(rng) % TCP_TEST_NUM_TOXES;
+        pairs[i].tox2 = (pairs[i].tox1 + random_u32(rng) % (TCP_TEST_NUM_TOXES - 1) + 1) % TCP_TEST_NUM_TOXES;
 
         for (uint32_t j = 0; j < i; ++j) {
             if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2) {

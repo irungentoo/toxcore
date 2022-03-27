@@ -173,41 +173,37 @@ bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2)
 #endif
 }
 
-uint8_t random_u08(void)
+uint8_t random_u08(const Random *rng)
 {
     uint8_t randnum;
-    random_bytes(&randnum, 1);
+    random_bytes(rng, &randnum, 1);
     return randnum;
 }
 
-uint16_t random_u16(void)
+uint16_t random_u16(const Random *rng)
 {
     uint16_t randnum;
-    random_bytes((uint8_t *)&randnum, sizeof(randnum));
+    random_bytes(rng, (uint8_t *)&randnum, sizeof(randnum));
     return randnum;
 }
 
-uint32_t random_u32(void)
+uint32_t random_u32(const Random *rng)
 {
     uint32_t randnum;
-    random_bytes((uint8_t *)&randnum, sizeof(randnum));
+    random_bytes(rng, (uint8_t *)&randnum, sizeof(randnum));
     return randnum;
 }
 
-uint64_t random_u64(void)
+uint64_t random_u64(const Random *rng)
 {
     uint64_t randnum;
-    random_bytes((uint8_t *)&randnum, sizeof(randnum));
+    random_bytes(rng, (uint8_t *)&randnum, sizeof(randnum));
     return randnum;
 }
 
-uint32_t random_range_u32(uint32_t upper_bound)
+uint32_t random_range_u32(const Random *rng, uint32_t upper_bound)
 {
-#ifdef VANILLA_NACL
-    return random_u32() % upper_bound;
-#else
-    return randombytes_uniform(upper_bound);
-#endif  // VANILLA_NACL
+    return rng->funcs->random_uniform(rng->obj, upper_bound);
 }
 
 bool crypto_signature_create(uint8_t *signature, const uint8_t *message, uint64_t message_length,
@@ -417,20 +413,20 @@ void increment_nonce_number(uint8_t *nonce, uint32_t increment)
     }
 }
 
-void random_nonce(uint8_t *nonce)
+void random_nonce(const Random *rng, uint8_t *nonce)
 {
-    random_bytes(nonce, crypto_box_NONCEBYTES);
+    random_bytes(rng, nonce, crypto_box_NONCEBYTES);
 }
 
-void new_symmetric_key(uint8_t *key)
+void new_symmetric_key(const Random *rng, uint8_t *key)
 {
-    random_bytes(key, CRYPTO_SYMMETRIC_KEY_SIZE);
+    random_bytes(rng, key, CRYPTO_SYMMETRIC_KEY_SIZE);
 }
 
-int32_t crypto_new_keypair(uint8_t *public_key, uint8_t *secret_key)
+int32_t crypto_new_keypair(const Random *rng, uint8_t *public_key, uint8_t *secret_key)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    random_bytes(secret_key, CRYPTO_SECRET_KEY_SIZE);
+    random_bytes(rng, secret_key, CRYPTO_SECRET_KEY_SIZE);
     memset(public_key, 0, CRYPTO_PUBLIC_KEY_SIZE);  // Make MSAN happy
     crypto_scalarmult_curve25519_base(public_key, secret_key);
     return 0;
@@ -454,11 +450,49 @@ void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length)
     crypto_hash_sha512(hash, data, length);
 }
 
-void random_bytes(uint8_t *bytes, size_t length)
+non_null()
+static void sys_random_bytes(void *obj, uint8_t *bytes, size_t length)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     fuzz_random_bytes(bytes, length);
 #else
     randombytes(bytes, length);
 #endif
+}
+
+non_null()
+static uint32_t sys_random_uniform(void *obj, uint32_t upper_bound)
+{
+#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) || defined(VANILLA_NACL)
+    uint32_t randnum;
+    sys_random_bytes(obj, (uint8_t *)&randnum, sizeof(randnum));
+    return randnum % upper_bound;
+#else
+    return randombytes_uniform(upper_bound);
+#endif  // VANILLA_NACL
+}
+
+static const Random_Funcs system_random_funcs = {
+    sys_random_bytes,
+    sys_random_uniform,
+};
+
+static const Random system_random_obj = {&system_random_funcs};
+
+const Random *system_random(void)
+{
+#ifndef VANILLA_NACL
+    // It is safe to call this function more than once and from different
+    // threads -- subsequent calls won't have any effects.
+    if (sodium_init() == -1) {
+        return nullptr;
+    }
+#endif
+
+    return &system_random_obj;
+}
+
+void random_bytes(const Random *rng, uint8_t *bytes, size_t length)
+{
+    rng->funcs->random_bytes(rng->obj, bytes, length);
 }

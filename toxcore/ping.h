@@ -18,7 +18,7 @@
 typedef struct Ping Ping;
 
 non_null()
-Ping *ping_new(const struct Mono_Time *mono_time, DHT *dht);
+Ping *ping_new(const Mono_Time *mono_time, const Random *rng, DHT *dht);
 
 non_null()
 void ping_kill(Ping *ping);

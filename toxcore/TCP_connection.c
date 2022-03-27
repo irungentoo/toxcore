@@ -19,6 +19,7 @@
 
 struct TCP_Connections {
     const Logger *logger;
+    const Random *rng;
     Mono_Time *mono_time;
     const Network *ns;
     DHT *dht;
@@ -380,7 +381,7 @@ int send_packet_tcp_connection(const TCP_Connections *tcp_c, int connections_num
  */
 int get_random_tcp_onion_conn_number(const TCP_Connections *tcp_c)
 {
-    const uint32_t r = random_u32();
+    const uint32_t r = random_u32(tcp_c->rng);
 
     for (uint32_t i = 0; i < tcp_c->tcp_connections_length; ++i) {
         const uint32_t index = (i + r) % tcp_c->tcp_connections_length;
@@ -813,7 +814,7 @@ static int reconnect_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connec
     uint8_t relay_pk[CRYPTO_PUBLIC_KEY_SIZE];
     memcpy(relay_pk, tcp_con_public_key(tcp_con->connection), CRYPTO_PUBLIC_KEY_SIZE);
     kill_TCP_connection(tcp_con->connection);
-    tcp_con->connection = new_TCP_connection(tcp_c->logger, tcp_c->mono_time, tcp_c->ns, &ip_port, relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key, &tcp_c->proxy_info);
+    tcp_con->connection = new_TCP_connection(tcp_c->logger, tcp_c->mono_time, tcp_c->rng, tcp_c->ns, &ip_port, relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key, &tcp_c->proxy_info);
 
     if (tcp_con->connection == nullptr) {
         kill_tcp_relay_connection(tcp_c, tcp_connections_number);
@@ -901,7 +902,7 @@ static int unsleep_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connecti
     }
 
     tcp_con->connection = new_TCP_connection(
-            tcp_c->logger, tcp_c->mono_time, tcp_c->ns, &tcp_con->ip_port,
+            tcp_c->logger, tcp_c->mono_time, tcp_c->rng, tcp_c->ns, &tcp_con->ip_port,
             tcp_con->relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key, &tcp_c->proxy_info);
 
     if (tcp_con->connection == nullptr) {
@@ -1186,7 +1187,7 @@ static int add_tcp_relay_instance(TCP_Connections *tcp_c, const IP_Port *ip_port
     TCP_con *tcp_con = &tcp_c->tcp_connections[tcp_connections_number];
 
     tcp_con->connection = new_TCP_connection(
-            tcp_c->logger, tcp_c->mono_time, tcp_c->ns, &ipp_copy,
+            tcp_c->logger, tcp_c->mono_time, tcp_c->rng, tcp_c->ns, &ipp_copy,
             relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key, &tcp_c->proxy_info);
 
     if (tcp_con->connection == nullptr) {
@@ -1354,7 +1355,7 @@ static bool copy_tcp_relay_conn(const TCP_Connections *tcp_c, Node_format *tcp_r
  */
 uint32_t tcp_copy_connected_relays(const TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num)
 {
-    const uint32_t r = random_u32();
+    const uint32_t r = random_u32(tcp_c->rng);
     uint32_t copied = 0;
 
     for (uint32_t i = 0; (i < tcp_c->tcp_connections_length) && (copied < max_num); ++i) {
@@ -1462,8 +1463,9 @@ int set_tcp_onion_status(TCP_Connections *tcp_c, bool status)
  *
  * Returns NULL on failure.
  */
-TCP_Connections *new_tcp_connections(const Logger *logger, Mono_Time *mono_time, const Network *ns,
-                                     const uint8_t *secret_key, const TCP_Proxy_Info *proxy_info)
+TCP_Connections *new_tcp_connections(
+        const Logger *logger, const Random *rng, const Network *ns, Mono_Time *mono_time, const uint8_t *secret_key,
+        const TCP_Proxy_Info *proxy_info)
 {
     if (secret_key == nullptr) {
         return nullptr;
@@ -1476,6 +1478,7 @@ TCP_Connections *new_tcp_connections(const Logger *logger, Mono_Time *mono_time,
     }
 
     temp->logger = logger;
+    temp->rng = rng;
     temp->mono_time = mono_time;
     temp->ns = ns;
 

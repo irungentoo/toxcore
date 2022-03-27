@@ -10,6 +10,7 @@
 #include "../toxcore/ccompat.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/mono_time.h"
+#include "../toxcore/tox_struct.h"
 #include "../toxcore/util.h"
 
 #define GROUP_JBUF_SIZE 6
@@ -535,7 +536,7 @@ bool groupchat_av_enabled(const Group_Chats *g_c, uint32_t groupnumber)
  */
 int add_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_cb *audio_callback, void *userdata)
 {
-    const int groupnumber = add_groupchat(g_c, GROUPCHAT_TYPE_AV);
+    const int groupnumber = add_groupchat(g_c, &tox->rng, GROUPCHAT_TYPE_AV);
 
     if (groupnumber == -1) {
         return -1;

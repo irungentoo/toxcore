@@ -80,6 +80,7 @@ struct DHT {
     const Logger *log;
     const Network *ns;
     Mono_Time *mono_time;
+    const Random *rng;
     Networking_Core *net;
 
     bool hole_punching_enabled;
@@ -342,8 +343,9 @@ void dht_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *publi
  * @retval -1 on failure.
  * @return the length of the created packet on success.
  */
-int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
-                   const uint8_t *recv_public_key, const uint8_t *data, uint32_t data_length, uint8_t request_id)
+int create_request(const Random *rng, const uint8_t *send_public_key, const uint8_t *send_secret_key,
+                   uint8_t *packet, const uint8_t *recv_public_key,
+                   const uint8_t *data, uint32_t data_length, uint8_t request_id)
 {
     if (send_public_key == nullptr || packet == nullptr || recv_public_key == nullptr || data == nullptr) {
         return -1;
@@ -354,7 +356,7 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
     }
 
     uint8_t *const nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
-    random_nonce(nonce);
+    random_nonce(rng, nonce);
     uint8_t temp[MAX_CRYPTO_REQUEST_SIZE] = {0};
     temp[0] = request_id;
     memcpy(temp + 1, data, data_length);
@@ -514,7 +516,7 @@ int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_
 }
 
 non_null()
-static int dht_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
+static int dht_create_packet(const Random *rng, const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
                              const uint8_t *shared_key, const uint8_t type,
                              const uint8_t *plain, size_t plain_length, uint8_t *packet)
 {
@@ -525,7 +527,7 @@ static int dht_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
         return -1;
     }
 
-    random_nonce(nonce);
+    random_nonce(rng, nonce);
 
     const int encrypted_length = encrypt_data_symmetric(shared_key, nonce, plain, plain_length, encrypted);
 
@@ -1371,7 +1373,7 @@ bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, c
 
     uint64_t ping_id = 0;
 
-    ping_id = ping_array_add(dht->dht_ping_array, dht->mono_time, plain_message, sizeof(receiver));
+    ping_id = ping_array_add(dht->dht_ping_array, dht->mono_time, dht->rng, plain_message, sizeof(receiver));
 
     if (ping_id == 0) {
         LOGGER_ERROR(dht->log, "adding ping id failed");
@@ -1387,7 +1389,7 @@ bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, c
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
     dht_get_shared_key_sent(dht, shared_key, public_key);
 
-    const int len = dht_create_packet(dht->self_public_key, shared_key, NET_PACKET_GET_NODES,
+    const int len = dht_create_packet(dht->rng, dht->self_public_key, shared_key, NET_PACKET_GET_NODES,
                                       plain, sizeof(plain), data);
 
     crypto_memzero(shared_key, sizeof(shared_key));
@@ -1438,8 +1440,8 @@ static int sendnodes_ipv6(const DHT *dht, const IP_Port *ip_port, const uint8_t 
     const uint32_t crypto_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE;
     VLA(uint8_t, data, 1 + nodes_length + length + crypto_size);
 
-    const int len = dht_create_packet(dht->self_public_key, shared_encryption_key, NET_PACKET_SEND_NODES_IPV6,
-                                      plain, 1 + nodes_length + length, data);
+    const int len = dht_create_packet(dht->rng, dht->self_public_key, shared_encryption_key,
+                                      NET_PACKET_SEND_NODES_IPV6, plain, 1 + nodes_length + length, data);
 
     if (len != SIZEOF_VLA(data)) {
         return -1;
@@ -1655,7 +1657,7 @@ int dht_addfriend(DHT *dht, const uint8_t *public_key, dht_ip_cb *ip_callback,
     *dht_friend = empty_dht_friend;
     memcpy(dht_friend->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
-    dht_friend->nat.nat_ping_id = random_u64();
+    dht_friend->nat.nat_ping_id = random_u64(dht->rng);
     ++dht->num_friends;
 
     dht_friend_lock(dht_friend, ip_callback, data, number, lock_count);
@@ -1802,10 +1804,10 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
 
     if (num_nodes > 0 && (mono_time_is_timeout(dht->mono_time, *lastgetnode, GET_NODE_INTERVAL)
                           || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
-        uint32_t rand_node = random_range_u32(num_nodes);
+        uint32_t rand_node = random_range_u32(dht->rng, num_nodes);
 
         if ((num_nodes - 1) != rand_node) {
-            rand_node += random_range_u32(num_nodes - (rand_node + 1));
+            rand_node += random_range_u32(dht->rng, num_nodes - (rand_node + 1));
         }
 
         dht_getnodes(dht, &assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, public_key);
@@ -2162,7 +2164,7 @@ static uint32_t routeone_to_friend(const DHT *dht, const uint8_t *friend_id, con
         return 0;
     }
 
-    const uint32_t rand_idx = random_range_u32(n);
+    const uint32_t rand_idx = random_range_u32(dht->rng, n);
     const int retval = send_packet(dht->net, &ip_list[rand_idx], *packet);
 
     if ((unsigned int)retval == packet->length) {
@@ -2185,8 +2187,8 @@ static int send_NATping(const DHT *dht, const uint8_t *public_key, uint64_t ping
     memcpy(data + 1, &ping_id, sizeof(uint64_t));
     /* 254 is NAT ping request packet id */
     const int len = create_request(
-                        dht->self_public_key, dht->self_secret_key, packet_data, public_key, data,
-                        sizeof(uint64_t) + 1, CRYPTO_PACKET_NAT_PING);
+                        dht->rng, dht->self_public_key, dht->self_secret_key, packet_data, public_key,
+                        data, sizeof(uint64_t) + 1, CRYPTO_PACKET_NAT_PING);
 
     if (len == -1) {
         return -1;
@@ -2239,7 +2241,7 @@ static int handle_NATping(void *object, const IP_Port *source, const uint8_t *so
 
     if (packet[0] == NAT_PING_RESPONSE) {
         if (dht_friend->nat.nat_ping_id == ping_id) {
-            dht_friend->nat.nat_ping_id = random_u64();
+            dht_friend->nat.nat_ping_id = random_u64(dht->rng);
             dht_friend->nat.hole_punching = true;
             return 0;
         }
@@ -2416,8 +2418,8 @@ static void do_NAT(DHT *dht)
  * @return the number of nodes.
  */
 non_null()
-static uint16_t list_nodes(const Client_data *list, size_t length, uint64_t cur_time,
-                           Node_format *nodes, uint16_t max_num)
+static uint16_t list_nodes(const Random *rng, const Client_data *list, size_t length,
+                           uint64_t cur_time, Node_format *nodes, uint16_t max_num)
 {
     if (max_num == 0) {
         return 0;
@@ -2435,7 +2437,7 @@ static uint16_t list_nodes(const Client_data *list, size_t length, uint64_t cur_
         if (!assoc_timeout(cur_time, &list[i - 1].assoc6)) {
             if (assoc == nullptr) {
                 assoc = &list[i - 1].assoc6;
-            } else if ((random_u08() % 2) != 0) {
+            } else if ((random_u08(rng) % 2) != 0) {
                 assoc = &list[i - 1].assoc6;
             }
         }
@@ -2465,10 +2467,11 @@ uint16_t randfriends_nodes(const DHT *dht, Node_format *nodes, uint16_t max_num)
     }
 
     uint16_t count = 0;
-    const uint32_t r = random_u32();
+    const uint32_t r = random_u32(dht->rng);
 
     for (size_t i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
-        count += list_nodes(dht->friends_list[(i + r) % DHT_FAKE_FRIEND_NUMBER].client_list, MAX_FRIEND_CLIENTS, dht->cur_time,
+        count += list_nodes(dht->rng, dht->friends_list[(i + r) % DHT_FAKE_FRIEND_NUMBER].client_list,
+                            MAX_FRIEND_CLIENTS, dht->cur_time,
                             nodes + count, max_num - count);
 
         if (count >= max_num) {
@@ -2485,7 +2488,7 @@ uint16_t randfriends_nodes(const DHT *dht, Node_format *nodes, uint16_t max_num)
  */
 uint16_t closelist_nodes(const DHT *dht, Node_format *nodes, uint16_t max_num)
 {
-    return list_nodes(dht->close_clientlist, LCLIENT_LIST, dht->cur_time, nodes, max_num);
+    return list_nodes(dht->rng, dht->close_clientlist, LCLIENT_LIST, dht->cur_time, nodes, max_num);
 }
 
 /*----------------------------------------------------------------------------------*/
@@ -2569,7 +2572,7 @@ static int handle_LANdiscovery(void *object, const IP_Port *source, const uint8_
 
 /*----------------------------------------------------------------------------------*/
 
-DHT *new_dht(const Logger *log, const Network *ns, Mono_Time *mono_time, Networking_Core *net,
+DHT *new_dht(const Logger *log, const Random *rng, const Network *ns, Mono_Time *mono_time, Networking_Core *net,
              bool hole_punching_enabled, bool lan_discovery_enabled)
 {
     if (net == nullptr) {
@@ -2587,11 +2590,12 @@ DHT *new_dht(const Logger *log, const Network *ns, Mono_Time *mono_time, Network
     dht->cur_time = mono_time_get(mono_time);
     dht->log = log;
     dht->net = net;
+    dht->rng = rng;
 
     dht->hole_punching_enabled = hole_punching_enabled;
     dht->lan_discovery_enabled = lan_discovery_enabled;
 
-    dht->ping = ping_new(mono_time, dht);
+    dht->ping = ping_new(mono_time, rng, dht);
 
     if (dht->ping == nullptr) {
         kill_dht(dht);
@@ -2604,7 +2608,7 @@ DHT *new_dht(const Logger *log, const Network *ns, Mono_Time *mono_time, Network
     networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
     cryptopacket_registerhandler(dht, CRYPTO_PACKET_NAT_PING, &handle_NATping, dht);
 
-    crypto_new_keypair(dht->self_public_key, dht->self_secret_key);
+    crypto_new_keypair(rng, dht->self_public_key, dht->self_secret_key);
 
     dht->dht_ping_array = ping_array_new(DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
 
@@ -2617,7 +2621,7 @@ DHT *new_dht(const Logger *log, const Network *ns, Mono_Time *mono_time, Network
         uint8_t random_public_key_bytes[CRYPTO_PUBLIC_KEY_SIZE];
         uint8_t random_secret_key_bytes[CRYPTO_SECRET_KEY_SIZE];
 
-        crypto_new_keypair(random_public_key_bytes, random_secret_key_bytes);
+        crypto_new_keypair(rng, random_public_key_bytes, random_secret_key_bytes);
 
         if (dht_addfriend(dht, random_public_key_bytes, nullptr, nullptr, 0, nullptr) != 0) {
             kill_dht(dht);

@@ -9,6 +9,7 @@
 #ifndef C_TOXCORE_TOXCORE_TCP_CLIENT_H
 #define C_TOXCORE_TOXCORE_TCP_CLIENT_H
 
+#include "crypto_core.h"
 #include "mono_time.h"
 #include "network.h"
 
@@ -55,9 +56,9 @@ non_null()
 void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value);
 
 /** Create new TCP connection to ip_port/public_key */
-non_null(1, 2, 3, 4, 5, 6, 7) nullable(8)
+non_null(1, 2, 3, 4, 5, 6, 7, 8) nullable(9)
 TCP_Client_Connection *new_TCP_connection(
-        const Logger *logger, const Mono_Time *mono_time, const Network *ns, const IP_Port *ip_port,
+        const Logger *logger, const Mono_Time *mono_time, const Random *rng, const Network *ns, const IP_Port *ip_port,
         const uint8_t *public_key, const uint8_t *self_public_key, const uint8_t *self_secret_key,
         const TCP_Proxy_Info *proxy_info);
 

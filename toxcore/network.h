@@ -428,13 +428,6 @@ Family net_family(const Networking_Core *net);
 non_null()
 uint16_t net_port(const Networking_Core *net);
 
-/** @brief Run this before creating sockets.
- *
- * return 0 on success
- * return -1 on failure
- */
-int networking_at_startup(void);
-
 /** Close the socket. */
 non_null()
 void kill_sock(const Network *ns, Socket sock);
@@ -581,6 +574,7 @@ non_null(1, 2, 3) nullable(6)
 Networking_Core *new_networking_ex(
         const Logger *log, const Network *ns, const IP *ip,
         uint16_t port_from, uint16_t port_to, unsigned int *error);
+
 non_null()
 Networking_Core *new_networking_no_udp(const Logger *log, const Network *ns);
 

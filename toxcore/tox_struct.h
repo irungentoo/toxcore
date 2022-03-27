@@ -17,6 +17,7 @@ extern "C" {
 struct Tox {
     Messenger *m;
     Mono_Time *mono_time;
+    Random rng;
     Network ns;
     pthread_mutex_t *mutex;
 

@@ -30,6 +30,7 @@
 
 struct Ping {
     const Mono_Time *mono_time;
+    const Random *rng;
     DHT *dht;
 
     Ping_Array  *ping_array;
@@ -60,7 +61,7 @@ void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key
     uint8_t data[PING_DATA_SIZE];
     pk_copy(data, public_key);
     memcpy(data + CRYPTO_PUBLIC_KEY_SIZE, ipp, sizeof(IP_Port));
-    ping_id = ping_array_add(ping->ping_array, ping->mono_time, data, sizeof(data));
+    ping_id = ping_array_add(ping->ping_array, ping->mono_time, ping->rng, data, sizeof(data));
 
     if (ping_id == 0) {
         crypto_memzero(shared_key, sizeof(shared_key));
@@ -73,7 +74,7 @@ void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key
 
     pk[0] = NET_PACKET_PING_REQUEST;
     pk_copy(pk + 1, dht_get_self_public_key(ping->dht));     // Our pubkey
-    random_nonce(pk + 1 + CRYPTO_PUBLIC_KEY_SIZE); // Generate new nonce
+    random_nonce(ping->rng, pk + 1 + CRYPTO_PUBLIC_KEY_SIZE); // Generate new nonce
 
 
     rc = encrypt_data_symmetric(shared_key,
@@ -107,7 +108,7 @@ static int ping_send_response(const Ping *ping, const IP_Port *ipp, const uint8_
 
     pk[0] = NET_PACKET_PING_RESPONSE;
     pk_copy(pk + 1, dht_get_self_public_key(ping->dht));     // Our pubkey
-    random_nonce(pk + 1 + CRYPTO_PUBLIC_KEY_SIZE); // Generate new nonce
+    random_nonce(ping->rng, pk + 1 + CRYPTO_PUBLIC_KEY_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
     const int rc = encrypt_data_symmetric(shared_encryption_key,
@@ -347,7 +348,7 @@ void ping_iterate(Ping *ping)
 }
 
 
-Ping *ping_new(const Mono_Time *mono_time, DHT *dht)
+Ping *ping_new(const Mono_Time *mono_time, const Random *rng, DHT *dht)
 {
     Ping *ping = (Ping *)calloc(1, sizeof(Ping));
 
@@ -363,6 +364,7 @@ Ping *ping_new(const Mono_Time *mono_time, DHT *dht)
     }
 
     ping->mono_time = mono_time;
+    ping->rng = rng;
     ping->dht = dht;
     networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_REQUEST, &handle_ping_request, dht);
     networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_RESPONSE, &handle_ping_response, dht);

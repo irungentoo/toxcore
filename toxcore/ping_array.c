@@ -103,8 +103,8 @@ static void ping_array_clear_timedout(Ping_Array *array, const Mono_Time *mono_t
     }
 }
 
-uint64_t ping_array_add(Ping_Array *array, const Mono_Time *mono_time, const uint8_t *data,
-                        uint32_t length)
+uint64_t ping_array_add(Ping_Array *array, const Mono_Time *mono_time, const Random *rng,
+                        const uint8_t *data, uint32_t length)
 {
     ping_array_clear_timedout(array, mono_time);
     const uint32_t index = array->last_added % array->total_size;
@@ -124,7 +124,7 @@ uint64_t ping_array_add(Ping_Array *array, const Mono_Time *mono_time, const uin
     array->entries[index].length = length;
     array->entries[index].ping_time = mono_time_get(mono_time);
     ++array->last_added;
-    uint64_t ping_id = random_u64();
+    uint64_t ping_id = random_u64(rng);
     ping_id /= array->total_size;
     ping_id *= array->total_size;
     ping_id += index;

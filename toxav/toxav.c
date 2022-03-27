@@ -1065,7 +1065,7 @@ static void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, 
     LOGGER_DEBUG(call->av->m->log, "Reported loss of %f%%", (double)loss * 100);
 
     /* if less than 10% data loss we do nothing! */
-    if (loss < 0.1f) {
+    if (loss < 0.1F) {
         return;
     }
 

@@ -608,8 +608,25 @@ static const Network system_network_obj = {&system_network_funcs};
 
 const Network *system_network(void)
 {
+#ifdef OS_WIN32
+    WSADATA wsaData;
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
+        return nullptr;
+    }
+#endif
     return &system_network_obj;
 }
+
+#if 0
+/* TODO(iphydf): Call this from functions that use `system_network()`. */
+void system_network_deinit(const Network *ns)
+{
+#ifdef OS_WIN32
+    WSACleanup();
+#endif
+}
+#endif
 
 non_null()
 static int net_setsockopt(const Network *ns, Socket sock, int level, int optname, const void *optval, size_t optlen)
@@ -979,52 +996,6 @@ void networking_poll(const Networking_Core *net, void *userdata)
     }
 }
 
-//!TOKSTYLE-
-// Global mutable state is not allowed in Tokstyle.
-static uint8_t at_startup_ran = 0;
-//!TOKSTYLE+
-int networking_at_startup(void)
-{
-    if (at_startup_ran != 0) {
-        return 0;
-    }
-
-#ifndef VANILLA_NACL
-
-#ifdef USE_RANDOMBYTES_STIR
-    randombytes_stir();
-#else
-
-    if (sodium_init() == -1) {
-        return -1;
-    }
-
-#endif /*USE_RANDOMBYTES_STIR*/
-
-#endif/*VANILLA_NACL*/
-
-#ifdef OS_WIN32
-    WSADATA wsaData;
-
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
-        return -1;
-    }
-
-#endif
-    at_startup_ran = 1;
-    return 0;
-}
-
-/* TODO(irungentoo): Put this somewhere */
-#if 0
-static void at_shutdown(void)
-{
-#ifdef OS_WIN32
-    WSACleanup();
-#endif
-}
-#endif
-
 /** @brief Initialize networking.
  * Bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
@@ -1063,10 +1034,6 @@ Networking_Core *new_networking_ex(
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
     if (!net_family_is_ipv4(ip->family) && !net_family_is_ipv6(ip->family)) {
         LOGGER_ERROR(log, "invalid address family: %u", ip->family.value);
-        return nullptr;
-    }
-
-    if (networking_at_startup() != 0) {
         return nullptr;
     }
 
@@ -1273,10 +1240,6 @@ Networking_Core *new_networking_ex(
 
 Networking_Core *new_networking_no_udp(const Logger *log, const Network *ns)
 {
-    if (networking_at_startup() != 0) {
-        return nullptr;
-    }
-
     /* this is the easiest way to completely disable UDP without changing too much code. */
     Networking_Core *net = (Networking_Core *)calloc(1, sizeof(Networking_Core));
 
@@ -1284,6 +1247,7 @@ Networking_Core *new_networking_no_udp(const Logger *log, const Network *ns)
         return nullptr;
     }
 
+    net->ns = ns;
     net->log = log;
     net->ns = ns;
 
@@ -1555,10 +1519,6 @@ static int addr_resolve(const Network *ns, const char *address, IP *to, IP *extr
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = family;
     hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
-
-    if (networking_at_startup() != 0) {
-        return 0;
-    }
 
     struct addrinfo *server = nullptr;
 

@@ -19,13 +19,13 @@ struct test_data {
     bool received_status_message;
 };
 
-static void set_random(Tox *m, bool (*setter)(Tox *, const uint8_t *, size_t, Tox_Err_Set_Info *), size_t length)
+static void set_random(Tox *m, const Random *rng, bool (*setter)(Tox *, const uint8_t *, size_t, Tox_Err_Set_Info *), size_t length)
 {
     VLA(uint8_t, text, length);
     uint32_t i;
 
     for (i = 0; i < length; ++i) {
-        text[i] = random_u08();
+        text[i] = random_u08(rng);
     }
 
     setter(m, text, SIZEOF_VLA(text), nullptr);
@@ -86,10 +86,12 @@ int main(void)
     ck_assert(reference_name != nullptr);
     ck_assert(reference_status != nullptr);
 
-    set_random(tox1, tox_self_set_name, tox_max_name_length());
-    set_random(tox2, tox_self_set_name, tox_max_name_length());
-    set_random(tox1, tox_self_set_status_message, tox_max_status_message_length());
-    set_random(tox2, tox_self_set_status_message, tox_max_status_message_length());
+    const Random *rng = system_random();
+    ck_assert(rng != nullptr);
+    set_random(tox1, rng, tox_self_set_name, tox_max_name_length());
+    set_random(tox2, rng, tox_self_set_name, tox_max_name_length());
+    set_random(tox1, rng, tox_self_set_status_message, tox_max_status_message_length());
+    set_random(tox2, rng, tox_self_set_status_message, tox_max_status_message_length());
 
     tox_self_get_name(tox2, reference_name);
     tox_self_get_status_message(tox2, reference_status);

@@ -16,7 +16,7 @@ struct KeyPair {
     PublicKey pk;
     SecretKey sk;
 
-    KeyPair() { crypto_new_keypair(pk.data(), sk.data()); }
+    explicit KeyPair(const Random *rng) { crypto_new_keypair(rng, pk.data(), sk.data()); }
 };
 
 template <typename T, size_t N>
@@ -27,17 +27,20 @@ std::array<T, N> to_array(T const (&arr)[N])
     return stdarr;
 }
 
-PublicKey random_pk()
+PublicKey random_pk(const Random *rng)
 {
     PublicKey pk;
-    random_bytes(pk.data(), pk.size());
+    random_bytes(rng, pk.data(), pk.size());
     return pk;
 }
 
 TEST(IdClosest, IdenticalKeysAreSameDistance)
 {
-    PublicKey pk0 = random_pk();
-    PublicKey pk1 = random_pk();
+    const Random *rng = system_random();
+    ASSERT_NE(rng, nullptr);
+
+    PublicKey pk0 = random_pk(rng);
+    PublicKey pk1 = random_pk(rng);
     PublicKey pk2 = pk1;
 
     EXPECT_EQ(id_closest(pk0.data(), pk1.data(), pk2.data()), 0);
@@ -45,10 +48,13 @@ TEST(IdClosest, IdenticalKeysAreSameDistance)
 
 TEST(IdClosest, DistanceIsCommutative)
 {
+    const Random *rng = system_random();
+    ASSERT_NE(rng, nullptr);
+
     for (uint32_t i = 0; i < 100; ++i) {
-        PublicKey pk0 = random_pk();
-        PublicKey pk1 = random_pk();
-        PublicKey pk2 = random_pk();
+        PublicKey pk0 = random_pk(rng);
+        PublicKey pk1 = random_pk(rng);
+        PublicKey pk2 = random_pk(rng);
 
         ASSERT_NE(pk1, pk2);  // RNG can't produce the same random key twice
 
@@ -124,9 +130,12 @@ TEST(AddToList, OverridesKeysWithCloserKeys)
 
 TEST(Request, CreateAndParse)
 {
+    const Random *rng = system_random();
+    ASSERT_NE(rng, nullptr);
+
     // Peers.
-    const KeyPair sender;
-    const KeyPair receiver;
+    const KeyPair sender(rng);
+    const KeyPair receiver(rng);
     const uint8_t sent_pkt_id = CRYPTO_PACKET_FRIEND_REQ;
 
     // Encoded packet.
@@ -139,17 +148,17 @@ TEST(Request, CreateAndParse)
 
     // Request data: maximum payload is 918 bytes, so create a payload 1 byte larger than max.
     std::vector<uint8_t> outgoing(919);
-    random_bytes(outgoing.data(), outgoing.size());
+    random_bytes(rng, outgoing.data(), outgoing.size());
 
-    EXPECT_LT(create_request(sender.pk.data(), sender.sk.data(), packet.data(), receiver.pk.data(),
-                  outgoing.data(), outgoing.size(), sent_pkt_id),
+    EXPECT_LT(create_request(rng, sender.pk.data(), sender.sk.data(), packet.data(),
+                  receiver.pk.data(), outgoing.data(), outgoing.size(), sent_pkt_id),
         0);
 
     // Pop one element so the payload is 918 bytes. Packing should now succeed.
     outgoing.pop_back();
 
-    const int max_sent_length = create_request(sender.pk.data(), sender.sk.data(), packet.data(),
-        receiver.pk.data(), outgoing.data(), outgoing.size(), sent_pkt_id);
+    const int max_sent_length = create_request(rng, sender.pk.data(), sender.sk.data(),
+        packet.data(), receiver.pk.data(), outgoing.data(), outgoing.size(), sent_pkt_id);
     ASSERT_GT(max_sent_length, 0);  // success.
 
     // Check that handle_request rejects packets larger than the maximum created packet size.
@@ -160,8 +169,8 @@ TEST(Request, CreateAndParse)
     // Now try all possible packet sizes from max (918) to 0.
     while (!outgoing.empty()) {
         // Pack:
-        const int sent_length = create_request(sender.pk.data(), sender.sk.data(), packet.data(),
-            receiver.pk.data(), outgoing.data(), outgoing.size(), sent_pkt_id);
+        const int sent_length = create_request(rng, sender.pk.data(), sender.sk.data(),
+            packet.data(), receiver.pk.data(), outgoing.data(), outgoing.size(), sent_pkt_id);
         ASSERT_GT(sent_length, 0);
 
         // Unpack:

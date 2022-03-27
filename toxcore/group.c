@@ -1309,12 +1309,13 @@ static void remove_connection_reason(Group_Chats *g_c, Group_c *g, uint16_t i, u
 
 /** @brief Creates a new groupchat and puts it in the chats array.
  *
+ * @param rng Random number generator used for generating the group ID.
  * @param type is one of `GROUPCHAT_TYPE_*`
  *
  * @return group number on success.
  * @retval -1 on failure.
  */
-int add_groupchat(Group_Chats *g_c, uint8_t type)
+int add_groupchat(Group_Chats *g_c, const Random *rng, uint8_t type)
 {
     const int32_t groupnumber = create_group_chat(g_c);
 
@@ -1326,7 +1327,7 @@ int add_groupchat(Group_Chats *g_c, uint8_t type)
 
     g->status = GROUPCHAT_STATUS_CONNECTED;
     g->type = type;
-    new_symmetric_key(g->id);
+    new_symmetric_key(rng, g->id);
     g->peer_number = 0; /* Founder is peer 0. */
     memcpy(g->real_pk, nc_get_self_public_key(g_c->m->net_crypto), CRYPTO_PUBLIC_KEY_SIZE);
     const int peer_index = addpeer(g_c, groupnumber, g->real_pk, dht_get_self_public_key(g_c->m->dht), 0, nullptr, true,
@@ -2177,12 +2178,12 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
                 /* TODO(irungentoo): what if two people enter the group at the
                  * same time and are given the same peer_number by different
                  * nodes? */
-                peer_number = random_u16();
+                peer_number = random_u16(m->rng);
 
                 unsigned int tries = 0;
 
                 while (get_peer_index(g, peer_number) != -1 || get_frozen_index(g, peer_number) != -1) {
-                    peer_number = random_u16();
+                    peer_number = random_u16(m->rng);
                     ++tries;
 
                     if (tries > 32) {
