@@ -2,7 +2,7 @@
 target_compile_definitions(toxcore_static PUBLIC "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION")
 
 # Override network and random functions
-add_library(fuzz_adapter fuzz_adapter.c)
+add_library(fuzz_adapter fuzz_adapter.c fuzz_support.cc fuzz_support.h)
 
 set(LIBFUZZER_LINKER_FLAGS)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -18,3 +18,9 @@ target_link_libraries(toxsave_fuzzer toxcore_static fuzz_adapter ${LIBFUZZER_LIN
 # Fuzzes the bootstrap process
 add_executable(bootstrap_fuzzer bootstrap_harness.cc)
 target_link_libraries(bootstrap_fuzzer toxcore_static fuzz_adapter ${LIBFUZZER_LINKER_FLAGS})
+
+add_executable(DHT_fuzz_test ../../toxcore/DHT_fuzz_test.cc)
+target_link_libraries(DHT_fuzz_test toxcore_static fuzz_adapter ${LIBFUZZER_LINKER_FLAGS})
+
+add_executable(tox_events_fuzz_test ../../toxcore/tox_events_fuzz_test.cc)
+target_link_libraries(tox_events_fuzz_test toxcore_static fuzz_adapter ${LIBFUZZER_LINKER_FLAGS})
