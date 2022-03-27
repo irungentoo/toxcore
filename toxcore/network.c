@@ -1329,7 +1329,31 @@ bool addr_parse_ip(const char *address, IP *to)
     return false;
 }
 
-int addr_resolve(const char *address, IP *to, IP *extra)
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+/** addr_resolve return values */
+#define TOX_ADDR_RESOLVE_INET  1
+#define TOX_ADDR_RESOLVE_INET6 2
+#endif
+
+/**
+ * Uses getaddrinfo to resolve an address into an IP address.
+ *
+ * Uses the first IPv4/IPv6 addresses returned by getaddrinfo.
+ *
+ * @param address a hostname (or something parseable to an IP address)
+ * @param to to.family MUST be initialized, either set to a specific IP version
+ *   (TOX_AF_INET/TOX_AF_INET6) or to the unspecified TOX_AF_UNSPEC (0), if both
+ *   IP versions are acceptable
+ * @param extra can be NULL and is only set in special circumstances, see returns
+ *
+ * Returns in `*to` a valid IPAny (v4/v6),
+ * prefers v6 if `ip.family` was TOX_AF_UNSPEC and both available
+ * Returns in `*extra` an IPv4 address, if family was TOX_AF_UNSPEC and `*to` is TOX_AF_INET6
+ *
+ * @return 0 on failure, `TOX_ADDR_RESOLVE_*` on success.
+ */
+non_null(1, 2) nullable(3)
+static int addr_resolve(const char *address, IP *to, IP *extra)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     return 0;
