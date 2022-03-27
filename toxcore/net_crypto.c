@@ -1015,7 +1015,7 @@ static int handle_request_packet(Mono_Time *mono_time, Packets_Array *send_array
     uint32_t requested = 0;
 
     const uint64_t temp_time = current_time_monotonic(mono_time);
-    uint64_t l_sent_time = -1;
+    uint64_t l_sent_time = 0;
 
     for (uint32_t i = send_array->buffer_start; i != send_array->buffer_end; ++i) {
         if (length == 0) {
