@@ -1,6 +1,7 @@
 FROM scratch
 
 # Roughly in order of change frequency.
+COPY third_party/ /src/third_party/
 COPY .github/scripts/flags*.sh /src/.github/scripts/
 COPY other/proxy/ /src/other/proxy/
 COPY cmake/ /src/cmake/
