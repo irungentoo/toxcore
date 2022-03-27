@@ -67,11 +67,12 @@
 #if !defined(__cplusplus) || __cplusplus < 201103L
 #define nullptr NULL
 #ifndef static_assert
+#ifdef __GNUC__
+// We'll just assume gcc and clang support C11 _Static_assert.
+#define static_assert _Static_assert
+#else // !__GNUC__
 #define STATIC_ASSERT_(cond, msg, line) typedef int static_assert_##line[(cond) ? 1 : -1]
 #define STATIC_ASSERT(cond, msg, line) STATIC_ASSERT_(cond, msg, line)
-#ifdef __GNUC__
-#define static_assert(cond, msg) __attribute__((__unused__)) STATIC_ASSERT(cond, msg, __LINE__)
-#else // !__GNUC__
 #define static_assert(cond, msg) STATIC_ASSERT(cond, msg, __LINE__)
 #endif // !__GNUC__
 #endif // !static_assert

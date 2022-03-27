@@ -20,6 +20,11 @@ add_ld_flag -undefined error
 # Make compilation error on a warning
 add_flag -Werror
 
+# Allow _Static_assert. Supported C11 extensions are fine, since we have several
+# C99-only compilers we test against anyway. Anything that passes all the
+# compilers we use is fine.
+add_c_flag -Wno-c11-extensions
+
 cmake -B_build -H. \
   -DCMAKE_C_FLAGS="$C_FLAGS" \
   -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
