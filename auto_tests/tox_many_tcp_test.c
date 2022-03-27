@@ -37,10 +37,7 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
 #define NUM_FRIENDS 50
 #define NUM_TOXES_TCP 40
 
-#ifdef TCP_RELAY_PORT
-#undef TCP_RELAY_PORT
-#endif
-#define TCP_RELAY_PORT 33448
+static uint16_t tcp_relay_port = 33448;
 
 static void test_many_clients_tcp(void)
 {
@@ -54,19 +51,27 @@ static void test_many_clients_tcp(void)
         struct Tox_Options *opts = tox_options_new(nullptr);
 
         if (i == 0) {
-            tox_options_set_tcp_port(opts, TCP_RELAY_PORT);
+            tox_options_set_tcp_port(opts, tcp_relay_port);
         } else {
             tox_options_set_udp_enabled(opts, false);
         }
 
         index[i] = i + 1;
-        toxes[i] = tox_new_log(opts, nullptr, &index[i]);
+        Tox_Err_New err;
+        toxes[i] = tox_new_log(opts, &err, &index[i]);
+        if (i == 0 && err == TOX_ERR_NEW_PORT_ALLOC) {
+            ck_assert(toxes[i] == nullptr);
+            --i;
+            ++tcp_relay_port;
+            tox_options_free(opts);
+            continue;
+        }
         ck_assert_msg(toxes[i] != nullptr, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
         tox_self_get_dht_id(toxes[0], dpk);
         Tox_Err_Bootstrap error = TOX_ERR_BOOTSTRAP_OK;
-        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "add relay error, %u, %d", i,
+        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, tcp_relay_port, dpk, &error), "add relay error, %u, %d", i,
                       error);
         uint16_t first_port = tox_self_get_udp_port(toxes[0], nullptr);
         ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, first_port, dpk, nullptr), "Bootstrap error");
@@ -147,7 +152,7 @@ static void test_many_clients_tcp_b(void)
         struct Tox_Options *opts = tox_options_new(nullptr);
 
         if (i < NUM_TCP_RELAYS) {
-            tox_options_set_tcp_port(opts, TCP_RELAY_PORT + i);
+            tox_options_set_tcp_port(opts, tcp_relay_port + i);
         } else {
             tox_options_set_udp_enabled(opts, 0);
         }
@@ -158,7 +163,7 @@ static void test_many_clients_tcp_b(void)
         tox_callback_friend_request(toxes[i], accept_friend_request);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
         tox_self_get_dht_id(toxes[(i % NUM_TCP_RELAYS)], dpk);
-        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT + (i % NUM_TCP_RELAYS), dpk, nullptr),
+        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, tcp_relay_port + (i % NUM_TCP_RELAYS), dpk, nullptr),
                       "add relay error");
         tox_self_get_dht_id(toxes[0], dpk);
         uint16_t first_port = tox_self_get_udp_port(toxes[0], nullptr);

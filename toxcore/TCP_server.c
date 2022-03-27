@@ -830,8 +830,8 @@ static Socket new_listening_TCP_socket(const Logger *logger, Family family, uint
 
     if (!ok) {
         char *const error = net_new_strerror(net_error());
-        LOGGER_ERROR(logger, "could not bind to TCP port %d (family = %d): %s",
-                     port, family.value, error != nullptr ? error : "(null)");
+        LOGGER_WARNING(logger, "could not bind to TCP port %d (family = %d): %s",
+                       port, family.value, error != nullptr ? error : "(null)");
         net_kill_strerror(error);
         kill_sock(sock);
         return net_invalid_socket;
