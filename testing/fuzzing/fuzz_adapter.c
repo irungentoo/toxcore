@@ -1,8 +1,6 @@
 #include "fuzz_adapter.h"
 
 struct fuzz_buf {
-    /* Monotonic counter for time replacement */
-    uint64_t counter;
     /* Fuzz data buffer */
     const uint8_t *cur;
     const uint8_t *end;
@@ -17,7 +15,6 @@ static struct fuzz_buf data;
 
 void network_adapter_init(const uint8_t *buf, size_t length)
 {
-    data.counter = 0;
     data.cur = buf;
     data.end = buf + length;
 }
@@ -89,9 +86,4 @@ void fuzz_random_bytes(uint8_t *rnd, size_t length)
     memset(rnd, 0, length);
     memcpy(rnd, data.cur, bytes_read);
     data.cur += bytes_read;
-}
-
-uint64_t fuzz_get_count(void)
-{
-    return data.counter++;
 }

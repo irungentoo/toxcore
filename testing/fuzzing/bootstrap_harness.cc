@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include "../../toxcore/tox.h"
+#include "../../toxcore/tox_struct.h"
 #include "fuzz_adapter.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
@@ -12,12 +13,18 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     Tox_Err_New error_new;
     Tox *tox = tox_new(nullptr, &error_new);
 
+    uint64_t clock = 0;
+    mono_time_set_current_time_callback(
+        tox->mono_time,
+        [](Mono_Time *mono_time, void *user_data) { return *static_cast<uint64_t *>(user_data); },
+        &clock);
+
     assert(tox != nullptr);
     assert(error_new == TOX_ERR_NEW_OK);
 
     uint8_t pub_key[TOX_PUBLIC_KEY_SIZE] = {0};
 
-    bool success = tox_bootstrap(tox, "127.0.0.1", 12345, pub_key, nullptr);
+    const bool success = tox_bootstrap(tox, "127.0.0.1", 12345, pub_key, nullptr);
     assert(success);
 
     /*
@@ -26,8 +33,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
      * NOTE: This should be fine tuned after gathering some experience.
      */
 
-    for (uint32_t i = 0; i < 100; ++i) {
+    for (uint32_t i = 0; i < 50; ++i) {
         tox_iterate(tox, nullptr);
+        // Move the clock forward a decent amount so all the time-based checks
+        // trigger more quickly.
+        clock += 200;
     }
 
     tox_kill(tox);

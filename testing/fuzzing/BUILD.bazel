@@ -16,7 +16,7 @@ cc_library(
 )
 
 cc_fuzz_test(
-    name = "bootstrap_fuzzer",
+    name = "bootstrap_fuzz_test",
     srcs = ["bootstrap_harness.cc"],
     copts = ["-UNDEBUG"],
     corpus = ["//tools/toktok-fuzzer/corpus:bootstrap_fuzzer"],

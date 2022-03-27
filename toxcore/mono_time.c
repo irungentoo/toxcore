@@ -32,12 +32,6 @@
 
 #include "ccompat.h"
 
-//!TOKSTYLE-
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-#include "../testing/fuzzing/fuzz_adapter.h"
-#endif
-//!TOKSTYLE+
-
 /** don't call into system billions of times for no reason */
 struct Mono_Time {
     uint64_t cur_time;
@@ -110,6 +104,11 @@ static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_
 non_null(1) nullable(2)
 static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_data)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // This assert should always fail. If it does, the fuzzing harness didn't
+    // override the mono time callback.
+    assert(mono_time == nullptr);
+#endif
     struct timespec clock_mono;
     clock_gettime(CLOCK_MONOTONIC, &clock_mono);
     return timespec_to_u64(clock_mono);
@@ -117,14 +116,6 @@ static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_
 #endif // !__APPLE__
 #endif // !OS_WIN32
 
-
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-non_null(1) nullable(2)
-static uint64_t current_time_monotonic_dummy(Mono_Time *mono_time, void *user_data)
-{
-    return fuzz_get_count();
-}
-#endif
 
 Mono_Time *mono_time_new(void)
 {
@@ -147,11 +138,7 @@ Mono_Time *mono_time_new(void)
         return nullptr;
     }
 
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    mono_time->current_time_callback = current_time_monotonic_dummy;
-#else
     mono_time->current_time_callback = current_time_monotonic_default;
-#endif
     mono_time->user_data = nullptr;
 
 #ifdef OS_WIN32
@@ -169,12 +156,15 @@ Mono_Time *mono_time_new(void)
 
     mono_time->cur_time = 0;
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    mono_time->base_time = 0; // Maximum reproducibility
+    // Maximum reproducibility and don't update mono_time before the harness has
+    // had a chance to set the callback.
+    // TODO(iphydf): Put mono time callback into Tox_Options with accessors only
+    // in tox_private.h.
+    mono_time->base_time = 0;
 #else
     mono_time->base_time = (uint64_t)time(nullptr) - (current_time_monotonic(mono_time) / 1000ULL);
-#endif
-
     mono_time_update(mono_time);
+#endif
 
     return mono_time;
 }
