@@ -27,7 +27,6 @@ TESTS = \
 	reconnect_test \
 	save_compatibility_test \
 	save_friend_test \
-	save_load_test \
 	send_message_test \
 	set_name_test \
 	set_status_message_test \
@@ -164,10 +163,6 @@ save_compatibility_test_LDADD = $(AUTOTEST_LDADD)
 save_friend_test_SOURCES = ../auto_tests/save_friend_test.c
 save_friend_test_CFLAGS = $(AUTOTEST_CFLAGS)
 save_friend_test_LDADD = $(AUTOTEST_LDADD)
-
-save_load_test_SOURCES = ../auto_tests/save_load_test.c
-save_load_test_CFLAGS = $(AUTOTEST_CFLAGS)
-save_load_test_LDADD = $(AUTOTEST_LDADD)
 
 send_message_test_SOURCES = ../auto_tests/send_message_test.c
 send_message_test_CFLAGS = $(AUTOTEST_CFLAGS)
