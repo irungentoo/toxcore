@@ -299,7 +299,10 @@ cc_fuzz_test(
     name = "DHT_fuzz_test",
     srcs = ["DHT_fuzz_test.cc"],
     corpus = ["//tools/toktok-fuzzer/corpus:DHT_fuzz_test"],
-    deps = [":DHT"],
+    deps = [
+        ":DHT",
+        "//c-toxcore/testing/fuzzing:fuzz_support",
+    ],
 )
 
 cc_library(

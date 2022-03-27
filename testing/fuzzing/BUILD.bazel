@@ -8,6 +8,13 @@ cc_library(
     visibility = ["//c-toxcore:__subpackages__"],
 )
 
+cc_library(
+    name = "fuzz_support",
+    srcs = ["fuzz_support.cc"],
+    hdrs = ["fuzz_support.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+)
+
 cc_fuzz_test(
     name = "bootstrap_fuzzer",
     srcs = ["bootstrap_harness.cc"],

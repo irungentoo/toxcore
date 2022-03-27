@@ -3,43 +3,31 @@
 #include <cstdlib>
 #include <vector>
 
+#include "../testing/fuzzing/fuzz_support.h"
+
 namespace {
 
-void TestHandleRequest(const uint8_t *input_data, size_t input_size)
+void TestHandleRequest(Fuzz_Data input)
 {
-    const uint8_t *data = input_data;
-    size_t size = input_size;
-
-    const uint8_t *self_public_key = data;
-    data += CRYPTO_PUBLIC_KEY_SIZE;
-    size -= CRYPTO_PUBLIC_KEY_SIZE;
-
-    const uint8_t *self_secret_key = data;
-    data += CRYPTO_SECRET_KEY_SIZE;
-    size -= CRYPTO_SECRET_KEY_SIZE;
+    CONSUME_OR_RETURN(const uint8_t *self_public_key, input, CRYPTO_PUBLIC_KEY_SIZE);
+    CONSUME_OR_RETURN(const uint8_t *self_secret_key, input, CRYPTO_SECRET_KEY_SIZE);
 
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t request[MAX_CRYPTO_REQUEST_SIZE];
     uint8_t request_id;
-    handle_request(self_public_key, self_secret_key, public_key, request, &request_id, data, size);
+    handle_request(
+        self_public_key, self_secret_key, public_key, request, &request_id, input.data, input.size);
 }
 
-void TestUnpackNodes(const uint8_t *input_data, size_t input_size)
+void TestUnpackNodes(Fuzz_Data input)
 {
-    const uint8_t *data = input_data;
-    size_t size = input_size;
+    CONSUME1_OR_RETURN(const bool tcp_enabled, input);
 
-    if (size < 1) {
-        return;
-    }
-
-    const bool tcp_enabled = data[0];
-    ++data;
-    --size;
-
-    Node_format nodes[5];
+    const uint16_t node_count = 5;
+    Node_format nodes[node_count];
     uint16_t processed_data_len;
-    const int packed_count = unpack_nodes(nodes, 5, &processed_data_len, data, size, tcp_enabled);
+    const int packed_count
+        = unpack_nodes(nodes, node_count, &processed_data_len, input.data, input.size, tcp_enabled);
     if (packed_count > 0) {
         Logger *logger = logger_new();
         std::vector<uint8_t> packed(packed_count * PACKED_NODE_SIZE_IP6);
@@ -53,28 +41,9 @@ void TestUnpackNodes(const uint8_t *input_data, size_t input_size)
 
 }  // namespace
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *input_data, size_t input_size);
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *input_data, size_t input_size)
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    const uint8_t *data = input_data;
-    size_t size = input_size;
-
-    if (size < 1) {
-        return 0;
-    }
-
-    const uint8_t func = data[0];
-    ++data;
-    --size;
-
-    switch (func) {
-    case 0:
-        TestHandleRequest(data, size);
-        return 0;
-    case 1:
-        TestUnpackNodes(data, size);
-        return 0;
-    default:
-        return 0;
-    }
+    fuzz_select_target(data, size, TestHandleRequest, TestUnpackNodes);
+    return 0;
 }
