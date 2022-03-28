@@ -2324,7 +2324,7 @@ static void do_friends(Messenger *m, void *userdata)
 }
 
 non_null(1) nullable(2)
-static void connection_status_callback(Messenger *m, void *userdata)
+static void m_connection_status_callback(Messenger *m, void *userdata)
 {
     const Onion_Connection_Status conn_status = onion_connection_status(m->onion_c);
 
@@ -2416,7 +2416,7 @@ void do_messenger(Messenger *m, void *userdata)
     do_onion_client(m->onion_c);
     do_friend_connections(m->fr_c, userdata);
     do_friends(m, userdata);
-    connection_status_callback(m, userdata);
+    m_connection_status_callback(m, userdata);
 
     if (mono_time_get(m->mono_time) > m->lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
         m->lastdump = mono_time_get(m->mono_time);
