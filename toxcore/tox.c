@@ -550,7 +550,9 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
             m_options.proxy_info.ip_port.ip.family = net_family_unspec;
         }
 
-        if (!addr_resolve_or_parse_ip(tox_options_get_proxy_host(opts), &m_options.proxy_info.ip_port.ip, nullptr)) {
+        const char *const proxy_host = tox_options_get_proxy_host(opts);
+
+        if (proxy_host == nullptr || !addr_resolve_or_parse_ip(proxy_host, &m_options.proxy_info.ip_port.ip, nullptr)) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
             // TODO(irungentoo): TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
             tox_options_free(default_options);
@@ -595,11 +597,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     Messenger_Error m_error;
     tox->m = new_messenger(tox->mono_time, &m_options, &m_error);
 
-    // TODO(iphydf): Clarify this code, check for NULL before new_groupchats, so
-    // new_groupchats can assume m is non-NULL.
-    if (new_groupchats(tox->mono_time, tox->m) == nullptr) {
-        kill_messenger(tox->m);
-
+    if (tox->m == nullptr) {
         if (m_error == MESSENGER_ERROR_PORT) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
         } else if (m_error == MESSENGER_ERROR_TCP_SERVER) {
@@ -618,6 +616,24 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
         free(tox->mutex);
         free(tox);
+        return nullptr;
+    }
+
+    if (new_groupchats(tox->mono_time, tox->m) == nullptr) {
+        kill_messenger(tox->m);
+
+        mono_time_free(tox->mono_time);
+        tox_options_free(default_options);
+        unlock(tox);
+
+        if (tox->mutex != nullptr) {
+            pthread_mutex_destroy(tox->mutex);
+        }
+
+        free(tox->mutex);
+        free(tox);
+
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
         return nullptr;
     }
 
