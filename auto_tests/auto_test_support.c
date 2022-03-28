@@ -13,7 +13,12 @@
 #define ABORT_ON_LOG_ERROR true
 #endif
 
-const Run_Auto_Options default_run_auto_options = { GRAPH_COMPLETE, nullptr };
+Run_Auto_Options default_run_auto_options() {
+    return (Run_Auto_Options) {
+        .graph = GRAPH_COMPLETE,
+        .init_autotox = nullptr,
+    };
+}
 
 // List of live bootstrap nodes. These nodes should have TCP server enabled.
 static const struct BootstrapNodes {

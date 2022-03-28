@@ -572,7 +572,7 @@ void set_forwarding_packet_tcp_connection_callback(TCP_Connections *tcp_c,
 IP_Port tcp_connections_number_to_ip_port(unsigned int tcp_connections_number)
 {
     IP_Port ip_port = {{{0}}};
-    ip_port.ip.family = net_family_tcp_server;
+    ip_port.ip.family = net_family_tcp_server();
     ip_port.ip.ip.v6.uint32[0] = tcp_connections_number;
     return ip_port;
 }
@@ -1282,9 +1282,9 @@ static int add_tcp_relay_instance(TCP_Connections *tcp_c, const IP_Port *ip_port
     IP_Port ipp_copy = *ip_port;
 
     if (net_family_is_tcp_ipv4(ipp_copy.ip.family)) {
-        ipp_copy.ip.family = net_family_ipv4;
+        ipp_copy.ip.family = net_family_ipv4();
     } else if (net_family_is_tcp_ipv6(ipp_copy.ip.family)) {
-        ipp_copy.ip.family = net_family_ipv6;
+        ipp_copy.ip.family = net_family_ipv6();
     }
 
     if (!net_family_is_ipv4(ipp_copy.ip.family) && !net_family_is_ipv6(ipp_copy.ip.family)) {
@@ -1451,9 +1451,9 @@ static bool copy_tcp_relay_conn(const TCP_Connections *tcp_c, Node_format *tcp_r
     Family *const family = &tcp_relay->ip_port.ip.family;
 
     if (net_family_is_ipv4(*family)) {
-        *family = net_family_tcp_ipv4;
+        *family = net_family_tcp_ipv4();
     } else if (net_family_is_ipv6(*family)) {
-        *family = net_family_tcp_ipv6;
+        *family = net_family_tcp_ipv6();
     }
 
     return true;

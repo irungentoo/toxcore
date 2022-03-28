@@ -20,6 +20,13 @@ project(toxcore)
 
 list(APPEND CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
 
+option(FLAT_OUTPUT_STRUCTURE "Whether to produce output artifacts in ${CMAKE_BINARY_DIR}/{bin,lib}" OFF)
+if(FLAT_OUTPUT_STRUCTURE)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+endif()
+
 set_source_files_properties(
   toxcore/mono_time.c
   toxcore/network.c

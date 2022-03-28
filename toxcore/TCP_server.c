@@ -574,7 +574,7 @@ static int rm_connection_index(TCP_Server *tcp_server, TCP_Secure_Connection *co
 static IP_Port con_id_to_ip_port(uint32_t con_id, uint64_t identifier)
 {
     IP_Port ip_port = {{{0}}};
-    ip_port.ip.family = net_family_tcp_client;
+    ip_port.ip.family = net_family_tcp_client();
     ip_port.ip.ip.v6.uint32[0] = con_id;
     ip_port.ip.ip.v6.uint64[1] = identifier;
     return ip_port;
@@ -980,7 +980,7 @@ TCP_Server *new_TCP_server(const Logger *logger, const Random *rng, const Networ
 
 #endif
 
-    const Family family = ipv6_enabled ? net_family_ipv6 : net_family_ipv4;
+    const Family family = ipv6_enabled ? net_family_ipv6() : net_family_ipv4();
 
     for (uint32_t i = 0; i < num_sockets; ++i) {
         const Socket sock = new_listening_TCP_socket(logger, ns, family, ports[i]);

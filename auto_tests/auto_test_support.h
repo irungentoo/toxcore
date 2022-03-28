@@ -43,7 +43,7 @@ typedef struct Run_Auto_Options {
     void (*init_autotox)(AutoTox *autotox, uint32_t n);
 } Run_Auto_Options;
 
-extern const Run_Auto_Options default_run_auto_options;
+Run_Auto_Options default_run_auto_options(void);
 
 void run_auto_test(struct Tox_Options *options, uint32_t tox_count, void test(AutoTox *autotoxes),
                    uint32_t state_size, const Run_Auto_Options *autotest_opts);

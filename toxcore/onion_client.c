@@ -1042,7 +1042,7 @@ static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length, 
     }
 
     IP_Port ip_port = {{{0}}};
-    ip_port.ip.family = net_family_tcp_server;
+    ip_port.ip.family = net_family_tcp_server();
 
     if (data[0] == NET_PACKET_ANNOUNCE_RESPONSE_OLD) {
         return handle_announce_response(object, &ip_port, data, length, userdata);

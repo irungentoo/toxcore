@@ -193,7 +193,7 @@ static IP_Port ip_port_normalize(const IP_Port *ip_port)
     IP_Port res = *ip_port;
 
     if (net_family_is_ipv6(res.ip.family) && ipv6_ipv4_in_v6(&res.ip.ip.v6)) {
-        res.ip.family = net_family_ipv4;
+        res.ip.family = net_family_ipv4();
         res.ip.ip.v4.uint32 = res.ip.ip.v6.uint32[3];
     }
 
@@ -571,24 +571,24 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool 
 
     if (data[0] == TOX_AF_INET) {
         is_ipv4 = true;
-        host_family = net_family_ipv4;
+        host_family = net_family_ipv4();
     } else if (data[0] == TOX_TCP_INET) {
         if (!tcp_enabled) {
             return -1;
         }
 
         is_ipv4 = true;
-        host_family = net_family_tcp_ipv4;
+        host_family = net_family_tcp_ipv4();
     } else if (data[0] == TOX_AF_INET6) {
         is_ipv4 = false;
-        host_family = net_family_ipv6;
+        host_family = net_family_ipv6();
     } else if (data[0] == TOX_TCP_INET6) {
         if (!tcp_enabled) {
             return -1;
         }
 
         is_ipv4 = false;
-        host_family = net_family_tcp_ipv6;
+        host_family = net_family_tcp_ipv6();
     } else {
         return -1;
     }
@@ -1549,7 +1549,7 @@ static int sendnodes_ipv6(const DHT *dht, const IP_Port *ip_port, const uint8_t 
 
     Node_format nodes_list[MAX_SENT_NODES];
     const uint32_t num_nodes =
-        get_close_nodes(dht, client_id, nodes_list, net_family_unspec, ip_is_lan(&ip_port->ip), false);
+        get_close_nodes(dht, client_id, nodes_list, net_family_unspec(), ip_is_lan(&ip_port->ip), false);
 
     VLA(uint8_t, plain, 1 + node_format_size * MAX_SENT_NODES + length);
 
@@ -1792,7 +1792,7 @@ int dht_addfriend(DHT *dht, const uint8_t *public_key, dht_ip_cb *ip_callback,
 
     dht_friend_lock(dht_friend, ip_callback, data, number, lock_count);
 
-    dht_friend->num_to_bootstrap = get_close_nodes(dht, dht_friend->public_key, dht_friend->to_bootstrap, net_family_unspec,
+    dht_friend->num_to_bootstrap = get_close_nodes(dht, dht_friend->public_key, dht_friend->to_bootstrap, net_family_unspec(),
                                    true, false);
 
     return 0;
@@ -2038,7 +2038,7 @@ int dht_bootstrap_from_address(DHT *dht, const char *address, bool ipv6enabled,
 
     if (ipv6enabled) {
         /* setup for getting BOTH: an IPv6 AND an IPv4 address */
-        ip_port_v64.ip.family = net_family_unspec;
+        ip_port_v64.ip.family = net_family_unspec();
         ip_reset(&ip_port_v4.ip);
         ip_extra = &ip_port_v4.ip;
     }
@@ -2847,7 +2847,7 @@ uint32_t dht_size(const DHT *dht)
     const uint32_t size32 = sizeof(uint32_t);
     const uint32_t sizesubhead = size32 * 2;
 
-    return size32 + sizesubhead + packed_node_size(net_family_ipv4) * numv4 + packed_node_size(net_family_ipv6) * numv6;
+    return size32 + sizesubhead + packed_node_size(net_family_ipv4()) * numv4 + packed_node_size(net_family_ipv6()) * numv6;
 }
 
 /** Save the DHT in data where data is an array of size `dht_size()`. */

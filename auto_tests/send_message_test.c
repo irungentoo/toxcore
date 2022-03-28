@@ -65,7 +65,7 @@ int main(void)
     struct Tox_Options *tox_options = tox_options_new(nullptr);
     ck_assert(tox_options != nullptr);
 
-    Run_Auto_Options options = default_run_auto_options;
+    Run_Auto_Options options = default_run_auto_options();
     options.graph = GRAPH_LINEAR;
     tox_options_set_ipv6_enabled(tox_options, true);
     run_auto_test(tox_options, 2, send_message_test, sizeof(State), &options);

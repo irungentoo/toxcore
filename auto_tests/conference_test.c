@@ -433,7 +433,7 @@ int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    Run_Auto_Options options = default_run_auto_options;
+    Run_Auto_Options options = default_run_auto_options();
     options.graph = GRAPH_LINEAR;
 
     run_auto_test(nullptr, NUM_GROUP_TOX, test_many_group, sizeof(State), &options);

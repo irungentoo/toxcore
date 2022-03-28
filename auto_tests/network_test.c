@@ -72,7 +72,7 @@ static void test_addr_resolv_localhost(void)
 #endif
 
     ip_init(&ip, 1); // ipv6enabled = 1
-    ip.family = net_family_unspec;
+    ip.family = net_family_unspec();
     IP extra;
     ip_reset(&extra);
     res = addr_resolve_or_parse_ip(ns, localhost, &ip, &extra);
@@ -115,14 +115,14 @@ static void test_ip_equal(void)
     res = ip_equal(nullptr, &ip1);
     ck_assert_msg(res == 0, "ip_equal(NULL, PTR): expected result 0, got %d.", res);
 
-    ip1.family = net_family_ipv4;
+    ip1.family = net_family_ipv4();
     ip1.ip.v4.uint32 = net_htonl(0x7F000001);
 
     res = ip_equal(&ip1, &ip2);
     ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_UNSPEC, 0} ): "
                   "expected result 0, got %d.", res);
 
-    ip2.family = net_family_ipv4;
+    ip2.family = net_family_ipv4();
     ip2.ip.v4.uint32 = net_htonl(0x7F000001);
 
     res = ip_equal(&ip1, &ip2);
@@ -135,7 +135,7 @@ static void test_ip_equal(void)
     ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_INET, 127.0.0.2} ): "
                   "expected result 0, got %d.", res);
 
-    ip2.family = net_family_ipv6;
+    ip2.family = net_family_ipv6();
     ip2.ip.v6.uint32[0] = 0;
     ip2.ip.v6.uint32[1] = 0;
     ip2.ip.v6.uint32[2] = net_htonl(0xFFFF);

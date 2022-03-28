@@ -18,8 +18,14 @@ class ToxConan(ConanFile):
     generators = "cmake_find_package"
     scm = {"type": "git", "url": "auto", "revision": "auto"}
 
-    options = {"with_tests": [True, False]}
-    default_options = {"with_tests": False}
+    options = {
+        "shared": [True, False],
+        "with_tests": [True, False],
+    }
+    default_options = {
+        "shared": False,
+        "with_tests": False,
+    }
 
     _cmake = None
 
@@ -30,11 +36,16 @@ class ToxConan(ConanFile):
         self._cmake = CMake(self)
         self._cmake.definitions["AUTOTEST"] = self.options.with_tests
         self._cmake.definitions["BUILD_MISC_TESTS"] = self.options.with_tests
-        self._cmake.definitions["ENABLE_SHARED"] = False
-        self._cmake.definitions["ENABLE_STATIC"] = True
+
+        self._cmake.definitions[
+            "CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = self.options.shared
+        self._cmake.definitions["ENABLE_SHARED"] = self.options.shared
+        self._cmake.definitions["ENABLE_STATIC"] = not self.options.shared
         self._cmake.definitions["MUST_BUILD_TOXAV"] = True
         if self.settings.compiler == "Visual Studio":
             self._cmake.definitions["MSVC_STATIC_SODIUM"] = True
+            self._cmake.definitions[
+                "FLAT_OUTPUT_STRUCTURE"] = self.options.shared
 
         self._cmake.configure()
         return self._cmake

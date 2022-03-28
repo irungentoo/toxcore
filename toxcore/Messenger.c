@@ -2380,7 +2380,7 @@ void do_messenger(Messenger *m, void *userdata)
             /* Add self tcp server. */
             IP_Port local_ip_port;
             local_ip_port.port = m->options.tcp_server_port;
-            local_ip_port.ip.family = net_family_ipv4;
+            local_ip_port.ip.family = net_family_ipv4();
             local_ip_port.ip.ip.v4 = get_ip4_loopback();
             add_tcp_relay(m->net_crypto, &local_ip_port, tcp_server_public_key(m->tcp_server));
         }
@@ -2964,7 +2964,7 @@ static State_Load_Status load_status(Messenger *m, const uint8_t *data, uint32_t
 non_null()
 static uint32_t tcp_relay_size(const Messenger *m)
 {
-    return NUM_SAVED_TCP_RELAYS * packed_node_size(net_family_tcp_ipv6);
+    return NUM_SAVED_TCP_RELAYS * packed_node_size(net_family_tcp_ipv6());
 }
 
 non_null()
@@ -2981,7 +2981,7 @@ static uint8_t *save_tcp_relays(const Messenger *m, uint8_t *data)
     uint32_t num = m->num_loaded_relays;
     num += copy_connected_tcp_relays(m->net_crypto, relays + num, NUM_SAVED_TCP_RELAYS - num);
 
-    const int l = pack_nodes(m->log, data, NUM_SAVED_TCP_RELAYS * packed_node_size(net_family_tcp_ipv6), relays, num);
+    const int l = pack_nodes(m->log, data, NUM_SAVED_TCP_RELAYS * packed_node_size(net_family_tcp_ipv6()), relays, num);
 
     if (l > 0) {
         const uint32_t len = l;
@@ -3014,7 +3014,7 @@ static State_Load_Status load_tcp_relays(Messenger *m, const uint8_t *data, uint
 non_null()
 static uint32_t path_node_size(const Messenger *m)
 {
-    return NUM_SAVED_PATH_NODES * packed_node_size(net_family_tcp_ipv6);
+    return NUM_SAVED_PATH_NODES * packed_node_size(net_family_tcp_ipv6());
 }
 
 non_null()
@@ -3025,7 +3025,7 @@ static uint8_t *save_path_nodes(const Messenger *m, uint8_t *data)
     data = state_write_section_header(data, STATE_COOKIE_TYPE, 0, STATE_TYPE_PATH_NODE);
     memset(nodes, 0, sizeof(nodes));
     const unsigned int num = onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
-    const int l = pack_nodes(m->log, data, NUM_SAVED_PATH_NODES * packed_node_size(net_family_tcp_ipv6), nodes, num);
+    const int l = pack_nodes(m->log, data, NUM_SAVED_PATH_NODES * packed_node_size(net_family_tcp_ipv6()), nodes, num);
 
     if (l > 0) {
         const uint32_t len = l;

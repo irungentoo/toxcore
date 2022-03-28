@@ -344,7 +344,7 @@ static int create_reply_plain_data_search_request(Announcements *announce,
 
     Node_format nodes_list[MAX_SENT_NODES];
     const int num_nodes = get_close_nodes(announce->dht, data_public_key, nodes_list,
-                                          net_family_unspec, ip_is_lan(&source->ip), true);
+                                          net_family_unspec(), ip_is_lan(&source->ip), true);
 
     if (num_nodes < 0 || num_nodes > MAX_SENT_NODES) {
         return -1;

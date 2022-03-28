@@ -25,10 +25,10 @@ static IP get_loopback(void)
 {
     IP ip;
 #if USE_IPV6
-    ip.family = net_family_ipv6;
+    ip.family = net_family_ipv6();
     ip.ip.v6 = get_ip6_loopback();
 #else
-    ip.family = net_family_ipv4;
+    ip.family = net_family_ipv4();
     ip.ip.v4 = get_ip4_loopback();
 #endif
     return ip;
@@ -68,7 +68,7 @@ static void test_basic(void)
 
     // Check all opened ports for connectivity.
     for (uint8_t i = 0; i < NUM_PORTS; i++) {
-        sock = net_socket(ns, net_family_ipv6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
+        sock = net_socket(ns, net_family_ipv6(), TOX_SOCK_STREAM, TOX_PROTO_TCP);
         localhost.port = net_htons(ports[i]);
         bool ret = net_connect(logger, sock, &localhost);
         ck_assert_msg(ret, "Failed to connect to created TCP relay server on port %d (%d).", ports[i], errno);
@@ -201,7 +201,7 @@ static struct sec_TCP_con *new_TCP_con(const Logger *logger, const Random *rng, 
     struct sec_TCP_con *sec_c = (struct sec_TCP_con *)malloc(sizeof(struct sec_TCP_con));
     ck_assert(sec_c != nullptr);
     sec_c->ns = ns;
-    Socket sock = net_socket(ns, net_family_ipv6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
+    Socket sock = net_socket(ns, net_family_ipv6(), TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
     IP_Port localhost;
     localhost.ip = get_loopback();

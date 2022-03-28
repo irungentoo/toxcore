@@ -533,7 +533,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
 
         if (m_options.ipv6enabled) {
-            m_options.proxy_info.ip_port.ip.family = net_family_unspec;
+            m_options.proxy_info.ip_port.ip.family = net_family_unspec();
         }
 
         const char *const proxy_host = tox_options_get_proxy_host(opts);

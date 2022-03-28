@@ -975,7 +975,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
                 }
 
                 if (friend_con->dht_ip_port_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
-                    friend_con->dht_ip_port.ip.family = net_family_unspec;
+                    friend_con->dht_ip_port.ip.family = net_family_unspec();
                 }
 
                 if (friend_con->dht_lock > 0) {

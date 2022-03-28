@@ -84,15 +84,15 @@ bool net_family_is_tcp_ipv6(Family family);
 bool net_family_is_tox_tcp_ipv4(Family family);
 bool net_family_is_tox_tcp_ipv6(Family family);
 
-extern const Family net_family_unspec;
-extern const Family net_family_ipv4;
-extern const Family net_family_ipv6;
-extern const Family net_family_tcp_server;
-extern const Family net_family_tcp_client;
-extern const Family net_family_tcp_ipv4;
-extern const Family net_family_tcp_ipv6;
-extern const Family net_family_tox_tcp_ipv4;
-extern const Family net_family_tox_tcp_ipv6;
+Family net_family_unspec(void);
+Family net_family_ipv4(void);
+Family net_family_ipv6(void);
+Family net_family_tcp_server(void);
+Family net_family_tcp_client(void);
+Family net_family_tcp_ipv4(void);
+Family net_family_tcp_ipv6(void);
+Family net_family_tox_tcp_ipv4(void);
+Family net_family_tox_tcp_ipv6(void);
 
 #define MAX_UDP_PACKET_SIZE 2048
 

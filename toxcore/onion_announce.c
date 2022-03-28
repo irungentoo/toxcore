@@ -465,7 +465,7 @@ static int handle_announce_request_common(
     /* Respond with a announce response packet */
     Node_format nodes_list[MAX_SENT_NODES];
     const unsigned int num_nodes =
-        get_close_nodes(onion_a->dht, plain + ONION_PING_ID_SIZE, nodes_list, net_family_unspec, ip_is_lan(&source->ip), false);
+        get_close_nodes(onion_a->dht, plain + ONION_PING_ID_SIZE, nodes_list, net_family_unspec(), ip_is_lan(&source->ip), false);
 
     assert(num_nodes <= UINT8_MAX);
 

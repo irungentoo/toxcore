@@ -20,10 +20,10 @@ static inline IP get_loopback(void)
 {
     IP ip;
 #if USE_IPV6
-    ip.family = net_family_ipv6;
+    ip.family = net_family_ipv6();
     ip.ip.v6 = get_ip6_loopback();
 #else
-    ip.family = net_family_ipv4;
+    ip.family = net_family_ipv4();
     ip.ip.v4 = get_ip4_loopback();
 #endif
     return ip;
@@ -309,7 +309,7 @@ static void test_forwarding(void)
         ck_assert(NUM_FORWARDER - NUM_FORWARDER_TCP > 1);
 
         for (uint32_t i = NUM_FORWARDER_TCP; i < NUM_FORWARDER; ++i) {
-            ck_assert_msg(get_close_nodes(subtoxes[i]->dht, dht_get_self_public_key(subtoxes[i]->dht), nodes, net_family_unspec, true,
+            ck_assert_msg(get_close_nodes(subtoxes[i]->dht, dht_get_self_public_key(subtoxes[i]->dht), nodes, net_family_unspec(), true,
                                           true) > 0,
                           "node %u has no nodes marked as announce nodes", i);
         }

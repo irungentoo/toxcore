@@ -18,10 +18,10 @@ static inline IP get_loopback(void)
 {
     IP ip;
 #if USE_IPV6
-    ip.family = net_family_ipv6;
+    ip.family = net_family_ipv6();
     ip.ip.v6 = get_ip6_loopback();
 #else
-    ip.family = net_family_ipv4;
+    ip.family = net_family_ipv4();
     ip.ip.v4 = get_ip4_loopback();
 #endif
     return ip;
