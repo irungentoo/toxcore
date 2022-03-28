@@ -165,7 +165,7 @@ Mono_Time *mono_time_new(const Memory *mem, mono_time_current_time_cb *current_t
     // Maximum reproducibility. Never return time = 0.
     mono_time->base_time = 1;
 #else
-    mono_time->base_time = (uint64_t)time(nullptr) - (current_time_monotonic(mono_time) / 1000ULL);
+    mono_time->base_time = (uint64_t)time(nullptr) * 1000ULL - current_time_monotonic(mono_time);
 #endif
 
     mono_time_update(mono_time);
@@ -190,14 +190,13 @@ void mono_time_free(const Memory *mem, Mono_Time *mono_time)
 
 void mono_time_update(Mono_Time *mono_time)
 {
-    uint64_t cur_time = 0;
 #ifdef OS_WIN32
     /* we actually want to update the overflow state of mono_time here */
     pthread_mutex_lock(&mono_time->last_clock_lock);
     mono_time->last_clock_update = true;
 #endif
-    cur_time = mono_time->current_time_callback(mono_time->user_data) / 1000ULL;
-    cur_time += mono_time->base_time;
+    const uint64_t cur_time =
+        mono_time->base_time + mono_time->current_time_callback(mono_time->user_data);
 #ifdef OS_WIN32
     pthread_mutex_unlock(&mono_time->last_clock_lock);
 #endif
@@ -211,21 +210,22 @@ void mono_time_update(Mono_Time *mono_time)
 #endif
 }
 
-uint64_t mono_time_get(const Mono_Time *mono_time)
+uint64_t mono_time_get_ms(const Mono_Time *mono_time)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+#if !defined(ESP_PLATFORM) && !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     // Fuzzing is only single thread for now, no locking needed */
-    return mono_time->cur_time;
-#else
-#ifndef ESP_PLATFORM
     pthread_rwlock_rdlock(mono_time->time_update_lock);
 #endif
     const uint64_t cur_time = mono_time->cur_time;
-#ifndef ESP_PLATFORM
+#if !defined(ESP_PLATFORM) && !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     pthread_rwlock_unlock(mono_time->time_update_lock);
 #endif
     return cur_time;
-#endif
+}
+
+uint64_t mono_time_get(const Mono_Time *mono_time)
+{
+    return mono_time_get_ms(mono_time) / 1000ULL;
 }
 
 bool mono_time_is_timeout(const Mono_Time *mono_time, uint64_t timestamp, uint64_t timeout)
@@ -245,9 +245,10 @@ void mono_time_set_current_time_callback(Mono_Time *mono_time,
     }
 }
 
-/**
- * Return current monotonic time in milliseconds (ms). The starting point is
- * unspecified.
+/** @brief Return current monotonic time in milliseconds (ms).
+ *
+ * The starting point is unspecified and in particular is likely not comparable
+ * to the return value of `mono_time_get_ms()`.
  */
 uint64_t current_time_monotonic(Mono_Time *mono_time)
 {
