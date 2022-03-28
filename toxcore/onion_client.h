@@ -197,7 +197,7 @@ non_null()
 void do_onion_client(Onion_Client *onion_c);
 
 non_null()
-Onion_Client *new_onion_client(const Logger *logger, Mono_Time *mono_time, Net_Crypto *c);
+Onion_Client *new_onion_client(const Logger *logger, const Mono_Time *mono_time, Net_Crypto *c);
 
 non_null()
 void kill_onion_client(Onion_Client *onion_c);

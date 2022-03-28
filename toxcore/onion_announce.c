@@ -44,7 +44,7 @@ typedef struct Onion_Announce_Entry {
 
 struct Onion_Announce {
     const Logger *log;
-    Mono_Time *mono_time;
+    const Mono_Time *mono_time;
     DHT     *dht;
     Networking_Core *net;
     Onion_Announce_Entry entries[ONION_ANNOUNCE_MAX_ENTRIES];
@@ -648,7 +648,7 @@ static int handle_data_request(void *object, const IP_Port *source, const uint8_
     return 0;
 }
 
-Onion_Announce *new_onion_announce(const Logger *log, Mono_Time *mono_time, DHT *dht)
+Onion_Announce *new_onion_announce(const Logger *log, const Mono_Time *mono_time, DHT *dht)
 {
     if (dht == nullptr) {
         return nullptr;

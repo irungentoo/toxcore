@@ -26,9 +26,9 @@ static inline IP get_loopback(void)
 #endif
     return ip;
 }
-static void do_onion(Onion *onion)
+static void do_onion(Mono_Time *mono_time, Onion *onion)
 {
-    mono_time_update(onion->mono_time);
+    mono_time_update(mono_time);
 
     networking_poll(onion->net, nullptr);
     do_dht(onion->dht);
@@ -229,16 +229,16 @@ static void test_basic(void)
     handled_test_1 = 0;
 
     do {
-        do_onion(onion1);
-        do_onion(onion2);
+        do_onion(mono_time1, onion1);
+        do_onion(mono_time2, onion2);
     } while (handled_test_1 == 0);
 
     networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE_OLD, &handle_test_2, onion1);
     handled_test_2 = 0;
 
     do {
-        do_onion(onion1);
-        do_onion(onion2);
+        do_onion(mono_time1, onion1);
+        do_onion(mono_time2, onion2);
     } while (handled_test_2 == 0);
 
     Onion_Announce *onion1_a = new_onion_announce(log1, mono_time1, onion1->dht);
@@ -260,8 +260,8 @@ static void test_basic(void)
     handled_test_3 = 0;
 
     do {
-        do_onion(onion1);
-        do_onion(onion2);
+        do_onion(mono_time1, onion1);
+        do_onion(mono_time2, onion2);
         c_sleep(50);
     } while (handled_test_3 == 0);
 
@@ -278,8 +278,8 @@ static void test_basic(void)
                           dht_get_self_public_key(onion1->dht), s);
 
     do {
-        do_onion(onion1);
-        do_onion(onion2);
+        do_onion(mono_time1, onion1);
+        do_onion(mono_time2, onion2);
         c_sleep(50);
     } while (memcmp(onion_announce_entry_public_key(onion2_a, ONION_ANNOUNCE_MAX_ENTRIES - 2),
                     dht_get_self_public_key(onion1->dht),
@@ -303,8 +303,8 @@ static void test_basic(void)
     handled_test_4 = 0;
 
     do {
-        do_onion(onion1);
-        do_onion(onion2);
+        do_onion(mono_time1, onion1);
+        do_onion(mono_time2, onion2);
         c_sleep(50);
     } while (handled_test_4 == 0);
 
