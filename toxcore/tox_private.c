@@ -21,6 +21,17 @@
         }                             \
     } while (0)
 
+Tox_System tox_default_system(void)
+{
+    const Tox_System sys = {
+        nullptr,  // mono_time_callback
+        nullptr,  // mono_time_user_data
+        system_random(),
+        system_network(),
+    };
+    return sys;
+}
+
 void tox_lock(const Tox *tox)
 {
     if (tox->mutex != nullptr) {

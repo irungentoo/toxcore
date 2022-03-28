@@ -3,6 +3,8 @@
 #include <vector>
 
 #include "../../toxcore/tox.h"
+#include "../../toxcore/tox_private.h"
+#include "fuzz_support.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
@@ -13,6 +15,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     assert(tox_options != nullptr);
     assert(error_options == TOX_ERR_OPTIONS_NEW_OK);
+
+    uint64_t clock = 0;
+    auto sys = fuzz_system(clock);
+    tox_options_set_operating_system(tox_options, sys.get());
 
     // pass test data to Tox
     tox_options_set_savedata_data(tox_options, data, size);

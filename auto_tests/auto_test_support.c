@@ -144,7 +144,7 @@ void iterate_all_wait(AutoTox *autotoxes, uint32_t tox_count, uint32_t wait)
     c_sleep(5);
 }
 
-static uint64_t get_state_clock_callback(Mono_Time *mono_time, void *user_data)
+static uint64_t get_state_clock_callback(void *user_data)
 {
     const uint64_t *clock = (const uint64_t *)user_data;
     return *clock;

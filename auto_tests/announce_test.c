@@ -57,7 +57,7 @@ static void test_store_data(void)
     Logger *log = logger_new();
     ck_assert(log != nullptr);
     logger_callback_log(log, (logger_cb *)print_debug_log, nullptr, nullptr);
-    Mono_Time *mono_time = mono_time_new();
+    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
     Networking_Core *net = new_networking_no_udp(log, ns);
     DHT *dht = new_dht(log, rng, ns, mono_time, net, true, true);
     Forwarding *forwarding = new_forwarding(log, rng, mono_time, dht);

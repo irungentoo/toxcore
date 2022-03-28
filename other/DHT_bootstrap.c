@@ -142,8 +142,8 @@ int main(int argc, char *argv[])
         logger_callback_log(logger, print_log, nullptr, nullptr);
     }
 
-    Mono_Time *mono_time = mono_time_new();
     const Random *rng = system_random();
+    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
     const uint16_t start_port = PORT;
     const uint16_t end_port = start_port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM);
     const Network *ns = system_network();

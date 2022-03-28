@@ -307,7 +307,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    Mono_Time *const mono_time = mono_time_new();
+    Mono_Time *const mono_time = mono_time_new(nullptr, nullptr);
 
     if (mono_time == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize monotonic timer. Exiting.\n");

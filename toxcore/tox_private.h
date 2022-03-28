@@ -10,13 +10,22 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "DHT.h"
-#include "network.h"
 #include "tox.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef uint64_t tox_mono_time_cb(void *user_data);
+
+struct Tox_System {
+    tox_mono_time_cb *mono_time_callback;
+    void *mono_time_user_data;
+    const struct Random *rng;
+    const struct Network *ns;
+};
+
+Tox_System tox_default_system(void);
 
 void tox_lock(const Tox *tox);
 void tox_unlock(const Tox *tox);
@@ -129,8 +138,6 @@ typedef enum Tox_Err_Dht_Get_Nodes {
  */
 bool tox_dht_get_nodes(const Tox *tox, const uint8_t *public_key, const char *ip, uint16_t port,
                        const uint8_t *target_public_key, Tox_Err_Dht_Get_Nodes *error);
-
-void tox_set_network(Tox *tox, const Network *ns);
 
 #ifdef __cplusplus
 }

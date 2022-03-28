@@ -520,7 +520,22 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         }
     }
 
-    tox_set_network(tox, nullptr);
+    const Tox_System *sys = tox_options_get_operating_system(opts);
+    const Tox_System default_system = tox_default_system();
+    if (sys == nullptr) {
+        sys = &default_system;
+    }
+
+    if (sys->rng == nullptr || sys->ns == nullptr) {
+        // TODO(iphydf): Not quite right, but similar.
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+        tox_options_free(default_options);
+        free(tox);
+        return nullptr;
+    }
+
+    tox->rng = *sys->rng;
+    tox->ns = *sys->ns;
 
     if (m_options.proxy_info.proxy_type != TCP_PROXY_NONE) {
         if (tox_options_get_proxy_port(opts) == 0) {
@@ -549,18 +564,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         m_options.proxy_info.ip_port.port = net_htons(tox_options_get_proxy_port(opts));
     }
 
-    const Random *rng = system_random();
-
-    if (rng == nullptr) {
-        // TODO(iphydf): Not quite right, but similar.
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
-        tox_options_free(default_options);
-        free(tox);
-        return nullptr;
-    }
-
-    tox->rng = *rng;
-    tox->mono_time = mono_time_new();
+    tox->mono_time = mono_time_new(sys->mono_time_callback, sys->mono_time_user_data);
 
     if (tox->mono_time == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
@@ -2575,14 +2579,4 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, Tox_Err_Get_Port *error)
     SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
     tox_unlock(tox);
     return 0;
-}
-
-void tox_set_network(Tox *tox, const Network *ns)
-{
-    assert(tox != nullptr);
-    if (ns != nullptr) {
-        tox->ns = *ns;
-    } else {
-        tox->ns = *system_network();
-    }
 }

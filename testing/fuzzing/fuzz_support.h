@@ -7,7 +7,10 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <memory>
 #include <utility>
+
+#include "../../toxcore/tox.h"
 
 struct Fuzz_Data {
     const uint8_t *data;
@@ -93,5 +96,7 @@ void fuzz_select_target(const uint8_t *data, std::size_t size, Args &&... args)
     CONSUME1_OR_RETURN(uint8_t selector, input);
     return fuzz_select_target(selector, input, std::forward<Args>(args)...);
 }
+
+std::unique_ptr<Tox_System> fuzz_system(uint64_t &clock);
 
 #endif  // C_TOXCORE_TESTING_FUZZING_FUZZ_SUPPORT_H

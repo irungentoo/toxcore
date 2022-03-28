@@ -1,26 +1,33 @@
 #include <cassert>
 #include <cstring>
+#include <memory>
 
 #include "../../toxcore/tox.h"
-#include "../../toxcore/tox_struct.h"
+#include "../../toxcore/tox_private.h"
 #include "fuzz_adapter.h"
+#include "fuzz_support.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     network_adapter_init(data, size);
 
-    Tox_Err_New error_new;
-    Tox *tox = tox_new(nullptr, &error_new);
-
     uint64_t clock = 0;
-    mono_time_set_current_time_callback(
-        tox->mono_time,
-        [](Mono_Time *mono_time, void *user_data) { return *static_cast<uint64_t *>(user_data); },
-        &clock);
+    auto sys = fuzz_system(clock);
+    assert(sys->mono_time_callback != nullptr);
+    assert(sys->mono_time_user_data != nullptr);
+
+    Tox_Options *opts = tox_options_new(nullptr);
+    assert(opts != nullptr);
+    tox_options_set_operating_system(opts, sys.get());
+
+    Tox_Err_New error_new;
+    Tox *tox = tox_new(opts, &error_new);
 
     assert(tox != nullptr);
     assert(error_new == TOX_ERR_NEW_OK);
+
+    tox_options_free(opts);
 
     uint8_t pub_key[TOX_PUBLIC_KEY_SIZE] = {0};
 

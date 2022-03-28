@@ -6,7 +6,7 @@
 #include "../toxcore/tox_struct.h"
 #include "auto_test_support.h"
 
-static uint64_t get_state_clock_callback(Mono_Time *mono_time, void *user_data)
+static uint64_t get_state_clock_callback(void *user_data)
 {
     const uint64_t *clock = (const uint64_t *)user_data;
     return *clock;

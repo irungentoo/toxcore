@@ -45,7 +45,7 @@ static uint16_t ports[NUM_PORTS] = {13215, 33445, 25643};
 
 static void test_basic(void)
 {
-    Mono_Time *mono_time = mono_time_new();
+    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
     const Random *rng = system_random();
     ck_assert(rng != nullptr);
     Logger *logger = logger_new();
@@ -297,7 +297,7 @@ static int read_packet_sec_TCP(const Logger *logger, struct sec_TCP_con *con, ui
 
 static void test_some(void)
 {
-    Mono_Time *mono_time = mono_time_new();
+    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
     const Random *rng = system_random();
     ck_assert(rng != nullptr);
     Logger *logger = logger_new();
@@ -488,9 +488,9 @@ static int oob_data_callback(void *object, const uint8_t *public_key, const uint
 
 static void test_client(void)
 {
+    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
     const Random *rng = system_random();
     ck_assert(rng != nullptr);
-    Mono_Time *mono_time = mono_time_new();
     Logger *logger = logger_new();
 
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
@@ -619,9 +619,9 @@ static void test_client(void)
 // Test how the client handles servers that don't respond.
 static void test_client_invalid(void)
 {
+    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
     const Random *rng = system_random();
     ck_assert(rng != nullptr);
-    Mono_Time *mono_time = mono_time_new();
     Logger *logger = logger_new();
     const Network *ns = system_network();
 
@@ -694,7 +694,7 @@ static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t
 
 static void test_tcp_connection(void)
 {
-    Mono_Time *mono_time = mono_time_new();
+    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
     Logger *logger = logger_new();
     const Random *rng = system_random();
     ck_assert(rng != nullptr);
@@ -803,7 +803,7 @@ static int tcp_oobdata_callback(void *object, const uint8_t *public_key, unsigne
 
 static void test_tcp_connection2(void)
 {
-    Mono_Time *mono_time = mono_time_new();
+    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
     Logger *logger = logger_new();
     const Random *rng = system_random();
     ck_assert(rng != nullptr);

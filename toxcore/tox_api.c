@@ -97,7 +97,6 @@ uint32_t tox_dht_node_public_key_size(void)
     return TOX_DHT_NODE_PUBLIC_KEY_SIZE;
 }
 
-
 //!TOKSTYLE-
 
 #define ACCESSORS(type, ns, name) \
@@ -126,6 +125,7 @@ ACCESSORS(void *, log_, user_data)
 ACCESSORS(bool,, local_discovery_enabled)
 ACCESSORS(bool,, dht_announcements_enabled)
 ACCESSORS(bool,, experimental_thread_safety)
+ACCESSORS(const Tox_System *,, operating_system)
 
 //!TOKSTYLE+
 

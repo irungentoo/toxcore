@@ -197,8 +197,8 @@ static void test_basic(void)
 
     const Random *rng = system_random();
     ck_assert(rng != nullptr);
-    Mono_Time *mono_time1 = mono_time_new();
-    Mono_Time *mono_time2 = mono_time_new();
+    Mono_Time *mono_time1 = mono_time_new(nullptr, nullptr);
+    Mono_Time *mono_time2 = mono_time_new(nullptr, nullptr);
 
     IP ip = get_loopback();
     Onion *onion1 = new_onion(log1, mono_time1, rng, new_dht(log1, rng, ns, mono_time1, new_networking(log1, ns, &ip, 36567), true, false));
@@ -293,7 +293,7 @@ static void test_basic(void)
     Logger *log3 = logger_new();
     logger_callback_log(log3, (logger_cb *)print_debug_log, nullptr, &index[2]);
 
-    Mono_Time *mono_time3 = mono_time_new();
+    Mono_Time *mono_time3 = mono_time_new(nullptr, nullptr);
 
     Onion *onion3 = new_onion(log3, mono_time3, rng, new_dht(log3, rng, ns, mono_time3, new_networking(log3, ns, &ip, 36569), true, false));
     ck_assert_msg((onion3 != nullptr), "Onion failed initializing.");
@@ -380,7 +380,7 @@ static Onions *new_onions(const Random *rng, uint16_t port, uint32_t *index)
 
     logger_callback_log(on->log, (logger_cb *)print_debug_log, nullptr, index);
 
-    on->mono_time = mono_time_new();
+    on->mono_time = mono_time_new(nullptr, nullptr);
 
     if (!on->mono_time) {
         logger_kill(on->log);

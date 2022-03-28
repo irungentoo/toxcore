@@ -181,7 +181,7 @@ ToxAV *toxav_new(Tox *tox, Toxav_Err_New *error)
 
     av->tox = tox;
     av->m = m;
-    av->toxav_mono_time = mono_time_new();
+    av->toxav_mono_time = mono_time_new(nullptr, nullptr);
     av->msi = msi_new(av->m);
 
     if (av->msi == nullptr) {

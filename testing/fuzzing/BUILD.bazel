@@ -13,6 +13,7 @@ cc_library(
     srcs = ["fuzz_support.cc"],
     hdrs = ["fuzz_support.h"],
     visibility = ["//c-toxcore:__subpackages__"],
+    deps = ["//c-toxcore/toxcore:tox"],
 )
 
 cc_library(
@@ -27,7 +28,10 @@ cc_fuzz_test(
     srcs = ["bootstrap_harness.cc"],
     copts = ["-UNDEBUG"],
     corpus = ["//tools/toktok-fuzzer/corpus:bootstrap_fuzzer"],
-    deps = ["//c-toxcore/toxcore:tox"],
+    deps = [
+        ":fuzz_support",
+        "//c-toxcore/toxcore:tox",
+    ],
 )
 
 cc_fuzz_test(
@@ -35,5 +39,8 @@ cc_fuzz_test(
     srcs = ["toxsave_harness.cc"],
     copts = ["-UNDEBUG"],
     corpus = ["//tools/toktok-fuzzer/corpus:toxsave_fuzzer"],
-    deps = ["//c-toxcore/toxcore:tox"],
+    deps = [
+        ":fuzz_support",
+        "//c-toxcore/toxcore:tox",
+    ],
 )

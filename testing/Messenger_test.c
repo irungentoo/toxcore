@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    Mono_Time *const mono_time = mono_time_new();
+    Mono_Time *const mono_time = mono_time_new(nullptr, nullptr);
 
     if (mono_time == nullptr) {
         fputs("Failed to allocate monotonic timer datastructure\n", stderr);
