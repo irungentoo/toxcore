@@ -4,19 +4,29 @@ image: Visual Studio 2019
 cache:
   - '%USERPROFILE%\.conan -> conanfile.py'
 
+environment:
+  matrix:
+    - job_name: static
+    - job_name: shared
+
 install:
   - set PATH=C:\Python310-x64\Scripts;%PATH%
   - py -3 -m pip install conan
-
-before_build:
   - git submodule update --init --recursive
-  - conan install -if _build .
+
+for:
+  - matrix:
+      only:
+        - job_name: static
+    before_build:
+      - conan install -if _build -o with_tests=True .
+  - matrix:
+      only:
+        - job_name: shared
+    before_build:
+      - conan install -if _build -o with_tests=True -o shared=True .
 
 build_script:
-  - conan build -bf _build -if _build .
-
-test_script:
   - set CONAN_CPU_COUNT=50
   - set CTEST_OUTPUT_ON_FAILURE=1
-  - conan install -if _build -o with_tests=True .
   - conan build -bf _build -if _build .
