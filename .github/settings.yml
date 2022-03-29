@@ -16,7 +16,6 @@ branches:
           - "bazel-dbg"
           - "bazel-opt"
           - "bazel-tsan"
-          - "bazel-valgrind"
           - "build-compcert"
           - "build-macos"
           - "build-nacl"
