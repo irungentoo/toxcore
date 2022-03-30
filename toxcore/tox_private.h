@@ -18,6 +18,9 @@
 extern "C" {
 #endif
 
+void tox_lock(const Tox *tox);
+void tox_unlock(const Tox *tox);
+
 /**
  * Set the callback for the `friend_lossy_packet` event for a specific packet ID.
  * Pass NULL to unset.
@@ -48,26 +51,19 @@ void *tox_get_av_object(const Tox *tox);
  *
  ******************************************************************************/
 
-
-
-
 /**
  * The minimum size of an IP string buffer in bytes.
  */
 #define TOX_DHT_NODE_IP_STRING_SIZE      96
 
-//!TOKSTYLE-
 uint32_t tox_dht_node_ip_string_size(void);
-//!TOKSTYLE+
 
 /**
  * The size of a DHT node public key in bytes.
  */
 #define TOX_DHT_NODE_PUBLIC_KEY_SIZE     32
 
-//!TOKSTYLE-
 uint32_t tox_dht_node_public_key_size(void);
-//!TOKSTYLE+
 
 /**
  * @param public_key The node's public key.

@@ -569,6 +569,7 @@ cc_library(
     srcs = [
         "tox.c",
         "tox_api.c",
+        "tox_private.c",
     ],
     hdrs = [
         "tox.h",

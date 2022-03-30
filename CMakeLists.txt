@@ -284,6 +284,7 @@ set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/tox_api.c
   toxcore/tox.c
   toxcore/tox.h
+  toxcore/tox_private.c
   toxcore/tox_private.h)
 set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxcore/tox.h^tox)
 
