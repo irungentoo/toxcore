@@ -31,8 +31,6 @@ CPPCHECK_CXX+=("--suppress=objectIndex")
 # False positive in auto_tests.
 CPPCHECK_CXX+=("--suppress=shadowArgument")
 CPPCHECK_CXX+=("--suppress=shadowFunction")
-# Range-for is fine.
-CPPCHECK_CXX+=("--suppress=useStlAlgorithm")
 
 run() {
   echo "Running cppcheck in variant '$*'"

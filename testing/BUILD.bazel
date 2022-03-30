@@ -59,13 +59,3 @@ cc_binary(
         "//c-toxcore/toxcore:mono_time",
     ],
 )
-
-cc_binary(
-    name = "random_testing",
-    testonly = 1,
-    srcs = ["random_testing.cc"],
-    deps = [
-        ":misc_tools",
-        "//c-toxcore/toxcore:tox",
-    ],
-)
