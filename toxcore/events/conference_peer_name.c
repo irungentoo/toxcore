@@ -112,7 +112,7 @@ static bool tox_event_conference_peer_name_pack(
            && bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->conference_number)
            && bin_pack_u32(bp, event->peer_number)
-           && bin_pack_bytes(bp, event->name, event->name_length);
+           && bin_pack_bin(bp, event->name, event->name_length);
 }
 
 non_null()
@@ -126,7 +126,7 @@ static bool tox_event_conference_peer_name_unpack(
 
     return bin_unpack_u32(bu, &event->conference_number)
            && bin_unpack_u32(bu, &event->peer_number)
-           && bin_unpack_bytes(bu, &event->name, &event->name_length);
+           && bin_unpack_bin(bu, &event->name, &event->name_length);
 }
 
 

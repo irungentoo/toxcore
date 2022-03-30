@@ -67,19 +67,19 @@ non_null() bool bin_unpack_u64(Bin_Unpack *bu, uint64_t *val);
  * remaining to be unpacked as the bin claims to need, so it's not possible to cause an arbitrarily
  * large allocation unless the input array was already that large.
  */
-non_null() bool bin_unpack_bytes(Bin_Unpack *bu, uint8_t **data_ptr, uint32_t *data_length_ptr);
+non_null() bool bin_unpack_bin(Bin_Unpack *bu, uint8_t **data_ptr, uint32_t *data_length_ptr);
 /** @brief Unpack a MessagePack bin of a fixed length into a pre-allocated byte array.
  *
  * Unlike the function above, this function does not allocate any memory, but requires the size to
  * be known up front.
  */
-non_null() bool bin_unpack_bytes_fixed(Bin_Unpack *bu, uint8_t *data, uint32_t data_length);
+non_null() bool bin_unpack_bin_fixed(Bin_Unpack *bu, uint8_t *data, uint32_t data_length);
 
 /** @brief Start unpacking a custom binary representation.
  *
  * A call to this function must be followed by exactly `size` bytes packed by functions below.
  */
-non_null() bool bin_unpack_bin(Bin_Unpack *bu, uint32_t *size);
+non_null() bool bin_unpack_bin_size(Bin_Unpack *bu, uint32_t *size);
 
 /** @brief Read a `uint8_t` directly from the unpacker, consuming 1 byte. */
 non_null() bool bin_unpack_u08_b(Bin_Unpack *bu, uint8_t *val);
@@ -91,7 +91,7 @@ non_null() bool bin_unpack_u32_b(Bin_Unpack *bu, uint32_t *val);
 non_null() bool bin_unpack_u64_b(Bin_Unpack *bu, uint64_t *val);
 
 /** @brief Read a byte array directly from the packer, consuming `length` bytes. */
-non_null() bool bin_unpack_bytes_b(Bin_Unpack *bu, uint8_t *data, uint32_t length);
+non_null() bool bin_unpack_bin_b(Bin_Unpack *bu, uint8_t *data, uint32_t length);
 
 #ifdef __cplusplus
 }  // extern "C"

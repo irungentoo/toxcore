@@ -141,7 +141,7 @@ static bool tox_event_file_recv_pack(
            && bin_pack_u32(bp, event->file_number)
            && bin_pack_u32(bp, event->kind)
            && bin_pack_u64(bp, event->file_size)
-           && bin_pack_bytes(bp, event->filename, event->filename_length);
+           && bin_pack_bin(bp, event->filename, event->filename_length);
 }
 
 non_null()
@@ -157,7 +157,7 @@ static bool tox_event_file_recv_unpack(
            && bin_unpack_u32(bu, &event->file_number)
            && bin_unpack_u32(bu, &event->kind)
            && bin_unpack_u64(bu, &event->file_size)
-           && bin_unpack_bytes(bu, &event->filename, &event->filename_length);
+           && bin_unpack_bin(bu, &event->filename, &event->filename_length);
 }
 
 

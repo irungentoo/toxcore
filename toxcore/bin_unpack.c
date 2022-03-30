@@ -104,15 +104,16 @@ bool bin_unpack_u64(Bin_Unpack *bu, uint64_t *val)
     return cmp_read_ulong(&bu->ctx, val);
 }
 
-bool bin_unpack_bytes(Bin_Unpack *bu, uint8_t **data_ptr, uint32_t *data_length_ptr)
+bool bin_unpack_bin(Bin_Unpack *bu, uint8_t **data_ptr, uint32_t *data_length_ptr)
 {
     uint32_t bin_size;
-    if (!cmp_read_bin_size(&bu->ctx, &bin_size) || bin_size > bu->bytes_size) {
+    if (!bin_unpack_bin_size(bu, &bin_size) || bin_size > bu->bytes_size) {
+        // There aren't as many bytes as this bin claims to want to allocate.
         return false;
     }
     uint8_t *const data = (uint8_t *)malloc(bin_size);
 
-    if (!bu->ctx.read(&bu->ctx, data, bin_size)) {
+    if (!bin_unpack_bin_b(bu, data, bin_size)) {
         free(data);
         return false;
     }
@@ -122,24 +123,24 @@ bool bin_unpack_bytes(Bin_Unpack *bu, uint8_t **data_ptr, uint32_t *data_length_
     return true;
 }
 
-bool bin_unpack_bytes_fixed(Bin_Unpack *bu, uint8_t *data, uint32_t data_length)
+bool bin_unpack_bin_fixed(Bin_Unpack *bu, uint8_t *data, uint32_t data_length)
 {
     uint32_t bin_size;
-    if (!cmp_read_bin_size(&bu->ctx, &bin_size) || bin_size != data_length) {
+    if (!bin_unpack_bin_size(bu, &bin_size) || bin_size != data_length) {
         return false;
     }
 
-    return bu->ctx.read(&bu->ctx, data, bin_size);
+    return bin_unpack_bin_b(bu, data, bin_size);
 }
 
-bool bin_unpack_bin(Bin_Unpack *bu, uint32_t *size)
+bool bin_unpack_bin_size(Bin_Unpack *bu, uint32_t *size)
 {
     return cmp_read_bin_size(&bu->ctx, size);
 }
 
 bool bin_unpack_u08_b(Bin_Unpack *bu, uint8_t *val)
 {
-    return bu->ctx.read(&bu->ctx, val, 1);
+    return bin_unpack_bin_b(bu, val, 1);
 }
 
 bool bin_unpack_u16_b(Bin_Unpack *bu, uint16_t *val)
@@ -178,7 +179,7 @@ bool bin_unpack_u64_b(Bin_Unpack *bu, uint64_t *val)
     return true;
 }
 
-bool bin_unpack_bytes_b(Bin_Unpack *bu, uint8_t *data, uint32_t length)
+bool bin_unpack_bin_b(Bin_Unpack *bu, uint8_t *data, uint32_t length)
 {
     return bu->ctx.read(&bu->ctx, data, length);
 }

@@ -126,7 +126,7 @@ static bool tox_event_file_recv_chunk_pack(
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_u32(bp, event->file_number)
            && bin_pack_u64(bp, event->position)
-           && bin_pack_bytes(bp, event->data, event->data_length);
+           && bin_pack_bin(bp, event->data, event->data_length);
 }
 
 non_null()
@@ -141,7 +141,7 @@ static bool tox_event_file_recv_chunk_unpack(
     return bin_unpack_u32(bu, &event->friend_number)
            && bin_unpack_u32(bu, &event->file_number)
            && bin_unpack_u64(bu, &event->position)
-           && bin_unpack_bytes(bu, &event->data, &event->data_length);
+           && bin_unpack_bin(bu, &event->data, &event->data_length);
 }
 
 

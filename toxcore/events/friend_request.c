@@ -96,8 +96,8 @@ static bool tox_event_friend_request_pack(
     return bin_pack_array(bp, 2)
            && bin_pack_u32(bp, TOX_EVENT_FRIEND_REQUEST)
            && bin_pack_array(bp, 2)
-           && bin_pack_bytes(bp, event->public_key, TOX_PUBLIC_KEY_SIZE)
-           && bin_pack_bytes(bp, event->message, event->message_length);
+           && bin_pack_bin(bp, event->public_key, TOX_PUBLIC_KEY_SIZE)
+           && bin_pack_bin(bp, event->message, event->message_length);
 }
 
 non_null()
@@ -109,8 +109,8 @@ static bool tox_event_friend_request_unpack(
         return false;
     }
 
-    return bin_unpack_bytes_fixed(bu, event->public_key, TOX_PUBLIC_KEY_SIZE)
-           && bin_unpack_bytes(bu, &event->message, &event->message_length);
+    return bin_unpack_bin_fixed(bu, event->public_key, TOX_PUBLIC_KEY_SIZE)
+           && bin_unpack_bin(bu, &event->message, &event->message_length);
 }
 
 

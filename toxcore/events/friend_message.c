@@ -111,7 +111,7 @@ static bool tox_event_friend_message_pack(
            && bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_u32(bp, event->type)
-           && bin_pack_bytes(bp, event->message, event->message_length);
+           && bin_pack_bin(bp, event->message, event->message_length);
 }
 
 non_null()
@@ -125,7 +125,7 @@ static bool tox_event_friend_message_unpack(
 
     return bin_unpack_u32(bu, &event->friend_number)
            && tox_unpack_message_type(bu, &event->type)
-           && bin_unpack_bytes(bu, &event->message, &event->message_length);
+           && bin_unpack_bin(bu, &event->message, &event->message_length);
 }
 
 

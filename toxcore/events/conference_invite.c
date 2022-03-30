@@ -112,7 +112,7 @@ static bool tox_event_conference_invite_pack(
            && bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_u32(bp, event->type)
-           && bin_pack_bytes(bp, event->cookie, event->cookie_length);
+           && bin_pack_bin(bp, event->cookie, event->cookie_length);
 }
 
 non_null()
@@ -126,7 +126,7 @@ static bool tox_event_conference_invite_unpack(
 
     return bin_unpack_u32(bu, &event->friend_number)
            && tox_unpack_conference_type(bu, &event->type)
-           && bin_unpack_bytes(bu, &event->cookie, &event->cookie_length);
+           && bin_unpack_bin(bu, &event->cookie, &event->cookie_length);
 }
 
 

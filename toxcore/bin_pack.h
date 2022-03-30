@@ -91,13 +91,13 @@ non_null() bool bin_pack_u32(Bin_Pack *bp, uint32_t val);
 /** @brief Pack a `uint64_t` as MessagePack positive integer. */
 non_null() bool bin_pack_u64(Bin_Pack *bp, uint64_t val);
 /** @brief Pack a byte array as MessagePack bin. */
-non_null() bool bin_pack_bytes(Bin_Pack *bp, const uint8_t *data, uint32_t length);
+non_null() bool bin_pack_bin(Bin_Pack *bp, const uint8_t *data, uint32_t length);
 
 /** @brief Start packing a custom binary representation.
  *
  * A call to this function must be followed by exactly `size` bytes packed by functions below.
  */
-non_null() bool bin_pack_bin(Bin_Pack *bp, uint32_t size);
+non_null() bool bin_pack_bin_marker(Bin_Pack *bp, uint32_t size);
 
 /** @brief Write a `uint8_t` directly to the packer in 1 byte. */
 non_null() bool bin_pack_u08_b(Bin_Pack *bp, uint8_t val);
@@ -113,7 +113,7 @@ non_null() bool bin_pack_u64_b(Bin_Pack *bp, uint64_t val);
  * Note that unless you prepend the array length manually, there is no record of it in the resulting
  * serialised representation.
  */
-non_null() bool bin_pack_bytes_b(Bin_Pack *bp, const uint8_t *data, uint32_t length);
+non_null() bool bin_pack_bin_b(Bin_Pack *bp, const uint8_t *data, uint32_t length);
 
 #ifdef __cplusplus
 }  // extern "C"

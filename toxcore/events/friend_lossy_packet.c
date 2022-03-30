@@ -96,7 +96,7 @@ static bool tox_event_friend_lossy_packet_pack(
            && bin_pack_u32(bp, TOX_EVENT_FRIEND_LOSSY_PACKET)
            && bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->friend_number)
-           && bin_pack_bytes(bp, event->data, event->data_length);
+           && bin_pack_bin(bp, event->data, event->data_length);
 }
 
 non_null()
@@ -109,7 +109,7 @@ static bool tox_event_friend_lossy_packet_unpack(
     }
 
     return bin_unpack_u32(bu, &event->friend_number)
-           && bin_unpack_bytes(bu, &event->data, &event->data_length);
+           && bin_unpack_bin(bu, &event->data, &event->data_length);
 }
 
 
