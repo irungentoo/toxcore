@@ -95,16 +95,17 @@ static void load_data_decrypted(void)
 
     ck_assert_msg(t != nullptr, "tox_new returned the error value %d", err);
 
-    uint8_t readname[TOX_MAX_NAME_LENGTH];
+    uint8_t *readname = (uint8_t *)malloc(tox_self_get_name_size(t));
+    ck_assert(readname != nullptr);
     tox_self_get_name(t, readname);
-    readname[tox_self_get_name_size(t)] = '\0';
 
-    ck_assert_msg(strcmp((const char *)readname, name) == 0,
+    ck_assert_msg(memcmp(readname, name, tox_self_get_name_size(t)) == 0,
                   "name returned by tox_self_get_name does not match expected result");
 
     tox_kill(t);
     free(clear);
     free(cipher);
+    free(readname);
     fclose(f);
 }
 

@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,8 +73,10 @@ static void print_information(Tox *tox)
     int length = snprintf(nospam_str, sizeof(nospam_str), "%08X", nospam);
     nospam_str[length] = '\0';
 
-    uint8_t name[TOX_MAX_NAME_LENGTH];
+    uint8_t *name = (uint8_t *)malloc(tox_self_get_name_size(tox) + 1);
+    assert(name != nullptr);
     tox_self_get_name(tox, name);
+    name[tox_self_get_name_size(tox)] = '\0';
 
     printf("INFORMATION\n");
     printf("----------------------------------\n");

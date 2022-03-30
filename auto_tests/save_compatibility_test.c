@@ -92,7 +92,8 @@ static void test_save_compatibility(const char *save_path)
     ck_assert_msg(name_size == EXPECTED_NAME_SIZE, "name sizes do not match expected %zu got %zu", EXPECTED_NAME_SIZE,
                   name_size);
 
-    uint8_t name[TOX_MAX_NAME_LENGTH];
+    uint8_t *name = (uint8_t *)malloc(tox_self_get_name_size(tox));
+    ck_assert(name != nullptr);
     tox_self_get_name(tox, name);
     ck_assert_msg(strncmp((const char *)name, EXPECTED_NAME, name_size) == 0,
                   "names do not match, expected %s got %s", EXPECTED_NAME, name);
@@ -101,7 +102,8 @@ static void test_save_compatibility(const char *save_path)
     ck_assert_msg(status_message_size == EXPECTED_STATUS_MESSAGE_SIZE,
                   "status message sizes do not match, expected %zu got %zu", EXPECTED_STATUS_MESSAGE_SIZE, status_message_size);
 
-    uint8_t status_message[TOX_MAX_STATUS_MESSAGE_LENGTH];
+    uint8_t *status_message = (uint8_t *)malloc(tox_self_get_status_message_size(tox));
+    ck_assert(status_message != nullptr);
     tox_self_get_status_message(tox, status_message);
     ck_assert_msg(strncmp((const char *)status_message, EXPECTED_STATUS_MESSAGE, status_message_size) == 0,
                   "status messages do not match, expected %s got %s",
@@ -128,6 +130,8 @@ static void test_save_compatibility(const char *save_path)
     /* Giving the tox a chance to error on iterate due to corrupted loaded structures */
     tox_iterate(tox, nullptr);
 
+    free(status_message);
+    free(name);
     tox_kill(tox);
 }
 

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <vector>
 
 #include "crypto_core.h"
 #include "tox_private.h"
@@ -11,11 +12,11 @@ namespace {
 
 static void set_random_name_and_status_message(Tox *tox, uint8_t *name, uint8_t *status_message)
 {
-    for (uint16_t i = 0; i < TOX_MAX_NAME_LENGTH; ++i) {
+    for (uint16_t i = 0; i < tox_max_name_length(); ++i) {
         name[i] = random_u08();
     }
 
-    for (uint16_t i = 0; i < TOX_MAX_STATUS_MESSAGE_LENGTH; ++i) {
+    for (uint16_t i = 0; i < tox_max_status_message_length(); ++i) {
         status_message[i] = random_u08();
     }
 }
@@ -75,11 +76,11 @@ TEST(Tox, OneTest)
     tox_options_set_start_port(options, 33545);
     tox_options_set_end_port(options, 33545 + 2000);
 
-    std::array<uint8_t, TOX_MAX_NAME_LENGTH> name;
-    std::array<uint8_t, TOX_MAX_STATUS_MESSAGE_LENGTH> status_message;
+    std::vector<uint8_t> name(tox_max_name_length());
+    std::vector<uint8_t> status_message(tox_max_status_message_length());
 
-    std::array<uint8_t, TOX_MAX_NAME_LENGTH> name2;
-    std::array<uint8_t, TOX_MAX_STATUS_MESSAGE_LENGTH> status_message2;
+    std::vector<uint8_t> name2(tox_max_name_length());
+    std::vector<uint8_t> status_message2(tox_max_status_message_length());
 
     Tox *tox1 = tox_new(options, nullptr);
     ASSERT_NE(tox1, nullptr);
@@ -97,15 +98,15 @@ TEST(Tox, OneTest)
     EXPECT_EQ(ret, UINT32_MAX);
 
     tox_self_get_address(tox2, address.data());
-    uint8_t message[TOX_MAX_FRIEND_REQUEST_LENGTH + 1] = {0};
+    std::vector<uint8_t> message(tox_max_friend_request_length() + 1);
     ret = tox_friend_add(tox1, address.data(), nullptr, 0, &error);
     EXPECT_EQ(error, TOX_ERR_FRIEND_ADD_NULL) << "Sending request with no message worked.";
     EXPECT_EQ(ret, UINT32_MAX);
-    ret = tox_friend_add(tox1, address.data(), message, 0, &error);
+    ret = tox_friend_add(tox1, address.data(), message.data(), 0, &error);
     EXPECT_EQ(error, TOX_ERR_FRIEND_ADD_NO_MESSAGE) << "Sending request with no message worked.";
     EXPECT_EQ(ret, UINT32_MAX);
-    ret = tox_friend_add(tox1, address.data(), message, sizeof(message), &error);
-    EXPECT_EQ(error, TOX_ERR_FRIEND_ADD_TOO_LONG) << "TOX_MAX_FRIEND_REQUEST_LENGTH is too big.";
+    ret = tox_friend_add(tox1, address.data(), message.data(), message.size(), &error);
+    EXPECT_EQ(error, TOX_ERR_FRIEND_ADD_TOO_LONG) << "tox_max_friend_request_length() is too big.";
     EXPECT_EQ(ret, UINT32_MAX);
 
     address[0]++;
@@ -114,19 +115,22 @@ TEST(Tox, OneTest)
     EXPECT_EQ(ret, UINT32_MAX);
 
     tox_self_get_address(tox2, address.data());
-    ret = tox_friend_add(tox1, address.data(), message, TOX_MAX_FRIEND_REQUEST_LENGTH, &error);
+    ret = tox_friend_add(
+        tox1, address.data(), message.data(), tox_max_friend_request_length(), &error);
     EXPECT_EQ(error, TOX_ERR_FRIEND_ADD_OK) << "Failed to add friend.";
     EXPECT_EQ(ret, 0);
-    ret = tox_friend_add(tox1, address.data(), message, TOX_MAX_FRIEND_REQUEST_LENGTH, &error);
+    ret = tox_friend_add(
+        tox1, address.data(), message.data(), tox_max_friend_request_length(), &error);
     EXPECT_EQ(error, TOX_ERR_FRIEND_ADD_ALREADY_SENT) << "Adding friend twice worked.";
     EXPECT_EQ(ret, UINT32_MAX);
 
     tox_self_set_name(tox1, name.data(), name.size(), nullptr);
-    EXPECT_EQ(tox_self_get_name_size(tox1), name.size()) << "Can't set name of TOX_MAX_NAME_LENGTH";
+    EXPECT_EQ(tox_self_get_name_size(tox1), name.size())
+        << "Can't set name of length " << tox_max_name_length();
 
     tox_self_set_status_message(tox1, status_message.data(), status_message.size(), nullptr);
     EXPECT_EQ(tox_self_get_status_message_size(tox1), status_message.size())
-        << "Can't set status message of TOX_MAX_STATUS_MESSAGE_LENGTH";
+        << "Can't set status message of length " << tox_max_status_message_length();
 
     tox_self_get_address(tox1, address.data());
     std::vector<uint8_t> data(tox_get_savedata_size(tox1));
@@ -140,22 +144,22 @@ TEST(Tox, OneTest)
     tox2 = tox_new(options, &err_n);
     EXPECT_EQ(err_n, TOX_ERR_NEW_OK) << "Load failed";
 
-    EXPECT_EQ(tox_self_get_name_size(tox2), sizeof name) << "Wrong name size.";
-    EXPECT_EQ(tox_self_get_status_message_size(tox2), sizeof status_message)
+    EXPECT_EQ(tox_self_get_name_size(tox2), name.size()) << "Wrong name size.";
+    EXPECT_EQ(tox_self_get_status_message_size(tox2), status_message.size())
         << "Wrong status message size";
 
-    std::array<uint8_t, TOX_MAX_NAME_LENGTH> name_loaded{};
+    std::vector<uint8_t> name_loaded(tox_max_name_length());
     tox_self_get_name(tox2, name_loaded.data());
     EXPECT_EQ(name, name_loaded) << "Wrong name.";
 
-    std::array<uint8_t, TOX_MAX_STATUS_MESSAGE_LENGTH> status_message_loaded{};
+    std::vector<uint8_t> status_message_loaded(tox_max_status_message_length());
     tox_self_get_status_message(tox2, status_message_loaded.data());
     EXPECT_EQ(status_message, status_message_loaded) << "Wrong status message.";
 
-    std::array<uint8_t, TOX_ADDRESS_SIZE> address2{};
+    std::array<uint8_t, TOX_ADDRESS_SIZE> address2;
     tox_self_get_address(tox2, address2.data());
     EXPECT_EQ(address2, address) << "Wrong address.";
-    std::array<uint8_t, TOX_MAX_NAME_LENGTH> new_name{};
+    std::vector<uint8_t> new_name(tox_max_name_length());
     tox_self_get_name(tox2, new_name.data());
     EXPECT_EQ(name, new_name) << "Wrong name";
 
