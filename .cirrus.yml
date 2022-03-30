@@ -9,7 +9,6 @@ bazel-opt_task:
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
     - cd /src/workspace && bazel test -k
-        --config=remote
         --build_tag_filters=-haskell
         --test_tag_filters=-haskell
         --
@@ -26,7 +25,6 @@ bazel-dbg_task:
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
     - cd /src/workspace && bazel test -k
-        --config=remote
         --build_tag_filters=-haskell
         --test_tag_filters=-haskell
         --

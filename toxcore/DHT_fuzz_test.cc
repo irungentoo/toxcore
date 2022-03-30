@@ -1,6 +1,8 @@
 #include "DHT.h"
 
+#include <cassert>
 #include <cstdlib>
+#include <cstring>
 #include <vector>
 
 #include "../testing/fuzzing/fuzz_support.h"
@@ -36,6 +38,16 @@ void TestUnpackNodes(Fuzz_Data &input)
         LOGGER_ASSERT(logger, packed_size == processed_data_len,
             "packed size (%d) != unpacked size (%d)", packed_size, processed_data_len);
         logger_kill(logger);
+
+        // Check that packed nodes can be unpacked again and result in the
+        // original unpacked nodes.
+        Node_format nodes2[node_count];
+        uint16_t processed_data_len2;
+        const int packed_count2 = unpack_nodes(
+            nodes2, node_count, &processed_data_len2, packed.data(), packed.size(), tcp_enabled);
+        assert(processed_data_len2 == processed_data_len);
+        assert(packed_count2 == packed_count);
+        assert(memcmp(nodes, nodes2, sizeof(Node_format) * packed_count) == 0);
     }
 }
 

@@ -62,19 +62,45 @@ static void bin_pack_init(Bin_Pack *bp, uint8_t *buf, uint32_t buf_size)
     cmp_init(&bp->ctx, bp, null_reader, null_skipper, buf_writer);
 }
 
-bool bin_pack_obj(bin_pack_cb *callback, const void *obj, uint8_t *buf, uint32_t buf_size)
-{
-    Bin_Pack bp;
-    bin_pack_init(&bp, buf, buf_size);
-    return callback(&bp, obj);
-}
-
-uint32_t bin_pack_obj_size(bin_pack_cb *callback, const void *obj)
+uint32_t bin_pack_obj_size(bin_pack_cb *callback, const Logger *logger, const void *obj)
 {
     Bin_Pack bp;
     bin_pack_init(&bp, nullptr, 0);
-    callback(&bp, obj);
+    if (!callback(&bp, logger, obj)) {
+        return UINT32_MAX;
+    }
     return bp.bytes_pos;
+}
+
+bool bin_pack_obj(bin_pack_cb *callback, const Logger *logger, const void *obj, uint8_t *buf, uint32_t buf_size)
+{
+    Bin_Pack bp;
+    bin_pack_init(&bp, buf, buf_size);
+    return callback(&bp, logger, obj);
+}
+
+uint32_t bin_pack_obj_array_size(bin_pack_array_cb *callback, const Logger *logger, const void *arr, uint32_t count)
+{
+    Bin_Pack bp;
+    bin_pack_init(&bp, nullptr, 0);
+    for (uint32_t i = 0; i < count; ++i) {
+        if (!callback(&bp, logger, arr, i)) {
+            return UINT32_MAX;
+        }
+    }
+    return bp.bytes_pos;
+}
+
+bool bin_pack_obj_array(bin_pack_array_cb *callback, const Logger *logger, const void *arr, uint32_t count, uint8_t *buf, uint32_t buf_size)
+{
+    Bin_Pack bp;
+    bin_pack_init(&bp, buf, buf_size);
+    for (uint32_t i = 0; i < count; ++i) {
+        if (!callback(&bp, logger, arr, i)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 Bin_Pack *bin_pack_new(uint8_t *buf, uint32_t buf_size)

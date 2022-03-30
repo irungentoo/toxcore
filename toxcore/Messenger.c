@@ -3153,7 +3153,7 @@ static void pack_groupchats(const GC_Session *c, Bin_Pack *bp)
 }
 
 non_null()
-static bool pack_groupchats_handler(Bin_Pack *bp, const void *obj)
+static bool pack_groupchats_handler(Bin_Pack *bp, const Logger *log, const void *obj)
 {
     pack_groupchats((const GC_Session *)obj, bp);
     return true;  // TODO(iphydf): Return bool from pack functions.
@@ -3163,7 +3163,7 @@ non_null()
 static uint32_t saved_groups_size(const Messenger *m)
 {
     GC_Session *c = m->group_handler;
-    return bin_pack_obj_size(pack_groupchats_handler, c);
+    return bin_pack_obj_size(pack_groupchats_handler, m->log, c);
 }
 
 non_null()
@@ -3185,7 +3185,7 @@ static uint8_t *groups_save(const Messenger *m, uint8_t *data)
 
     data = state_write_section_header(data, STATE_COOKIE_TYPE, len, STATE_TYPE_GROUPS);
 
-    if (!bin_pack_obj(pack_groupchats_handler, c, data, len)) {
+    if (!bin_pack_obj(pack_groupchats_handler, m->log, c, data, len)) {
         LOGGER_FATAL(m->log, "failed to pack group chats into buffer of length %u", len);
         return data;
     }
