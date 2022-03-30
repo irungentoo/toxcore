@@ -470,8 +470,8 @@ int dht_load(DHT *dht, const uint8_t *data, uint32_t length);
 
 /** Initialize DHT. */
 non_null()
-DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool hole_punching_enabled,
-             bool lan_discovery_enabled);
+DHT *new_dht(const Logger *log, const Network *ns, Mono_Time *mono_time, Networking_Core *net,
+             bool hole_punching_enabled, bool lan_discovery_enabled);
 
 non_null()
 void kill_dht(DHT *dht);

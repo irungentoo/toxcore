@@ -78,6 +78,7 @@ typedef struct Cryptopacket_Handler {
 
 struct DHT {
     const Logger *log;
+    const Network *ns;
     Mono_Time *mono_time;
     Networking_Core *net;
 
@@ -1910,7 +1911,7 @@ int dht_bootstrap_from_address(DHT *dht, const char *address, bool ipv6enabled,
         ip_extra = &ip_port_v4.ip;
     }
 
-    if (addr_resolve_or_parse_ip(address, &ip_port_v64.ip, ip_extra)) {
+    if (addr_resolve_or_parse_ip(dht->ns, address, &ip_port_v64.ip, ip_extra)) {
         ip_port_v64.port = port;
         dht_bootstrap(dht, &ip_port_v64, public_key);
 
@@ -2568,8 +2569,8 @@ static int handle_LANdiscovery(void *object, const IP_Port *source, const uint8_
 
 /*----------------------------------------------------------------------------------*/
 
-DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool hole_punching_enabled,
-             bool lan_discovery_enabled)
+DHT *new_dht(const Logger *log, const Network *ns, Mono_Time *mono_time, Networking_Core *net,
+             bool hole_punching_enabled, bool lan_discovery_enabled)
 {
     if (net == nullptr) {
         return nullptr;
@@ -2581,6 +2582,7 @@ DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool
         return nullptr;
     }
 
+    dht->ns = ns;
     dht->mono_time = mono_time;
     dht->cur_time = mono_time_get(mono_time);
     dht->log = log;

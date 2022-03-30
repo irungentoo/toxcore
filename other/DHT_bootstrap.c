@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
     const uint16_t start_port = PORT;
     const uint16_t end_port = start_port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM);
     const Network *ns = system_network();
-    DHT *dht = new_dht(logger, mono_time, new_networking_ex(logger, ns, &ip, start_port, end_port, nullptr), true, true);
+    DHT *dht = new_dht(logger, ns, mono_time, new_networking_ex(logger, ns, &ip, start_port, end_port, nullptr), true, true);
     Onion *onion = new_onion(logger, mono_time, dht);
     const Onion_Announce *onion_a = new_onion_announce(logger, mono_time, dht);
 

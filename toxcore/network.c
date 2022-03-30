@@ -1271,7 +1271,7 @@ Networking_Core *new_networking_ex(
     return nullptr;
 }
 
-Networking_Core *new_networking_no_udp(const Logger *log)
+Networking_Core *new_networking_no_udp(const Logger *log, const Network *ns)
 {
     if (networking_at_startup() != 0) {
         return nullptr;
@@ -1285,6 +1285,7 @@ Networking_Core *new_networking_no_udp(const Logger *log)
     }
 
     net->log = log;
+    net->ns = ns;
 
     return net;
 }
@@ -1536,8 +1537,8 @@ bool addr_parse_ip(const char *address, IP *to)
  *
  * @return 0 on failure, `TOX_ADDR_RESOLVE_*` on success.
  */
-non_null(1, 2) nullable(3)
-static int addr_resolve(const char *address, IP *to, IP *extra)
+non_null(1, 2, 3) nullable(4)
+static int addr_resolve(const Network *ns, const char *address, IP *to, IP *extra)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     return 0;
@@ -1633,9 +1634,9 @@ static int addr_resolve(const char *address, IP *to, IP *extra)
 #endif
 }
 
-bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
+bool addr_resolve_or_parse_ip(const Network *ns, const char *address, IP *to, IP *extra)
 {
-    if (addr_resolve(address, to, extra) == 0) {
+    if (addr_resolve(ns, address, to, extra) == 0) {
         if (!addr_parse_ip(address, to)) {
             return false;
         }

@@ -520,6 +520,8 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         }
     }
 
+    tox_set_network(tox, nullptr);
+
     if (m_options.proxy_info.proxy_type != TCP_PROXY_NONE) {
         if (tox_options_get_proxy_port(opts) == 0) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_PORT);
@@ -536,7 +538,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
         const char *const proxy_host = tox_options_get_proxy_host(opts);
 
-        if (proxy_host == nullptr || !addr_resolve_or_parse_ip(proxy_host, &m_options.proxy_info.ip_port.ip, nullptr)) {
+        if (proxy_host == nullptr || !addr_resolve_or_parse_ip(&tox->ns, proxy_host, &m_options.proxy_info.ip_port.ip, nullptr)) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
             // TODO(irungentoo): TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
             tox_options_free(default_options);
@@ -548,7 +550,6 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     }
 
     tox->mono_time = mono_time_new();
-    tox_set_network(tox, nullptr);
 
     if (tox->mono_time == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);

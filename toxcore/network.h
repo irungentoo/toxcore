@@ -412,8 +412,8 @@ void ipport_copy(IP_Port *target, const IP_Port *source);
  *
  * @return true on success, false on failure
  */
-non_null(1, 2) nullable(3)
-bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
+non_null(1, 2, 3) nullable(4)
+bool addr_resolve_or_parse_ip(const Network *ns, const char *address, IP *to, IP *extra);
 
 /** @brief Function to receive data, ip and port of sender is put into ip_port.
  * Packet data is put into data.
@@ -582,7 +582,7 @@ Networking_Core *new_networking_ex(
         const Logger *log, const Network *ns, const IP *ip,
         uint16_t port_from, uint16_t port_to, unsigned int *error);
 non_null()
-Networking_Core *new_networking_no_udp(const Logger *log);
+Networking_Core *new_networking_no_udp(const Logger *log, const Network *ns);
 
 /** Function to cleanup networking stuff (doesn't do much right now). */
 non_null()

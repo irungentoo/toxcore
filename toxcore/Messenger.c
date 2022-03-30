@@ -3196,7 +3196,7 @@ Messenger *new_messenger(Mono_Time *mono_time, const Network *ns, Messenger_Opti
     }
 
     if (options->udp_disabled) {
-        m->net = new_networking_no_udp(m->log);
+        m->net = new_networking_no_udp(m->log, m->ns);
     } else {
         IP ip;
         ip_init(&ip, options->ipv6enabled);
@@ -3215,7 +3215,7 @@ Messenger *new_messenger(Mono_Time *mono_time, const Network *ns, Messenger_Opti
         return nullptr;
     }
 
-    m->dht = new_dht(m->log, m->mono_time, m->net, options->hole_punching_enabled, options->local_discovery_enabled);
+    m->dht = new_dht(m->log, m->ns, m->mono_time, m->net, options->hole_punching_enabled, options->local_discovery_enabled);
 
     if (m->dht == nullptr) {
         kill_networking(m->net);

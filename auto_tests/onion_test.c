@@ -180,15 +180,16 @@ static void send_onion_packet(const Networking_Core *net, const Onion_Path *path
 /** Initialize networking.
  * Added for reverse compatibility with old new_networking calls.
  */
-static Networking_Core *new_networking(const Logger *log, const IP *ip, uint16_t port)
+static Networking_Core *new_networking(const Logger *log, const Network *ns, const IP *ip, uint16_t port)
 {
-    const Network *ns = system_network();
     return new_networking_ex(log, ns, ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), nullptr);
 }
 
 static void test_basic(void)
 {
     uint32_t index[] = { 1, 2, 3 };
+    const Network *ns = system_network();
+
     Logger *log1 = logger_new();
     logger_callback_log(log1, (logger_cb *)print_debug_log, nullptr, &index[0]);
     Logger *log2 = logger_new();
@@ -198,8 +199,8 @@ static void test_basic(void)
     Mono_Time *mono_time2 = mono_time_new();
 
     IP ip = get_loopback();
-    Onion *onion1 = new_onion(log1, mono_time1, new_dht(log1, mono_time1, new_networking(log1, &ip, 36567), true, false));
-    Onion *onion2 = new_onion(log2, mono_time2, new_dht(log2, mono_time2, new_networking(log2, &ip, 36568), true, false));
+    Onion *onion1 = new_onion(log1, mono_time1, new_dht(log1, ns, mono_time1, new_networking(log1, ns, &ip, 36567), true, false));
+    Onion *onion2 = new_onion(log2, mono_time2, new_dht(log2, ns, mono_time2, new_networking(log2, ns, &ip, 36568), true, false));
     ck_assert_msg((onion1 != nullptr) && (onion2 != nullptr), "Onion failed initializing.");
     networking_registerhandler(onion2->net, NET_PACKET_ANNOUNCE_REQUEST_OLD, &handle_test_1, onion2);
 
@@ -292,7 +293,7 @@ static void test_basic(void)
 
     Mono_Time *mono_time3 = mono_time_new();
 
-    Onion *onion3 = new_onion(log3, mono_time3, new_dht(log3, mono_time3, new_networking(log3, &ip, 36569), true, false));
+    Onion *onion3 = new_onion(log3, mono_time3, new_dht(log3, ns, mono_time3, new_networking(log3, ns, &ip, 36569), true, false));
     ck_assert_msg((onion3 != nullptr), "Onion failed initializing.");
 
     random_nonce(nonce);
@@ -361,6 +362,7 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
 {
     IP ip = get_loopback();
     ip.ip.v6.uint8[15] = 1;
+    const Network *ns = system_network();
     Onions *on = (Onions *)malloc(sizeof(Onions));
 
     if (!on) {
@@ -384,7 +386,7 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
         return nullptr;
     }
 
-    Networking_Core *net = new_networking(on->log, &ip, port);
+    Networking_Core *net = new_networking(on->log, ns, &ip, port);
 
     if (!net) {
         mono_time_free(on->mono_time);
@@ -393,7 +395,7 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
         return nullptr;
     }
 
-    DHT *dht = new_dht(on->log, on->mono_time, net, true, false);
+    DHT *dht = new_dht(on->log, ns, on->mono_time, net, true, false);
 
     if (!dht) {
         kill_networking(net);
@@ -427,7 +429,6 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
     }
 
     TCP_Proxy_Info inf = {{{{0}}}};
-    const Network *ns = system_network();
     on->onion_c = new_onion_client(on->log, on->mono_time, new_net_crypto(on->log, on->mono_time, ns, dht, &inf));
 
     if (!on->onion_c) {

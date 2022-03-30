@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
 
     mono_time_update(mono_time);
 
-    DHT *const dht = new_dht(logger, mono_time, net, true, enable_lan_discovery);
+    DHT *const dht = new_dht(logger, ns, mono_time, net, true, enable_lan_discovery);
 
     if (dht == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
