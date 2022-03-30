@@ -21,5 +21,6 @@ WORKDIR $SRC
 COPY . $SRC/c-toxcore
 # Working directory for build.sh.
 WORKDIR $SRC/c-toxcore
+RUN git submodule update --init --recursive
 # Copy build.sh into $SRC dir.
 COPY ./.clusterfuzzlite/build.sh $SRC/
