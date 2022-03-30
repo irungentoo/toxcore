@@ -5,6 +5,7 @@
 #include <array>
 
 #include "crypto_core.h"
+#include "tox_private.h"
 
 namespace {
 
@@ -17,6 +18,36 @@ static void set_random_name_and_status_message(Tox *tox, uint8_t *name, uint8_t 
     for (uint16_t i = 0; i < TOX_MAX_STATUS_MESSAGE_LENGTH; ++i) {
         status_message[i] = random_u08();
     }
+}
+
+TEST(Tox, CurrentVersionIsCompatibleWithItself)
+{
+    EXPECT_TRUE(
+        TOX_VERSION_IS_API_COMPATIBLE(TOX_VERSION_MAJOR, TOX_VERSION_MINOR, TOX_VERSION_PATCH));
+    EXPECT_TRUE(TOX_VERSION_IS_ABI_COMPATIBLE());
+    EXPECT_TRUE(
+        tox_version_is_compatible(tox_version_major(), tox_version_minor(), tox_version_patch()));
+}
+
+TEST(Tox, ConstantsAreNonZero)
+{
+    EXPECT_GT(tox_public_key_size(), 0);
+    EXPECT_GT(tox_secret_key_size(), 0);
+    EXPECT_GT(tox_conference_uid_size(), 0);
+    EXPECT_GT(tox_conference_id_size(), 0);
+    EXPECT_GT(tox_nospam_size(), 0);
+    EXPECT_GT(tox_address_size(), 0);
+    EXPECT_GT(tox_max_name_length(), 0);
+    EXPECT_GT(tox_max_status_message_length(), 0);
+    EXPECT_GT(tox_max_friend_request_length(), 0);
+    EXPECT_GT(tox_max_message_length(), 0);
+    EXPECT_GT(tox_max_custom_packet_size(), 0);
+    EXPECT_GT(tox_hash_length(), 0);
+    EXPECT_GT(tox_file_id_length(), 0);
+    EXPECT_GT(tox_max_filename_length(), 0);
+    EXPECT_GT(tox_max_hostname_length(), 0);
+    EXPECT_GT(tox_dht_node_ip_string_size(), 0);
+    EXPECT_GT(tox_dht_node_public_key_size(), 0);
 }
 
 TEST(Tox, BootstrapErrorCodes)

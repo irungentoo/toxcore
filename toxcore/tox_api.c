@@ -16,35 +16,89 @@
         }                             \
     } while (0)
 
-//!TOKSTYLE-
-
-#define CONST_FUNCTION(lowercase, uppercase) \
-uint32_t tox_##lowercase(void) \
-{ \
-    return TOX_##uppercase; \
+uint32_t tox_version_major(void)
+{
+    return TOX_VERSION_MAJOR;
+}
+uint32_t tox_version_minor(void)
+{
+    return TOX_VERSION_MINOR;
+}
+uint32_t tox_version_patch(void)
+{
+    return TOX_VERSION_PATCH;
+}
+uint32_t tox_public_key_size(void)
+{
+    return TOX_PUBLIC_KEY_SIZE;
+}
+uint32_t tox_secret_key_size(void)
+{
+    return TOX_SECRET_KEY_SIZE;
+}
+uint32_t tox_conference_uid_size(void)
+{
+    return TOX_CONFERENCE_UID_SIZE;
+}
+uint32_t tox_conference_id_size(void)
+{
+    return TOX_CONFERENCE_ID_SIZE;
+}
+uint32_t tox_nospam_size(void)
+{
+    return TOX_NOSPAM_SIZE;
+}
+uint32_t tox_address_size(void)
+{
+    return TOX_ADDRESS_SIZE;
+}
+uint32_t tox_max_name_length(void)
+{
+    return TOX_MAX_NAME_LENGTH;
+}
+uint32_t tox_max_status_message_length(void)
+{
+    return TOX_MAX_STATUS_MESSAGE_LENGTH;
+}
+uint32_t tox_max_friend_request_length(void)
+{
+    return TOX_MAX_FRIEND_REQUEST_LENGTH;
+}
+uint32_t tox_max_message_length(void)
+{
+    return TOX_MAX_MESSAGE_LENGTH;
+}
+uint32_t tox_max_custom_packet_size(void)
+{
+    return TOX_MAX_CUSTOM_PACKET_SIZE;
+}
+uint32_t tox_hash_length(void)
+{
+    return TOX_HASH_LENGTH;
+}
+uint32_t tox_file_id_length(void)
+{
+    return TOX_FILE_ID_LENGTH;
+}
+uint32_t tox_max_filename_length(void)
+{
+    return TOX_MAX_FILENAME_LENGTH;
+}
+uint32_t tox_max_hostname_length(void)
+{
+    return TOX_MAX_HOSTNAME_LENGTH;
+}
+uint32_t tox_dht_node_ip_string_size(void)
+{
+    return TOX_DHT_NODE_IP_STRING_SIZE;
+}
+uint32_t tox_dht_node_public_key_size(void)
+{
+    return TOX_DHT_NODE_PUBLIC_KEY_SIZE;
 }
 
-CONST_FUNCTION(version_major, VERSION_MAJOR)
-CONST_FUNCTION(version_minor, VERSION_MINOR)
-CONST_FUNCTION(version_patch, VERSION_PATCH)
-CONST_FUNCTION(public_key_size, PUBLIC_KEY_SIZE)
-CONST_FUNCTION(secret_key_size, SECRET_KEY_SIZE)
-CONST_FUNCTION(conference_uid_size, CONFERENCE_UID_SIZE)
-CONST_FUNCTION(conference_id_size, CONFERENCE_ID_SIZE)
-CONST_FUNCTION(nospam_size, NOSPAM_SIZE)
-CONST_FUNCTION(address_size, ADDRESS_SIZE)
-CONST_FUNCTION(max_name_length, MAX_NAME_LENGTH)
-CONST_FUNCTION(max_status_message_length, MAX_STATUS_MESSAGE_LENGTH)
-CONST_FUNCTION(max_friend_request_length, MAX_FRIEND_REQUEST_LENGTH)
-CONST_FUNCTION(max_message_length, MAX_MESSAGE_LENGTH)
-CONST_FUNCTION(max_custom_packet_size, MAX_CUSTOM_PACKET_SIZE)
-CONST_FUNCTION(hash_length, HASH_LENGTH)
-CONST_FUNCTION(file_id_length, FILE_ID_LENGTH)
-CONST_FUNCTION(max_filename_length, MAX_FILENAME_LENGTH)
-CONST_FUNCTION(max_hostname_length, MAX_HOSTNAME_LENGTH)
-CONST_FUNCTION(dht_node_ip_string_size, DHT_NODE_IP_STRING_SIZE)
-CONST_FUNCTION(dht_node_public_key_size, DHT_NODE_PUBLIC_KEY_SIZE)
 
+//!TOKSTYLE-
 
 #define ACCESSORS(type, ns, name) \
 type tox_options_get_##ns##name(const struct Tox_Options *options) \
