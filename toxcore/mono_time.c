@@ -26,6 +26,7 @@
 #include <sys/time.h>
 #endif
 
+#include <assert.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <time.h>
