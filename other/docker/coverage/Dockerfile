@@ -45,6 +45,7 @@ RUN source .github/scripts/flags-coverage.sh \
  -DSTRICT_ABI=ON \
  -DAUTOTEST=ON \
  -DPROXY_TEST=ON \
+ -DUSE_IPV6=OFF \
  && cmake --build _build --parallel 8 --target install
 
 WORKDIR /work/_build

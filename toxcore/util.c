@@ -17,10 +17,39 @@
 #include <string.h>
 #include <time.h>
 
-#include "crypto_core.h" /* for CRYPTO_PUBLIC_KEY_SIZE */
+#include "ccompat.h"
+#include "crypto_core.h" // for CRYPTO_PUBLIC_KEY_SIZE
 
+bool is_power_of_2(uint64_t x)
+{
+    return x != 0 && (x & (~x + 1)) == x;
+}
 
-/** Equality function for public keys. */
+const uint8_t *get_enc_key(const uint8_t *key)
+{
+    return key;
+}
+
+const uint8_t *get_sig_pk(const uint8_t *key)
+{
+    return key + ENC_PUBLIC_KEY_SIZE;
+}
+
+void set_sig_pk(uint8_t *key, const uint8_t *sig_pk)
+{
+    memcpy(key + ENC_PUBLIC_KEY_SIZE, sig_pk, SIG_PUBLIC_KEY_SIZE);
+}
+
+const uint8_t *get_sig_sk(const uint8_t *key)
+{
+    return key + ENC_SECRET_KEY_SIZE;
+}
+
+const uint8_t *get_chat_id(const uint8_t *key)
+{
+    return key + ENC_PUBLIC_KEY_SIZE;
+}
+
 bool pk_equal(const uint8_t *dest, const uint8_t *src)
 {
     return public_key_eq(dest, src);
@@ -29,6 +58,34 @@ bool pk_equal(const uint8_t *dest, const uint8_t *src)
 void pk_copy(uint8_t *dest, const uint8_t *src)
 {
     memcpy(dest, src, CRYPTO_PUBLIC_KEY_SIZE);
+}
+
+void free_uint8_t_pointer_array(uint8_t **ary, size_t n_items)
+{
+    if (ary == nullptr) {
+        return;
+    }
+
+    for (size_t i = 0; i < n_items; ++i) {
+        if (ary[i] != nullptr) {
+            free(ary[i]);
+        }
+    }
+
+    free(ary);
+}
+
+uint16_t data_checksum(const uint8_t *data, uint32_t length)
+{
+    uint8_t checksum[2] = {0};
+    uint16_t check;
+
+    for (uint32_t i = 0; i < length; ++i) {
+        checksum[i % 2] ^= data[i];
+    }
+
+    memcpy(&check, checksum, sizeof(check));
+    return check;
 }
 
 int create_recursive_mutex(pthread_mutex_t *mutex)
@@ -110,4 +167,20 @@ uint32_t min_u32(uint32_t a, uint32_t b)
 uint64_t min_u64(uint64_t a, uint64_t b)
 {
     return a < b ? a : b;
+}
+
+uint32_t jenkins_one_at_a_time_hash(const uint8_t *key, size_t len)
+{
+    uint32_t hash = 0;
+
+    for (uint32_t i = 0; i < len; ++i) {
+        hash += key[i];
+        hash += hash << 10;
+        hash ^= hash >> 6;
+    }
+
+    hash += hash << 3;
+    hash ^= hash >> 11;
+    hash += hash << 15;
+    return hash;
 }

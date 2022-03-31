@@ -1800,7 +1800,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
     }
 
     if (num_nodes > 0 && (mono_time_is_timeout(dht->mono_time, *lastgetnode, GET_NODE_INTERVAL)
-                             || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
+                          || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
         uint32_t rand_node = random_range_u32(num_nodes);
 
         if ((num_nodes - 1) != rand_node) {
@@ -1855,8 +1855,8 @@ static void do_Close(DHT *dht)
     dht->num_to_bootstrap = 0;
 
     const uint8_t not_killed = do_ping_and_sendnode_requests(
-                             dht, &dht->close_lastgetnodes, dht->self_public_key, dht->close_clientlist, LCLIENT_LIST, &dht->close_bootstrap_times,
-                             false);
+                                   dht, &dht->close_lastgetnodes, dht->self_public_key, dht->close_clientlist, LCLIENT_LIST, &dht->close_bootstrap_times,
+                                   false);
 
     if (not_killed != 0) {
         return;
@@ -2568,7 +2568,8 @@ static int handle_LANdiscovery(void *object, const IP_Port *source, const uint8_
 
 /*----------------------------------------------------------------------------------*/
 
-DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool hole_punching_enabled, bool lan_discovery_enabled)
+DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool hole_punching_enabled,
+             bool lan_discovery_enabled)
 {
     if (net == nullptr) {
         return nullptr;
@@ -2761,7 +2762,8 @@ void dht_save(const DHT *dht, uint8_t *data)
         }
     }
 
-    state_write_section_header(old_data, DHT_STATE_COOKIE_TYPE, pack_nodes(dht->log, data, sizeof(Node_format) * num, clients, num), DHT_STATE_TYPE_NODES);
+    state_write_section_header(old_data, DHT_STATE_COOKIE_TYPE, pack_nodes(dht->log, data, sizeof(Node_format) * num,
+                               clients, num), DHT_STATE_TYPE_NODES);
 
     free(clients);
 }

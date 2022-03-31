@@ -76,6 +76,7 @@ cc_test(
     flaky = True,
     deps = [
         ":crypto_core",
+        ":util",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
@@ -163,6 +164,7 @@ cc_library(
     ],
     deps = [
         ":attributes",
+        ":ccompat",
         ":crypto_core",
         "@pthread",
     ],
@@ -484,6 +486,46 @@ cc_library(
         ":ccompat",
         ":friend_connection",
         ":util",
+    ],
+)
+
+cc_library(
+    name = "group_moderation",
+    srcs = ["group_moderation.c"],
+    hdrs = ["group_moderation.h"],
+    deps = [
+        ":DHT",
+        ":ccompat",
+        ":crypto_core",
+        ":logger",
+        ":mono_time",
+        ":network",
+        ":util",
+        "@libsodium",
+    ],
+)
+
+cc_test(
+    name = "group_moderation_test",
+    size = "small",
+    srcs = ["group_moderation_test.cc"],
+    deps = [
+        ":crypto_core",
+        ":group_moderation",
+        ":logger",
+        ":util",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_fuzz_test(
+    name = "group_moderation_fuzz_test",
+    srcs = ["group_moderation_fuzz_test.cc"],
+    corpus = ["//tools/toktok-fuzzer/corpus:group_moderation_fuzz_test"],
+    deps = [
+        ":group_moderation",
+        "//c-toxcore/testing/fuzzing:fuzz_support",
     ],
 )
 

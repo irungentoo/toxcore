@@ -93,23 +93,6 @@ int getfriendcon_id(const Messenger *m, int32_t friendnumber)
 }
 
 /**
- * @return a uint16_t that represents the checksum of address of length len.
- */
-non_null()
-static uint16_t address_checksum(const uint8_t *address, uint32_t len)
-{
-    uint8_t checksum[2] = {0};
-    uint16_t check;
-
-    for (uint32_t i = 0; i < len; ++i) {
-        checksum[i % 2] ^= address[i];
-    }
-
-    memcpy(&check, checksum, sizeof(check));
-    return check;
-}
-
-/**
  * Format: `[real_pk (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]`
  *
  * @param[out] address FRIEND_ADDRESS_SIZE byte address to give to others.
@@ -119,7 +102,7 @@ void getaddress(const Messenger *m, uint8_t *address)
     pk_copy(address, nc_get_self_public_key(m->net_crypto));
     uint32_t nospam = get_nospam(m->fr);
     memcpy(address + CRYPTO_PUBLIC_KEY_SIZE, &nospam, sizeof(nospam));
-    uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+    uint16_t checksum = data_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
     memcpy(address + CRYPTO_PUBLIC_KEY_SIZE + sizeof(nospam), &checksum, sizeof(checksum));
 }
 
@@ -236,7 +219,7 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
     }
 
     uint16_t check;
-    const uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+    const uint16_t checksum = data_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
     memcpy(&check, address + CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint32_t), sizeof(check));
 
     if (check != checksum) {
@@ -2887,7 +2870,7 @@ static State_Load_Status friends_list_load(Messenger *m, const uint8_t *data, ui
             uint8_t address[FRIEND_ADDRESS_SIZE];
             pk_copy(address, temp.real_pk);
             memcpy(address + CRYPTO_PUBLIC_KEY_SIZE, &temp.friendrequest_nospam, sizeof(uint32_t));
-            uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
+            uint16_t checksum = data_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
             memcpy(address + CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint32_t), &checksum, sizeof(checksum));
             m_addfriend(m, address, temp.info, net_ntohs(temp.info_size));
         }

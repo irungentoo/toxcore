@@ -11,6 +11,8 @@ CPPCHECK+=("--inconclusive")
 CPPCHECK+=("--error-exitcode=1")
 # Used for VLA.
 CPPCHECK+=("--suppress=allocaCalled")
+# False positives on sanctions_copy in group_moderation.c
+CPPCHECK+=("--suppress=doubleFree")
 # False positives in switch statements.
 CPPCHECK+=("--suppress=knownConditionTrueFalse")
 # Cppcheck does not need standard library headers to get proper results.

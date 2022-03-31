@@ -6,11 +6,17 @@
 #include <array>
 #include <vector>
 
+#include "util.h"
+
 namespace {
+
+using ExtPublicKey = std::array<uint8_t, EXT_PUBLIC_KEY_SIZE>;
+using ExtSecretKey = std::array<uint8_t, EXT_SECRET_KEY_SIZE>;
+using Signature = std::array<uint8_t, CRYPTO_SIGNATURE_SIZE>;
+using Nonce = std::array<uint8_t, CRYPTO_NONCE_SIZE>;
 
 TEST(CryptoCore, IncrementNonce)
 {
-    using Nonce = std::array<uint8_t, CRYPTO_NONCE_SIZE>;
     Nonce nonce{};
     increment_nonce(nonce.data());
     EXPECT_EQ(
@@ -26,7 +32,6 @@ TEST(CryptoCore, IncrementNonce)
 
 TEST(CryptoCore, IncrementNonceNumber)
 {
-    using Nonce = std::array<uint8_t, CRYPTO_NONCE_SIZE>;
     Nonce nonce{};
 
     increment_nonce_number(nonce.data(), 0x1F5);
@@ -41,6 +46,26 @@ TEST(CryptoCore, IncrementNonceNumber)
     EXPECT_EQ(nonce,
         (Nonce{
             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x12, 0x34, 0x5A, 0x62}}));
+}
+
+TEST(CryptoCore, Signatures)
+{
+    ExtPublicKey pk;
+    ExtSecretKey sk;
+
+    EXPECT_TRUE(create_extended_keypair(pk.data(), sk.data()));
+
+    std::vector<uint8_t> message;
+
+    // Try a few different sizes, including empty 0 length message.
+    for (uint8_t i = 0; i < 100; ++i) {
+        message.push_back(random_u08());
+        Signature signature;
+        EXPECT_TRUE(crypto_signature_create(
+            signature.data(), message.data(), message.size(), get_sig_sk(sk.data())));
+        EXPECT_TRUE(crypto_signature_verify(
+            signature.data(), message.data(), message.size(), get_sig_pk(pk.data())));
+    }
 }
 
 }  // namespace
