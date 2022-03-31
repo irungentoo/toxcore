@@ -82,6 +82,8 @@ bool bin_pack_array(Bin_Pack *bp, uint32_t size);
 
 /** @brief Pack a MessagePack bool. */
 non_null() bool bin_pack_bool(Bin_Pack *bp, bool val);
+/** @brief Pack a `uint8_t` as MessagePack positive integer. */
+non_null() bool bin_pack_u08(Bin_Pack *bp, uint8_t val);
 /** @brief Pack a `uint16_t` as MessagePack positive integer. */
 non_null() bool bin_pack_u16(Bin_Pack *bp, uint16_t val);
 /** @brief Pack a `uint32_t` as MessagePack positive integer. */

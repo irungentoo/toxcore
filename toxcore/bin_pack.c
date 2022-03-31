@@ -102,6 +102,11 @@ bool bin_pack_bool(Bin_Pack *bp, bool val)
     return cmp_write_bool(&bp->ctx, val);
 }
 
+bool bin_pack_u08(Bin_Pack *bp, uint8_t val)
+{
+    return cmp_write_uinteger(&bp->ctx, val);
+}
+
 bool bin_pack_u16(Bin_Pack *bp, uint16_t val)
 {
     return cmp_write_uinteger(&bp->ctx, val);
