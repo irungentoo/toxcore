@@ -194,111 +194,27 @@ set(toxcore_PKGCONFIG_LIBS)
 # Requires: in pkg-config file.
 set(toxcore_PKGCONFIG_REQUIRES)
 
-# LAYER 1: Crypto core
-# --------------------
-set(toxcore_SOURCES ${toxcore_SOURCES}
+set(toxcore_SOURCES
+  third_party/cmp/cmp.c
+  third_party/cmp/cmp.h
+  toxcore/bin_pack.c
+  toxcore/bin_pack.h
+  toxcore/bin_unpack.c
+  toxcore/bin_unpack.h
   toxcore/ccompat.c
   toxcore/ccompat.h
   toxcore/crypto_core.c
-  toxcore/crypto_core.h)
-set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${LIBSODIUM_LIBRARIES})
-set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} libsodium)
-
-# LAYER 2: Basic networking
-# -------------------------
-set(toxcore_SOURCES ${toxcore_SOURCES}
-  toxcore/logger.c
-  toxcore/logger.h
-  toxcore/mono_time.c
-  toxcore/mono_time.h
-  toxcore/network.c
-  toxcore/network.h
-  toxcore/state.c
-  toxcore/state.h
-  toxcore/util.c
-  toxcore/util.h)
-
-# LAYER 3: Distributed Hash Table
-# -------------------------------
-set(toxcore_SOURCES ${toxcore_SOURCES}
+  toxcore/crypto_core.h
   toxcore/DHT.c
   toxcore/DHT.h
-  toxcore/LAN_discovery.c
-  toxcore/LAN_discovery.h
-  toxcore/ping.c
-  toxcore/ping.h
-  toxcore/ping_array.c
-  toxcore/ping_array.h)
-
-# LAYER 4: Onion routing, TCP connections, crypto connections
-# -----------------------------------------------------------
-set(toxcore_SOURCES ${toxcore_SOURCES}
-  toxcore/TCP_client.c
-  toxcore/TCP_client.h
-  toxcore/TCP_common.c
-  toxcore/TCP_common.h
-  toxcore/TCP_connection.c
-  toxcore/TCP_connection.h
-  toxcore/TCP_server.c
-  toxcore/TCP_server.h
-  toxcore/list.c
-  toxcore/list.h
-  toxcore/net_crypto.c
-  toxcore/net_crypto.h
-  toxcore/onion.c
-  toxcore/onion.h
-  toxcore/onion_announce.c
-  toxcore/onion_announce.h
-  toxcore/onion_client.c
-  toxcore/onion_client.h)
-
-# LAYER 5: Friend requests and connections
-# ----------------------------------------
-set(toxcore_SOURCES ${toxcore_SOURCES}
-  toxcore/friend_connection.c
-  toxcore/friend_connection.h
-  toxcore/friend_requests.c
-  toxcore/friend_requests.h)
-
-# LAYER 6: DHT based group chats
-# ----------------------------------------
-set(toxcore_SOURCES ${toxcore_SOURCES}
-  toxcore/group_moderation.c
-  toxcore/group_moderation.h)
-
-# LAYER 7: Tox messenger
-# ----------------------
-set(toxcore_SOURCES ${toxcore_SOURCES}
-  toxcore/Messenger.c
-  toxcore/Messenger.h)
-
-# LAYER 8: Conferences
-# --------------------
-set(toxcore_SOURCES ${toxcore_SOURCES}
-  toxcore/group.c
-  toxcore/group.h)
-
-# LAYER 9: Public API
-# -------------------
-set(toxcore_SOURCES ${toxcore_SOURCES}
-  toxcore/tox_api.c
-  toxcore/tox.c
-  toxcore/tox.h
-  toxcore/tox_private.c
-  toxcore/tox_private.h)
-set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxcore/tox.h^tox)
-
-# LAYER 10: New async events API
-# -------------------
-set(toxcore_SOURCES ${toxcore_SOURCES}
-  third_party/cmp/cmp.c
-  third_party/cmp/cmp.h
   toxcore/events/conference_connected.c
   toxcore/events/conference_invite.c
   toxcore/events/conference_message.c
   toxcore/events/conference_peer_list_changed.c
   toxcore/events/conference_peer_name.c
   toxcore/events/conference_title.c
+  toxcore/events/events_alloc.c
+  toxcore/events/events_alloc.h
   toxcore/events/file_chunk_request.c
   toxcore/events/file_recv.c
   toxcore/events/file_recv_chunk.c
@@ -313,25 +229,68 @@ set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/events/friend_status.c
   toxcore/events/friend_status_message.c
   toxcore/events/friend_typing.c
-  toxcore/events/events_alloc.c
-  toxcore/events/events_alloc.h
   toxcore/events/self_connection_status.c
-  toxcore/bin_pack.c
-  toxcore/bin_pack.h
-  toxcore/bin_unpack.c
-  toxcore/bin_unpack.h
+  toxcore/friend_connection.c
+  toxcore/friend_connection.h
+  toxcore/friend_requests.c
+  toxcore/friend_requests.h
+  toxcore/group.c
+  toxcore/group.h
+  toxcore/group_moderation.c
+  toxcore/group_moderation.h
+  toxcore/LAN_discovery.c
+  toxcore/LAN_discovery.h
+  toxcore/list.c
+  toxcore/list.h
+  toxcore/logger.c
+  toxcore/logger.h
+  toxcore/Messenger.c
+  toxcore/Messenger.h
+  toxcore/mono_time.c
+  toxcore/mono_time.h
+  toxcore/net_crypto.c
+  toxcore/net_crypto.h
+  toxcore/network.c
+  toxcore/network.h
+  toxcore/onion_announce.c
+  toxcore/onion_announce.h
+  toxcore/onion.c
+  toxcore/onion_client.c
+  toxcore/onion_client.h
+  toxcore/onion.h
+  toxcore/ping_array.c
+  toxcore/ping_array.h
+  toxcore/ping.c
+  toxcore/ping.h
+  toxcore/state.c
+  toxcore/state.h
+  toxcore/TCP_client.c
+  toxcore/TCP_client.h
+  toxcore/TCP_common.c
+  toxcore/TCP_common.h
+  toxcore/TCP_connection.c
+  toxcore/TCP_connection.h
+  toxcore/TCP_server.c
+  toxcore/TCP_server.h
+  toxcore/tox_api.c
+  toxcore/tox.c
+  toxcore/tox_dispatch.c
+  toxcore/tox_dispatch.h
   toxcore/tox_events.c
   toxcore/tox_events.h
+  toxcore/tox.h
+  toxcore/tox_private.c
+  toxcore/tox_private.h
   toxcore/tox_unpack.c
-  toxcore/tox_unpack.h)
-set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxcore/tox_events.h^tox)
-
-# LAYER 11: Dispatch recorded events to callbacks.
-# -------------------
-set(toxcore_SOURCES ${toxcore_SOURCES}
-  toxcore/tox_dispatch.c
-  toxcore/tox_dispatch.h)
-set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxcore/tox_dispatch.h^tox)
+  toxcore/tox_unpack.h
+  toxcore/util.c
+  toxcore/util.h)
+set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${LIBSODIUM_LIBRARIES})
+set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} libsodium)
+set(toxcore_API_HEADERS
+  ${toxcore_SOURCE_DIR}/toxcore/tox.h^tox
+  ${toxcore_SOURCE_DIR}/toxcore/tox_events.h^tox
+  ${toxcore_SOURCE_DIR}/toxcore/tox_dispatch.h^tox)
 
 ################################################################################
 #
@@ -358,10 +317,11 @@ if(BUILD_TOXAV)
     toxav/toxav_old.c
     toxav/video.c
     toxav/video.h)
+  set(toxcore_API_HEADERS ${toxcore_API_HEADERS}
+    ${toxcore_SOURCE_DIR}/toxav/toxav.h^toxav)
+
   set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
   set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} opus vpx)
-
-  set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxav/toxav.h^toxav)
 endif()
 
 ################################################################################
@@ -373,7 +333,8 @@ endif()
 set(toxcore_SOURCES ${toxcore_SOURCES}
   toxencryptsave/toxencryptsave.c
   toxencryptsave/toxencryptsave.h)
-set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxencryptsave/toxencryptsave.h^tox)
+set(toxcore_API_HEADERS ${toxcore_API_HEADERS}
+  ${toxcore_SOURCE_DIR}/toxencryptsave/toxencryptsave.h^tox)
 
 ################################################################################
 #
