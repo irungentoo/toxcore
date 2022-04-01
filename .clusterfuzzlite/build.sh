@@ -21,5 +21,5 @@ for TARGET in $FUZZ_TARGETS; do
   cmake --build ./ --target "$TARGET"
 
   # copy to output files
-  cp "$WORK"/"$TARGET" "$OUT"/
+  cp "$WORK/testing/fuzzing/$TARGET" "$OUT"/
 done
