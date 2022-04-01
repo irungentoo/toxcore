@@ -86,10 +86,12 @@ static void test_basic(void)
 
     // Generation of the initial handshake.
     uint8_t t_secret_key[CRYPTO_SECRET_KEY_SIZE];
-    uint8_t handshake_plain[TCP_HANDSHAKE_PLAIN_SIZE];
+    uint8_t *handshake_plain = (uint8_t *)malloc(TCP_HANDSHAKE_PLAIN_SIZE);
+    ck_assert(handshake_plain != nullptr);
     crypto_new_keypair(handshake_plain, t_secret_key);
     memcpy(handshake_plain + CRYPTO_PUBLIC_KEY_SIZE, f_nonce, CRYPTO_NONCE_SIZE);
-    uint8_t handshake[TCP_CLIENT_HANDSHAKE_SIZE];
+    uint8_t *handshake = (uint8_t *)malloc(TCP_CLIENT_HANDSHAKE_SIZE);
+    ck_assert(handshake != nullptr);
     memcpy(handshake, f_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     random_nonce(handshake + CRYPTO_PUBLIC_KEY_SIZE);
 
@@ -98,6 +100,8 @@ static void test_basic(void)
                            TCP_HANDSHAKE_PLAIN_SIZE, handshake + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
     ck_assert_msg(ret == TCP_CLIENT_HANDSHAKE_SIZE - (CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE),
                   "encrypt_data() call failed.");
+
+    free(handshake_plain);
 
     // Sending the handshake
     ck_assert_msg(net_send(ns, logger, sock, handshake, TCP_CLIENT_HANDSHAKE_SIZE - 1,
@@ -108,6 +112,8 @@ static void test_basic(void)
 
     ck_assert_msg(net_send(ns, logger, sock, handshake + (TCP_CLIENT_HANDSHAKE_SIZE - 1), 1, &localhost) == 1,
                   "The attempt to send the last byte of handshake failed.");
+
+    free(handshake);
 
     do_TCP_server_delay(tcp_s, mono_time, 50);
 

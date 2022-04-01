@@ -18,7 +18,7 @@ add_flag -Wenum-compare
 add_flag -Wfloat-equal
 add_flag -Wformat=2
 add_flag -Wframe-address
-add_flag -Wframe-larger-than=12400
+add_flag -Wframe-larger-than=9000
 add_flag -Wignored-attributes
 add_flag -Wignored-qualifiers
 add_flag -Winit-self
