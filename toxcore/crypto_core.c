@@ -40,12 +40,6 @@
 #define ENC_SECRET_KEY_SIZE CRYPTO_SECRET_KEY_SIZE
 #endif
 
-//!TOKSTYLE-
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-#include "../testing/fuzzing/fuzz_adapter.h"
-#endif
-//!TOKSTYLE+
-
 static_assert(CRYPTO_PUBLIC_KEY_SIZE == crypto_box_PUBLICKEYBYTES,
               "CRYPTO_PUBLIC_KEY_SIZE should be equal to crypto_box_PUBLICKEYBYTES");
 static_assert(CRYPTO_SECRET_KEY_SIZE == crypto_box_SECRETKEYBYTES,
@@ -122,38 +116,38 @@ static void crypto_free(uint8_t *ptr, size_t bytes)
 
 void crypto_memzero(void *data, size_t length)
 {
-#ifndef VANILLA_NACL
-    sodium_memzero(data, length);
-#else
+#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) || defined(VANILLA_NACL)
     memset(data, 0, length);
+#else
+    sodium_memzero(data, length);
 #endif
 }
 
 bool crypto_memlock(void *data, size_t length)
 {
-#ifndef VANILLA_NACL
+#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) || defined(VANILLA_NACL)
+    return false;
+#else
 
     if (sodium_mlock(data, length) != 0) {
         return false;
     }
 
     return true;
-#else
-    return false;
 #endif
 }
 
 bool crypto_memunlock(void *data, size_t length)
 {
-#ifndef VANILLA_NACL
+#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) || defined(VANILLA_NACL)
+    return false;
+#else
 
     if (sodium_munlock(data, length) != 0) {
         return false;
     }
 
     return true;
-#else
-    return false;
 #endif
 }
 
@@ -169,18 +163,26 @@ bool public_key_eq(const uint8_t *pk1, const uint8_t *pk2)
 
 bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2)
 {
-#ifndef VANILLA_NACL
-    return crypto_verify_64(cksum1, cksum2) == 0;
-#else
+#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
+    // Hope that this is better for the fuzzer
+    return memcmp(cksum1, cksum2, CRYPTO_SHA512_SIZE) == 0;
+#elif defined(VANILLA_NACL)
     const int lo = crypto_verify_32(cksum1, cksum2) == 0 ? 1 : 0;
     const int hi = crypto_verify_32(cksum1 + 8, cksum2 + 8) == 0 ? 1 : 0;
     return (lo & hi) == 1;
+#else
+    return crypto_verify_64(cksum1, cksum2) == 0;
 #endif
 }
 
 bool crypto_sha256_eq(const uint8_t *cksum1, const uint8_t *cksum2)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // Hope that this is better for the fuzzer
+    return memcmp(cksum1, cksum2, CRYPTO_SHA256_SIZE) == 0;
+#else
     return crypto_verify_32(cksum1, cksum2) == 0;
+#endif
 }
 
 uint8_t random_u08(const Random *rng)
@@ -238,17 +240,19 @@ bool crypto_signature_verify(const uint8_t *signature, const uint8_t *message, u
 
 bool public_key_valid(const uint8_t *public_key)
 {
-    if (public_key[31] >= 128) { /* Last bit of key is always zero. */
-        return false;
-    }
-
-    return true;
+    /* Last bit of key is always zero. */
+    return public_key[31] < 128;
 }
 
 int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key,
                            uint8_t *shared_key)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    memcpy(shared_key, public_key, CRYPTO_SHARED_KEY_SIZE);
+    return 0;
+#else
     return crypto_box_beforenm(shared_key, public_key, secret_key);
+#endif
 }
 
 int32_t encrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
@@ -450,11 +454,6 @@ void crypto_derive_public_key(uint8_t *public_key, const uint8_t *secret_key)
     crypto_scalarmult_curve25519_base(public_key, secret_key);
 }
 
-void crypto_sha256(uint8_t *hash, const uint8_t *data, size_t length)
-{
-    crypto_hash_sha256(hash, data, length);
-}
-
 void new_hmac_key(const Random *rng, uint8_t *key)
 {
     random_bytes(rng, key, CRYPTO_HMAC_KEY_SIZE);
@@ -472,31 +471,42 @@ bool crypto_hmac_verify(const uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[
     return crypto_auth_verify(auth, data, length, key) == 0;
 }
 
+void crypto_sha256(uint8_t *hash, const uint8_t *data, size_t length)
+{
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    memset(hash, 0, CRYPTO_SHA256_SIZE);
+    memcpy(hash, data, length < CRYPTO_SHA256_SIZE ? length : CRYPTO_SHA256_SIZE);
+#else
+    crypto_hash_sha256(hash, data, length);
+#endif
+}
+
 void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    memset(hash, 0, CRYPTO_SHA512_SIZE);
+    memcpy(hash, data, length < CRYPTO_SHA512_SIZE ? length : CRYPTO_SHA512_SIZE);
+#else
     crypto_hash_sha512(hash, data, length);
+#endif
 }
 
 non_null()
 static void sys_random_bytes(void *obj, uint8_t *bytes, size_t length)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    fuzz_random_bytes(bytes, length);
-#else
     randombytes(bytes, length);
-#endif
 }
 
 non_null()
 static uint32_t sys_random_uniform(void *obj, uint32_t upper_bound)
 {
-#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) || defined(VANILLA_NACL)
+#ifdef VANILLA_NACL
     uint32_t randnum;
     sys_random_bytes(obj, (uint8_t *)&randnum, sizeof(randnum));
     return randnum % upper_bound;
 #else
     return randombytes_uniform(upper_bound);
-#endif  // VANILLA_NACL
+#endif
 }
 
 static const Random_Funcs system_random_funcs = {
@@ -508,6 +518,11 @@ static const Random system_random_obj = {&system_random_funcs};
 
 const Random *system_random(void)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    if ((true)) {
+        return nullptr;
+    }
+#endif
 #ifndef VANILLA_NACL
     // It is safe to call this function more than once and from different
     // threads -- subsequent calls won't have any effects.
@@ -515,7 +530,6 @@ const Random *system_random(void)
         return nullptr;
     }
 #endif
-
     return &system_random_obj;
 }
 

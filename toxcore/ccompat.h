@@ -12,8 +12,6 @@
 
 #include "attributes.h"
 
-/* No declarations here. */
-
 //!TOKSTYLE-
 
 // Variable length arrays.

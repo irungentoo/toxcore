@@ -1,19 +1,18 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
 
-cc_library(
-    name = "fuzz_adapter",
-    srcs = ["fuzz_adapter.c"],
-    hdrs = ["fuzz_adapter.h"],
-    visibility = ["//c-toxcore:__subpackages__"],
-)
+package(features = ["layering_check"])
 
 cc_library(
     name = "fuzz_support",
     srcs = ["fuzz_support.cc"],
     hdrs = ["fuzz_support.h"],
     visibility = ["//c-toxcore:__subpackages__"],
-    deps = ["//c-toxcore/toxcore:tox"],
+    deps = [
+        "//c-toxcore/toxcore:crypto_core",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:tox",
+    ],
 )
 
 cc_library(
@@ -31,6 +30,9 @@ cc_fuzz_test(
     deps = [
         ":fuzz_support",
         "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_dispatch",
+        "//c-toxcore/toxcore:tox_events",
+        "//c-toxcore/toxcore:util",
     ],
 )
 

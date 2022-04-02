@@ -64,7 +64,6 @@ cc_library(
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":ccompat",
-        "//c-toxcore/testing/fuzzing:fuzz_adapter",
         "@libsodium",
     ],
 )
@@ -136,7 +135,6 @@ cc_library(
     ],
     deps = [
         ":ccompat",
-        "//c-toxcore/testing/fuzzing:fuzz_adapter",
         "@pthread",
     ],
 )
@@ -160,6 +158,7 @@ cc_library(
         "//c-toxcore/auto_tests:__pkg__",
         "//c-toxcore/other:__pkg__",
         "//c-toxcore/other/bootstrap_daemon:__pkg__",
+        "//c-toxcore/testing/fuzzing:__pkg__",
         "//c-toxcore/toxav:__pkg__",
     ],
     deps = [
@@ -178,6 +177,7 @@ cc_library(
         "//c-toxcore/auto_tests:__pkg__",
         "//c-toxcore/other:__pkg__",
         "//c-toxcore/other/bootstrap_daemon:__pkg__",
+        "//c-toxcore/testing/fuzzing:__pkg__",
         "//c-toxcore/toxav:__pkg__",
     ],
     deps = [
@@ -186,7 +186,6 @@ cc_library(
         ":logger",
         ":mono_time",
         ":util",
-        "//c-toxcore/testing/fuzzing:fuzz_adapter",
         "@libsodium",
         "@psocket",
         "@pthread",

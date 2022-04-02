@@ -97,12 +97,6 @@
 #include "mono_time.h"
 #include "util.h"
 
-//!TOKSTYLE-
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-#include "../testing/fuzzing/fuzz_adapter.h"
-#endif
-//!TOKSTYLE+
-
 // Disable MSG_NOSIGNAL on systems not supporting it, e.g. Windows, FreeBSD
 #if !defined(MSG_NOSIGNAL)
 #define MSG_NOSIGNAL 0
@@ -127,12 +121,10 @@ static bool should_ignore_recv_error(int err)
     return err == EWOULDBLOCK;
 }
 
-#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 static bool should_ignore_connect_error(int err)
 {
     return err == EWOULDBLOCK || err == EINPROGRESS;
 }
-#endif
 
 non_null()
 static const char *inet_ntop4(const struct in_addr *addr, char *buf, size_t bufsize)
@@ -488,54 +480,34 @@ struct Network_Addr {
 non_null()
 static int sys_close(void *obj, int sock)
 {
-#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
-    return 0;
-#elif defined(OS_WIN32)
+#if defined(OS_WIN32)
     return closesocket(sock);
 #else  // !OS_WIN32
     return close(sock);
-#endif  // FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+#endif
 }
 
 non_null()
 static int sys_accept(void *obj, int sock)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return 2;
-#else
     return accept(sock, nullptr, nullptr);
-#endif
 }
 
 non_null()
 static int sys_bind(void *obj, int sock, const Network_Addr *addr)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return 0;
-#else
     return bind(sock, (const struct sockaddr *)&addr->addr, addr->size);
-#endif
 }
 
 non_null()
 static int sys_listen(void *obj, int sock, int backlog)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return 0;
-#else
     return listen(sock, backlog);
-#endif
 }
 
 non_null()
 static int sys_recvbuf(void *obj, int sock)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    // TODO(iphydf): Return something sensible here (from the fuzzer): number of
-    // bytes to be read from the socket.
-    return 0;
-#else
-
 #ifdef OS_WIN32
     u_long count = 0;
     ioctlsocket(sock, FIONREAD, &count);
@@ -545,100 +517,63 @@ static int sys_recvbuf(void *obj, int sock)
 #endif
 
     return count;
-#endif
 }
 
 non_null()
 static int sys_recv(void *obj, int sock, uint8_t *buf, size_t len)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return fuzz_recv(sock, (char *)buf, len, MSG_NOSIGNAL);
-#else
     return recv(sock, (char *)buf, len, MSG_NOSIGNAL);
-#endif
 }
 
 non_null()
 static int sys_send(void *obj, int sock, const uint8_t *buf, size_t len)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return fuzz_send(sock, (const char *)buf, len, MSG_NOSIGNAL);
-#else
     return send(sock, (const char *)buf, len, MSG_NOSIGNAL);
-#endif
 }
 
 non_null()
 static int sys_sendto(void *obj, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return fuzz_sendto(sock, (const char *)buf, len, 0, (const struct sockaddr *)&addr->addr, addr->size);
-#else
     return sendto(sock, (const char *)buf, len, 0, (const struct sockaddr *)&addr->addr, addr->size);
-#endif
 }
 
 non_null()
 static int sys_recvfrom(void *obj, int sock, uint8_t *buf, size_t len, Network_Addr *addr) {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    socklen_t size = addr->size;
-    const int ret = fuzz_recvfrom(sock, (char *)buf, len, 0, (struct sockaddr *)&addr->addr, &size);
-    addr->size = size;
-    return ret;
-#else
     socklen_t size = addr->size;
     const int ret = recvfrom(sock, (char *)buf, len, 0, (struct sockaddr *)&addr->addr, &size);
     addr->size = size;
     return ret;
-#endif
 }
 
 non_null()
 static int sys_socket(void *obj, int domain, int type, int proto)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return 1;
-#else
     return (int)socket(domain, type, proto);
-#endif
 }
 
 non_null()
 static int sys_socket_nonblock(void *obj, int sock, bool nonblock)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return 0;
-#else
 #ifdef OS_WIN32
     u_long mode = nonblock ? 1 : 0;
     return ioctlsocket(sock, FIONBIO, &mode);
 #else
     return fcntl(sock, F_SETFL, O_NONBLOCK, nonblock ? 1 : 0);
 #endif /* OS_WIN32 */
-#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 non_null()
 static int sys_getsockopt(void *obj, int sock, int level, int optname, void *optval, size_t *optlen)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    memset(optval, 0, *optlen);
-    return 0;
-#else
     socklen_t len = *optlen;
     const int ret = getsockopt(sock, level, optname, optval, &len);
     *optlen = len;
     return ret;
-#endif
 }
 
 non_null()
 static int sys_setsockopt(void *obj, int sock, int level, int optname, const void *optval, size_t optlen)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return 0;
-#else
     return setsockopt(sock, level, optname, optval, optlen);
-#endif
 }
 
 static const Network_Funcs system_network_funcs = {
@@ -660,6 +595,11 @@ static const Network system_network_obj = {&system_network_funcs};
 
 const Network *system_network(void)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    if ((true)) {
+        return nullptr;
+    }
+#endif
 #ifdef OS_WIN32
     WSADATA wsaData;
 
@@ -1528,11 +1468,9 @@ bool addr_parse_ip(const char *address, IP *to)
     return false;
 }
 
-#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 /** addr_resolve return values */
 #define TOX_ADDR_RESOLVE_INET  1
 #define TOX_ADDR_RESOLVE_INET6 2
-#endif
 
 /**
  * Uses getaddrinfo to resolve an address into an IP address.
@@ -1555,8 +1493,10 @@ non_null(1, 2, 3) nullable(4)
 static int addr_resolve(const Network *ns, const char *address, IP *to, IP *extra)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return 0;
-#else
+    if ((true)) {
+        return 0;
+    }
+#endif
 
     if (address == nullptr || to == nullptr) {
         return 0;
@@ -1641,7 +1581,6 @@ static int addr_resolve(const Network *ns, const char *address, IP *to, IP *extr
 
     freeaddrinfo(server);
     return result;
-#endif
 }
 
 bool addr_resolve_or_parse_ip(const Network *ns, const char *address, IP *to, IP *extra)
@@ -1682,8 +1621,11 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
     }
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return addrsize != 0;
-#else
+    if ((true)) {
+        return true;
+    }
+#endif
+
     Ip_Ntoa ip_str;
     LOGGER_DEBUG(log, "connecting socket %d to %s:%d",
                  (int)sock.sock, net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port));
@@ -1703,20 +1645,22 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
     }
 
     return true;
-#endif
 }
 
 int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    *res = (IP_Port *)calloc(1, sizeof(IP_Port));
-    assert(*res != nullptr);
-    IP_Port *ip_port = *res;
-    ip_port->ip.ip.v4.uint32 = 0x7F000003; // 127.0.0.3
-    ip_port->ip.family = *make_tox_family(AF_INET);
+    if ((true)) {
+        *res = (IP_Port *)calloc(1, sizeof(IP_Port));
+        assert(*res != nullptr);
+        IP_Port *ip_port = *res;
+        ip_port->ip.ip.v4.uint32 = 0x7F000003; // 127.0.0.3
+        ip_port->ip.family = *make_tox_family(AF_INET);
 
-    return 1;
-#else
+        return 1;
+    }
+#endif
+
     // Try parsing as IP address first.
     IP_Port parsed = {{{0}}};
 
@@ -1805,7 +1749,6 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
     freeaddrinfo(infos);
 
     return count;
-#endif
 }
 
 void net_freeipport(IP_Port *ip_ports)

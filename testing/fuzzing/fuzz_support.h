@@ -97,6 +97,18 @@ void fuzz_select_target(const uint8_t *data, std::size_t size, Args &&... args)
     return fuzz_select_target(selector, input, std::forward<Args>(args)...);
 }
 
-std::unique_ptr<Tox_System> fuzz_system(uint64_t &clock);
+struct Network;
+struct Random;
+
+struct Fuzz_System {
+    uint64_t clock;
+    Fuzz_Data &data;
+    std::unique_ptr<Tox_System> sys;
+    std::unique_ptr<Network> ns;
+    std::unique_ptr<Random> rng;
+
+    Fuzz_System(Fuzz_Data &input);
+    ~Fuzz_System();
+};
 
 #endif  // C_TOXCORE_TESTING_FUZZING_FUZZ_SUPPORT_H
