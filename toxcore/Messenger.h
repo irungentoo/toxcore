@@ -761,7 +761,7 @@ Messenger *new_messenger(Mono_Time *mono_time, const Random *rng, const Network 
  *
  * Free all datastructures.
  */
-non_null()
+nullable(1)
 void kill_messenger(Messenger *m);
 
 /** @brief The main loop that needs to be run at least 20 times per second. */

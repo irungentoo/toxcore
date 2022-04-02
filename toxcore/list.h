@@ -40,7 +40,7 @@ non_null()
 int bs_list_init(BS_List *list, uint32_t element_size, uint32_t initial_capacity);
 
 /** Free a list initiated with list_init */
-non_null()
+nullable(1)
 void bs_list_free(BS_List *list);
 
 /** @brief Retrieve the id of an element in the list

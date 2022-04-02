@@ -2655,6 +2655,10 @@ void do_dht(DHT *dht)
 
 void kill_dht(DHT *dht)
 {
+    if (dht == nullptr) {
+        return;
+    }
+
     networking_registerhandler(dht->net, NET_PACKET_GET_NODES, nullptr, nullptr);
     networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, nullptr, nullptr);
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO, nullptr, nullptr);

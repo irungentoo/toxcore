@@ -473,7 +473,7 @@ non_null()
 DHT *new_dht(const Logger *log, const Random *rng, const Network *ns, Mono_Time *mono_time, Networking_Core *net,
              bool hole_punching_enabled, bool lan_discovery_enabled);
 
-non_null()
+nullable(1)
 void kill_dht(DHT *dht);
 
 /**

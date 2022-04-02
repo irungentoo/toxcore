@@ -164,7 +164,7 @@ non_null()
 void do_friend_connections(Friend_Connections *fr_c, void *userdata);
 
 /** Free everything related with friend_connections. */
-non_null()
+nullable(1)
 void kill_friend_connections(Friend_Connections *fr_c);
 
 typedef struct Friend_Conn Friend_Conn;

@@ -260,7 +260,8 @@ int kill_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connections_number
 
 non_null(1, 2) nullable(3)
 void do_tcp_connections(const Logger *logger, TCP_Connections *tcp_c, void *userdata);
-non_null()
+
+nullable(1)
 void kill_tcp_connections(TCP_Connections *tcp_c);
 
 #endif

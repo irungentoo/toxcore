@@ -1277,6 +1277,10 @@ void do_TCP_server(TCP_Server *tcp_server, const Mono_Time *mono_time)
 
 void kill_TCP_server(TCP_Server *tcp_server)
 {
+    if (tcp_server == nullptr) {
+        return;
+    }
+
     for (uint32_t i = 0; i < tcp_server->num_listening_socks; ++i) {
         kill_sock(tcp_server->ns, tcp_server->socks_listening[i]);
     }

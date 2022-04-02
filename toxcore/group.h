@@ -392,7 +392,7 @@ non_null(1) nullable(2)
 void do_groupchats(Group_Chats *g_c, void *userdata);
 
 /** Free everything related with group chats. */
-non_null()
+nullable(1)
 void kill_groupchats(Group_Chats *g_c);
 
 #endif

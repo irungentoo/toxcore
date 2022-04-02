@@ -156,6 +156,10 @@ int bs_list_init(BS_List *list, uint32_t element_size, uint32_t initial_capacity
 
 void bs_list_free(BS_List *list)
 {
+    if (list == nullptr) {
+        return;
+    }
+
     // free both arrays
     free(list->data);
     list->data = nullptr;

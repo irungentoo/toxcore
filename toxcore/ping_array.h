@@ -34,7 +34,7 @@ struct Ping_Array *ping_array_new(uint32_t size, uint32_t timeout);
 /**
  * @brief Free all the allocated memory in a @ref Ping_Array.
  */
-non_null()
+nullable(1)
 void ping_array_kill(Ping_Array *array);
 
 /**

@@ -43,7 +43,7 @@ Logger *logger_new(void);
 /**
  * Frees all resources associated with the logger.
  */
-non_null()
+nullable(1)
 void logger_kill(Logger *log);
 
 /**

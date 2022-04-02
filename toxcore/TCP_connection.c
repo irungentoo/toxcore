@@ -1580,6 +1580,10 @@ void do_tcp_connections(const Logger *logger, TCP_Connections *tcp_c, void *user
 
 void kill_tcp_connections(TCP_Connections *tcp_c)
 {
+    if (tcp_c == nullptr) {
+        return;
+    }
+
     for (uint32_t i = 0; i < tcp_c->tcp_connections_length; ++i) {
         kill_TCP_connection(tcp_c->tcp_connections[i].connection);
     }

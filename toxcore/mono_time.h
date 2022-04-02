@@ -46,7 +46,9 @@ extern "C" {
 typedef struct Mono_Time Mono_Time;
 
 Mono_Time *mono_time_new(void);
-non_null() void mono_time_free(Mono_Time *mono_time);
+
+nullable(1)
+void mono_time_free(Mono_Time *mono_time);
 
 /**
  * Update mono_time; subsequent calls to mono_time_get or mono_time_is_timeout

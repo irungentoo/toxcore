@@ -148,7 +148,7 @@ void set_callback_handle_recv_1(Onion *onion, onion_recv_1_cb *function, void *o
 non_null()
 Onion *new_onion(const Logger *log, const Mono_Time *mono_time, const Random *rng, DHT *dht);
 
-non_null()
+nullable(1)
 void kill_onion(Onion *onion);
 
 

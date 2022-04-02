@@ -172,6 +172,9 @@ Mono_Time *mono_time_new(void)
 
 void mono_time_free(Mono_Time *mono_time)
 {
+    if (mono_time == nullptr) {
+        return;
+    }
 #ifdef OS_WIN32
     pthread_mutex_destroy(&mono_time->last_clock_lock);
 #endif

@@ -20,7 +20,7 @@ typedef struct Ping Ping;
 non_null()
 Ping *ping_new(const Mono_Time *mono_time, const Random *rng, DHT *dht);
 
-non_null()
+nullable(1)
 void ping_kill(Ping *ping);
 
 /** @brief Add nodes to the to_ping list.

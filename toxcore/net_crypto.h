@@ -386,6 +386,7 @@ uint32_t crypto_run_interval(const Net_Crypto *c);
 non_null(1) nullable(2)
 void do_net_crypto(Net_Crypto *c, void *userdata);
 
-non_null() void kill_net_crypto(Net_Crypto *c);
+nullable(1)
+void kill_net_crypto(Net_Crypto *c);
 
 #endif

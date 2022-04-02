@@ -70,7 +70,7 @@ Bin_Pack *bin_pack_new(uint8_t *buf, uint32_t buf_size);
  *
  * Does not deallocate the buffer inside.
  */
-non_null()
+nullable(1)
 void bin_pack_free(Bin_Pack *bp);
 
 /** @brief Start packing a MessagePack array.

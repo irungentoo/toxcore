@@ -43,7 +43,7 @@ non_null()
 void do_TCP_server(TCP_Server *tcp_server, const Mono_Time *mono_time);
 
 /** Kill the TCP server */
-non_null()
+nullable(1)
 void kill_TCP_server(TCP_Server *tcp_server);
 
 

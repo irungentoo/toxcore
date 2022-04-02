@@ -47,6 +47,8 @@ non_null()
 void friendreq_init(Friend_Requests *fr, Friend_Connections *fr_c);
 
 Friend_Requests *friendreq_new(void);
-non_null() void friendreq_kill(Friend_Requests *fr);
+
+nullable(1)
+void friendreq_kill(Friend_Requests *fr);
 
 #endif

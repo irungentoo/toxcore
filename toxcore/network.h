@@ -579,7 +579,7 @@ non_null()
 Networking_Core *new_networking_no_udp(const Logger *log, const Network *ns);
 
 /** Function to cleanup networking stuff (doesn't do much right now). */
-non_null()
+nullable(1)
 void kill_networking(Networking_Core *net);
 
 #ifdef __cplusplus

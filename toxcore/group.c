@@ -3800,6 +3800,10 @@ void do_groupchats(Group_Chats *g_c, void *userdata)
 /** Free everything related with group chats. */
 void kill_groupchats(Group_Chats *g_c)
 {
+    if (g_c == nullptr) {
+        return;
+    }
+
     for (uint16_t i = 0; i < g_c->num_chats; ++i) {
         del_groupchat(g_c, i, false);
     }
