@@ -15,6 +15,13 @@ cc_library(
     visibility = ["//c-toxcore:__subpackages__"],
 )
 
+cc_library(
+    name = "fuzz_tox",
+    hdrs = ["fuzz_tox.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [":fuzz_support"],
+)
+
 cc_fuzz_test(
     name = "bootstrap_fuzz_test",
     srcs = ["bootstrap_harness.cc"],

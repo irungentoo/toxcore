@@ -7,7 +7,7 @@
 
 namespace {
 
-void TestHandleRequest(Fuzz_Data input)
+void TestHandleRequest(Fuzz_Data &input)
 {
     CONSUME_OR_RETURN(const uint8_t *self_public_key, input, CRYPTO_PUBLIC_KEY_SIZE);
     CONSUME_OR_RETURN(const uint8_t *self_secret_key, input, CRYPTO_SECRET_KEY_SIZE);
@@ -19,7 +19,7 @@ void TestHandleRequest(Fuzz_Data input)
         self_public_key, self_secret_key, public_key, request, &request_id, input.data, input.size);
 }
 
-void TestUnpackNodes(Fuzz_Data input)
+void TestUnpackNodes(Fuzz_Data &input)
 {
     CONSUME1_OR_RETURN(const bool tcp_enabled, input);
 

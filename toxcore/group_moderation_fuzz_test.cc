@@ -4,7 +4,7 @@
 
 namespace {
 
-void TestModListUnpack(Fuzz_Data input)
+void TestModListUnpack(Fuzz_Data &input)
 {
     CONSUME1_OR_RETURN(const uint16_t num_mods, input);
     Moderation mods{};
@@ -12,7 +12,7 @@ void TestModListUnpack(Fuzz_Data input)
     mod_list_cleanup(&mods);
 }
 
-void TestSanctionsListUnpack(Fuzz_Data input)
+void TestSanctionsListUnpack(Fuzz_Data &input)
 {
     Mod_Sanction sanctions[10];
     Mod_Sanction_Creds creds;
@@ -20,7 +20,7 @@ void TestSanctionsListUnpack(Fuzz_Data input)
     sanctions_list_unpack(sanctions, &creds, 10, input.data, input.size, &processed_data_len);
 }
 
-void TestSanctionCredsUnpack(Fuzz_Data input)
+void TestSanctionCredsUnpack(Fuzz_Data &input)
 {
     CONSUME_OR_RETURN(const uint8_t *data, input, MOD_SANCTIONS_CREDS_SIZE);
     Mod_Sanction_Creds creds;
