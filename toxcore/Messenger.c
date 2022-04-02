@@ -1266,20 +1266,27 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
     }
 
     if (send_file_control_packet(m, friendnumber, inbound, file_number, control, nullptr, 0)) {
-        if (control == FILECONTROL_KILL) {
-            if (!inbound && (ft->status == FILESTATUS_TRANSFERRING || ft->status == FILESTATUS_FINISHED)) {
-                // We are actively sending that file, remove from list
-                --m->friendlist[friendnumber].num_sending_files;
+        switch (control) {
+            case FILECONTROL_KILL: {
+                if (!inbound && (ft->status == FILESTATUS_TRANSFERRING || ft->status == FILESTATUS_FINISHED)) {
+                    // We are actively sending that file, remove from list
+                    --m->friendlist[friendnumber].num_sending_files;
+                }
+
+                ft->status = FILESTATUS_NONE;
+                break;
             }
+            case FILECONTROL_PAUSE: {
+                ft->paused |= FILE_PAUSE_US;
+                break;
+            }
+            case FILECONTROL_ACCEPT: {
+                ft->status = FILESTATUS_TRANSFERRING;
 
-            ft->status = FILESTATUS_NONE;
-        } else if (control == FILECONTROL_PAUSE) {
-            ft->paused |= FILE_PAUSE_US;
-        } else if (control == FILECONTROL_ACCEPT) {
-            ft->status = FILESTATUS_TRANSFERRING;
-
-            if ((ft->paused & FILE_PAUSE_US) != 0) {
-                ft->paused ^=  FILE_PAUSE_US;
+                if ((ft->paused & FILE_PAUSE_US) != 0) {
+                    ft->paused ^= FILE_PAUSE_US;
+                }
+                break;
             }
         }
     } else {
