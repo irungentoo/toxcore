@@ -1251,7 +1251,6 @@ Networking_Core *new_networking_no_udp(const Logger *log, const Network *ns)
 
     net->ns = ns;
     net->log = log;
-    net->ns = ns;
 
     return net;
 }
