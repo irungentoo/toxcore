@@ -34,7 +34,6 @@ static inline IP get_loopback(void)
 #define NUM_FORWARDER_DHT (NUM_FORWARDER - NUM_FORWARDER_TCP)
 #define NUM_FORWARDING_ITERATIONS 1
 #define FORWARD_SEND_INTERVAL 2
-#define FORWARDER_TCP_RELAY_PORT 36570
 #define FORWARDING_BASE_PORT 36571
 
 typedef struct Test_Data {
@@ -180,11 +179,21 @@ static void test_forwarding(void)
     printf("testing forwarding via tcp relays and dht\n");
 
     struct Tox_Options *opts = tox_options_new(nullptr);
-    tox_options_set_tcp_port(opts, FORWARDER_TCP_RELAY_PORT);
-    IP_Port relay_ipport_tcp = {ip, net_htons(FORWARDER_TCP_RELAY_PORT)};
-    Tox *relay = tox_new_log(opts, nullptr, nullptr);
+    uint16_t forwarder_tcp_relay_port = 36570;
+    Tox *relay = nullptr;
+    // Try a few different ports.
+    for (uint8_t i = 0; i < 100; ++i) {
+        tox_options_set_tcp_port(opts, forwarder_tcp_relay_port);
+        relay = tox_new_log(opts, nullptr, nullptr);
+        if (relay != nullptr) {
+            break;
+        }
+        ++forwarder_tcp_relay_port;
+    }
     tox_options_free(opts);
     ck_assert_msg(relay != nullptr, "Failed to create TCP relay");
+
+    IP_Port relay_ipport_tcp = {ip, net_htons(forwarder_tcp_relay_port)};
 
     uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
     tox_self_get_dht_id(relay, dpk);
