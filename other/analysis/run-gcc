@@ -16,7 +16,6 @@ run() {
     -Wall \
     -Wextra \
     -Werror \
-    -Wno-error=null-dereference \
     -Wno-error=type-limits \
     -Wno-aggressive-loop-optimizations \
     -Wno-float-conversion \
