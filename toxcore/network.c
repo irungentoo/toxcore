@@ -313,13 +313,16 @@ static const Family *make_tox_family(int family)
 non_null()
 static void get_ip4(IP4 *result, const struct in_addr *addr)
 {
+    static_assert(sizeof(result->uint32) == sizeof(addr->s_addr),
+                  "Tox and operating system don't agree on size of IPv4 addresses");
     result->uint32 = addr->s_addr;
 }
 
 non_null()
 static void get_ip6(IP6 *result, const struct in6_addr *addr)
 {
-    assert(sizeof(result->uint8) == sizeof(addr->s6_addr));
+    static_assert(sizeof(result->uint8) == sizeof(addr->s6_addr),
+                  "Tox and operating system don't agree on size of IPv6 addresses");
     memcpy(result->uint8, addr->s6_addr, sizeof(result->uint8));
 }
 
@@ -332,7 +335,6 @@ static void fill_addr4(const IP4 *ip, struct in_addr *addr)
 non_null()
 static void fill_addr6(const IP6 *ip, struct in6_addr *addr)
 {
-    assert(sizeof(ip->uint8) == sizeof(addr->s6_addr));
     memcpy(addr->s6_addr, ip->uint8, sizeof(ip->uint8));
 }
 

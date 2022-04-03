@@ -2744,7 +2744,7 @@ non_null()
 static uint8_t *save_nospam_keys(const Messenger *m, uint8_t *data)
 {
     const uint32_t len = m_plugin_size(m, STATE_TYPE_NOSPAMKEYS);
-    assert(sizeof(get_nospam(m->fr)) == sizeof(uint32_t));
+    static_assert(sizeof(get_nospam(m->fr)) == sizeof(uint32_t), "nospam doesn't fit in a 32 bit int");
     data = state_write_section_header(data, STATE_COOKIE_TYPE, len, STATE_TYPE_NOSPAMKEYS);
     const uint32_t nospam = get_nospam(m->fr);
     host_to_lendian_bytes32(data, nospam);

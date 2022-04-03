@@ -18,7 +18,6 @@ sh_test(
         "-Wno-callgraph",
         "-Wno-enum-names",
         "-Wno-type-check",
-        "-Wno-var-unused-in-scope",
         "+RTS",
         "-N3",
         "-RTS",
