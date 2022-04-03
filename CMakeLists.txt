@@ -106,11 +106,6 @@ if(NOT USE_IPV6)
   add_definitions(-DUSE_IPV6=0)
 endif()
 
-option(USE_STDERR_LOGGER "Enable logging to stderr when the logger is NULL" OFF)
-if(USE_STDERR_LOGGER)
-  add_definitions(-DUSE_STDERR_LOGGER=1)
-endif()
-
 option(BUILD_MISC_TESTS "Build additional tests and utilities" OFF)
 option(BUILD_FUN_UTILS "Build additional just for fun utilities" OFF)
 

@@ -26,6 +26,8 @@ add_flag -Wno-format-nonliteral
 # write {{{0}}} in some cases, which is ugly and a maintenance burden.
 add_flag -Wno-missing-braces
 add_flag -Wno-missing-field-initializers
+# We don't use this attribute. It appears in the non-NDEBUG stderr logger.
+add_flag -Wno-missing-noreturn
 # Useful sometimes, but we accept padding in structs for clarity.
 # Reordering fields to avoid padding will reduce readability.
 add_flag -Wno-padded

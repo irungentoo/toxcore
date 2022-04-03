@@ -22,7 +22,7 @@ struct Logger {
     void *userdata;
 };
 
-#ifdef USE_STDERR_LOGGER
+#ifndef NDEBUG
 static const char *logger_level_name(Logger_Level level)
 {
     switch (level) {
@@ -44,13 +44,18 @@ static const char *logger_level_name(Logger_Level level)
 
     return "<unknown>";
 }
+#endif
 
 non_null(1, 3, 5, 6) nullable(7)
 static void logger_stderr_handler(void *context, Logger_Level level, const char *file, int line, const char *func,
                                   const char *message, void *userdata)
 {
+#ifndef NDEBUG
     // GL stands for "global logger".
     fprintf(stderr, "[GL] %s %s:%d(%s): %s\n", logger_level_name(level), file, line, func, message);
+    fprintf(stderr, "Default stderr logger triggered; aborting program\n");
+    abort();
+#endif
 }
 
 static const Logger logger_stderr = {
@@ -58,7 +63,6 @@ static const Logger logger_stderr = {
     nullptr,
     nullptr,
 };
-#endif
 
 /*
  * Public Functions
@@ -85,12 +89,7 @@ void logger_write(const Logger *log, Logger_Level level, const char *file, int l
                   const char *format, ...)
 {
     if (log == nullptr) {
-#ifdef USE_STDERR_LOGGER
         log = &logger_stderr;
-#else
-        fprintf(stderr, "NULL logger not permitted.\n");
-        abort();
-#endif
     }
 
     if (log->callback == nullptr) {
