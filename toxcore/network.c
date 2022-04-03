@@ -670,25 +670,25 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
                        uint16_t buflen, const IP_Port *ip_port, long res)
 {
     if (res < 0) { /* Windows doesn't necessarily know `%zu` */
-        char ip_str[IP_NTOA_LEN];
+        Ip_Ntoa ip_str;
         const int error = net_error();
         char *strerror = net_new_strerror(error);
         LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, min_u16(buflen, 999), 'E',
-                     ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port), error,
+                     net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port), error,
                      strerror, data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
         net_kill_strerror(strerror);
     } else if ((res > 0) && ((size_t)res <= buflen)) {
-        char ip_str[IP_NTOA_LEN];
+        Ip_Ntoa ip_str;
         LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, min_u16(res, 999), (size_t)res < buflen ? '<' : '=',
-                     ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port), 0, "OK",
+                     net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
     } else { /* empty or overwrite */
-        char ip_str[IP_NTOA_LEN];
+        Ip_Ntoa ip_str;
         LOGGER_TRACE(log, "[%2u] %s %lu%c%u %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, res, res == 0 ? '!' : '>', buflen,
-                     ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port), 0, "OK",
+                     net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
     }
 }
@@ -1198,8 +1198,8 @@ Networking_Core *new_networking_ex(
         if (res == 0) {
             temp->port = *portptr;
 
-            char ip_str[IP_NTOA_LEN];
-            LOGGER_DEBUG(log, "Bound successfully to %s:%u", ip_ntoa(ip, ip_str, sizeof(ip_str)),
+            Ip_Ntoa ip_str;
+            LOGGER_DEBUG(log, "Bound successfully to %s:%u", net_ip_ntoa(ip, &ip_str),
                          net_ntohs(temp->port));
 
             /* errno isn't reset on success, only set on failure, the failed
@@ -1225,11 +1225,11 @@ Networking_Core *new_networking_ex(
         *portptr = net_htons(port_to_try);
     }
 
-    char ip_str[IP_NTOA_LEN];
+    Ip_Ntoa ip_str;
     int neterror = net_error();
     char *strerror = net_new_strerror(neterror);
     LOGGER_ERROR(log, "failed to bind socket: %d, %s IP: %s port_from: %u port_to: %u", neterror, strerror,
-                 ip_ntoa(ip, ip_str, sizeof(ip_str)), port_from, port_to);
+                 net_ip_ntoa(ip, &ip_str), port_from, port_to);
     net_kill_strerror(strerror);
     kill_networking(temp);
 
@@ -1402,34 +1402,31 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
     *target = *source;
 }
 
-/** @brief converts ip into a string
+/** @brief Converts IP into a string.
  *
- * @param ip_str must be of length at least IP_NTOA_LEN
+ * Writes error message into the buffer on error.
  *
- * writes error message into the buffer on error
+ * @param ip_str contains a buffer of the required size.
  *
- * @return ip_str
+ * @return Pointer to the buffer inside `ip_str` containing the IP string.
  */
-const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
+const char *net_ip_ntoa(const IP *ip, Ip_Ntoa *ip_str)
 {
-    if (length < IP_NTOA_LEN) {
-        snprintf(ip_str, length, "Bad buf length");
-        return ip_str;
-    }
+    assert(ip_str != nullptr);
 
     if (ip == nullptr) {
-        snprintf(ip_str, length, "(IP invalid: NULL)");
-        return ip_str;
+        snprintf(ip_str->buf, sizeof(ip_str->buf), "(IP invalid: NULL)");
+        return ip_str->buf;
     }
 
-    if (!ip_parse_addr(ip, ip_str, length)) {
-        snprintf(ip_str, length, "(IP invalid, family %u)", ip->family.value);
-        return ip_str;
+    if (!ip_parse_addr(ip, ip_str->buf, sizeof(ip_str->buf))) {
+        snprintf(ip_str->buf, sizeof(ip_str->buf), "(IP invalid, family %u)", ip->family.value);
+        return ip_str->buf;
     }
 
     /* brute force protection against lacking termination */
-    ip_str[length - 1] = '\0';
-    return ip_str;
+    ip_str->buf[sizeof(ip_str->buf) - 1] = '\0';
+    return ip_str->buf;
 }
 
 bool ip_parse_addr(const IP *ip, char *address, size_t length)
@@ -1611,8 +1608,6 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
 {
     struct sockaddr_storage addr = {0};
     size_t addrsize;
-    char ip_str[IP_NTOA_LEN];
-    ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str));
 
     if (net_family_is_ipv4(ip_port->ip.family)) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
@@ -1629,15 +1624,18 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
         fill_addr6(&ip_port->ip.ip.v6, &addr6->sin6_addr);
         addr6->sin6_port = ip_port->port;
     } else {
-        LOGGER_ERROR(log, "cannot connect to %s:%d which is neither IPv4 nor IPv6", ip_str, ip_port->port);
+        Ip_Ntoa ip_str;
+        LOGGER_ERROR(log, "cannot connect to %s:%d which is neither IPv4 nor IPv6",
+                     net_ip_ntoa(&ip_port->ip, &ip_str), ip_port->port);
         return false;
     }
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     return addrsize != 0;
 #else
+    Ip_Ntoa ip_str;
     LOGGER_DEBUG(log, "connecting socket %d to %s:%d",
-                 (int)sock.sock, ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port));
+                 (int)sock.sock, net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port));
     errno = 0;
 
     if (connect(sock.sock, (struct sockaddr *)&addr, addrsize) == -1) {
@@ -1646,7 +1644,8 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
         // Non-blocking socket: "Operation in progress" means it's connecting.
         if (!should_ignore_connect_error(error)) {
             char *net_strerror = net_new_strerror(error);
-            LOGGER_ERROR(log, "failed to connect to %s:%d: %d (%s)", ip_str, ip_port->port, error, net_strerror);
+            LOGGER_ERROR(log, "failed to connect to %s:%d: %d (%s)",
+                         ip_str.buf, ip_port->port, error, net_strerror);
             net_kill_strerror(net_strerror);
             return false;
         }

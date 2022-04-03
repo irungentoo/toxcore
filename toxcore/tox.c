@@ -315,10 +315,9 @@ static void tox_dht_get_nodes_response_handler(const DHT *dht, const Node_format
         return;
     }
 
-    char ip[IP_NTOA_LEN];
-    ip_ntoa(&node->ip_port.ip, ip, sizeof(ip));
-
-    tox_data->tox->dht_get_nodes_response_callback(tox_data->tox, node->public_key, ip, net_ntohs(node->ip_port.port),
+    Ip_Ntoa ip_str;
+    tox_data->tox->dht_get_nodes_response_callback(
+            tox_data->tox, node->public_key, net_ip_ntoa(&node->ip_port.ip, &ip_str), net_ntohs(node->ip_port.port),
             tox_data->user_data);
 }
 

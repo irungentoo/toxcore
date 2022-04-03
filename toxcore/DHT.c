@@ -482,10 +482,10 @@ int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_
         is_ipv4 = false;
         family = TOX_TCP_INET6;
     } else {
-        char ip_str[IP_NTOA_LEN];
+        Ip_Ntoa ip_str;
         // TODO(iphydf): Find out why we're trying to pack invalid IPs, stop
         // doing that, and turn this into an error.
-        LOGGER_TRACE(logger, "cannot pack invalid IP: %s", ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)));
+        LOGGER_TRACE(logger, "cannot pack invalid IP: %s", net_ip_ntoa(&ip_port->ip, &ip_str));
         return -1;
     }
 
@@ -781,12 +781,13 @@ static void update_client(const Logger *log, const Mono_Time *mono_time, int ind
     }
 
     if (!ipport_equal(&assoc->ip_port, ip_port)) {
-        char ip_str[IP_NTOA_LEN];
+        Ip_Ntoa ip_str_from;
+        Ip_Ntoa ip_str_to;
         LOGGER_TRACE(log, "coipil[%u]: switching ipv%d from %s:%u to %s:%u",
                      index, ip_version,
-                     ip_ntoa(&assoc->ip_port.ip, ip_str, sizeof(ip_str)),
+                     net_ip_ntoa(&assoc->ip_port.ip, &ip_str_from),
                      net_ntohs(assoc->ip_port.port),
-                     ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)),
+                     net_ip_ntoa(&ip_port->ip, &ip_str_to),
                      net_ntohs(ip_port->port));
     }
 

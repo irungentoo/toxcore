@@ -35,11 +35,11 @@ static void test_addr_resolv_localhost(void)
     ck_assert_msg(res, "Resolver failed: %d, %s", error, strerror);
     net_kill_strerror(strerror);
 
-    char ip_str[IP_NTOA_LEN];
+    Ip_Ntoa ip_str;
     ck_assert_msg(net_family_is_ipv4(ip.family), "Expected family TOX_AF_INET, got %u.", ip.family.value);
     const uint32_t loopback = get_ip4_loopback().uint32;
     ck_assert_msg(ip.ip.v4.uint32 == loopback, "Expected 127.0.0.1, got %s.",
-                  ip_ntoa(&ip, ip_str, sizeof(ip_str)));
+                  net_ip_ntoa(&ip, &ip_str));
 
     ip_init(&ip, 1); // ipv6enabled = 1
     res = addr_resolve_or_parse_ip(ns, localhost, &ip, nullptr);
@@ -62,7 +62,7 @@ static void test_addr_resolv_localhost(void)
                   ip.family.value);
     IP6 ip6_loopback = get_ip6_loopback();
     ck_assert_msg(!memcmp(&ip.ip.v6, &ip6_loopback, sizeof(IP6)), "Expected ::1, got %s.",
-                  ip_ntoa(&ip, ip_str, sizeof(ip_str)));
+                  net_ip_ntoa(&ip, &ip_str));
 
     if (localhost_split) {
         printf("Localhost seems to be split in two.\n");
@@ -85,17 +85,17 @@ static void test_addr_resolv_localhost(void)
     ck_assert_msg(net_family_is_ipv6(ip.family), "Expected family TOX_AF_INET6 (%d), got %u.", TOX_AF_INET6,
                   ip.family.value);
     ck_assert_msg(!memcmp(&ip.ip.v6, &ip6_loopback, sizeof(IP6)), "Expected ::1, got %s.",
-                  ip_ntoa(&ip, ip_str, sizeof(ip_str)));
+                  net_ip_ntoa(&ip, &ip_str));
 
     ck_assert_msg(net_family_is_ipv4(extra.family), "Expected family TOX_AF_INET (%d), got %u.", TOX_AF_INET,
                   extra.family.value);
     ck_assert_msg(extra.ip.v4.uint32 == loopback, "Expected 127.0.0.1, got %s.",
-                  ip_ntoa(&ip, ip_str, sizeof(ip_str)));
+                  net_ip_ntoa(&ip, &ip_str));
 #elif 0
     // TODO(iphydf): Fix this to work on IPv6-supporting systems.
     ck_assert_msg(net_family_is_ipv4(ip.family), "Expected family TOX_AF_INET (%d), got %u.", TOX_AF_INET, ip.family.value);
     ck_assert_msg(ip.ip.v4.uint32 == loopback, "Expected 127.0.0.1, got %s.",
-                  ip_ntoa(&ip, ip_str, sizeof(ip_str)));
+                  net_ip_ntoa(&ip, &ip_str));
 #endif
 }
 
