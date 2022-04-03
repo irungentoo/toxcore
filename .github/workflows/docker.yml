@@ -111,6 +111,33 @@ jobs:
           cache-from: type=registry,ref=toxchat/c-toxcore:wasm
           cache-to: type=inline
 
+  docker-esp32:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          driver: docker
+      - name: Login to DockerHub
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build toxchat/c-toxcore:sources
+        uses: docker/build-push-action@v2
+        with:
+          file: other/docker/sources/Dockerfile
+          tags: toxchat/c-toxcore:sources
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          file: other/docker/esp32/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: toxchat/c-toxcore:esp32
+          cache-from: type=registry,ref=toxchat/c-toxcore:esp32
+          cache-to: type=inline
+
   docker-win32:
     runs-on: ubuntu-latest
     steps:

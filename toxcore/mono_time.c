@@ -44,8 +44,10 @@ struct Mono_Time {
     bool last_clock_update;
 #endif
 
+#ifndef ESP_PLATFORM
     /* protect `time` from concurrent access */
     pthread_rwlock_t *time_update_lock;
+#endif
 
     mono_time_current_time_cb *current_time_callback;
     void *user_data;
@@ -128,6 +130,7 @@ Mono_Time *mono_time_new(mono_time_current_time_cb *current_time_callback, void 
         return nullptr;
     }
 
+#ifndef ESP_PLATFORM
     mono_time->time_update_lock = (pthread_rwlock_t *)calloc(1, sizeof(pthread_rwlock_t));
 
     if (mono_time->time_update_lock == nullptr) {
@@ -140,6 +143,7 @@ Mono_Time *mono_time_new(mono_time_current_time_cb *current_time_callback, void 
         free(mono_time);
         return nullptr;
     }
+#endif
 
     mono_time_set_current_time_callback(mono_time, current_time_callback, user_data);
 
@@ -177,8 +181,10 @@ void mono_time_free(Mono_Time *mono_time)
 #ifdef OS_WIN32
     pthread_mutex_destroy(&mono_time->last_clock_lock);
 #endif
+#ifndef ESP_PLATFORM
     pthread_rwlock_destroy(mono_time->time_update_lock);
     free(mono_time->time_update_lock);
+#endif
     free(mono_time);
 }
 
@@ -196,9 +202,13 @@ void mono_time_update(Mono_Time *mono_time)
     pthread_mutex_unlock(&mono_time->last_clock_lock);
 #endif
 
+#ifndef ESP_PLATFORM
     pthread_rwlock_wrlock(mono_time->time_update_lock);
+#endif
     mono_time->cur_time = cur_time;
+#ifndef ESP_PLATFORM
     pthread_rwlock_unlock(mono_time->time_update_lock);
+#endif
 }
 
 uint64_t mono_time_get(const Mono_Time *mono_time)
@@ -207,9 +217,13 @@ uint64_t mono_time_get(const Mono_Time *mono_time)
     // Fuzzing is only single thread for now, no locking needed */
     return mono_time->cur_time;
 #else
+#ifndef ESP_PLATFORM
     pthread_rwlock_rdlock(mono_time->time_update_lock);
+#endif
     const uint64_t cur_time = mono_time->cur_time;
+#ifndef ESP_PLATFORM
     pthread_rwlock_unlock(mono_time->time_update_lock);
+#endif
     return cur_time;
 #endif
 }

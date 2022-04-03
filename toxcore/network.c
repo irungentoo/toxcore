@@ -370,7 +370,12 @@ IP4 get_ip4_loopback(void)
 IP6 get_ip6_loopback(void)
 {
     IP6 loopback;
+#ifdef ESP_PLATFORM
+    loopback = empty_ip_port.ip.ip.v6;
+    loopback.uint8[15] = 1;
+#else
     get_ip6(&loopback, &in6addr_loopback);
+#endif
     return loopback;
 }
 
@@ -1196,6 +1201,7 @@ Networking_Core *new_networking_ex(
             LOGGER_ERROR(log, "Dual-stack socket failed to enable, won't be able to receive from/send to IPv4 addresses");
         }
 
+#ifndef ESP_PLATFORM
         /* multicast local nodes */
         struct ipv6_mreq mreq;
         memset(&mreq, 0, sizeof(mreq));
@@ -1216,6 +1222,7 @@ Networking_Core *new_networking_ex(
         }
 
         net_kill_strerror(strerror);
+#endif
     }
 
     /* A hanging program or a different user might block the standard port.
