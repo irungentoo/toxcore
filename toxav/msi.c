@@ -793,8 +793,7 @@ static void handle_pop(MSICall *call, const MSIMessage *msg)
     } else {
         switch (call->state) {
             case MSI_CALL_INACTIVE: {
-                LOGGER_ERROR(call->session->messenger->log, "Handling what should be impossible case");
-                abort();
+                LOGGER_FATAL(call->session->messenger->log, "Handling what should be impossible case");
             }
 
             case MSI_CALL_ACTIVE: {

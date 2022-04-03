@@ -50,6 +50,16 @@ jobs:
         with:
           file: other/docker/tokstyle/Dockerfile
 
+  misra:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Docker Build
+        uses: docker/build-push-action@v2
+        with:
+          file: other/docker/misra/Dockerfile
+
   cimplefmt:
     runs-on: ubuntu-latest
     steps:
