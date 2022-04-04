@@ -1689,7 +1689,7 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
         if (!should_ignore_connect_error(error)) {
             char *net_strerror = net_new_strerror(error);
             LOGGER_ERROR(log, "failed to connect to %s:%d: %d (%s)",
-                         ip_str.buf, ip_port->port, error, net_strerror);
+                         net_ip_ntoa(&ip_port->ip, &ip_str), ip_port->port, error, net_strerror);
             net_kill_strerror(net_strerror);
             return false;
         }
