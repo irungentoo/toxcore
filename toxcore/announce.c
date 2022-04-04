@@ -17,7 +17,7 @@
 #include "timed_auth.h"
 #include "util.h"
 
-uint8_t response_of_request_type(uint8_t request_type)
+uint8_t announce_response_of_request_type(uint8_t request_type)
 {
     switch (request_type) {
         case NET_PACKET_DATA_SEARCH_REQUEST:
@@ -63,7 +63,7 @@ struct Announcements {
     Announce_Entry entries[ANNOUNCE_BUCKETS * ANNOUNCE_BUCKET_SIZE];
 };
 
-void set_synch_offset(Announcements *announce, int32_t synch_offset)
+void announce_set_synch_offset(Announcements *announce, int32_t synch_offset)
 {
     announce->synch_offset = synch_offset;
 }
@@ -95,7 +95,7 @@ static uint8_t truncate_pk_at_index(const uint8_t *pk, uint16_t index, uint16_t 
            ((i + 1 < CRYPTO_PUBLIC_KEY_SIZE ? pk[i + 1] : 0) >> (16 - bits - j));
 }
 
-uint16_t get_bucketnum(const uint8_t *base, const uint8_t *pk)
+uint16_t announce_get_bucketnum(const uint8_t *base, const uint8_t *pk)
 {
     const uint16_t index = bit_by_bit_cmp(base, pk);
 
@@ -106,7 +106,7 @@ uint16_t get_bucketnum(const uint8_t *base, const uint8_t *pk)
 non_null()
 static Announce_Entry *bucket_of_key(Announcements *announce, const uint8_t *pk)
 {
-    return &announce->entries[get_bucketnum(announce->public_key, pk) * ANNOUNCE_BUCKET_SIZE];
+    return &announce->entries[announce_get_bucketnum(announce->public_key, pk) * ANNOUNCE_BUCKET_SIZE];
 }
 
 non_null()
@@ -130,7 +130,7 @@ static Announce_Entry *get_stored(Announcements *announce, const uint8_t *data_p
 non_null()
 static const Announce_Entry *bucket_of_key_const(const Announcements *announce, const uint8_t *pk)
 {
-    return &announce->entries[get_bucketnum(announce->public_key, pk) * ANNOUNCE_BUCKET_SIZE];
+    return &announce->entries[announce_get_bucketnum(announce->public_key, pk) * ANNOUNCE_BUCKET_SIZE];
 }
 
 non_null()
@@ -152,8 +152,8 @@ static const Announce_Entry *get_stored_const(const Announcements *announce, con
 }
 
 
-bool on_stored(const Announcements *announce, const uint8_t *data_public_key,
-               on_retrieve_cb *on_retrieve_callback, void *object)
+bool announce_on_stored(const Announcements *announce, const uint8_t *data_public_key,
+                        announce_on_retrieve_cb *on_retrieve_callback, void *object)
 {
     const Announce_Entry *const entry = get_stored_const(announce, data_public_key);
 
@@ -210,8 +210,8 @@ static bool would_accept_store_request(Announcements *announce, const uint8_t *d
     return find_entry_slot(announce, data_public_key) != nullptr;
 }
 
-bool store_data(Announcements *announce, const uint8_t *data_public_key,
-                const uint8_t *data, uint32_t length, uint32_t timeout)
+bool announce_store_data(Announcements *announce, const uint8_t *data_public_key,
+                         const uint8_t *data, uint32_t length, uint32_t timeout)
 {
     if (length > MAX_ANNOUNCEMENT_SIZE) {
         return false;
@@ -479,7 +479,7 @@ static int create_reply_plain_store_announce_request(Announcements *announce,
             stored->store_until = mono_time_get(announce->mono_time) + timeout;
         }
     } else {
-        if (!store_data(announce, data_public_key, announcement, announcement_len, timeout)) {
+        if (!announce_store_data(announce, data_public_key, announcement, announcement_len, timeout)) {
             return -1;
         }
     }
@@ -585,7 +585,7 @@ static int create_reply(Announcements *announce, const IP_Port *source,
 
     const uint16_t plain_reply_len = plain_reply_noping_len + sizeof(uint64_t);
 
-    const uint8_t response_type = response_of_request_type(data[0]);
+    const uint8_t response_type = announce_response_of_request_type(data[0]);
 
     return dht_create_packet(announce->rng, announce->public_key, shared_key, response_type,
                              plain_reply, plain_reply_len, reply, reply_max_length);
