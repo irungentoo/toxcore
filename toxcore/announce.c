@@ -544,7 +544,7 @@ static int create_reply(Announcements *announce, const IP_Port *source,
 {
     const int plain_len = (int)length - (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE);
 
-    if (plain_len < sizeof(uint64_t)) {
+    if (plain_len < (int)sizeof(uint64_t)) {
         return -1;
     }
 

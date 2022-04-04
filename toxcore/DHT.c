@@ -1079,7 +1079,7 @@ static int handle_data_search_response(void *object, const IP_Port *source,
 
     const int32_t plain_len = (int32_t)length - (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE);
 
-    if (plain_len < CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t)) {
+    if (plain_len < (int32_t)(CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t))) {
         return 1;
     }
 
