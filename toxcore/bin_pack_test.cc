@@ -122,4 +122,13 @@ TEST(BinPack, BinCanHoldArbitraryData)
     EXPECT_EQ(str, (std::array<uint8_t, 5>{'h', 'e', 'l', 'l', 'o'}));
 }
 
+TEST(BinPack, OversizedArrayFailsUnpack)
+{
+    std::array<uint8_t, 1> buf = {0x91};
+
+    Bin_Unpack_Ptr bu(bin_unpack_new(buf.data(), buf.size()));
+    uint32_t size;
+    EXPECT_FALSE(bin_unpack_array(bu.get(), &size));
+}
+
 }  // namespace

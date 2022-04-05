@@ -70,7 +70,7 @@ void bin_unpack_free(Bin_Unpack *bu)
 
 bool bin_unpack_array(Bin_Unpack *bu, uint32_t *size)
 {
-    return cmp_read_array(&bu->ctx, size);
+    return cmp_read_array(&bu->ctx, size) && *size <= bu->bytes_size;
 }
 
 bool bin_unpack_array_fixed(Bin_Unpack *bu, uint32_t required_size)
