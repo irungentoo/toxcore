@@ -242,6 +242,8 @@ set(toxcore_SOURCES
   toxcore/friend_requests.h
   toxcore/group.c
   toxcore/group.h
+  toxcore/group_announce.c
+  toxcore/group_announce.h
   toxcore/group_moderation.c
   toxcore/group_moderation.h
   toxcore/LAN_discovery.c
@@ -414,6 +416,7 @@ unit_test(toxav rtp)
 unit_test(toxcore DHT)
 unit_test(toxcore bin_pack)
 unit_test(toxcore crypto_core)
+unit_test(toxcore group_announce)
 unit_test(toxcore group_moderation)
 unit_test(toxcore mono_time)
 unit_test(toxcore ping_array)
