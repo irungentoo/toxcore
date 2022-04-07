@@ -541,6 +541,7 @@ int dht_create_packet(const Random *rng, const uint8_t public_key[CRYPTO_PUBLIC_
     }
 
     if (length < 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + encrypted_length) {
+        free(encrypted);
         return -1;
     }
 
@@ -1034,7 +1035,7 @@ void set_announce_node(DHT *dht, const uint8_t *public_key)
         index = LCLIENT_LENGTH - 1;
     }
 
-    set_announce_node_in_list(dht->close_clientlist + index * LCLIENT_NODES, LCLIENT_LIST, public_key);
+    set_announce_node_in_list(dht->close_clientlist + index * LCLIENT_NODES, LCLIENT_LENGTH, public_key);
 
     for (int32_t i = 0; i < dht->num_friends; ++i) {
         set_announce_node_in_list(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, public_key);
