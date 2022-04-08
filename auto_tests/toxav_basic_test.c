@@ -119,10 +119,7 @@ static void regular_call_flow(
     Toxav_Err_Call call_err;
     toxav_call(AliceAV, 0, a_br, v_br, &call_err);
 
-    if (call_err != TOXAV_ERR_CALL_OK) {
-        printf("toxav_call failed: %d\n", call_err);
-        ck_assert(0);
-    }
+    ck_assert_msg(call_err == TOXAV_ERR_CALL_OK, "toxav_call failed: %d\n", call_err);
 
     const time_t start_time = time(nullptr);
 
@@ -131,10 +128,7 @@ static void regular_call_flow(
             Toxav_Err_Answer answer_err;
             toxav_answer(BobAV, 0, a_br, v_br, &answer_err);
 
-            if (answer_err != TOXAV_ERR_ANSWER_OK) {
-                printf("toxav_answer failed: %d\n", answer_err);
-                ck_assert(0);
-            }
+            ck_assert_msg(answer_err == TOXAV_ERR_ANSWER_OK, "toxav_answer failed: %d\n", answer_err);
 
             BobCC->incoming = false;
         } else { /* TODO(mannol): rtp */
@@ -143,10 +137,7 @@ static void regular_call_flow(
                 Toxav_Err_Call_Control cc_err;
                 toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &cc_err);
 
-                if (cc_err != TOXAV_ERR_CALL_CONTROL_OK) {
-                    printf("toxav_call_control failed: %d\n", cc_err);
-                    ck_assert(0);
-                }
+                ck_assert_msg(cc_err == TOXAV_ERR_CALL_CONTROL_OK, "toxav_call_control failed: %d\n", cc_err);
             }
         }
 
@@ -267,10 +258,7 @@ static void test_av_flows(void)
             Toxav_Err_Call rc;
             toxav_call(AliceAV, 0, 48, 0, &rc);
 
-            if (rc != TOXAV_ERR_CALL_OK) {
-                printf("toxav_call failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_CALL_OK, "toxav_call failed: %d\n", rc);
         }
 
         do {
@@ -282,10 +270,7 @@ static void test_av_flows(void)
             Toxav_Err_Call_Control rc;
             toxav_call_control(BobAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
-            if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
-                printf("toxav_call_control failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_CALL_CONTROL_OK, "toxav_call_control failed: %d\n", rc);
         }
 
         do {
@@ -305,10 +290,7 @@ static void test_av_flows(void)
             Toxav_Err_Call rc;
             toxav_call(AliceAV, 0, 48, 0, &rc);
 
-            if (rc != TOXAV_ERR_CALL_OK) {
-                printf("toxav_call failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_CALL_OK, "toxav_call failed: %d\n", rc);
         }
 
         do {
@@ -320,10 +302,7 @@ static void test_av_flows(void)
             Toxav_Err_Call_Control rc;
             toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
-            if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
-                printf("toxav_call_control failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_CALL_CONTROL_OK, "toxav_call_control failed: %d\n", rc);
         }
 
         /* Alice will not receive end state */
@@ -345,10 +324,7 @@ static void test_av_flows(void)
             Toxav_Err_Call rc;
             toxav_call(AliceAV, 0, 48, 1000, &rc);
 
-            if (rc != TOXAV_ERR_CALL_OK) {
-                printf("toxav_call failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_CALL_OK, "toxav_call failed: %d\n", rc);
         }
 
         do {
@@ -367,10 +343,7 @@ static void test_av_flows(void)
             Toxav_Err_Answer rc;
             toxav_answer(BobAV, 0, 48, 4000, &rc);
 
-            if (rc != TOXAV_ERR_ANSWER_OK) {
-                printf("toxav_answer failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_ANSWER_OK, "toxav_answer failed: %d\n", rc);
         }
 
         iterate_tox(bootstrap, Alice, Bob);
@@ -412,10 +385,7 @@ static void test_av_flows(void)
             Toxav_Err_Call_Control rc;
             toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
-            if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
-                printf("toxav_call_control failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_CALL_CONTROL_OK, "toxav_call_control failed: %d\n", rc);
         }
 
         iterate_tox(bootstrap, Alice, Bob);
@@ -435,10 +405,7 @@ static void test_av_flows(void)
             Toxav_Err_Call rc;
             toxav_call(AliceAV, 0, 48, 0, &rc);
 
-            if (rc != TOXAV_ERR_CALL_OK) {
-                printf("toxav_call failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_CALL_OK, "toxav_call failed: %d\n", rc);
         }
 
         do {
@@ -449,10 +416,7 @@ static void test_av_flows(void)
             Toxav_Err_Answer rc;
             toxav_answer(BobAV, 0, 48, 0, &rc);
 
-            if (rc != TOXAV_ERR_ANSWER_OK) {
-                printf("toxav_answer failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_ANSWER_OK, "toxav_answer failed: %d\n", rc);
         }
 
         iterate_tox(bootstrap, Alice, Bob);
@@ -480,10 +444,7 @@ static void test_av_flows(void)
             Toxav_Err_Call_Control rc;
             toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
-            if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
-                printf("toxav_call_control failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_CALL_CONTROL_OK, "toxav_call_control failed: %d\n", rc);
         }
 
         iterate_tox(bootstrap, Alice, Bob);
@@ -503,10 +464,7 @@ static void test_av_flows(void)
             Toxav_Err_Call rc;
             toxav_call(AliceAV, 0, 48, 0, &rc);
 
-            if (rc != TOXAV_ERR_CALL_OK) {
-                printf("toxav_call failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_CALL_OK, "toxav_call failed: %d\n", rc);
         }
 
         do {
@@ -517,10 +475,7 @@ static void test_av_flows(void)
             Toxav_Err_Answer rc;
             toxav_answer(BobAV, 0, 48, 0, &rc);
 
-            if (rc != TOXAV_ERR_ANSWER_OK) {
-                printf("toxav_answer failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_ANSWER_OK, "toxav_answer failed: %d\n", rc);
         }
 
         iterate_tox(bootstrap, Alice, Bob);
@@ -538,10 +493,7 @@ static void test_av_flows(void)
             Toxav_Err_Call_Control rc;
             toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
-            if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
-                printf("toxav_call_control failed: %d\n", rc);
-                ck_assert(0);
-            }
+            ck_assert_msg(rc == TOXAV_ERR_CALL_CONTROL_OK, "toxav_call_control failed: %d\n", rc);
         }
 
         iterate_tox(bootstrap, Alice, Bob);
