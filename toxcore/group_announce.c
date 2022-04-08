@@ -248,6 +248,7 @@ int gca_unpack_public_announce(const Logger *log, const uint8_t *data, uint16_t 
 {
     if (length < CHAT_ID_SIZE) {
         LOGGER_ERROR(log, "invalid public announce length: %u", length);
+        return -1;
     }
 
     if (data == nullptr) {
