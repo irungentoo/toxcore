@@ -41,12 +41,13 @@ typedef enum Graph_Type {
 typedef struct Run_Auto_Options {
     Graph_Type graph;
     void (*init_autotox)(AutoTox *autotox, uint32_t n);
+    uint16_t tcp_port;
 } Run_Auto_Options;
 
 Run_Auto_Options default_run_auto_options(void);
 
 void run_auto_test(struct Tox_Options *options, uint32_t tox_count, void test(AutoTox *autotoxes),
-                   uint32_t state_size, const Run_Auto_Options *autotest_opts);
+                   uint32_t state_size, Run_Auto_Options *autotest_opts);
 
 void bootstrap_tox_live_network(Tox *tox, bool enable_tcp);
 

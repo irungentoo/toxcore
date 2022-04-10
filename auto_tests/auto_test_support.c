@@ -13,10 +13,12 @@
 #define ABORT_ON_LOG_ERROR true
 #endif
 
-Run_Auto_Options default_run_auto_options() {
+Run_Auto_Options default_run_auto_options()
+{
     return (Run_Auto_Options) {
         .graph = GRAPH_COMPLETE,
         .init_autotox = nullptr,
+        .tcp_port = 33188,
     };
 }
 
@@ -210,11 +212,43 @@ void reload(AutoTox *autotox)
 }
 
 static void initialise_autotox(struct Tox_Options *options, AutoTox *autotox, uint32_t index, uint32_t state_size,
-                               const Run_Auto_Options *autotest_opts)
+                               Run_Auto_Options *autotest_opts)
 {
     autotox->index = index;
-    Tox_Err_New err;
-    autotox->tox = tox_new_log(options, &err, &autotox->index);
+
+    Tox_Err_New err = TOX_ERR_NEW_OK;
+
+    if (index == 0) {
+        struct Tox_Options *default_opts = tox_options_new(nullptr);
+        ck_assert(default_opts != nullptr);
+
+        if (options == nullptr) {
+            options = default_opts;
+        }
+
+        // Try a few ports for the TCP relay.
+        for (uint16_t tcp_port = autotest_opts->tcp_port; tcp_port < autotest_opts->tcp_port + 200; ++tcp_port) {
+            tox_options_set_tcp_port(options, tcp_port);
+            autotox->tox = tox_new_log(options, &err, &autotox->index);
+
+            if (autotox->tox != nullptr) {
+                autotest_opts->tcp_port = tcp_port;
+                break;
+            }
+
+            ck_assert_msg(err == TOX_ERR_NEW_PORT_ALLOC, "unexpected tox_new error (expected PORT_ALLOC): %d", err);
+        }
+
+        tox_options_free(default_opts);
+    } else {
+        // No TCP relay enabled for all the other toxes.
+        if (options != nullptr) {
+            tox_options_set_tcp_port(options, 0);
+        }
+
+        autotox->tox = tox_new_log(options, &err, &autotox->index);
+    }
+
     ck_assert_msg(autotox->tox != nullptr, "failed to create tox instance #%u (error = %d)", index, err);
 
     set_mono_time_callback(autotox);
@@ -276,28 +310,30 @@ static void bootstrap_autotoxes(struct Tox_Options *options, uint32_t tox_count,
 {
     const bool udp_enabled = options != nullptr ? tox_options_get_udp_enabled(options) : true;
 
-    if (udp_enabled) {
-        printf("bootstrapping all toxes off tox 0\n");
-        uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
-        tox_self_get_dht_id(autotoxes[0].tox, dht_key);
-        const uint16_t dht_port = tox_self_get_udp_port(autotoxes[0].tox, nullptr);
+    printf("bootstrapping all toxes off tox 0\n");
+    uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
+    tox_self_get_dht_id(autotoxes[0].tox, dht_key);
+    const uint16_t dht_port = tox_self_get_udp_port(autotoxes[0].tox, nullptr);
 
-        for (uint32_t i = 1; i < tox_count; ++i) {
-            Tox_Err_Bootstrap err;
-            tox_bootstrap(autotoxes[i].tox, "localhost", dht_port, dht_key, &err);
-            ck_assert(err == TOX_ERR_BOOTSTRAP_OK);
-        }
-    } else {
-        printf("bootstrapping all toxes to tcp relays\n");
+    for (uint32_t i = 1; i < tox_count; ++i) {
+        Tox_Err_Bootstrap err;
+        tox_bootstrap(autotoxes[i].tox, "localhost", dht_port, dht_key, &err);
+        ck_assert(err == TOX_ERR_BOOTSTRAP_OK);
+    }
+
+    if (!udp_enabled) {
+        printf("bootstrapping all toxes to local TCP relay running on port %d\n", autotest_opts->tcp_port);
 
         for (uint32_t i = 0; i < tox_count; ++i) {
-            bootstrap_tox_live_network(autotoxes[i].tox, true);
+            Tox_Err_Bootstrap err;
+            tox_add_tcp_relay(autotoxes[i].tox, "localhost", autotest_opts->tcp_port, dht_key, &err);
+            ck_assert(err == TOX_ERR_BOOTSTRAP_OK);
         }
     }
 }
 
 void run_auto_test(struct Tox_Options *options, uint32_t tox_count, void test(AutoTox *autotoxes),
-                   uint32_t state_size, const Run_Auto_Options *autotest_opts)
+                   uint32_t state_size, Run_Auto_Options *autotest_opts)
 {
     printf("initialising %u toxes\n", tox_count);
 
@@ -365,7 +401,7 @@ void print_debug_log(Tox *m, Tox_Log_Level level, const char *file, uint32_t lin
         return;
     }
 
-    uint32_t index = user_data ? *(uint32_t *)user_data : 0;
+    const uint32_t index = user_data ? *(uint32_t *)user_data : 0;
     fprintf(stderr, "[#%u] %s %s:%u\t%s:\t%s\n", index, tox_log_level_name(level), file, line, func, message);
 
     if (level == TOX_LOG_LEVEL_ERROR && ABORT_ON_LOG_ERROR) {
