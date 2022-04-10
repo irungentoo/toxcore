@@ -125,7 +125,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     Tox_Err_New error_new;
     Tox *tox = tox_new(opts, &error_new);
 
-    assert(tox != nullptr);
+    if (tox == nullptr) {
+        // It might fail, because some I/O happens in tox_new, and the fuzzer
+        // might do things that make that I/O fail.
+        return 0;
+    }
+
     assert(error_new == TOX_ERR_NEW_OK);
 
     tox_options_free(opts);
