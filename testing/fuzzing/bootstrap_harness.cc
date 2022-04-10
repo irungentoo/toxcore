@@ -124,6 +124,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     Tox_Err_New error_new;
     Tox *tox = tox_new(opts, &error_new);
+    tox_options_free(opts);
 
     if (tox == nullptr) {
         // It might fail, because some I/O happens in tox_new, and the fuzzer
@@ -132,8 +133,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
 
     assert(error_new == TOX_ERR_NEW_OK);
-
-    tox_options_free(opts);
 
     uint8_t pub_key[TOX_PUBLIC_KEY_SIZE] = {0};
 

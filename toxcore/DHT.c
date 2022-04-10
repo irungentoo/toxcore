@@ -2602,7 +2602,7 @@ uint16_t randfriends_nodes(const DHT *dht, Node_format *nodes, uint16_t max_num)
     const uint32_t r = random_range_u32(dht->rng, dht->num_friends - DHT_FAKE_FRIEND_NUMBER);
     uint16_t count = 0;
 
-    for (size_t i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
+    for (uint32_t i = 0; i < DHT_FAKE_FRIEND_NUMBER && i < dht->num_friends; ++i) {
         count += list_nodes(dht->rng, dht->friends_list[r + i].client_list,
                             MAX_FRIEND_CLIENTS, dht->cur_time,
                             nodes + count, max_num - count);
@@ -2764,6 +2764,12 @@ DHT *new_dht(const Logger *log, const Random *rng, const Network *ns, Mono_Time 
             kill_dht(dht);
             return nullptr;
         }
+    }
+
+    if (dht->num_friends != DHT_FAKE_FRIEND_NUMBER) {
+        LOGGER_ERROR(log, "the RNG provided seems to be broken: it generated the same keypair twice");
+        kill_dht(dht);
+        return nullptr;
     }
 
     return dht;
