@@ -18,46 +18,10 @@
 #include <time.h>
 
 #include "ccompat.h"
-#include "crypto_core.h" // for CRYPTO_PUBLIC_KEY_SIZE
 
 bool is_power_of_2(uint64_t x)
 {
     return x != 0 && (x & (~x + 1)) == x;
-}
-
-const uint8_t *get_enc_key(const uint8_t *key)
-{
-    return key;
-}
-
-const uint8_t *get_sig_pk(const uint8_t *key)
-{
-    return key + ENC_PUBLIC_KEY_SIZE;
-}
-
-void set_sig_pk(uint8_t *key, const uint8_t *sig_pk)
-{
-    memcpy(key + ENC_PUBLIC_KEY_SIZE, sig_pk, SIG_PUBLIC_KEY_SIZE);
-}
-
-const uint8_t *get_sig_sk(const uint8_t *key)
-{
-    return key + ENC_SECRET_KEY_SIZE;
-}
-
-const uint8_t *get_chat_id(const uint8_t *key)
-{
-    return key + ENC_PUBLIC_KEY_SIZE;
-}
-
-bool pk_equal(const uint8_t *dest, const uint8_t *src)
-{
-    return public_key_eq(dest, src);
-}
-
-void pk_copy(uint8_t *dest, const uint8_t *src)
-{
-    memcpy(dest, src, CRYPTO_PUBLIC_KEY_SIZE);
 }
 
 void free_uint8_t_pointer_array(uint8_t **ary, size_t n_items)

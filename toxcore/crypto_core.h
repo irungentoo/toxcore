@@ -182,7 +182,13 @@ bool crypto_hmac_verify(const uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[
  * @retval false if they are not
  */
 non_null()
-bool public_key_eq(const uint8_t pk1[CRYPTO_PUBLIC_KEY_SIZE], const uint8_t pk2[CRYPTO_PUBLIC_KEY_SIZE]);
+bool pk_equal(const uint8_t pk1[CRYPTO_PUBLIC_KEY_SIZE], const uint8_t pk2[CRYPTO_PUBLIC_KEY_SIZE]);
+
+/**
+ * @brief Copy a public key from `src` to `dest`.
+ */
+non_null()
+void pk_copy(uint8_t dest[CRYPTO_PUBLIC_KEY_SIZE], const uint8_t src[CRYPTO_PUBLIC_KEY_SIZE]);
 
 /**
  * @brief Compare 2 SHA512 checksums of length CRYPTO_SHA512_SIZE, not vulnerable to
@@ -297,6 +303,13 @@ bool public_key_valid(const uint8_t *public_key);
  */
 non_null()
 bool create_extended_keypair(uint8_t *pk, uint8_t *sk);
+
+/** Functions for groupchat extended keys */
+non_null() const uint8_t *get_enc_key(const uint8_t *key);
+non_null() const uint8_t *get_sig_pk(const uint8_t *key);
+non_null() void set_sig_pk(uint8_t *key, const uint8_t *sig_pk);
+non_null() const uint8_t *get_sig_sk(const uint8_t *key);
+non_null() const uint8_t *get_chat_id(const uint8_t *key);
 
 /**
  * @brief Generate a new random keypair.

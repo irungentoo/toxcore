@@ -61,7 +61,7 @@ static_assert(CRYPTO_SHA256_SIZE == crypto_hash_sha256_BYTES,
 static_assert(CRYPTO_SHA512_SIZE == crypto_hash_sha512_BYTES,
               "CRYPTO_SHA512_SIZE should be equal to crypto_hash_sha512_BYTES");
 static_assert(CRYPTO_PUBLIC_KEY_SIZE == 32,
-              "CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for public_key_eq to work");
+              "CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for pk_equal to work");
 
 #ifndef VANILLA_NACL
 static_assert(CRYPTO_SIGNATURE_SIZE == crypto_sign_BYTES,
@@ -88,6 +88,31 @@ bool create_extended_keypair(uint8_t *pk, uint8_t *sk)
 
     return res1 == 0 && res2 == 0;
 #endif
+}
+
+const uint8_t *get_enc_key(const uint8_t *key)
+{
+    return key;
+}
+
+const uint8_t *get_sig_pk(const uint8_t *key)
+{
+    return key + ENC_PUBLIC_KEY_SIZE;
+}
+
+void set_sig_pk(uint8_t *key, const uint8_t *sig_pk)
+{
+    memcpy(key + ENC_PUBLIC_KEY_SIZE, sig_pk, SIG_PUBLIC_KEY_SIZE);
+}
+
+const uint8_t *get_sig_sk(const uint8_t *key)
+{
+    return key + ENC_SECRET_KEY_SIZE;
+}
+
+const uint8_t *get_chat_id(const uint8_t *key)
+{
+    return key + ENC_PUBLIC_KEY_SIZE;
 }
 
 #if !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
@@ -151,7 +176,7 @@ bool crypto_memunlock(void *data, size_t length)
 #endif
 }
 
-bool public_key_eq(const uint8_t *pk1, const uint8_t *pk2)
+bool pk_equal(const uint8_t *pk1, const uint8_t *pk2)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     // Hope that this is better for the fuzzer
@@ -159,6 +184,11 @@ bool public_key_eq(const uint8_t *pk1, const uint8_t *pk2)
 #else
     return crypto_verify_32(pk1, pk2) == 0;
 #endif
+}
+
+void pk_copy(uint8_t *dest, const uint8_t *src)
+{
+    memcpy(dest, src, CRYPTO_PUBLIC_KEY_SIZE);
 }
 
 bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2)

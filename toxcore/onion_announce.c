@@ -388,8 +388,8 @@ static void make_announce_payload_helper(const Onion_Announce *onion_a, const ui
         return;
     }
 
-    if (public_key_eq(onion_a->entries[index].public_key, packet_public_key)) {
-        if (!public_key_eq(onion_a->entries[index].data_public_key, data_public_key)) {
+    if (pk_equal(onion_a->entries[index].public_key, packet_public_key)) {
+        if (!pk_equal(onion_a->entries[index].data_public_key, data_public_key)) {
             response[0] = 0;
             memcpy(response + 1, ping_id, ONION_PING_ID_SIZE);
         } else {

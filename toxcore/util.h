@@ -16,28 +16,12 @@
 #include <stdint.h>
 
 #include "attributes.h"
-#include "crypto_core.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 bool is_power_of_2(uint64_t x);
-
-/** Functions for groupchat extended keys */
-non_null() const uint8_t *get_enc_key(const uint8_t *key);
-non_null() const uint8_t *get_sig_pk(const uint8_t *key);
-non_null() void set_sig_pk(uint8_t *key, const uint8_t *sig_pk);
-non_null() const uint8_t *get_sig_sk(const uint8_t *key);
-non_null() const uint8_t *get_chat_id(const uint8_t *key);
-
-
-/** @brief Equality function for public keys. */
-non_null() bool pk_equal(const uint8_t *dest, const uint8_t *src);
-/**
- * @brief Copy a public key from `src` to `dest`.
- */
-non_null() void pk_copy(uint8_t *dest, const uint8_t *src);
 
 /** @brief Frees all pointers in a uint8_t pointer array, as well as the array itself. */
 nullable(1)

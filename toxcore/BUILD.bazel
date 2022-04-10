@@ -16,6 +16,44 @@ cc_library(
 )
 
 cc_library(
+    name = "ccompat",
+    srcs = ["ccompat.c"],
+    hdrs = ["ccompat.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [":attributes"],
+)
+
+cc_library(
+    name = "util",
+    srcs = ["util.c"],
+    hdrs = ["util.h"],
+    visibility = [
+        "//c-toxcore/auto_tests:__pkg__",
+        "//c-toxcore/other:__pkg__",
+        "//c-toxcore/other/bootstrap_daemon:__pkg__",
+        "//c-toxcore/testing/fuzzing:__pkg__",
+        "//c-toxcore/toxav:__pkg__",
+    ],
+    deps = [
+        ":attributes",
+        ":ccompat",
+        "@pthread",
+    ],
+)
+
+cc_test(
+    name = "util_test",
+    size = "small",
+    srcs = ["util_test.cc"],
+    deps = [
+        ":crypto_core",
+        ":util",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "bin_pack",
     srcs = ["bin_pack.c"],
     hdrs = ["bin_pack.h"],
@@ -47,14 +85,6 @@ cc_test(
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
-)
-
-cc_library(
-    name = "ccompat",
-    srcs = ["ccompat.c"],
-    hdrs = ["ccompat.h"],
-    visibility = ["//c-toxcore:__subpackages__"],
-    deps = [":attributes"],
 )
 
 cc_library(
@@ -151,25 +181,6 @@ cc_test(
 )
 
 cc_library(
-    name = "util",
-    srcs = ["util.c"],
-    hdrs = ["util.h"],
-    visibility = [
-        "//c-toxcore/auto_tests:__pkg__",
-        "//c-toxcore/other:__pkg__",
-        "//c-toxcore/other/bootstrap_daemon:__pkg__",
-        "//c-toxcore/testing/fuzzing:__pkg__",
-        "//c-toxcore/toxav:__pkg__",
-    ],
-    deps = [
-        ":attributes",
-        ":ccompat",
-        ":crypto_core",
-        "@pthread",
-    ],
-)
-
-cc_library(
     name = "network",
     srcs = ["network.c"],
     hdrs = ["network.h"],
@@ -198,18 +209,6 @@ cc_test(
     srcs = ["network_test.cc"],
     deps = [
         ":network",
-        "@com_google_googletest//:gtest",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_test(
-    name = "util_test",
-    size = "small",
-    srcs = ["util_test.cc"],
-    deps = [
-        ":crypto_core",
-        ":util",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
