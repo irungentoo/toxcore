@@ -1035,7 +1035,7 @@ void set_announce_node(DHT *dht, const uint8_t *public_key)
         index = LCLIENT_LENGTH - 1;
     }
 
-    set_announce_node_in_list(dht->close_clientlist + index * LCLIENT_NODES, LCLIENT_LENGTH, public_key);
+    set_announce_node_in_list(dht->close_clientlist + index * LCLIENT_NODES, LCLIENT_NODES, public_key);
 
     for (int32_t i = 0; i < dht->num_friends; ++i) {
         set_announce_node_in_list(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, public_key);
