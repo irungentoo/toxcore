@@ -14,6 +14,7 @@
 #include "../../toxcore/crypto_core.h"
 #include "../../toxcore/network.h"
 #include "../../toxcore/tox_private.h"
+#include "func_conversion.h"
 
 // TODO(iphydf): Put this somewhere shared.
 struct Network_Addr {
@@ -40,7 +41,7 @@ static int recv_common(Fuzz_Data &input, void *buf, size_t buf_len)
     return res;
 }
 
-static const Network_Funcs fuzz_network_funcs = {
+static constexpr Network_Funcs fuzz_network_funcs = {
     /* .close = */ [](void *obj, int sock) { return 0; },
     /* .accept = */ [](void *obj, int sock) { return 2; },
     /* .bind = */ [](void *obj, int sock, const Network_Addr *addr) { return 0; },
@@ -52,12 +53,12 @@ static const Network_Funcs fuzz_network_funcs = {
         return 0;
     },
     /* .recv = */
-    [](void *obj, int sock, uint8_t *buf, size_t len) {
+    ![](Fuzz_System *self, int sock, uint8_t *buf, size_t len) {
         // Receive data from the fuzzer.
-        return recv_common(static_cast<Fuzz_System *>(obj)->data, buf, len);
+        return recv_common(self->data, buf, len);
     },
     /* .recvfrom = */
-    [](void *obj, int sock, uint8_t *buf, size_t len, Network_Addr *addr) {
+    ![](Fuzz_System *self, int sock, uint8_t *buf, size_t len, Network_Addr *addr) {
         addr->addr = sockaddr_storage{};
         // Dummy Addr
         addr->addr.ss_family = AF_INET;
@@ -68,7 +69,7 @@ static const Network_Funcs fuzz_network_funcs = {
         addr_in->sin_addr.s_addr = INADDR_LOOPBACK + 1;
         addr->size = sizeof(struct sockaddr);
 
-        return recv_common(static_cast<Fuzz_System *>(obj)->data, buf, len);
+        return recv_common(self->data, buf, len);
     },
     /* .send = */
     [](void *obj, int sock, const uint8_t *buf, size_t len) {
@@ -93,24 +94,22 @@ static const Network_Funcs fuzz_network_funcs = {
     },
 };
 
-static const Random_Funcs fuzz_random_funcs = {
+static constexpr Random_Funcs fuzz_random_funcs = {
     /* .random_bytes = */
-    [](void *obj, uint8_t *bytes, size_t length) {
-        Fuzz_System *sys = static_cast<Fuzz_System *>(obj);
+    ![](Fuzz_System *self, uint8_t *bytes, size_t length) {
         // Amount of data is limited
-        const size_t available = sys->data.size;
-        const size_t bytes_read = std::min(length, available);
+        const size_t bytes_read = std::min(length, self->data.size);
         // Initialize everything to make MSAN and others happy
         std::memset(bytes, 0, length);
-        std::memcpy(bytes, sys->data.data, bytes_read);
-        sys->data.data += bytes_read;
-        sys->data.size -= bytes_read;
+        std::memcpy(bytes, self->data.data, bytes_read);
+        self->data.data += bytes_read;
+        self->data.size -= bytes_read;
     },
     /* .random_uniform = */
-    [](void *obj, uint32_t upper_bound) {
-        Fuzz_System *sys = static_cast<Fuzz_System *>(obj);
+    ![](Fuzz_System *self, uint32_t upper_bound) {
         uint32_t randnum;
-        sys->rng->funcs->random_bytes(sys, reinterpret_cast<uint8_t *>(&randnum), sizeof(randnum));
+        self->rng->funcs->random_bytes(
+            self, reinterpret_cast<uint8_t *>(&randnum), sizeof(randnum));
         return randnum % upper_bound;
     },
 };
@@ -122,8 +121,7 @@ Fuzz_System::Fuzz_System(Fuzz_Data &input)
     , ns(std::make_unique<Network>(Network{&fuzz_network_funcs, this}))
     , rng(std::make_unique<Random>(Random{&fuzz_random_funcs, this}))
 {
-    sys->mono_time_callback
-        = [](void *user_data) { return static_cast<Fuzz_System *>(user_data)->clock; };
+    sys->mono_time_callback = ![](Fuzz_System *self) { return self->clock; };
     sys->mono_time_user_data = this;
     sys->ns = ns.get();
     sys->rng = rng.get();

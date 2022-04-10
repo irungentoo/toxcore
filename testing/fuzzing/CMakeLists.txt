@@ -2,7 +2,7 @@
 target_compile_definitions(toxcore_static PUBLIC "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION")
 
 # Override network and random functions
-add_library(fuzz_support fuzz_support.cc fuzz_support.h)
+add_library(fuzz_support func_conversion.h fuzz_support.cc fuzz_support.h)
 
 set(LIBFUZZER_LINKER_FLAGS)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

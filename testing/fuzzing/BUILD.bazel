@@ -5,7 +5,10 @@ package(features = ["layering_check"])
 
 cc_library(
     name = "fuzz_support",
-    srcs = ["fuzz_support.cc"],
+    srcs = [
+        "func_conversion.h",
+        "fuzz_support.cc",
+    ],
     hdrs = ["fuzz_support.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
