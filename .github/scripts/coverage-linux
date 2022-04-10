@@ -21,9 +21,8 @@ export CC=clang
 export CXX=clang++
 
 sudo install other/docker/coverage/run_mallocfail /usr/local/bin/run_mallocfail
-go get github.com/things-go/go-socks5
-go build other/proxy/proxy_server.go
-./proxy_server &
+(cd other/proxy && go build)
+other/proxy/proxy &
 
 . ".github/scripts/flags-coverage.sh"
 

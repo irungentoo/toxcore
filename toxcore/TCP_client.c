@@ -151,7 +151,8 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
     char success[] = "200";
     uint8_t data[16]; // draining works the best if the length is a power of 2
 
-    const int ret = read_TCP_packet(logger, tcp_conn->con.ns, tcp_conn->con.sock, data, sizeof(data) - 1, &tcp_conn->con.ip_port);
+    const int ret = read_TCP_packet(logger, tcp_conn->con.ns, tcp_conn->con.sock, data, sizeof(data) - 1,
+                                    &tcp_conn->con.ip_port);
 
     if (ret == -1) {
         return 0;
@@ -161,14 +162,19 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
 
     if (strstr((const char *)data, success) != nullptr) {
         // drain all data
-        const uint16_t data_left = net_socket_data_recv_buffer(tcp_conn->con.ns, tcp_conn->con.sock);
+        uint16_t data_left = net_socket_data_recv_buffer(tcp_conn->con.ns, tcp_conn->con.sock);
 
-        if (data_left > 0) {
-            VLA(uint8_t, temp_data, data_left);
-            if (read_TCP_packet(logger, tcp_conn->con.ns, tcp_conn->con.sock, temp_data, data_left, &tcp_conn->con.ip_port) == -1) {
+        while (data_left > 0) {
+            uint8_t temp_data[16];
+            const uint16_t temp_data_size = min_u16(data_left, sizeof(temp_data));
+
+            if (read_TCP_packet(logger, tcp_conn->con.ns, tcp_conn->con.sock, temp_data, temp_data_size,
+                                &tcp_conn->con.ip_port) == -1) {
                 LOGGER_ERROR(logger, "failed to drain TCP data (but ignoring failure)");
                 return 1;
             }
+
+            data_left -= temp_data_size;
         }
 
         return 1;
@@ -812,12 +818,16 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
             return handle_TCP_client_oob_recv(conn, data, length, userdata);
 
         case TCP_PACKET_ONION_RESPONSE: {
-            conn->onion_callback(conn->onion_callback_object, data + 1, length - 1, userdata);
+            if (conn->onion_callback != nullptr) {
+                conn->onion_callback(conn->onion_callback_object, data + 1, length - 1, userdata);
+            }
             return 0;
         }
 
         case TCP_PACKET_FORWARDING: {
-            conn->forwarded_response_callback(conn->forwarded_response_callback_object, data + 1, length - 1, userdata);
+            if (conn->forwarded_response_callback != nullptr) {
+                conn->forwarded_response_callback(conn->forwarded_response_callback_object, data + 1, length - 1, userdata);
+            }
             return 0;
         }
 

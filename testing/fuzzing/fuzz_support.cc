@@ -47,10 +47,9 @@ static constexpr Network_Funcs fuzz_network_funcs = {
     /* .bind = */ [](void *obj, int sock, const Network_Addr *addr) { return 0; },
     /* .listen = */ [](void *obj, int sock, int backlog) { return 0; },
     /* .recvbuf = */
-    [](void *obj, int sock) {
-        // TODO(iphydf): Return something sensible here (from the fuzzer): number of
-        // bytes to be read from the socket.
-        return 0;
+    ![](Fuzz_System *self, int sock) {
+        const size_t count = random_u16(self->rng.get());
+        return static_cast<int>(std::min(count, self->data.size));
     },
     /* .recv = */
     ![](Fuzz_System *self, int sock, uint8_t *buf, size_t len) {
@@ -107,10 +106,13 @@ static constexpr Random_Funcs fuzz_random_funcs = {
     },
     /* .random_uniform = */
     ![](Fuzz_System *self, uint32_t upper_bound) {
-        uint32_t randnum;
-        self->rng->funcs->random_bytes(
-            self, reinterpret_cast<uint8_t *>(&randnum), sizeof(randnum));
-        return randnum % upper_bound;
+        uint32_t randnum = 0;
+        if (upper_bound > 0) {
+            self->rng->funcs->random_bytes(
+                self, reinterpret_cast<uint8_t *>(&randnum), sizeof(randnum));
+            randnum %= upper_bound;
+        }
+        return randnum;
     },
 };
 

@@ -648,7 +648,7 @@ static uint32_t data_1(uint16_t buflen, const uint8_t *buffer)
 {
     uint32_t data = 0;
 
-    if (buflen > 7) {
+    if (buflen > 8) {
         net_unpack_u32(buffer + 5, &data);
     }
 

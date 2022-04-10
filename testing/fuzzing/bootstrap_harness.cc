@@ -108,19 +108,27 @@ void setup_callbacks(Tox_Dispatch *dispatch)
         });
 }
 
-}
-
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+void TestBootstrap(Fuzz_Data &input)
 {
-    Fuzz_Data input{data, size};
-
     Fuzz_System sys(input);
     assert(sys.rng != nullptr);
 
     Tox_Options *opts = tox_options_new(nullptr);
     assert(opts != nullptr);
     tox_options_set_operating_system(opts, sys.sys.get());
+
+    CONSUME1_OR_RETURN(const uint8_t proxy_type, input);
+    if (proxy_type == 0) {
+        tox_options_set_proxy_type(opts, TOX_PROXY_TYPE_NONE);
+    } else if (proxy_type == 1) {
+        tox_options_set_proxy_type(opts, TOX_PROXY_TYPE_SOCKS5);
+        tox_options_set_proxy_host(opts, "127.0.0.1");
+        tox_options_set_proxy_port(opts, 8080);
+    } else if (proxy_type == 2) {
+        tox_options_set_proxy_type(opts, TOX_PROXY_TYPE_HTTP);
+        tox_options_set_proxy_host(opts, "127.0.0.1");
+        tox_options_set_proxy_port(opts, 8080);
+    }
 
     Tox_Err_New error_new;
     Tox *tox = tox_new(opts, &error_new);
@@ -129,15 +137,18 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     if (tox == nullptr) {
         // It might fail, because some I/O happens in tox_new, and the fuzzer
         // might do things that make that I/O fail.
-        return 0;
+        return;
     }
 
     assert(error_new == TOX_ERR_NEW_OK);
 
     uint8_t pub_key[TOX_PUBLIC_KEY_SIZE] = {0};
 
-    const bool success = tox_bootstrap(tox, "127.0.0.1", 12345, pub_key, nullptr);
-    assert(success);
+    const bool udp_success = tox_bootstrap(tox, "127.0.0.1", 12345, pub_key, nullptr);
+    assert(udp_success);
+
+    const bool tcp_success = tox_add_tcp_relay(tox, "127.0.0.1", 12345, pub_key, nullptr);
+    assert(tcp_success);
 
     tox_events_init(tox);
 
@@ -158,5 +169,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     tox_dispatch_free(dispatch);
     tox_kill(tox);
+}
+
+}
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+{
+    Fuzz_Data input{data, size};
+    TestBootstrap(input);
     return 0;  // Non-zero return values are reserved for future use.
 }
