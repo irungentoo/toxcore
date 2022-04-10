@@ -501,6 +501,10 @@ non_null()
 static uint32_t sys_random_uniform(void *obj, uint32_t upper_bound)
 {
 #ifdef VANILLA_NACL
+    if (upper_bound == 0) {
+        return 0;
+    }
+
     uint32_t randnum;
     sys_random_bytes(obj, (uint8_t *)&randnum, sizeof(randnum));
     return randnum % upper_bound;

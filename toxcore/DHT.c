@@ -2598,11 +2598,12 @@ uint16_t randfriends_nodes(const DHT *dht, Node_format *nodes, uint16_t max_num)
         return 0;
     }
 
+    assert(dht->num_friends >= DHT_FAKE_FRIEND_NUMBER);
+    const uint32_t r = random_range_u32(dht->rng, dht->num_friends - DHT_FAKE_FRIEND_NUMBER);
     uint16_t count = 0;
-    const uint32_t r = random_u32(dht->rng);
 
     for (size_t i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
-        count += list_nodes(dht->rng, dht->friends_list[(i + r) % DHT_FAKE_FRIEND_NUMBER].client_list,
+        count += list_nodes(dht->rng, dht->friends_list[r + i].client_list,
                             MAX_FRIEND_CLIENTS, dht->cur_time,
                             nodes + count, max_num - count);
 
