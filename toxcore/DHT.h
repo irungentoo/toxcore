@@ -411,6 +411,9 @@ int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *node
 
 /** @brief Put up to max_num nodes in nodes from the random friends.
  *
+ * Important: this function relies on the first two DHT friends *not* being real
+ * friends to avoid leaking information about real friends into the onion paths.
+ *
  * @return the number of nodes.
  */
 non_null()

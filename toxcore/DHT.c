@@ -2590,6 +2590,9 @@ static uint16_t list_nodes(const Random *rng, const Client_data *list, size_t le
 
 /** @brief Put up to max_num nodes in nodes from the random friends.
  *
+ * Important: this function relies on the first two DHT friends *not* being real
+ * friends to avoid leaking information about real friends into the onion paths.
+ *
  * @return the number of nodes.
  */
 uint16_t randfriends_nodes(const DHT *dht, Node_format *nodes, uint16_t max_num)
@@ -2598,12 +2601,14 @@ uint16_t randfriends_nodes(const DHT *dht, Node_format *nodes, uint16_t max_num)
         return 0;
     }
 
-    assert(dht->num_friends >= DHT_FAKE_FRIEND_NUMBER);
-    const uint32_t r = random_range_u32(dht->rng, dht->num_friends - DHT_FAKE_FRIEND_NUMBER);
     uint16_t count = 0;
+    const uint32_t r = random_u32(dht->rng);
 
-    for (uint32_t i = 0; i < DHT_FAKE_FRIEND_NUMBER && i < dht->num_friends; ++i) {
-        count += list_nodes(dht->rng, dht->friends_list[r + i].client_list,
+    assert(DHT_FAKE_FRIEND_NUMBER <= dht->num_friends);
+
+    // Only gather nodes from the initial 2 fake friends.
+    for (uint32_t i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
+        count += list_nodes(dht->rng, dht->friends_list[(i + r) % DHT_FAKE_FRIEND_NUMBER].client_list,
                             MAX_FRIEND_CLIENTS, dht->cur_time,
                             nodes + count, max_num - count);
 
