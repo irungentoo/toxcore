@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 
 #include <algorithm>
+#include <cerrno>
 #include <cstring>
 #include <memory>
 
@@ -117,8 +118,7 @@ static constexpr Random_Funcs fuzz_random_funcs = {
 };
 
 Fuzz_System::Fuzz_System(Fuzz_Data &input)
-    : clock(0)
-    , data(input)
+    : data(input)
     , sys(std::make_unique<Tox_System>())
     , ns(std::make_unique<Network>(Network{&fuzz_network_funcs, this}))
     , rng(std::make_unique<Random>(Random{&fuzz_random_funcs, this}))
@@ -130,3 +130,75 @@ Fuzz_System::Fuzz_System(Fuzz_Data &input)
 }
 
 Fuzz_System::~Fuzz_System() { }
+
+static constexpr Network_Funcs null_network_funcs = {
+    /* .close = */ [](void *obj, int sock) { return 0; },
+    /* .accept = */ [](void *obj, int sock) { return 2; },
+    /* .bind = */ [](void *obj, int sock, const Network_Addr *addr) { return 0; },
+    /* .listen = */ [](void *obj, int sock, int backlog) { return 0; },
+    /* .recvbuf = */ ![](Null_System *self, int sock) { return 0; },
+    /* .recv = */
+    ![](Null_System *self, int sock, uint8_t *buf, size_t len) {
+        errno = ENOMEM;
+        return -1;
+    },
+    /* .recvfrom = */
+    ![](Null_System *self, int sock, uint8_t *buf, size_t len, Network_Addr *addr) {
+        errno = ENOMEM;
+        return -1;
+    },
+    /* .send = */
+    [](void *obj, int sock, const uint8_t *buf, size_t len) {
+        // Always succeed.
+        return static_cast<int>(len);
+    },
+    /* .sendto = */
+    [](void *obj, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
+        // Always succeed.
+        return static_cast<int>(len);
+    },
+    /* .socket = */ [](void *obj, int domain, int type, int proto) { return 1; },
+    /* .socket_nonblock = */ [](void *obj, int sock, bool nonblock) { return 0; },
+    /* .getsockopt = */
+    [](void *obj, int sock, int level, int optname, void *optval, size_t *optlen) {
+        memset(optval, 0, *optlen);
+        return 0;
+    },
+    /* .setsockopt = */
+    [](void *obj, int sock, int level, int optname, const void *optval, size_t optlen) {
+        return 0;
+    },
+};
+
+static uint64_t simple_rng(uint64_t &seed)
+{
+    // https://nuclear.llnl.gov/CNP/rng/rngman/node4.html
+    seed = 2862933555777941757LL * seed + 3037000493LL;
+    return seed;
+}
+
+static constexpr Random_Funcs null_random_funcs = {
+    /* .random_bytes = */
+    ![](Null_System *self, uint8_t *bytes, size_t length) {
+        for (size_t i = 0; i < length; ++i) {
+            bytes[i] = simple_rng(self->seed) & 0xff;
+        }
+    },
+    /* .random_uniform = */
+    ![](Null_System *self, uint32_t upper_bound) {
+        return static_cast<uint32_t>(simple_rng(self->seed)) % upper_bound;
+    },
+};
+
+Null_System::Null_System()
+    : sys(std::make_unique<Tox_System>())
+    , ns(std::make_unique<Network>(Network{&null_network_funcs, this}))
+    , rng(std::make_unique<Random>(Random{&null_random_funcs, this}))
+{
+    sys->mono_time_callback = ![](Fuzz_System *self) { return self->clock; };
+    sys->mono_time_user_data = this;
+    sys->ns = ns.get();
+    sys->rng = rng.get();
+}
+
+Null_System::~Null_System() { }

@@ -100,15 +100,36 @@ void fuzz_select_target(const uint8_t *data, std::size_t size, Args &&... args)
 struct Network;
 struct Random;
 
+/**
+ * A Tox_System implementation that consumes fuzzer input to produce network
+ * inputs and random numbers. Once it runs out of fuzzer input, network receive
+ * functions return no more data and the random numbers are always zero.
+ */
 struct Fuzz_System {
-    uint64_t clock;
+    uint64_t clock = 0;
     Fuzz_Data &data;
     std::unique_ptr<Tox_System> sys;
     std::unique_ptr<Network> ns;
     std::unique_ptr<Random> rng;
 
-    Fuzz_System(Fuzz_Data &input);
+    explicit Fuzz_System(Fuzz_Data &input);
     ~Fuzz_System();
+};
+
+/**
+ * A Tox_System implementation that consumes no fuzzer input but still has a
+ * working and deterministic RNG. Network receive functions always fail, send
+ * always succeeds.
+ */
+struct Null_System {
+    uint64_t clock = 0;
+    uint64_t seed = 4;  // chosen by fair dice roll. guaranteed to be random.
+    std::unique_ptr<Tox_System> sys;
+    std::unique_ptr<Network> ns;
+    std::unique_ptr<Random> rng;
+
+    Null_System();
+    ~Null_System();
 };
 
 #endif  // C_TOXCORE_TESTING_FUZZING_FUZZ_SUPPORT_H

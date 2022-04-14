@@ -20,7 +20,7 @@ void TestSaveDataLoading(Fuzz_Data &input)
     const size_t savedata_size = input.size;
     CONSUME_OR_RETURN(const uint8_t *savedata, input, savedata_size);
 
-    Fuzz_System sys(input);
+    Null_System sys;
     tox_options_set_operating_system(tox_options, sys.sys.get());
 
     // pass test data to Tox
