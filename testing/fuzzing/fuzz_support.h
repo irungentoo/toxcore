@@ -7,7 +7,10 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <deque>
 #include <memory>
+#include <vector>
+#include <unordered_map>
 #include <utility>
 
 #include "../../toxcore/tox.h"
@@ -100,20 +103,51 @@ void fuzz_select_target(const uint8_t *data, std::size_t size, Args &&... args)
 struct Network;
 struct Random;
 
+struct System {
+    std::unique_ptr<Tox_System> sys;
+    std::unique_ptr<Network> ns;
+    std::unique_ptr<Random> rng;
+
+    // Not inline because sizeof of the above 2 structs is not known everywhere.
+    ~System();
+
+    /** @brief Deterministic system clock for this instance.
+     *
+     * Different instances can evolve independently. The time is initialised
+     * with a large number, because otherwise many zero-initialised "empty"
+     * friends inside toxcore will be "not timed out" for a long time, messing
+     * up some logic. Tox moderately depends on the clock being fairly high up
+     * (not close to 0).
+     */
+    uint64_t clock = UINT32_MAX;
+
+    /**
+     * During bootstrap, move the time forward a decent amount, because friend
+     * finding and bootstrapping takes significant (around 10 seconds) wall
+     * clock time that should be advanced more quickly in the test.
+     */
+    static constexpr uint8_t BOOTSTRAP_ITERATION_INTERVAL = 200;
+    /**
+     * Less than BOOTSTRAP_ITERATION_INTERVAL because otherwise we'll spam
+     * onion announce packets.
+     */
+    static constexpr uint8_t MESSAGE_ITERATION_INTERVAL = 20;
+    /**
+     * Move the clock forward at least 20ms so at least some amount of
+     * time passes on each iteration.
+     */
+    static constexpr uint8_t MIN_ITERATION_INTERVAL = 20;
+};
+
 /**
  * A Tox_System implementation that consumes fuzzer input to produce network
  * inputs and random numbers. Once it runs out of fuzzer input, network receive
  * functions return no more data and the random numbers are always zero.
  */
-struct Fuzz_System {
-    uint64_t clock = 0;
+struct Fuzz_System : System {
     Fuzz_Data &data;
-    std::unique_ptr<Tox_System> sys;
-    std::unique_ptr<Network> ns;
-    std::unique_ptr<Random> rng;
 
     explicit Fuzz_System(Fuzz_Data &input);
-    ~Fuzz_System();
 };
 
 /**
@@ -121,15 +155,76 @@ struct Fuzz_System {
  * working and deterministic RNG. Network receive functions always fail, send
  * always succeeds.
  */
-struct Null_System {
-    uint64_t clock = 0;
+struct Null_System : System {
     uint64_t seed = 4;  // chosen by fair dice roll. guaranteed to be random.
-    std::unique_ptr<Tox_System> sys;
-    std::unique_ptr<Network> ns;
-    std::unique_ptr<Random> rng;
 
     Null_System();
-    ~Null_System();
 };
+
+/**
+ * A Tox_System implementation that records all I/O but does not actually
+ * perform any real I/O. Everything inside this system is hermetic in-process
+ * and fully deterministic.
+ *
+ * Note: take care not to initialise two systems with the same seed, since
+ * that's the only thing distinguishing the system's behaviour. Two toxes
+ * initialised with the same seed will be identical (same keys, etc.).
+ */
+struct Record_System : System {
+    /** @brief State shared between all tox instances. */
+    struct Global {
+        /** @brief Bound UDP ports and their system instance.
+         *
+         * This implements an in-process network where instances can send
+         * packets to other instances by inserting them into the receiver's
+         * recvq using the receive function.
+         *
+         * We need to keep track of ports associated with recv queues because
+         * toxcore sends packets to itself sometimes when doing onion routing
+         * with only 2 nodes in the network.
+         */
+        std::unordered_map<uint16_t, Record_System *> bound;
+    };
+
+    Global &global_;
+    uint64_t seed_;  //!< Current PRNG state.
+    const char *name_;  //!< Tox system name ("tox1"/"tox2") for logging.
+
+    std::deque<std::pair<uint16_t, std::vector<uint8_t>>> recvq;
+    uint16_t port = 0;  //!< Sending port for this system instance.
+    std::vector<uint8_t> recording;
+
+    explicit Record_System(Global &global, uint64_t seed, const char *name);
+
+    /** @brief Deposit a network packet in this instance's recvq.
+     */
+    void receive(uint16_t send_port, const uint8_t *buf, size_t len);
+};
+
+/** @brief Enable debug logging.
+ *
+ * This should not be enabled in fuzzer code while fuzzing, as console I/O slows
+ * everything down drastically. It's useful while developing the fuzzer and the
+ * protodump program.
+ */
+extern const bool DEBUG;
+
+inline constexpr char tox_log_level_name(Tox_Log_Level level)
+{
+    switch (level) {
+    case TOX_LOG_LEVEL_TRACE:
+        return 'T';
+    case TOX_LOG_LEVEL_DEBUG:
+        return 'D';
+    case TOX_LOG_LEVEL_INFO:
+        return 'I';
+    case TOX_LOG_LEVEL_WARNING:
+        return 'W';
+    case TOX_LOG_LEVEL_ERROR:
+        return 'E';
+    }
+
+    return '?';
+}
 
 #endif  // C_TOXCORE_TESTING_FUZZING_FUZZ_SUPPORT_H

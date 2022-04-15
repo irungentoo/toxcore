@@ -655,6 +655,122 @@ static uint32_t data_1(uint16_t buflen, const uint8_t *buffer)
     return data;
 }
 
+static const char *net_packet_type_name(Net_Packet_Type type)
+{
+    switch (type) {
+        case NET_PACKET_PING_REQUEST:
+            return "PING_REQUEST";
+
+        case NET_PACKET_PING_RESPONSE:
+            return "PING_RESPONSE";
+
+        case NET_PACKET_GET_NODES:
+            return "GET_NODES";
+
+        case NET_PACKET_SEND_NODES_IPV6:
+            return "SEND_NODES_IPV6";
+
+        case NET_PACKET_COOKIE_REQUEST:
+            return "COOKIE_REQUEST";
+
+        case NET_PACKET_COOKIE_RESPONSE:
+            return "COOKIE_RESPONSE";
+
+        case NET_PACKET_CRYPTO_HS:
+            return "CRYPTO_HS";
+
+        case NET_PACKET_CRYPTO_DATA:
+            return "CRYPTO_DATA";
+
+        case NET_PACKET_CRYPTO:
+            return "CRYPTO";
+
+        case NET_PACKET_LAN_DISCOVERY:
+            return "LAN_DISCOVERY";
+
+            // TODO(Jfreegman): Uncomment these when we merge the rest of new groupchats
+//      case NET_PACKET_GC_HANDSHAKE:
+//          return "GC_HANDSHAKE";
+
+//      case NET_PACKET_GC_LOSSLESS:
+//          return "GC_LOSSLESS";
+
+//      case NET_PACKET_GC_LOSSY:
+//          return "GC_LOSSY";
+
+        case NET_PACKET_ONION_SEND_INITIAL:
+            return "ONION_SEND_INITIAL";
+
+        case NET_PACKET_ONION_SEND_1:
+            return "ONION_SEND_1";
+
+        case NET_PACKET_ONION_SEND_2:
+            return "ONION_SEND_2";
+
+        case NET_PACKET_ANNOUNCE_REQUEST_OLD:
+            return "ANNOUNCE_REQUEST_OLD";
+
+        case NET_PACKET_ANNOUNCE_RESPONSE_OLD:
+            return "ANNOUNCE_RESPONSE_OLD";
+
+        case NET_PACKET_ONION_DATA_REQUEST:
+            return "ONION_DATA_REQUEST";
+
+        case NET_PACKET_ONION_DATA_RESPONSE:
+            return "ONION_DATA_RESPONSE";
+
+        case NET_PACKET_ANNOUNCE_REQUEST:
+            return "ANNOUNCE_REQUEST";
+
+        case NET_PACKET_ANNOUNCE_RESPONSE:
+            return "ANNOUNCE_RESPONSE";
+
+        case NET_PACKET_ONION_RECV_3:
+            return "ONION_RECV_3";
+
+        case NET_PACKET_ONION_RECV_2:
+            return "ONION_RECV_2";
+
+        case NET_PACKET_ONION_RECV_1:
+            return "ONION_RECV_1";
+
+        case NET_PACKET_FORWARD_REQUEST:
+            return "FORWARD_REQUEST";
+
+        case NET_PACKET_FORWARDING:
+            return "FORWARDING";
+
+        case NET_PACKET_FORWARD_REPLY:
+            return "FORWARD_REPLY";
+
+        case NET_PACKET_DATA_SEARCH_REQUEST:
+            return "DATA_SEARCH_REQUEST";
+
+        case NET_PACKET_DATA_SEARCH_RESPONSE:
+            return "DATA_SEARCH_RESPONSE";
+
+        case NET_PACKET_DATA_RETRIEVE_REQUEST:
+            return "DATA_RETRIEVE_REQUEST";
+
+        case NET_PACKET_DATA_RETRIEVE_RESPONSE:
+            return "DATA_RETRIEVE_RESPONSE";
+
+        case NET_PACKET_STORE_ANNOUNCE_REQUEST:
+            return "STORE_ANNOUNCE_REQUEST";
+
+        case NET_PACKET_STORE_ANNOUNCE_RESPONSE:
+            return "STORE_ANNOUNCE_RESPONSE";
+
+        case BOOTSTRAP_INFO_PACKET_ID:
+            return "BOOTSTRAP_INFO";
+
+        case NET_PACKET_MAX:
+            return "MAX";
+    }
+
+    return "<unknown>";
+}
+
 non_null()
 static void loglogdata(const Logger *log, const char *message, const uint8_t *buffer,
                        uint16_t buflen, const IP_Port *ip_port, long res)
@@ -663,21 +779,24 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
         Ip_Ntoa ip_str;
         const int error = net_error();
         char *strerror = net_new_strerror(error);
-        LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
-                     buffer[0], message, min_u16(buflen, 999), 'E',
+        LOGGER_TRACE(log, "[%02x = %-20s] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
+                     buffer[0], net_packet_type_name((Net_Packet_Type)buffer[0]), message,
+                     min_u16(buflen, 999), 'E',
                      net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port), error,
                      strerror, data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
         net_kill_strerror(strerror);
     } else if ((res > 0) && ((size_t)res <= buflen)) {
         Ip_Ntoa ip_str;
-        LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
-                     buffer[0], message, min_u16(res, 999), (size_t)res < buflen ? '<' : '=',
+        LOGGER_TRACE(log, "[%02x = %-20s] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
+                     buffer[0], net_packet_type_name((Net_Packet_Type)buffer[0]), message,
+                     min_u16(res, 999), (size_t)res < buflen ? '<' : '=',
                      net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
     } else { /* empty or overwrite */
         Ip_Ntoa ip_str;
-        LOGGER_TRACE(log, "[%2u] %s %lu%c%u %s:%u (%u: %s) | %08x%08x...%02x",
-                     buffer[0], message, res, res == 0 ? '!' : '>', buflen,
+        LOGGER_TRACE(log, "[%02x = %-20s] %s %lu%c%u %s:%u (%u: %s) | %08x%08x...%02x",
+                     buffer[0], net_packet_type_name((Net_Packet_Type)buffer[0]), message,
+                     res, res == 0 ? '!' : '>', buflen,
                      net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
     }
@@ -1628,7 +1747,7 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
 
     Ip_Ntoa ip_str;
     LOGGER_DEBUG(log, "connecting socket %d to %s:%d",
-                 (int)sock.sock, net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port));
+                 (int)sock.sock, net_ip_ntoa(&ip_port->ip, &ip_str), ip_port->port);
     errno = 0;
 
     if (connect(sock.sock, (struct sockaddr *)&addr, addrsize) == -1) {
@@ -1649,18 +1768,6 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
 
 int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    if ((true)) {
-        *res = (IP_Port *)calloc(1, sizeof(IP_Port));
-        assert(*res != nullptr);
-        IP_Port *ip_port = *res;
-        ip_port->ip.ip.v4.uint32 = 0x7F000003; // 127.0.0.3
-        ip_port->ip.family = *make_tox_family(AF_INET);
-
-        return 1;
-    }
-#endif
-
     // Try parsing as IP address first.
     IP_Port parsed = {{{0}}};
 
@@ -1675,6 +1782,18 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
         *res = tmp;
         return 1;
     }
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    if ((true)) {
+        *res = (IP_Port *)calloc(1, sizeof(IP_Port));
+        assert(*res != nullptr);
+        IP_Port *ip_port = *res;
+        ip_port->ip.ip.v4.uint32 = net_htonl(0x7F000003); // 127.0.0.3
+        ip_port->ip.family = *make_tox_family(AF_INET);
+
+        return 1;
+    }
+#endif
 
     // It's not an IP address, so now we try doing a DNS lookup.
     struct addrinfo *infos;

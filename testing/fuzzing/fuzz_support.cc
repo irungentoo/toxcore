@@ -8,7 +8,10 @@
 #include <sys/socket.h>
 
 #include <algorithm>
+#include <cassert>
 #include <cerrno>
+#include <climits>
+#include <cstdio>
 #include <cstring>
 #include <memory>
 
@@ -17,15 +20,20 @@
 #include "../../toxcore/tox_private.h"
 #include "func_conversion.h"
 
+const bool DEBUG = false;
+
 // TODO(iphydf): Put this somewhere shared.
 struct Network_Addr {
     struct sockaddr_storage addr;
     size_t size;
 };
 
-static int recv_common(Fuzz_Data &input, void *buf, size_t buf_len)
+System::~System() { }
+
+static int recv_common(Fuzz_Data &input, uint8_t *buf, size_t buf_len)
 {
     if (input.size < 2) {
+        errno = ENOMEM;
         return -1;
     }
 
@@ -33,9 +41,21 @@ static int recv_common(Fuzz_Data &input, void *buf, size_t buf_len)
     input.data += 2;
     input.size -= 2;
 
+    if (fuzz_len == 0xffff) {
+        errno = EWOULDBLOCK;
+        if (DEBUG) {
+            std::printf("recvfrom: no data for tox1\n");
+        }
+        return -1;
+    }
+
+    if (DEBUG) {
+        std::printf(
+            "recvfrom: %zu (%02x, %02x) for tox1\n", fuzz_len, input.data[-2], input.data[-1]);
+    }
     const size_t res = std::min(buf_len, std::min(fuzz_len, input.size));
 
-    memcpy(buf, input.data, res);
+    std::copy(input.data, input.data + res, buf);
     input.data += res;
     input.size -= res;
 
@@ -43,53 +63,59 @@ static int recv_common(Fuzz_Data &input, void *buf, size_t buf_len)
 }
 
 static constexpr Network_Funcs fuzz_network_funcs = {
-    /* .close = */ [](void *obj, int sock) { return 0; },
-    /* .accept = */ [](void *obj, int sock) { return 2; },
-    /* .bind = */ [](void *obj, int sock, const Network_Addr *addr) { return 0; },
-    /* .listen = */ [](void *obj, int sock, int backlog) { return 0; },
+    /* .close = */ ![](Fuzz_System *self, int sock) { return 0; },
+    /* .accept = */ ![](Fuzz_System *self, int sock) { return 1337; },
+    /* .bind = */ ![](Fuzz_System *self, int sock, const Network_Addr *addr) { return 0; },
+    /* .listen = */ ![](Fuzz_System *self, int sock, int backlog) { return 0; },
     /* .recvbuf = */
     ![](Fuzz_System *self, int sock) {
+        assert(sock == 42);
         const size_t count = random_u16(self->rng.get());
         return static_cast<int>(std::min(count, self->data.size));
     },
     /* .recv = */
     ![](Fuzz_System *self, int sock, uint8_t *buf, size_t len) {
+        assert(sock == 42);
         // Receive data from the fuzzer.
         return recv_common(self->data, buf, len);
     },
     /* .recvfrom = */
     ![](Fuzz_System *self, int sock, uint8_t *buf, size_t len, Network_Addr *addr) {
+        assert(sock == 42);
+
         addr->addr = sockaddr_storage{};
         // Dummy Addr
         addr->addr.ss_family = AF_INET;
 
         // We want an AF_INET address with dummy values
         sockaddr_in *addr_in = reinterpret_cast<sockaddr_in *>(&addr->addr);
-        addr_in->sin_port = 12356;
-        addr_in->sin_addr.s_addr = INADDR_LOOPBACK + 1;
+        addr_in->sin_port = htons(33446);
+        addr_in->sin_addr.s_addr = htonl(0x7f000002);  // 127.0.0.2
         addr->size = sizeof(struct sockaddr);
 
         return recv_common(self->data, buf, len);
     },
     /* .send = */
-    [](void *obj, int sock, const uint8_t *buf, size_t len) {
+    ![](Fuzz_System *self, int sock, const uint8_t *buf, size_t len) {
+        assert(sock == 42);
         // Always succeed.
         return static_cast<int>(len);
     },
     /* .sendto = */
-    [](void *obj, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
+    ![](Fuzz_System *self, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
+        assert(sock == 42);
         // Always succeed.
         return static_cast<int>(len);
     },
-    /* .socket = */ [](void *obj, int domain, int type, int proto) { return 1; },
-    /* .socket_nonblock = */ [](void *obj, int sock, bool nonblock) { return 0; },
+    /* .socket = */ ![](Fuzz_System *self, int domain, int type, int proto) { return 42; },
+    /* .socket_nonblock = */ ![](Fuzz_System *self, int sock, bool nonblock) { return 0; },
     /* .getsockopt = */
-    [](void *obj, int sock, int level, int optname, void *optval, size_t *optlen) {
-        memset(optval, 0, *optlen);
+    ![](Fuzz_System *self, int sock, int level, int optname, void *optval, size_t *optlen) {
+        std::memset(optval, 0, *optlen);
         return 0;
     },
     /* .setsockopt = */
-    [](void *obj, int sock, int level, int optname, const void *optval, size_t optlen) {
+    ![](Fuzz_System *self, int sock, int level, int optname, const void *optval, size_t optlen) {
         return 0;
     },
 };
@@ -101,9 +127,12 @@ static constexpr Random_Funcs fuzz_random_funcs = {
         const size_t bytes_read = std::min(length, self->data.size);
         // Initialize everything to make MSAN and others happy
         std::memset(bytes, 0, length);
-        std::memcpy(bytes, self->data.data, bytes_read);
+        std::copy(self->data.data, self->data.data + bytes_read, bytes);
         self->data.data += bytes_read;
         self->data.size -= bytes_read;
+        if (DEBUG) {
+            std::printf("rng: %02x..%02x[%zu] -> tox1\n", bytes[0], bytes[length - 1], length);
+        }
     },
     /* .random_uniform = */
     ![](Fuzz_System *self, uint32_t upper_bound) {
@@ -118,10 +147,12 @@ static constexpr Random_Funcs fuzz_random_funcs = {
 };
 
 Fuzz_System::Fuzz_System(Fuzz_Data &input)
-    : data(input)
-    , sys(std::make_unique<Tox_System>())
-    , ns(std::make_unique<Network>(Network{&fuzz_network_funcs, this}))
-    , rng(std::make_unique<Random>(Random{&fuzz_random_funcs, this}))
+    : System{
+        std::make_unique<Tox_System>(),
+        std::make_unique<Network>(Network{&fuzz_network_funcs, this}),
+        std::make_unique<Random>(Random{&fuzz_random_funcs, this}),
+    }
+    , data(input)
 {
     sys->mono_time_callback = ![](Fuzz_System *self) { return self->clock; };
     sys->mono_time_user_data = this;
@@ -129,43 +160,43 @@ Fuzz_System::Fuzz_System(Fuzz_Data &input)
     sys->rng = rng.get();
 }
 
-Fuzz_System::~Fuzz_System() { }
-
 static constexpr Network_Funcs null_network_funcs = {
-    /* .close = */ [](void *obj, int sock) { return 0; },
-    /* .accept = */ [](void *obj, int sock) { return 2; },
-    /* .bind = */ [](void *obj, int sock, const Network_Addr *addr) { return 0; },
-    /* .listen = */ [](void *obj, int sock, int backlog) { return 0; },
+    /* .close = */ ![](Null_System *self, int sock) { return 0; },
+    /* .accept = */ ![](Null_System *self, int sock) { return 1337; },
+    /* .bind = */ ![](Null_System *self, int sock, const Network_Addr *addr) { return 0; },
+    /* .listen = */ ![](Null_System *self, int sock, int backlog) { return 0; },
     /* .recvbuf = */ ![](Null_System *self, int sock) { return 0; },
     /* .recv = */
     ![](Null_System *self, int sock, uint8_t *buf, size_t len) {
+        // Always fail.
         errno = ENOMEM;
         return -1;
     },
     /* .recvfrom = */
     ![](Null_System *self, int sock, uint8_t *buf, size_t len, Network_Addr *addr) {
+        // Always fail.
         errno = ENOMEM;
         return -1;
     },
     /* .send = */
-    [](void *obj, int sock, const uint8_t *buf, size_t len) {
+    ![](Null_System *self, int sock, const uint8_t *buf, size_t len) {
         // Always succeed.
         return static_cast<int>(len);
     },
     /* .sendto = */
-    [](void *obj, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
+    ![](Null_System *self, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
         // Always succeed.
         return static_cast<int>(len);
     },
-    /* .socket = */ [](void *obj, int domain, int type, int proto) { return 1; },
-    /* .socket_nonblock = */ [](void *obj, int sock, bool nonblock) { return 0; },
+    /* .socket = */ ![](Null_System *self, int domain, int type, int proto) { return 42; },
+    /* .socket_nonblock = */ ![](Null_System *self, int sock, bool nonblock) { return 0; },
     /* .getsockopt = */
-    [](void *obj, int sock, int level, int optname, void *optval, size_t *optlen) {
-        memset(optval, 0, *optlen);
+    ![](Null_System *self, int sock, int level, int optname, void *optval, size_t *optlen) {
+        std::memset(optval, 0, *optlen);
         return 0;
     },
     /* .setsockopt = */
-    [](void *obj, int sock, int level, int optname, const void *optval, size_t optlen) {
+    ![](Null_System *self, int sock, int level, int optname, const void *optval, size_t optlen) {
         return 0;
     },
 };
@@ -191,9 +222,11 @@ static constexpr Random_Funcs null_random_funcs = {
 };
 
 Null_System::Null_System()
-    : sys(std::make_unique<Tox_System>())
-    , ns(std::make_unique<Network>(Network{&null_network_funcs, this}))
-    , rng(std::make_unique<Random>(Random{&null_random_funcs, this}))
+    : System{
+        std::make_unique<Tox_System>(),
+        std::make_unique<Network>(Network{&null_network_funcs, this}),
+        std::make_unique<Random>(Random{&null_random_funcs, this}),
+    }
 {
     sys->mono_time_callback = ![](Fuzz_System *self) { return self->clock; };
     sys->mono_time_user_data = this;
@@ -201,4 +234,135 @@ Null_System::Null_System()
     sys->rng = rng.get();
 }
 
-Null_System::~Null_System() { }
+static uint16_t get_port(const Network_Addr *addr)
+{
+    if (addr->addr.ss_family == AF_INET6) {
+        return reinterpret_cast<const sockaddr_in6 *>(&addr->addr)->sin6_port;
+    } else {
+        assert(addr->addr.ss_family == AF_INET);
+        return reinterpret_cast<const sockaddr_in *>(&addr->addr)->sin_port;
+    }
+}
+
+static constexpr Network_Funcs record_network_funcs = {
+    /* .close = */ ![](Record_System *self, int sock) { return 0; },
+    /* .accept = */ ![](Record_System *self, int sock) { return 2; },
+    /* .bind = */
+    ![](Record_System *self, int sock, const Network_Addr *addr) {
+        const uint16_t port = get_port(addr);
+        if (self->global_.bound.find(port) != self->global_.bound.end()) {
+            errno = EADDRINUSE;
+            return -1;
+        }
+        self->global_.bound.emplace(port, self);
+        self->port = port;
+        return 0;
+    },
+    /* .listen = */ ![](Record_System *self, int sock, int backlog) { return 0; },
+    /* .recvbuf = */ ![](Record_System *self, int sock) { return 0; },
+    /* .recv = */
+    ![](Record_System *self, int sock, uint8_t *buf, size_t len) {
+        // Always fail.
+        errno = ENOMEM;
+        return -1;
+    },
+    /* .recvfrom = */
+    ![](Record_System *self, int sock, uint8_t *buf, size_t len, Network_Addr *addr) {
+        assert(sock == 42);
+        if (self->recvq.empty()) {
+            self->recording.push_back(0xff);
+            self->recording.push_back(0xff);
+            errno = EWOULDBLOCK;
+            if (DEBUG) {
+                std::printf("recvfrom: no data for %s\n", self->name_);
+            }
+            return -1;
+        }
+        const auto [from, packet] = std::move(self->recvq.front());
+        self->recvq.pop_front();
+        const size_t recvlen = std::min(len, packet.size());
+        std::copy(packet.begin(), packet.end(), buf);
+
+        addr->addr = sockaddr_storage{};
+        // Dummy Addr
+        addr->addr.ss_family = AF_INET;
+
+        // We want an AF_INET address with dummy values
+        sockaddr_in *addr_in = reinterpret_cast<sockaddr_in *>(&addr->addr);
+        addr_in->sin_port = from;
+        addr_in->sin_addr.s_addr = htonl(0x7f000002);  // 127.0.0.2
+        addr->size = sizeof(struct sockaddr);
+
+        assert(recvlen > 0 && recvlen <= INT_MAX);
+        self->recording.push_back(recvlen >> 8);
+        self->recording.push_back(recvlen & 0xff);
+        if (DEBUG) {
+            std::printf("recvfrom: %zu (%02x, %02x) for %s\n", recvlen, self->recording.end()[-2],
+                self->recording.end()[-1], self->name_);
+        }
+        self->recording.insert(self->recording.end(), buf, buf + recvlen);
+        return static_cast<int>(recvlen);
+    },
+    /* .send = */
+    ![](Record_System *self, int sock, const uint8_t *buf, size_t len) {
+        // Always succeed.
+        return static_cast<int>(len);
+    },
+    /* .sendto = */
+    ![](Record_System *self, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
+        assert(sock == 42);
+        auto backend = self->global_.bound.find(get_port(addr));
+        assert(backend != self->global_.bound.end());
+        backend->second->receive(self->port, buf, len);
+        return static_cast<int>(len);
+    },
+    /* .socket = */ ![](Record_System *self, int domain, int type, int proto) { return 42; },
+    /* .socket_nonblock = */ ![](Record_System *self, int sock, bool nonblock) { return 0; },
+    /* .getsockopt = */
+    ![](Record_System *self, int sock, int level, int optname, void *optval, size_t *optlen) {
+        std::memset(optval, 0, *optlen);
+        return 0;
+    },
+    /* .setsockopt = */
+    ![](Record_System *self, int sock, int level, int optname, const void *optval, size_t optlen) {
+        return 0;
+    },
+};
+
+static constexpr Random_Funcs record_random_funcs = {
+    /* .random_bytes = */
+    ![](Record_System *self, uint8_t *bytes, size_t length) {
+        for (size_t i = 0; i < length; ++i) {
+            bytes[i] = simple_rng(self->seed_) & 0xff;
+            self->recording.push_back(bytes[i]);
+        }
+        if (DEBUG) {
+            std::printf(
+                "rng: %02x..%02x[%zu] -> %s\n", bytes[0], bytes[length - 1], length, self->name_);
+        }
+    },
+    /* .random_uniform = */
+    fuzz_random_funcs.random_uniform,
+};
+
+Record_System::Record_System(Global &global, uint64_t seed, const char *name)
+    : System{
+        std::make_unique<Tox_System>(),
+        std::make_unique<Network>(Network{&record_network_funcs, this}),
+        std::make_unique<Random>(Random{&record_random_funcs, this}),
+    }
+    , global_(global)
+    , seed_(seed)
+    , name_(name)
+{
+    sys->mono_time_callback = ![](Fuzz_System *self) { return self->clock; };
+    sys->mono_time_user_data = this;
+    sys->ns = ns.get();
+    sys->rng = rng.get();
+}
+
+void Record_System::receive(uint16_t send_port, const uint8_t *buf, size_t len)
+{
+    assert(port != 0);
+    recvq.emplace_back(send_port, std::vector<uint8_t>{buf, buf + len});
+}
