@@ -1791,8 +1791,7 @@ Socket net_socket(const Network *ns, Family domain, int type, int protocol)
 uint16_t net_socket_data_recv_buffer(const Network *ns, Socket sock)
 {
     const int count = ns->funcs->recvbuf(ns->obj, sock.sock);
-    assert(count >= 0 && count <= UINT16_MAX);
-    return (uint16_t)count;
+    return (uint16_t)max_s32(0, min_s32(count, UINT16_MAX));
 }
 
 uint32_t net_htonl(uint32_t hostlong)
