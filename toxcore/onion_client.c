@@ -71,7 +71,6 @@ typedef struct Onion_Friend {
 
     uint64_t last_noreplay;
 
-    uint64_t last_seen;
     uint64_t last_populated;  // the last time we had a fully populated client nodes list
     uint64_t time_last_pinged; // the last time we pinged this friend with any node
 
@@ -718,10 +717,6 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
             return -1;
         }
 
-        if (is_stored == 1) {
-            onion_c->friends_list[num - 1].last_seen = mono_time_get(onion_c->mono_time);
-        }
-
         node_list = onion_c->friends_list[num - 1].clients_list;
         reference_id = onion_c->friends_list[num - 1].real_public_key;
         list_length = MAX_ONION_CLIENTS;
@@ -1003,7 +998,6 @@ static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, con
     }
 
     onion_set_friend_DHT_pubkey(onion_c, friend_num, data + 1 + sizeof(uint64_t));
-    onion_c->friends_list[friend_num].last_seen = mono_time_get(onion_c->mono_time);
 
     const uint16_t len_nodes = length - DHTPK_DATA_MIN_LENGTH;
 
@@ -1391,7 +1385,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
 }
 
 /** @brief Set the function for this friend that will be callbacked with object and number
- * when that friends gives us one of the TCP relays he is connected to.
+ * when that friend gives us one of the TCP relays they are connected to.
  *
  * object and number will be passed as argument to this function.
  *
@@ -1412,7 +1406,7 @@ int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num,
 }
 
 /** @brief Set the function for this friend that will be callbacked with object and number
- * when that friend gives us his DHT temporary public key.
+ * when that friend gives us their DHT temporary public key.
  *
  * object and number will be passed as argument to this function.
  *
@@ -1453,7 +1447,6 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
         }
     }
 
-    onion_c->friends_list[friend_num].last_seen = mono_time_get(onion_c->mono_time);
     onion_c->friends_list[friend_num].know_dht_public_key = true;
     memcpy(onion_c->friends_list[friend_num].dht_public_key, dht_key, CRYPTO_PUBLIC_KEY_SIZE);
 
@@ -1487,7 +1480,7 @@ unsigned int onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_
  *
  * @retval -1 if public_key does NOT refer to a friend
  * @retval  0 if public_key refers to a friend and we failed to find the friend (yet)
- * @retval  1 if public_key refers to a friend and we found him
+ * @retval  1 if public_key refers to a friend and we found them
  */
 int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_port)
 {
@@ -1502,7 +1495,9 @@ int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_p
 
 
 /** @brief Set if friend is online or not.
- * NOTE: This function is there and should be used so that we don't send useless packets to the friend if he is online.
+ *
+ * NOTE: This function is there and should be used so that we don't send
+ * useless packets to the friend if they are online.
  *
  * return -1 on failure.
  * return 0 on success.
@@ -1511,10 +1506,6 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, bool is_onlin
 {
     if ((uint32_t)friend_num >= onion_c->num_friends) {
         return -1;
-    }
-
-    if (!is_online && onion_c->friends_list[friend_num].is_online) {
-        onion_c->friends_list[friend_num].last_seen = mono_time_get(onion_c->mono_time);
     }
 
     onion_c->friends_list[friend_num].is_online = is_online;
@@ -1573,10 +1564,6 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
     const bool friend_is_new = o_friend->run_count <= ANNOUNCE_FRIEND_RUN_COUNT_BEGINNING;
 
     if (!friend_is_new) {
-        if (o_friend->last_seen == 0) {
-            o_friend->last_seen = tm;
-        }
-
         // how often we ping a node for a friend depends on how many times we've already tried.
         // the interval increases exponentially, as the longer a friend has been offline, the less
         // likely the case is that they're online and failed to find us

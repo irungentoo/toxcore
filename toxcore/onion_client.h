@@ -110,7 +110,9 @@ non_null()
 int onion_delfriend(Onion_Client *onion_c, int friend_num);
 
 /** @brief Set if friend is online or not.
- * NOTE: This function is there and should be used so that we don't send useless packets to the friend if he is online.
+ *
+ * NOTE: This function is there and should be used so that we don't send
+ * useless packets to the friend if they are online.
  *
  * return -1 on failure.
  * return 0 on success.
@@ -122,7 +124,7 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, bool is_onlin
  *
  * @retval -1 if public_key does NOT refer to a friend
  * @retval  0 if public_key refers to a friend and we failed to find the friend (yet)
- * @retval  1 if public_key refers to a friend and we found him
+ * @retval  1 if public_key refers to a friend and we found them
  */
 non_null()
 int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
@@ -130,7 +132,7 @@ int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_p
 typedef int recv_tcp_relay_cb(void *object, uint32_t number, const IP_Port *ip_port, const uint8_t *public_key);
 
 /** @brief Set the function for this friend that will be callbacked with object and number
- * when that friends gives us one of the TCP relays he is connected to.
+ * when that friend gives us one of the TCP relays they are connected to.
  *
  * object and number will be passed as argument to this function.
  *
@@ -144,7 +146,7 @@ int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num,
 typedef void onion_dht_pk_cb(void *data, int32_t number, const uint8_t *dht_public_key, void *userdata);
 
 /** @brief Set the function for this friend that will be callbacked with object and number
- * when that friend gives us his DHT temporary public key.
+ * when that friend gives us their DHT temporary public key.
  *
  * object and number will be passed as argument to this function.
  *
