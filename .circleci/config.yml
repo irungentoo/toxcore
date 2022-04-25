@@ -119,7 +119,6 @@ jobs:
       - run: git submodule update --init --recursive
       - run: other/analysis/check_includes
       - run: other/analysis/check_logger_levels
-      - run: other/analysis/run-check-recursion
       - run: other/analysis/run-clang
       - run: other/analysis/run-cppcheck
       - run: other/analysis/run-gcc

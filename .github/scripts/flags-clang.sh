@@ -15,6 +15,8 @@ add_flag -Wno-conversion
 # TODO(iphydf): Check enum values when received from the user, then assume
 # correctness and remove this suppression.
 add_flag -Wno-covered-switch-default
+# We use C99, so declarations can come after statements.
+add_flag -Wno-declaration-after-statement
 # Due to clang's tolower() macro being recursive
 # https://github.com/TokTok/c-toxcore/pull/481
 add_flag -Wno-disabled-macro-expansion
