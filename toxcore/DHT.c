@@ -533,8 +533,8 @@ int pack_nodes(const Logger *logger, uint8_t *data, uint16_t length, const Node_
 
 #ifndef NDEBUG
         const uint32_t increment = ipp_size + CRYPTO_PUBLIC_KEY_SIZE;
-#endif
         assert(increment == PACKED_NODE_SIZE_IP4 || increment == PACKED_NODE_SIZE_IP6);
+#endif
     }
 
     return packed_length;
@@ -565,8 +565,8 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 
 #ifndef NDEBUG
         const uint32_t increment = ipp_size + CRYPTO_PUBLIC_KEY_SIZE;
-#endif
         assert(increment == PACKED_NODE_SIZE_IP4 || increment == PACKED_NODE_SIZE_IP6);
+#endif
     }
 
     if (processed_data_len != nullptr) {
