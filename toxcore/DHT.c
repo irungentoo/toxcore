@@ -1899,7 +1899,7 @@ int dht_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
     const DHT_Friend *const frnd = &dht->friends_list[friend_index];
     const uint32_t client_index = index_of_client_pk(frnd->client_list, MAX_FRIEND_CLIENTS, public_key);
 
-    if (client_index == -1) {
+    if (client_index == UINT32_MAX) {
         return 0;
     }
 
