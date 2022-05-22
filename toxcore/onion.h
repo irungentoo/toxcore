@@ -12,6 +12,7 @@
 #include "DHT.h"
 #include "logger.h"
 #include "mono_time.h"
+#include "shared_key_cache.h"
 
 typedef int onion_recv_1_cb(void *object, const IP_Port *dest, const uint8_t *data, uint16_t length);
 
@@ -24,9 +25,9 @@ typedef struct Onion {
     uint8_t secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
     uint64_t timestamp;
 
-    Shared_Keys shared_keys_1;
-    Shared_Keys shared_keys_2;
-    Shared_Keys shared_keys_3;
+    Shared_Key_Cache *shared_keys_1;
+    Shared_Key_Cache *shared_keys_2;
+    Shared_Key_Cache *shared_keys_3;
 
     onion_recv_1_cb *recv_1_function;
     void *callback_object;

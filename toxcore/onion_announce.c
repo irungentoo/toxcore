@@ -16,6 +16,7 @@
 #include "LAN_discovery.h"
 #include "ccompat.h"
 #include "mono_time.h"
+#include "shared_key_cache.h"
 #include "util.h"
 
 #define PING_ID_TIMEOUT ONION_ANNOUNCE_TIMEOUT
@@ -30,6 +31,10 @@
 #define DATA_REQUEST_MIN_SIZE_RECV (DATA_REQUEST_MIN_SIZE + ONION_RETURN_3)
 
 #define ONION_MINIMAL_SIZE (ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE * 2 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH)
+
+/* Settings for the shared key cache */
+#define MAX_KEYS_PER_SLOT 4
+#define KEYS_TIMEOUT 600
 
 static_assert(ONION_PING_ID_SIZE == CRYPTO_PUBLIC_KEY_SIZE,
               "announce response packets assume that ONION_PING_ID_SIZE is equal to CRYPTO_PUBLIC_KEY_SIZE");
@@ -51,7 +56,7 @@ struct Onion_Announce {
     Onion_Announce_Entry entries[ONION_ANNOUNCE_MAX_ENTRIES];
     uint8_t hmac_key[CRYPTO_HMAC_KEY_SIZE];
 
-    Shared_Keys shared_keys_recv;
+    Shared_Key_Cache *shared_keys_recv;
 
     uint16_t extra_data_max_size;
     pack_extra_data_cb *extra_data_callback;
@@ -426,9 +431,12 @@ static int handle_announce_request_common(
     pack_extra_data_cb *pack_extra_data_callback)
 {
     const uint8_t *packet_public_key = packet + 1 + CRYPTO_NONCE_SIZE;
-    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    get_shared_key(onion_a->mono_time, &onion_a->shared_keys_recv, shared_key, dht_get_self_secret_key(onion_a->dht),
-                   packet_public_key);
+    const uint8_t *shared_key = shared_key_cache_lookup(onion_a->shared_keys_recv, packet_public_key);
+
+    if (shared_key == nullptr) {
+        /* Error looking up/deriving the shared key */
+        return 1;
+    }
 
     uint8_t *plain = (uint8_t *)malloc(plain_size);
 
@@ -653,6 +661,12 @@ Onion_Announce *new_onion_announce(const Logger *log, const Random *rng, const M
     onion_a->extra_data_object = nullptr;
     new_hmac_key(rng, onion_a->hmac_key);
 
+    onion_a->shared_keys_recv = shared_key_cache_new(mono_time, dht_get_self_secret_key(dht), KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    if (onion_a->shared_keys_recv == nullptr) {
+        kill_onion_announce(onion_a);
+        return nullptr;
+    }
+
     networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_announce_request, onion_a);
     networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST_OLD, &handle_announce_request_old, onion_a);
     networking_registerhandler(onion_a->net, NET_PACKET_ONION_DATA_REQUEST, &handle_data_request, onion_a);
@@ -671,6 +685,7 @@ void kill_onion_announce(Onion_Announce *onion_a)
     networking_registerhandler(onion_a->net, NET_PACKET_ONION_DATA_REQUEST, nullptr, nullptr);
 
     crypto_memzero(onion_a->hmac_key, CRYPTO_HMAC_KEY_SIZE);
+    shared_key_cache_free(onion_a->shared_keys_recv);
 
     free(onion_a);
 }

@@ -223,8 +223,8 @@ static int create_cookie_request(const Net_Crypto *c, uint8_t *packet, const uin
     memcpy(plain, c->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(plain + CRYPTO_PUBLIC_KEY_SIZE, padding, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(plain + (CRYPTO_PUBLIC_KEY_SIZE * 2), &number, sizeof(uint64_t));
-
-    dht_get_shared_key_sent(c->dht, shared_key, dht_public_key);
+    const uint8_t *tmp_shared_key = dht_get_shared_key_sent(c->dht, dht_public_key);
+    memcpy(shared_key, tmp_shared_key, CRYPTO_SHARED_KEY_SIZE);
     uint8_t nonce[CRYPTO_NONCE_SIZE];
     random_nonce(c->rng, nonce);
     packet[0] = NET_PACKET_COOKIE_REQUEST;
@@ -341,7 +341,8 @@ static int handle_cookie_request(const Net_Crypto *c, uint8_t *request_plain, ui
     }
 
     memcpy(dht_public_key, packet + 1, CRYPTO_PUBLIC_KEY_SIZE);
-    dht_get_shared_key_sent(c->dht, shared_key, dht_public_key);
+    const uint8_t *tmp_shared_key = dht_get_shared_key_sent(c->dht, dht_public_key);
+    memcpy(shared_key, tmp_shared_key, CRYPTO_SHARED_KEY_SIZE);
     const int len = decrypt_data_symmetric(shared_key, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
                                            packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE, COOKIE_REQUEST_PLAIN_LENGTH + CRYPTO_MAC_SIZE,
                                            request_plain);

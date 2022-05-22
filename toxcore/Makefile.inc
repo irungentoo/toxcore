@@ -61,6 +61,8 @@ libtoxcore_la_SOURCES = ../third_party/cmp/cmp.c \
                         ../toxcore/Messenger.c \
                         ../toxcore/ping.h \
                         ../toxcore/ping.c \
+                        ../toxcore/shared_key_cache.h \
+                        ../toxcore/shared_key_cache.c \
                         ../toxcore/state.h \
                         ../toxcore/state.c \
                         ../toxcore/tox.h \

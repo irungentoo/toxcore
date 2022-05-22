@@ -254,24 +254,6 @@ non_null(1, 4) nullable(3)
 int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed_data_len, const uint8_t *data,
                  uint16_t length, bool tcp_enabled);
 
-
-/*----------------------------------------------------------------------------------*/
-/* struct to store some shared keys so we don't have to regenerate them for each request. */
-#define MAX_KEYS_PER_SLOT 4
-#define KEYS_TIMEOUT 600
-
-typedef struct Shared_Key {
-    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    uint32_t times_requested;
-    bool stored;
-    uint64_t time_last_requested;
-} Shared_Key;
-
-typedef struct Shared_Keys {
-    Shared_Key keys[256 * MAX_KEYS_PER_SLOT];
-} Shared_Keys;
-
 /*----------------------------------------------------------------------------------*/
 
 typedef int cryptopacket_handler_cb(void *object, const IP_Port *ip_port, const uint8_t *source_pubkey,
@@ -296,30 +278,18 @@ non_null() const uint8_t *dht_get_friend_public_key(const DHT *dht, uint32_t fri
 /*----------------------------------------------------------------------------------*/
 
 /**
- * Shared key generations are costly, it is therefore smart to store commonly used
- * ones so that they can be re-used later without being computed again.
- *
- * If a shared key is already in shared_keys, copy it to shared_key.
- * Otherwise generate it into shared_key and copy it to shared_keys
- */
-non_null()
-void get_shared_key(
-    const Mono_Time *mono_time, Shared_Keys *shared_keys, uint8_t *shared_key,
-    const uint8_t *secret_key, const uint8_t *public_key);
-
-/**
  * Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we receive.
  */
 non_null()
-void dht_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
+const uint8_t *dht_get_shared_key_recv(DHT *dht, const uint8_t *public_key);
 
 /**
  * Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we send.
  */
 non_null()
-void dht_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
+const uint8_t *dht_get_shared_key_sent(DHT *dht, const uint8_t *public_key);
 
 /**
  * Sends a getnodes request to `ip_port` with the public key `public_key` for nodes

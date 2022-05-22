@@ -14,8 +14,13 @@
 
 #include "LAN_discovery.h"
 #include "ccompat.h"
+#include "shared_key_cache.h"
 #include "timed_auth.h"
 #include "util.h"
+
+// Settings for the shared key cache
+#define MAX_KEYS_PER_SLOT 4
+#define KEYS_TIMEOUT 600
 
 uint8_t announce_response_of_request_type(uint8_t request_type)
 {
@@ -53,7 +58,7 @@ struct Announcements {
     const uint8_t *public_key;
     const uint8_t *secret_key;
 
-    Shared_Keys shared_keys;
+    Shared_Key_Cache *shared_keys;
     uint8_t hmac_key[CRYPTO_HMAC_KEY_SIZE];
 
     int32_t synch_offset;
@@ -429,10 +434,13 @@ static int create_reply_plain_store_announce_request(Announcements *announce,
     }
 
     VLA(uint8_t, plain, plain_len);
-    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
 
-    get_shared_key(announce->mono_time, &announce->shared_keys, shared_key,
-                   announce->secret_key, data_public_key);
+    const uint8_t* shared_key = shared_key_cache_lookup(announce->shared_keys, data_public_key);
+
+    if (shared_key == nullptr) {
+        /* Error looking up/deriving the shared key */
+        return -1;
+    }
 
     if (decrypt_data_symmetric(shared_key,
                                data + CRYPTO_PUBLIC_KEY_SIZE,
@@ -549,9 +557,7 @@ static int create_reply(Announcements *announce, const IP_Port *source,
     }
 
     VLA(uint8_t, plain, plain_len);
-    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-
-    dht_get_shared_key_recv(announce->dht, shared_key, data + 1);
+    const uint8_t *shared_key = dht_get_shared_key_recv(announce->dht, data + 1);
 
     if (decrypt_data_symmetric(shared_key,
                                data + 1 + CRYPTO_PUBLIC_KEY_SIZE,
@@ -652,6 +658,11 @@ Announcements *new_announcements(const Logger *log, const Random *rng, const Mon
     announce->public_key = dht_get_self_public_key(announce->dht);
     announce->secret_key = dht_get_self_secret_key(announce->dht);
     new_hmac_key(announce->rng, announce->hmac_key);
+    announce->shared_keys = shared_key_cache_new(mono_time, announce->secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    if (announce->shared_keys == nullptr) {
+        free(announce);
+        return nullptr;
+    }
 
     announce->start_time = mono_time_get(announce->mono_time);
 
@@ -677,7 +688,7 @@ void kill_announcements(Announcements *announce)
     networking_registerhandler(announce->net, NET_PACKET_STORE_ANNOUNCE_REQUEST, nullptr, nullptr);
 
     crypto_memzero(announce->hmac_key, CRYPTO_HMAC_KEY_SIZE);
-    crypto_memzero(&announce->shared_keys, sizeof(Shared_Keys));
+    shared_key_cache_free(announce->shared_keys);
 
     for (uint32_t i = 0; i < ANNOUNCE_BUCKETS * ANNOUNCE_BUCKET_SIZE; ++i) {
         if (announce->entries[i].data != nullptr) {

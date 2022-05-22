@@ -284,6 +284,8 @@ set(toxcore_SOURCES
   toxcore/ping_array.h
   toxcore/ping.c
   toxcore/ping.h
+  toxcore/shared_key_cache.c
+  toxcore/shared_key_cache.h
   toxcore/state.c
   toxcore/state.h
   toxcore/TCP_client.c

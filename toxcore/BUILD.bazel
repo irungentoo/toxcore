@@ -181,6 +181,24 @@ cc_test(
 )
 
 cc_library(
+    name = "shared_key_cache",
+    srcs = ["shared_key_cache.c"],
+    hdrs = ["shared_key_cache.h"],
+    visibility = [
+        "//c-toxcore/auto_tests:__pkg__",
+        "//c-toxcore/other:__pkg__",
+        "//c-toxcore/other/bootstrap_daemon:__pkg__",
+        "//c-toxcore/testing:__pkg__",
+        "//c-toxcore/toxav:__pkg__",
+    ],
+    deps = [
+        ":ccompat",
+        ":crypto_core",
+        ":mono_time",
+    ],
+)
+
+cc_library(
     name = "network",
     srcs = ["network.c"],
     hdrs = ["network.h"],
@@ -289,6 +307,7 @@ cc_library(
         ":mono_time",
         ":network",
         ":ping_array",
+        ":shared_key_cache",
         ":state",
         ":util",
     ],
@@ -326,6 +345,7 @@ cc_library(
         ":ccompat",
         ":crypto_core",
         ":mono_time",
+        ":shared_key_cache",
         ":util",
     ],
 )
@@ -366,6 +386,7 @@ cc_library(
         ":LAN_discovery",
         ":ccompat",
         ":forwarding",
+        ":shared_key_cache",
         ":timed_auth",
         ":util",
     ],
@@ -480,6 +501,7 @@ cc_library(
         ":ccompat",
         ":mono_time",
         ":onion",
+        ":shared_key_cache",
         ":timed_auth",
         ":util",
     ],

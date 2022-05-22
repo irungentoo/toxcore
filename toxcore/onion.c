@@ -27,6 +27,11 @@
 
 #define KEY_REFRESH_INTERVAL (2 * 60 * 60)
 
+
+// Settings for the shared key cache
+#define MAX_KEYS_PER_SLOT 4
+#define KEYS_TIMEOUT 600
+
 /** Change symmetric keys every 2 hours to make paths expire eventually. */
 non_null()
 static void change_symmetric_key(Onion *onion)
@@ -314,9 +319,14 @@ static int handle_send_initial(void *object, const IP_Port *source, const uint8_
     change_symmetric_key(onion);
 
     uint8_t plain[ONION_MAX_PACKET_SIZE];
-    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    get_shared_key(onion->mono_time, &onion->shared_keys_1, shared_key, dht_get_self_secret_key(onion->dht),
-                   packet + 1 + CRYPTO_NONCE_SIZE);
+    const uint8_t *public_key = packet + 1 + CRYPTO_NONCE_SIZE;
+    const uint8_t *shared_key = shared_key_cache_lookup(onion->shared_keys_1, public_key);
+
+    if (shared_key == nullptr) {
+        /* Error looking up/deriving the shared key */
+        return 1;
+    }
+
     const int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
                                      length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE), plain);
 
@@ -385,9 +395,14 @@ static int handle_send_1(void *object, const IP_Port *source, const uint8_t *pac
     change_symmetric_key(onion);
 
     uint8_t plain[ONION_MAX_PACKET_SIZE];
-    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    get_shared_key(onion->mono_time, &onion->shared_keys_2, shared_key, dht_get_self_secret_key(onion->dht),
-                   packet + 1 + CRYPTO_NONCE_SIZE);
+    const uint8_t *public_key = packet + 1 + CRYPTO_NONCE_SIZE;
+    const uint8_t *shared_key = shared_key_cache_lookup(onion->shared_keys_2, public_key);
+
+    if (shared_key == nullptr) {
+        /* Error looking up/deriving the shared key */
+        return 1;
+    }
+
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
                                      length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + RETURN_1), plain);
 
@@ -443,9 +458,14 @@ static int handle_send_2(void *object, const IP_Port *source, const uint8_t *pac
     change_symmetric_key(onion);
 
     uint8_t plain[ONION_MAX_PACKET_SIZE];
-    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    get_shared_key(onion->mono_time, &onion->shared_keys_3, shared_key, dht_get_self_secret_key(onion->dht),
-                   packet + 1 + CRYPTO_NONCE_SIZE);
+    const uint8_t *public_key = packet + 1 + CRYPTO_NONCE_SIZE;
+    const uint8_t *shared_key = shared_key_cache_lookup(onion->shared_keys_3, public_key);
+
+    if (shared_key == nullptr) {
+        /* Error looking up/deriving the shared key */
+        return 1;
+    }
+
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
                                      length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + RETURN_2), plain);
 
@@ -668,6 +688,19 @@ Onion *new_onion(const Logger *log, const Mono_Time *mono_time, const Random *rn
     new_symmetric_key(rng, onion->secret_symmetric_key);
     onion->timestamp = mono_time_get(onion->mono_time);
 
+    const uint8_t *secret_key = dht_get_self_secret_key(dht);
+    onion->shared_keys_1 = shared_key_cache_new(mono_time, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    onion->shared_keys_2 = shared_key_cache_new(mono_time, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    onion->shared_keys_3 = shared_key_cache_new(mono_time, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+
+    if (onion->shared_keys_1 == nullptr ||
+        onion->shared_keys_2 == nullptr ||
+        onion->shared_keys_3 == nullptr) {
+        kill_onion(onion);
+        return nullptr;
+    }
+
+
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_INITIAL, &handle_send_initial, onion);
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_1, &handle_send_1, onion);
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_2, &handle_send_2, onion);
@@ -694,6 +727,10 @@ void kill_onion(Onion *onion)
     networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_1, nullptr, nullptr);
 
     crypto_memzero(onion->secret_symmetric_key, sizeof(onion->secret_symmetric_key));
+
+    shared_key_cache_free(onion->shared_keys_1);
+    shared_key_cache_free(onion->shared_keys_2);
+    shared_key_cache_free(onion->shared_keys_3);
 
     free(onion);
 }
