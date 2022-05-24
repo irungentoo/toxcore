@@ -191,9 +191,9 @@ static void test_basic(void)
     const Network *ns = system_network();
 
     Logger *log1 = logger_new();
-    logger_callback_log(log1, (logger_cb *)print_debug_log, nullptr, &index[0]);
+    logger_callback_log(log1, print_debug_logger, nullptr, &index[0]);
     Logger *log2 = logger_new();
-    logger_callback_log(log2, (logger_cb *)print_debug_log, nullptr, &index[1]);
+    logger_callback_log(log2, print_debug_logger, nullptr, &index[1]);
 
     const Random *rng = system_random();
     ck_assert(rng != nullptr);
@@ -291,7 +291,7 @@ static void test_basic(void)
 
     c_sleep(1000);
     Logger *log3 = logger_new();
-    logger_callback_log(log3, (logger_cb *)print_debug_log, nullptr, &index[2]);
+    logger_callback_log(log3, print_debug_logger, nullptr, &index[2]);
 
     Mono_Time *mono_time3 = mono_time_new(nullptr, nullptr);
 
@@ -378,7 +378,7 @@ static Onions *new_onions(const Random *rng, uint16_t port, uint32_t *index)
         return nullptr;
     }
 
-    logger_callback_log(on->log, (logger_cb *)print_debug_log, nullptr, index);
+    logger_callback_log(on->log, print_debug_logger, nullptr, index);
 
     on->mono_time = mono_time_new(nullptr, nullptr);
 

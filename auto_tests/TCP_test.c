@@ -49,7 +49,7 @@ static void test_basic(void)
     const Random *rng = system_random();
     ck_assert(rng != nullptr);
     Logger *logger = logger_new();
-    logger_callback_log(logger, (logger_cb *)print_debug_log, nullptr, nullptr);
+    logger_callback_log(logger, print_debug_logger, nullptr, nullptr);
 
     // Attempt to create a new TCP_Server instance.
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];

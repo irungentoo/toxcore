@@ -109,7 +109,7 @@ static Forwarding_Subtox *new_forwarding_subtox(bool no_udp, uint32_t *index, ui
 
     subtox->log = logger_new();
     ck_assert(subtox->log != nullptr);
-    logger_callback_log(subtox->log, (logger_cb *)print_debug_log, nullptr, index);
+    logger_callback_log(subtox->log, print_debug_logger, nullptr, index);
     subtox->mono_time = mono_time_new(nullptr, nullptr);
 
     const Random *rng= system_random();
