@@ -500,10 +500,10 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
 {
     if ((NUM_FIRST == number && !first) || (NUM_LAST == number && !last)) {
         Onions *on = (Onions *)object;
-        uint16_t count = 0;
-        int ret = dht_addfriend(on->onion->dht, dht_public_key, &dht_ip_callback, object, number, &count);
+        uint32_t token = 0;
+        int ret = dht_addfriend(on->onion->dht, dht_public_key, &dht_ip_callback, object, number, &token);
         ck_assert_msg(ret == 0, "dht_addfriend() did not return 0");
-        ck_assert_msg(count == 1, "Count not 1, count is %u", count);
+        ck_assert_msg(token == 1, "Count not 1, count is %u", token);
 
         if (NUM_FIRST == number && !first) {
             first = 1;

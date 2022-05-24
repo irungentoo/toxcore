@@ -172,8 +172,6 @@ typedef struct NAT {
     uint64_t    nat_ping_timestamp;
 } NAT;
 
-#define DHT_FRIEND_MAX_LOCKS 32
-
 typedef struct Node_format {
     uint8_t     public_key[CRYPTO_PUBLIC_KEY_SIZE];
     IP_Port     ip_port;
@@ -327,29 +325,34 @@ non_null(1) nullable(2)
 void dht_callback_get_nodes_response(DHT *dht, dht_get_nodes_response_cb *function);
 
 /** @brief Add a new friend to the friends list.
- * public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
+ * @param public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
  *
- * ip_callback is the callback of a function that will be called when the ip address
+ * @param ip_callback is the callback of a function that will be called when the ip address
  * is found along with arguments data and number.
+ * @param data User data for the callback
+ * @param number Will be passed to ip_callback
  *
- * lock_count will be set to a non zero number that must be passed to `dht_delfriend()`
+ * @param lock_token will be set to a non zero number that must be passed to `dht_delfriend()`
  * to properly remove the callback.
  *
  * @retval 0 if success.
  * @retval -1 if failure (friends list is full).
  */
-non_null(1, 2) nullable(3, 4, 6)
+non_null(1, 2, 6) nullable(3, 4)
 int dht_addfriend(DHT *dht, const uint8_t *public_key, dht_ip_cb *ip_callback,
-                  void *data, int32_t number, uint16_t *lock_count);
+                  void *data, int32_t number, uint32_t *lock_token);
 
 /** @brief Delete a friend from the friends list.
  * public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
+ * @param dht The DHT object
+ * @param public_key The public key of the friend
+ * @param lock_token The token received by dht_addfriend(...)
  *
  * @retval 0 if success.
  * @retval -1 if failure (public_key not in friends list).
  */
 non_null()
-int dht_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count);
+int dht_delfriend(DHT *dht, const uint8_t *public_key, uint32_t lock_token);
 
 /** @brief Get ip of friend.
  *

@@ -43,6 +43,9 @@
 /** Number of get node requests to send to quickly find close nodes. */
 #define MAX_BOOTSTRAP_TIMES 5
 
+// TODO(sudden6): find out why we need multiple callbacks and if we really need 32
+#define DHT_FRIEND_MAX_LOCKS 32
+
 typedef struct DHT_Friend_Callback {
     dht_ip_cb *ip_callback;
     void *data;
@@ -61,7 +64,8 @@ struct DHT_Friend {
     /* Symmetric NAT hole punching stuff. */
     NAT         nat;
 
-    uint16_t lock_count;
+    /* Each set bit represents one installed callback */
+    uint32_t lock_flags;
     DHT_Friend_Callback callbacks[DHT_FRIEND_MAX_LOCKS];
 
     Node_format to_bootstrap[MAX_SENT_NODES];
@@ -70,6 +74,8 @@ struct DHT_Friend {
 
 static const DHT_Friend empty_dht_friend = {{0}};
 const Node_format empty_node_format = {{0}};
+
+static_assert(sizeof (empty_dht_friend.lock_flags) * 8 == DHT_FRIEND_MAX_LOCKS, "Bitfield size and number of locks don't match");
 
 typedef struct Cryptopacket_Handler {
     cryptopacket_handler_cb *function;
@@ -1419,8 +1425,9 @@ uint32_t addto_lists(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key
         return used;
     }
 
-    for (uint32_t i = 0; i < friend_foundip->lock_count; ++i) {
-        if (friend_foundip->callbacks[i].ip_callback != nullptr) {
+    for (uint32_t i = 0; i < DHT_FRIEND_MAX_LOCKS; ++i) {
+        const bool has_lock = (friend_foundip->lock_flags & (UINT32_C(1) << i)) > 0;
+        if (has_lock && friend_foundip->callbacks[i].ip_callback != nullptr) {
             friend_foundip->callbacks[i].ip_callback(friend_foundip->callbacks[i].data,
                     friend_foundip->callbacks[i].number, &ipp_copy);
         }
@@ -1745,34 +1752,74 @@ static int handle_sendnodes_ipv6(void *object, const IP_Port *source, const uint
 /*----------------------------------------------------------------------------------*/
 /*------------------------END of packet handling functions--------------------------*/
 
-non_null(1) nullable(2, 3, 5)
-static void dht_friend_lock(DHT_Friend *const dht_friend, dht_ip_cb *ip_callback,
-                            void *data, int32_t number, uint16_t *lock_count)
+non_null(1) nullable(2, 3)
+static uint32_t dht_friend_lock(DHT_Friend *const dht_friend, dht_ip_cb *ip_callback,
+                            void *data, int32_t number)
 {
-    const uint16_t lock_num = dht_friend->lock_count;
-    ++dht_friend->lock_count;
+    // find first free slot
+    uint8_t lock_num;
+    uint32_t lock_token = 0;
+    for (lock_num = 0; lock_num < DHT_FRIEND_MAX_LOCKS; ++lock_num) {
+        lock_token = UINT32_C(1) << lock_num;
+        if ((dht_friend->lock_flags & lock_token) == 0) {
+            break;
+        }
+    }
+
+    // One of the conditions would be enough, but static analyzers don't get that
+    if (lock_token == 0 || lock_num == DHT_FRIEND_MAX_LOCKS) {
+        return 0;
+    }
+
+    // Claim that slot
+    dht_friend->lock_flags |= lock_token;
+
     dht_friend->callbacks[lock_num].ip_callback = ip_callback;
     dht_friend->callbacks[lock_num].data = data;
     dht_friend->callbacks[lock_num].number = number;
 
-    if (lock_count != nullptr) {
-        *lock_count = lock_num + 1;
+    return lock_token;
+}
+
+non_null()
+static void dht_friend_unlock(DHT_Friend *const dht_friend, uint32_t lock_token)
+{
+    // If this triggers, there was a double free
+    assert((lock_token & dht_friend->lock_flags) > 0);
+
+    // find used slot
+    uint8_t lock_num;
+    for (lock_num = 0; lock_num < DHT_FRIEND_MAX_LOCKS; ++lock_num) {
+        if ((dht_friend->lock_flags & lock_token) > 0) {
+            break;
+        }
     }
+
+    if (lock_num == DHT_FRIEND_MAX_LOCKS) {
+        // Gracefully handle double unlock
+        return;
+    }
+
+    // Clear the slot
+    dht_friend->lock_flags &= ~lock_token;
+
+    dht_friend->callbacks[lock_num].ip_callback = nullptr;
+    dht_friend->callbacks[lock_num].data = nullptr;
+    dht_friend->callbacks[lock_num].number = 0;
 }
 
 int dht_addfriend(DHT *dht, const uint8_t *public_key, dht_ip_cb *ip_callback,
-                  void *data, int32_t number, uint16_t *lock_count)
+                  void *data, int32_t number, uint32_t *lock_token)
 {
     const uint32_t friend_num = index_of_friend_pk(dht->friends_list, dht->num_friends, public_key);
 
     if (friend_num != UINT32_MAX) { /* Is friend already in DHT? */
         DHT_Friend *const dht_friend = &dht->friends_list[friend_num];
+        const uint32_t tmp_lock_token = dht_friend_lock(dht_friend, ip_callback, data, number);
 
-        if (dht_friend->lock_count == DHT_FRIEND_MAX_LOCKS) {
+        if (tmp_lock_token == 0) {
             return -1;
         }
-
-        dht_friend_lock(dht_friend, ip_callback, data, number, lock_count);
 
         return 0;
     }
@@ -1791,7 +1838,8 @@ int dht_addfriend(DHT *dht, const uint8_t *public_key, dht_ip_cb *ip_callback,
     dht_friend->nat.nat_ping_id = random_u64(dht->rng);
     ++dht->num_friends;
 
-    dht_friend_lock(dht_friend, ip_callback, data, number, lock_count);
+    *lock_token = dht_friend_lock(dht_friend, ip_callback, data, number);
+    assert(*lock_token != 0); // Friend was newly allocated
 
     dht_friend->num_to_bootstrap = get_close_nodes(dht, dht_friend->public_key, dht_friend->to_bootstrap, net_family_unspec(),
                                    true, false);
@@ -1799,7 +1847,7 @@ int dht_addfriend(DHT *dht, const uint8_t *public_key, dht_ip_cb *ip_callback,
     return 0;
 }
 
-int dht_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count)
+int dht_delfriend(DHT *dht, const uint8_t *public_key, uint32_t lock_token)
 {
     const uint32_t friend_num = index_of_friend_pk(dht->friends_list, dht->num_friends, public_key);
 
@@ -1808,13 +1856,9 @@ int dht_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count)
     }
 
     DHT_Friend *const dht_friend = &dht->friends_list[friend_num];
-    --dht_friend->lock_count;
-
-    if (dht_friend->lock_count > 0 && lock_count > 0) { /* DHT friend is still in use.*/
-        --lock_count;
-        dht_friend->callbacks[lock_count].ip_callback = nullptr;
-        dht_friend->callbacks[lock_count].data = nullptr;
-        dht_friend->callbacks[lock_count].number = 0;
+    dht_friend_unlock(dht_friend, lock_token);
+    if (dht_friend->lock_flags > 0) {
+        /* DHT friend is still in use.*/
         return 0;
     }
 
@@ -2765,7 +2809,8 @@ DHT *new_dht(const Logger *log, const Random *rng, const Network *ns, Mono_Time 
 
         crypto_new_keypair(rng, random_public_key_bytes, random_secret_key_bytes);
 
-        if (dht_addfriend(dht, random_public_key_bytes, nullptr, nullptr, 0, nullptr) != 0) {
+        uint32_t token; // We don't intend to delete these ever, but need to pass the token
+        if (dht_addfriend(dht, random_public_key_bytes, nullptr, nullptr, 0, &token) != 0) {
             kill_dht(dht);
             return nullptr;
         }

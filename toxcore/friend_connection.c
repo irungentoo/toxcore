@@ -31,7 +31,7 @@ struct Friend_Conn {
 
     uint8_t real_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t dht_temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
-    uint16_t dht_lock;
+    uint32_t dht_lock_token;
     IP_Port dht_ip_port;
     uint64_t dht_pk_lastrecv;
     uint64_t dht_ip_port_lastrecv;
@@ -377,16 +377,15 @@ static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint
 
     friend_con->dht_pk_lastrecv = mono_time_get(fr_c->mono_time);
 
-    if (friend_con->dht_lock > 0) {
-        if (dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock) != 0) {
+    if (friend_con->dht_lock_token > 0) {
+        if (dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock_token) != 0) {
             LOGGER_ERROR(fr_c->logger, "a. Could not delete dht peer. Please report this.");
             return;
         }
-
-        friend_con->dht_lock = 0;
+        friend_con->dht_lock_token = 0;
     }
 
-    dht_addfriend(fr_c->dht, dht_public_key, dht_ip_callback, fr_c, friendcon_id, &friend_con->dht_lock);
+    dht_addfriend(fr_c->dht, dht_public_key, dht_ip_callback, fr_c, friendcon_id, &friend_con->dht_lock_token);
     memcpy(friend_con->dht_temp_pk, dht_public_key, CRYPTO_PUBLIC_KEY_SIZE);
 }
 
@@ -609,7 +608,7 @@ static int friend_new_connection(Friend_Connections *fr_c, int friendcon_id)
     }
 
     /* If dht_temp_pk does not contains a pk. */
-    if (friend_con->dht_lock == 0) {
+    if (friend_con->dht_lock_token == 0) {
         return -1;
     }
 
@@ -838,8 +837,9 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
     onion_delfriend(fr_c->onion_c, friend_con->onion_friendnum);
     crypto_kill(fr_c->net_crypto, friend_con->crypt_connection_id);
 
-    if (friend_con->dht_lock > 0) {
-        dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock);
+    if (friend_con->dht_lock_token > 0) {
+        dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock_token);
+        friend_con->dht_lock_token = 0;
     }
 
     return wipe_friend_conn(fr_c, friendcon_id);
@@ -967,9 +967,9 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
         if (friend_con != nullptr) {
             if (friend_con->status == FRIENDCONN_STATUS_CONNECTING) {
                 if (friend_con->dht_pk_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
-                    if (friend_con->dht_lock > 0) {
-                        dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock);
-                        friend_con->dht_lock = 0;
+                    if (friend_con->dht_lock_token > 0) {
+                        dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock_token);
+                        friend_con->dht_lock_token = 0;
                         memset(friend_con->dht_temp_pk, 0, CRYPTO_PUBLIC_KEY_SIZE);
                     }
                 }
@@ -978,7 +978,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
                     friend_con->dht_ip_port.ip.family = net_family_unspec();
                 }
 
-                if (friend_con->dht_lock > 0) {
+                if (friend_con->dht_lock_token > 0) {
                     if (friend_new_connection(fr_c, i) == 0) {
                         set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, &friend_con->dht_ip_port, false);
                         connect_to_saved_tcp_relays(fr_c, i, MAX_FRIEND_TCP_CONNECTIONS / 2); /* Only fill it half up. */
