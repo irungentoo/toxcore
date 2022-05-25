@@ -19,12 +19,23 @@ CPPCHECK+=("--suppress=missingIncludeSystem")
 CPPCHECK+=("--suppress=signConversion")
 # TODO(iphydf): Fixed in the toxav refactor PR.
 CPPCHECK+=("--suppress=redundantAssignment")
+# We have some redundant nullptr checks in assertions
+CPPCHECK+=("--suppress=nullPointerRedundantCheck")
+# Triggers a false warning in group.c
+CPPCHECK+=("--suppress=AssignmentAddressToInteger")
+# TODO(sudden6): This triggers a false positive, check again later to enable it
+CPPCHECK+=("--suppress=arrayIndexOutOfBoundsCond")
+
 # We're a library. This only works on whole programs.
 CPPCHECK_C=("--suppress=unusedFunction")
 
 # False positive in auto_tests.
 CPPCHECK_CXX+=("--suppress=shadowArgument")
 CPPCHECK_CXX+=("--suppress=shadowFunction")
+# False positive for callback functions
+CPPCHECK_CXX+=("--suppress=constParameter")
+# Used in Messenger.c for a static_assert(...)
+CPPCHECK_CXX+=("--suppress=sizeofFunctionCall")
 
 run() {
   echo "Running cppcheck in variant '$*'"
