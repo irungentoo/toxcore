@@ -1790,7 +1790,7 @@ static void dht_friend_unlock(DHT_Friend *const dht_friend, uint32_t lock_token)
     // find used slot
     uint8_t lock_num;
     for (lock_num = 0; lock_num < DHT_FRIEND_MAX_LOCKS; ++lock_num) {
-        if ((dht_friend->lock_flags & lock_token) > 0) {
+        if (((UINT32_C(1) << lock_num) & lock_token) > 0) {
             break;
         }
     }
