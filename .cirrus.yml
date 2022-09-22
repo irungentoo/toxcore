@@ -92,6 +92,7 @@ bazel-tsan_task:
         -//c-toxcore/auto_tests:conference_av_test
         -//c-toxcore/auto_tests:conference_test
         -//c-toxcore/auto_tests:file_transfer_test
+        -//c-toxcore/auto_tests:group_tcp_test
         -//c-toxcore/auto_tests:onion_test
         -//c-toxcore/auto_tests:tcp_relay_test
         -//c-toxcore/auto_tests:tox_many_test

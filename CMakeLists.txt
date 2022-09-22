@@ -113,6 +113,11 @@ if(NOT USE_IPV6)
   add_definitions(-DUSE_IPV6=0)
 endif()
 
+option(USE_TEST_NETWORK "Use a separate test network with different packet IDs" OFF)
+if(USE_TEST_NETWORK)
+  add_definitions(-DUSE_TEST_NETWORK=1)
+endif()
+
 option(BUILD_MISC_TESTS "Build additional tests and utilities" OFF)
 option(BUILD_FUN_UTILS "Build additional just for fun utilities" OFF)
 
@@ -241,11 +246,20 @@ set(toxcore_SOURCES
   toxcore/friend_requests.c
   toxcore/friend_requests.h
   toxcore/group.c
+  toxcore/group_chats.c
+  toxcore/group_chats.h
+  toxcore/group_common.h
+  toxcore/group_connection.c
+  toxcore/group_connection.h
   toxcore/group.h
   toxcore/group_announce.c
   toxcore/group_announce.h
   toxcore/group_moderation.c
   toxcore/group_moderation.h
+  toxcore/group_onion_announce.c
+  toxcore/group_onion_announce.h
+  toxcore/group_pack.c
+  toxcore/group_pack.h
   toxcore/LAN_discovery.c
   toxcore/LAN_discovery.h
   toxcore/list.c

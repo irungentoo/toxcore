@@ -17,6 +17,7 @@ TESTS = \
 	forwarding_test \
 	friend_connection_test \
 	friend_request_test \
+	group_state_test \
 	invalid_tcp_proxy_test \
 	invalid_udp_proxy_test \
 	lan_discovery_test \
@@ -125,6 +126,10 @@ friend_connection_test_LDADD = $(AUTOTEST_LDADD)
 friend_request_test_SOURCES = ../auto_tests/friend_request_test.c
 friend_request_test_CFLAGS = $(AUTOTEST_CFLAGS)
 friend_request_test_LDADD = $(AUTOTEST_LDADD)
+
+group_state_test_SOURCES = ../auto_tests/group_state_test.c
+group_state_test_CFLAGS = $(AUTOTEST_CFLAGS)
+group_state_test_LDADD = $(AUTOTEST_LDADD)
 
 invalid_tcp_proxy_test_SOURCES = ../auto_tests/invalid_tcp_proxy_test.c
 invalid_tcp_proxy_test_CFLAGS = $(AUTOTEST_CFLAGS)

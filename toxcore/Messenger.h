@@ -15,6 +15,8 @@
 #include "forwarding.h"
 #include "friend_connection.h"
 #include "friend_requests.h"
+#include "group_announce.h"
+#include "group_common.h"
 #include "logger.h"
 #include "net_crypto.h"
 #include "state.h"
@@ -35,7 +37,11 @@ typedef enum Message_Type {
     MESSAGE_ACTION,
 } Message_Type;
 
+// TODO(Jfreegman, Iphy): Remove this before merge
+#ifndef MESSENGER_DEFINED
+#define MESSENGER_DEFINED
 typedef struct Messenger Messenger;
+#endif  // MESSENGER_DEFINED
 
 // Returns the size of the data
 typedef uint32_t m_state_size_cb(const Messenger *m);
@@ -191,6 +197,8 @@ typedef void m_friend_connectionstatuschange_internal_cb(Messenger *m, uint32_t 
         uint8_t connection_status, void *user_data);
 typedef void m_conference_invite_cb(Messenger *m, uint32_t friend_number, const uint8_t *cookie, uint16_t length,
                                     void *user_data);
+typedef void m_group_invite_cb(const Messenger *m, uint32_t friendnumber, const uint8_t *data, size_t length,
+                               const uint8_t *group_name, size_t group_name_length, void *userdata);
 typedef void m_msi_packet_cb(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length,
                              void *user_data);
 typedef int m_lossy_rtp_packet_cb(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object);
@@ -269,6 +277,9 @@ struct Messenger {
     uint64_t lastdump;
     uint8_t is_receiving_file;
 
+    GC_Session *group_handler;
+    GC_Announces_List *group_announce;
+
     bool has_added_relays; // If the first connection has occurred in do_messenger
 
     uint16_t num_loaded_relays;
@@ -288,6 +299,8 @@ struct Messenger {
     struct Group_Chats *conferences_object; /* Set by new_groupchats()*/
     m_conference_invite_cb *conference_invite;
 
+    m_group_invite_cb *group_invite;
+
     m_file_recv_cb *file_sendrequest;
     m_file_recv_control_cb *file_filecontrol;
     m_file_recv_chunk_cb *file_filedata;
@@ -304,6 +317,14 @@ struct Messenger {
 
     Messenger_Options options;
 };
+
+/**
+ * Determines if the friendnumber passed is valid in the Messenger object.
+ *
+ * @param friendnumber The index in the friend list.
+ */
+non_null()
+bool friend_is_valid(const Messenger *m, int32_t friendnumber);
 
 /**
  * Format: `[real_pk (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]`
@@ -347,6 +368,19 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
  */
 non_null()
 int32_t m_addfriend_norequest(Messenger *m, const uint8_t *real_pk);
+
+/** @brief Initializes the friend connection and onion connection for a groupchat.
+ *
+ * @retval true on success.
+ */
+non_null()
+bool m_create_group_connection(Messenger *m, GC_Chat *chat);
+
+/*
+ * Kills the friend connection for a groupchat.
+ */
+non_null()
+void m_kill_group_connection(Messenger *m, const GC_Chat *chat);
 
 /** @return the friend number associated to that public key.
  * @retval -1 if no such friend.
@@ -589,6 +623,12 @@ non_null() void m_callback_core_connection(Messenger *m, m_self_connection_statu
 non_null(1) nullable(2)
 void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function);
 
+/* Set the callback for group invites.
+ */
+non_null(1) nullable(2)
+void m_callback_group_invite(Messenger *m, m_group_invite_cb *function);
+
+
 /** @brief Send a conference invite packet.
  *
  * return true on success
@@ -596,6 +636,17 @@ void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function
  */
 non_null()
 bool send_conference_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
+
+/* Send a group invite packet.
+ *
+ *  WARNING: Return-value semantics are different than for
+ *  send_conference_invite_packet().
+ *
+ *  return true on success
+ */
+non_null()
+bool send_group_invite_packet(const Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length);
+
 
 /*** FILE SENDING */
 
@@ -678,7 +729,8 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
  * @retval -7 if wrong position.
  */
 non_null(1) nullable(5)
-int send_file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data, uint16_t length);
+int send_file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position,
+                   const uint8_t *data, uint16_t length);
 
 /*** A/V related */
 

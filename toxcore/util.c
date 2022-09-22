@@ -139,12 +139,12 @@ uint32_t jenkins_one_at_a_time_hash(const uint8_t *key, size_t len)
 
     for (uint32_t i = 0; i < len; ++i) {
         hash += key[i];
-        hash += hash << 10;
+        hash += (uint32_t)((uint64_t)hash << 10);
         hash ^= hash >> 6;
     }
 
-    hash += hash << 3;
+    hash += (uint32_t)((uint64_t)hash << 3);
     hash ^= hash >> 11;
-    hash += hash << 15;
+    hash += (uint32_t)((uint64_t)hash << 15);
     return hash;
 }

@@ -127,6 +127,11 @@ bool bin_pack_bin(Bin_Pack *bp, const uint8_t *data, uint32_t length)
     return cmp_write_bin(&bp->ctx, data, length);
 }
 
+bool bin_pack_nil(Bin_Pack *bp)
+{
+    return cmp_write_nil(&bp->ctx);
+}
+
 bool bin_pack_bin_marker(Bin_Pack *bp, uint32_t size)
 {
     return cmp_write_bin_marker(&bp->ctx, size);
@@ -159,3 +164,4 @@ bool bin_pack_bin_b(Bin_Pack *bp, const uint8_t *data, uint32_t length)
 {
     return bp->ctx.write(&bp->ctx, data, length) == length;
 }
+

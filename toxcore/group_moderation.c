@@ -27,6 +27,10 @@ static_assert(MOD_MAX_NUM_SANCTIONS * MOD_SANCTION_PACKED_SIZE + MOD_SANCTIONS_C
               "MOD_MAX_NUM_SANCTIONS must be able to fit inside the maximum allowed payload size");
 static_assert(MOD_MAX_NUM_MODERATORS * MOD_LIST_ENTRY_SIZE <= MAX_PACKET_SIZE_NO_HEADERS,
               "MOD_MAX_NUM_MODERATORS must be able to fit insize the maximum allowed payload size");
+static_assert(MOD_MAX_NUM_MODERATORS <= MOD_MAX_NUM_MODERATORS_LIMIT,
+              "MOD_MAX_NUM_MODERATORS must be <= MOD_MAX_NUM_MODERATORS_LIMIT");
+static_assert(MOD_MAX_NUM_SANCTIONS <= MOD_MAX_NUM_SANCTIONS_LIMIT,
+              "MOD_MAX_NUM_SANCTIONS must be <= MOD_MAX_NUM_SANCTIONS_LIMIT");
 
 uint16_t mod_list_packed_size(const Moderation *moderation)
 {
@@ -398,7 +402,7 @@ int sanctions_list_unpack(Mod_Sanction *sanctions, Mod_Sanction_Creds *creds, ui
  */
 non_null(4) nullable(1)
 static bool sanctions_list_make_hash(const Mod_Sanction *sanctions, uint32_t new_version, uint16_t num_sanctions,
-                                    uint8_t *hash)
+                                     uint8_t *hash)
 {
     if (num_sanctions == 0 || sanctions == nullptr) {
         memset(hash, 0, MOD_SANCTION_HASH_SIZE);
@@ -568,7 +572,7 @@ bool sanctions_list_check_integrity(const Moderation *moderation, const Mod_Sanc
 }
 
 /** @brief Validates a sanctions list if credentials are supplied. If successful,
- *   or if no credentials are supplid, assigns new sanctions list and credentials
+ *   or if no credentials are supplied, assigns new sanctions list and credentials
  *   to moderation object.
  *
  * @param moderation The moderation object being operated on.

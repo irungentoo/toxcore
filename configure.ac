@@ -171,6 +171,16 @@ if test "$use_ipv6" != "yes"; then
   AC_DEFINE([USE_IPV6],[0],[define to 0 to force ipv4])
 fi
 
+AC_ARG_ENABLE([[test_network]],
+  [AS_HELP_STRING([[--enable-test-network[=ARG]]], [build tox for a test network incompatible with the main DHT [no]])],
+    [use_test_network=${enableval}],
+    [use_test_network='no']
+  )
+
+if test "$use_test_network" == "yes"; then
+  AC_DEFINE([USE_TEST_NETWORK],[1],[define to 1 to enable the test network])
+fi
+
 AX_HAVE_EPOLL
 if test "$enable_epoll" != "no"; then
   if test "${ax_cv_have_epoll}" = "yes"; then

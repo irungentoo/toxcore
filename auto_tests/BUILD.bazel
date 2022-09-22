@@ -44,6 +44,7 @@ flaky_tests = {
         ":check_compat",
         "//c-toxcore/testing:misc_tools",
         "//c-toxcore/toxav",
+        "//c-toxcore/toxcore:Messenger",
         "//c-toxcore/toxcore:TCP_client",
         "//c-toxcore/toxcore:TCP_common",
         "//c-toxcore/toxcore:TCP_connection",

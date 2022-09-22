@@ -29,6 +29,7 @@
 #include "../../../toxcore/LAN_discovery.h"
 #include "../../../toxcore/TCP_server.h"
 #include "../../../toxcore/announce.h"
+#include "../../../toxcore/group_onion_announce.h"
 #include "../../../toxcore/logger.h"
 #include "../../../toxcore/mono_time.h"
 #include "../../../toxcore/onion_announce.h"
@@ -364,6 +365,22 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    GC_Announces_List *group_announce = new_gca_list();
+
+    if (group_announce == nullptr) {
+        log_write(LOG_LEVEL_ERROR, "Couldn't initialize group announces. Exiting.\n");
+        kill_announcements(announce);
+        kill_forwarding(forwarding);
+        kill_dht(dht);
+        mono_time_free(mono_time);
+        kill_networking(net);
+        logger_kill(logger);
+        free(motd);
+        free(tcp_relay_ports);
+        free(keys_file_path);
+        return 1;
+    }
+
     Onion *onion = new_onion(logger, mono_time, rng, dht);
 
     if (!onion) {
@@ -384,6 +401,7 @@ int main(int argc, char *argv[])
 
     if (!onion_a) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion Announce. Exiting.\n");
+        kill_gca(group_announce);
         kill_onion(onion);
         kill_announcements(announce);
         kill_forwarding(forwarding);
@@ -397,6 +415,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    gca_onion_init(group_announce, onion_a);
+
     if (enable_motd) {
         if (bootstrap_set_callbacks(dht_get_net(dht), DAEMON_VERSION_NUMBER, (uint8_t *)motd, strlen(motd) + 1) == 0) {
             log_write(LOG_LEVEL_INFO, "Set MOTD successfully.\n");
@@ -404,6 +424,7 @@ int main(int argc, char *argv[])
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't set MOTD: %s. Exiting.\n", motd);
             kill_onion_announce(onion_a);
+            kill_gca(group_announce);
             kill_onion(onion);
             kill_announcements(announce);
             kill_forwarding(forwarding);
@@ -424,6 +445,7 @@ int main(int argc, char *argv[])
     } else {
         log_write(LOG_LEVEL_ERROR, "Couldn't read/write: %s. Exiting.\n", keys_file_path);
         kill_onion_announce(onion_a);
+        kill_gca(group_announce);
         kill_onion(onion);
         kill_announcements(announce);
         kill_forwarding(forwarding);
@@ -442,6 +464,7 @@ int main(int argc, char *argv[])
         if (tcp_relay_port_count == 0) {
             log_write(LOG_LEVEL_ERROR, "No TCP relay ports read. Exiting.\n");
             kill_onion_announce(onion_a);
+	        kill_gca(group_announce);
             kill_announcements(announce);
             kill_forwarding(forwarding);
             kill_onion(onion);
@@ -487,6 +510,7 @@ int main(int argc, char *argv[])
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox TCP server. Exiting.\n");
             kill_onion_announce(onion_a);
+            kill_gca(group_announce);
             kill_onion(onion);
             kill_announcements(announce);
             kill_forwarding(forwarding);
@@ -504,6 +528,7 @@ int main(int argc, char *argv[])
         log_write(LOG_LEVEL_ERROR, "Couldn't read list of bootstrap nodes in %s. Exiting.\n", cfg_file_path);
         kill_TCP_server(tcp_server);
         kill_onion_announce(onion_a);
+        kill_gca(group_announce);
         kill_onion(onion);
         kill_announcements(announce);
         kill_forwarding(forwarding);
@@ -586,6 +611,7 @@ int main(int argc, char *argv[])
     lan_discovery_kill(broadcast);
     kill_TCP_server(tcp_server);
     kill_onion_announce(onion_a);
+    kill_gca(group_announce);
     kill_onion(onion);
     kill_announcements(announce);
     kill_forwarding(forwarding);

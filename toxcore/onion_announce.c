@@ -346,7 +346,6 @@ non_null()
 static int add_to_entries(Onion_Announce *onion_a, const IP_Port *ret_ip_port, const uint8_t *public_key,
                           const uint8_t *data_public_key, const uint8_t *ret)
 {
-
     int pos = in_entries(onion_a, public_key);
 
     if (pos == -1) {
@@ -657,9 +656,6 @@ Onion_Announce *new_onion_announce(const Logger *log, const Random *rng, const M
     networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_announce_request, onion_a);
     networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST_OLD, &handle_announce_request_old, onion_a);
     networking_registerhandler(onion_a->net, NET_PACKET_ONION_DATA_REQUEST, &handle_data_request, onion_a);
-
-    // TODO(Jfreegman): Remove this when we merge the rest of new groupchats
-    onion_announce_extra_data_callback(onion_a, 0, nullptr, nullptr);
 
     return onion_a;
 }

@@ -60,6 +60,9 @@ non_null() bool bin_unpack_u16(Bin_Unpack *bu, uint16_t *val);
 non_null() bool bin_unpack_u32(Bin_Unpack *bu, uint32_t *val);
 /** @brief Unpack a MessagePack positive int into a `uint64_t`. */
 non_null() bool bin_unpack_u64(Bin_Unpack *bu, uint64_t *val);
+/** @brief Unpack a Messagepack nil value. */
+non_null() bool bin_unpack_nil(Bin_Unpack *bu);
+
 /** @brief Unpack a MessagePack bin into a newly allocated byte array.
  *
  * Allocates a new byte array and stores it into `data_ptr` with its length stored in

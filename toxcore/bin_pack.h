@@ -90,9 +90,10 @@ non_null() bool bin_pack_u16(Bin_Pack *bp, uint16_t val);
 non_null() bool bin_pack_u32(Bin_Pack *bp, uint32_t val);
 /** @brief Pack a `uint64_t` as MessagePack positive integer. */
 non_null() bool bin_pack_u64(Bin_Pack *bp, uint64_t val);
+/** @brief Pack an empty array member as a MessagePack nil value. */
+non_null() bool bin_pack_nil(Bin_Pack *bp);
 /** @brief Pack a byte array as MessagePack bin. */
 non_null() bool bin_pack_bin(Bin_Pack *bp, const uint8_t *data, uint32_t length);
-
 /** @brief Start packing a custom binary representation.
  *
  * A call to this function must be followed by exactly `size` bytes packed by functions below.

@@ -20,6 +20,7 @@
 
 #define ONION_ANNOUNCE_SENDBACK_DATA_LENGTH (sizeof(uint64_t))
 
+#define MAX_SENT_GC_NODES 1
 #define ONION_ANNOUNCE_REQUEST_MIN_SIZE (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_MAC_SIZE)
 #define ONION_ANNOUNCE_REQUEST_MAX_SIZE (ONION_ANNOUNCE_REQUEST_MIN_SIZE + ONION_MAX_EXTRA_DATA_SIZE)
 
@@ -125,7 +126,7 @@ typedef int pack_extra_data_cb(void *object, const Logger *logger, const Mono_Ti
                                uint8_t num_nodes, uint8_t *plain, uint16_t plain_size,
                                uint8_t *response, uint16_t response_size, uint16_t offset);
 
-non_null(1) nullable(3, 4)
+non_null()
 void onion_announce_extra_data_callback(Onion_Announce *onion_a, uint16_t extra_data_max_size,
                                         pack_extra_data_cb *extra_data_callback, void *extra_data_object);
 

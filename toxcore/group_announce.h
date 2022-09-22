@@ -20,7 +20,7 @@ extern "C" {
 /* The maximum number of announces to save for a particular group chat. */
 #define GCA_MAX_SAVED_ANNOUNCES_PER_GC 16
 
-/* Maximum number of TCP relays that can be in an annoucne. */
+/* Maximum number of TCP relays that can be in an announce. */
 #define GCA_MAX_ANNOUNCED_TCP_RELAYS 1
 
 /* Maximum number of announces we can send in an announce response. */

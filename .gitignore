@@ -65,6 +65,8 @@ libtool
 .libs
 .dirstamp
 build/
+*.nvim*
+*.vim*
 
 #kdevelop
 .kdev/
@@ -88,3 +90,5 @@ cscope.files
 
 # rpm
 tox.spec
+
+.idea/

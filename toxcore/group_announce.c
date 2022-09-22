@@ -186,7 +186,7 @@ static int gca_unpack_announce(const Logger *log, const uint8_t *data, uint16_t 
     memcpy(announce->peer_public_key, data + offset, ENC_PUBLIC_KEY_SIZE);
     offset += ENC_PUBLIC_KEY_SIZE;
 
-    announce->ip_port_is_set = data[offset] == 1;
+    net_unpack_bool(&data[offset], &announce->ip_port_is_set);
     ++offset;
 
     announce->tcp_relays_count = data[offset];

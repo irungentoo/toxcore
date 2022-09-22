@@ -685,18 +685,17 @@ static const char *net_packet_type_name(Net_Packet_Type type)
         case NET_PACKET_CRYPTO:
             return "CRYPTO";
 
+        case NET_PACKET_GC_HANDSHAKE:
+            return "GC_HANDSHAKE";
+
+        case NET_PACKET_GC_LOSSLESS:
+            return "GC_LOSSLESS";
+
+        case NET_PACKET_GC_LOSSY:
+            return "GC_LOSSY";
+
         case NET_PACKET_LAN_DISCOVERY:
             return "LAN_DISCOVERY";
-
-            // TODO(Jfreegman): Uncomment these when we merge the rest of new groupchats
-//      case NET_PACKET_GC_HANDSHAKE:
-//          return "GC_HANDSHAKE";
-
-//      case NET_PACKET_GC_LOSSLESS:
-//          return "GC_LOSSLESS";
-
-//      case NET_PACKET_GC_LOSSY:
-//          return "GC_LOSSY";
 
         case NET_PACKET_ONION_SEND_INITIAL:
             return "ONION_SEND_INITIAL";
@@ -1933,6 +1932,12 @@ uint16_t net_ntohs(uint16_t hostshort)
     return ntohs(hostshort);
 }
 
+size_t net_pack_bool(uint8_t *bytes, bool v)
+{
+    bytes[0] = v ? 1 : 0;
+    return 1;
+}
+
 size_t net_pack_u16(uint8_t *bytes, uint16_t v)
 {
     bytes[0] = (v >> 8) & 0xff;
@@ -1954,6 +1959,12 @@ size_t net_pack_u64(uint8_t *bytes, uint64_t v)
     p += net_pack_u32(p, (v >> 32) & 0xffffffff);
     p += net_pack_u32(p, v & 0xffffffff);
     return p - bytes;
+}
+
+size_t net_unpack_bool(const uint8_t *bytes, bool *v)
+{
+    *v = bytes[0] != 0;
+    return 1;
 }
 
 size_t net_unpack_u16(const uint8_t *bytes, uint16_t *v)

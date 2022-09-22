@@ -231,7 +231,7 @@ static int create_cookie_request(const Net_Crypto *c, uint8_t *packet, const uin
     memcpy(packet + 1, dht_get_self_public_key(c->dht), CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, nonce, CRYPTO_NONCE_SIZE);
     const int len = encrypt_data_symmetric(shared_key, nonce, plain, sizeof(plain),
-                                     packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
+                                           packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
 
     if (len != COOKIE_REQUEST_PLAIN_LENGTH + CRYPTO_MAC_SIZE) {
         return -1;
@@ -343,8 +343,8 @@ static int handle_cookie_request(const Net_Crypto *c, uint8_t *request_plain, ui
     memcpy(dht_public_key, packet + 1, CRYPTO_PUBLIC_KEY_SIZE);
     dht_get_shared_key_sent(c->dht, shared_key, dht_public_key);
     const int len = decrypt_data_symmetric(shared_key, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
-                                     packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE, COOKIE_REQUEST_PLAIN_LENGTH + CRYPTO_MAC_SIZE,
-                                     request_plain);
+                                           packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE, COOKIE_REQUEST_PLAIN_LENGTH + CRYPTO_MAC_SIZE,
+                                           request_plain);
 
     if (len != COOKIE_REQUEST_PLAIN_LENGTH) {
         return -1;
@@ -488,7 +488,7 @@ static int create_crypto_handshake(const Net_Crypto *c, uint8_t *packet, const u
 
     random_nonce(c->rng, packet + 1 + COOKIE_LENGTH);
     const int len = encrypt_data(peer_real_pk, c->self_secret_key, packet + 1 + COOKIE_LENGTH, plain, sizeof(plain),
-                           packet + 1 + COOKIE_LENGTH + CRYPTO_NONCE_SIZE);
+                                 packet + 1 + COOKIE_LENGTH + CRYPTO_NONCE_SIZE);
 
     if (len != HANDSHAKE_PACKET_LENGTH - (1 + COOKIE_LENGTH + CRYPTO_NONCE_SIZE)) {
         return -1;
@@ -541,8 +541,8 @@ static bool handle_crypto_handshake(const Net_Crypto *c, uint8_t *nonce, uint8_t
 
     uint8_t plain[CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SHA512_SIZE + COOKIE_LENGTH];
     const int len = decrypt_data(cookie_plain, c->self_secret_key, packet + 1 + COOKIE_LENGTH,
-                           packet + 1 + COOKIE_LENGTH + CRYPTO_NONCE_SIZE,
-                           HANDSHAKE_PACKET_LENGTH - (1 + COOKIE_LENGTH + CRYPTO_NONCE_SIZE), plain);
+                                 packet + 1 + COOKIE_LENGTH + CRYPTO_NONCE_SIZE,
+                                 HANDSHAKE_PACKET_LENGTH - (1 + COOKIE_LENGTH + CRYPTO_NONCE_SIZE), plain);
 
     if (len != sizeof(plain)) {
         return false;
@@ -1273,7 +1273,7 @@ static int handle_data_packet(const Net_Crypto *c, int crypt_connection_id, uint
     const uint16_t diff = num - num_cur_nonce;
     increment_nonce_number(nonce, diff);
     const int len = decrypt_data_symmetric(conn->shared_key, nonce, packet + 1 + sizeof(uint16_t),
-                                     length - (1 + sizeof(uint16_t)), data);
+                                           length - (1 + sizeof(uint16_t)), data);
 
     if ((unsigned int)len != length - crypto_packet_overhead) {
         return -1;
@@ -1515,7 +1515,7 @@ static void connection_kill(Net_Crypto *c, int crypt_connection_id, void *userda
 
     if (conn->connection_status_callback != nullptr) {
         conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id,
-                false, userdata);
+                                         false, userdata);
     }
 
     while (true) { /* TODO(irungentoo): is this really the best way to do this? */
@@ -1602,7 +1602,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
 
         if (conn->connection_status_callback != nullptr) {
             conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id,
-                    true, userdata);
+                                             true, userdata);
         }
     }
 
@@ -1616,8 +1616,8 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
         }
 
         const int requested = handle_request_packet(c->mono_time, &conn->send_array,
-                                              real_data, real_length,
-                                              &rtt_calc_time, rtt_time);
+                              real_data, real_length,
+                              &rtt_calc_time, rtt_time);
 
         if (requested == -1) {
             return -1;
@@ -2657,7 +2657,7 @@ static void send_crypto_packets(Net_Crypto *c)
                                                      &conn->recv_array) + 1.0) / (conn->packet_recv_rate + 1.0));
 
                 const double request_packet_interval2 = ((CRYPTO_PACKET_MIN_RATE / conn->packet_recv_rate) *
-                                                   (double)CRYPTO_SEND_PACKET_INTERVAL) + (double)PACKET_COUNTER_AVERAGE_INTERVAL;
+                                                        (double)CRYPTO_SEND_PACKET_INTERVAL) + (double)PACKET_COUNTER_AVERAGE_INTERVAL;
 
                 if (request_packet_interval2 < request_packet_interval) {
                     request_packet_interval = request_packet_interval2;
@@ -2750,7 +2750,7 @@ static void send_crypto_packets(Net_Crypto *c)
                                                  PACKET_COUNTER_AVERAGE_INTERVAL));
 
                     const double min_speed_request = 1000.0 * (((double)(total_sent + total_resent)) / (
-                            (double)CONGESTION_QUEUE_ARRAY_SIZE * PACKET_COUNTER_AVERAGE_INTERVAL));
+                                                         (double)CONGESTION_QUEUE_ARRAY_SIZE * PACKET_COUNTER_AVERAGE_INTERVAL));
 
                     if (min_speed < CRYPTO_PACKET_MIN_RATE) {
                         min_speed = CRYPTO_PACKET_MIN_RATE;

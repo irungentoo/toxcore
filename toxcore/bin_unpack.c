@@ -104,6 +104,11 @@ bool bin_unpack_u64(Bin_Unpack *bu, uint64_t *val)
     return cmp_read_ulong(&bu->ctx, val);
 }
 
+bool bin_unpack_nil(Bin_Unpack *bu)
+{
+    return cmp_read_nil(&bu->ctx);
+}
+
 bool bin_unpack_bin(Bin_Unpack *bu, uint8_t **data_ptr, uint32_t *data_length_ptr)
 {
     uint32_t bin_size;

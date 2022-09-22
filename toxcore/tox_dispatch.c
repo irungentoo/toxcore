@@ -47,9 +47,11 @@ Tox_Dispatch *tox_dispatch_new(Tox_Err_Dispatch_New *error)
     *dispatch = (Tox_Dispatch) {
         nullptr
     };
+
     if (error != nullptr) {
         *error = TOX_ERR_DISPATCH_NEW_OK;
     }
+
     return dispatch;
 }
 

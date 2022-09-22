@@ -471,6 +471,7 @@ cc_library(
     hdrs = ["onion_announce.h"],
     visibility = [
         "//c-toxcore/auto_tests:__pkg__",
+        "//c-toxcore/other:__pkg__",
         "//c-toxcore/other/bootstrap_daemon:__pkg__",
     ],
     deps = [
@@ -514,6 +515,22 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "group_onion_announce",
+    srcs = ["group_onion_announce.c"],
+    hdrs = ["group_onion_announce.h"],
+    visibility = [
+        "//c-toxcore/auto_tests:__pkg__",
+        "//c-toxcore/other:__pkg__",
+        "//c-toxcore/other/bootstrap_daemon:__pkg__",
+    ],
+    deps = [
+        ":ccompat",
+        ":group_announce",
+        ":onion_announce",
+    ],
+)
+
 cc_fuzz_test(
     name = "group_announce_fuzz_test",
     srcs = ["group_announce_fuzz_test.cc"],
@@ -533,8 +550,10 @@ cc_library(
         ":DHT",
         ":LAN_discovery",
         ":ccompat",
+        ":group_onion_announce",
         ":mono_time",
         ":net_crypto",
+        ":network",
         ":onion_announce",
         ":util",
     ],
@@ -578,6 +597,7 @@ cc_library(
     deps = [
         ":ccompat",
         ":friend_connection",
+        ":network",
         ":util",
     ],
 )
@@ -624,24 +644,48 @@ cc_fuzz_test(
 
 cc_library(
     name = "Messenger",
-    srcs = ["Messenger.c"],
-    hdrs = ["Messenger.h"],
+    srcs = [
+        "Messenger.c",
+        "group_chats.c",
+        "group_connection.c",
+        "group_pack.c",
+    ],
+    hdrs = [
+        "Messenger.h",
+        "group_chats.h",
+        "group_common.h",
+        "group_connection.h",
+        "group_pack.h",
+    ],
     visibility = [
         "//c-toxcore/auto_tests:__pkg__",
+        "//c-toxcore/other:__pkg__",
         "//c-toxcore/testing:__pkg__",
         "//c-toxcore/toxav:__pkg__",
     ],
     deps = [
+        ":DHT",
+        ":LAN_discovery",
+        ":TCP_connection",
         ":TCP_server",
         ":announce",
+        ":bin_pack",
+        ":bin_unpack",
         ":ccompat",
+        ":crypto_core",
         ":forwarding",
+        ":friend_connection",
         ":friend_requests",
+        ":group_moderation",
+        ":group_onion_announce",
         ":logger",
         ":mono_time",
+        ":net_crypto",
         ":network",
+        ":onion_announce",
         ":state",
         ":util",
+        "@libsodium",
     ],
 )
 
@@ -676,6 +720,7 @@ cc_library(
         ":Messenger",
         ":ccompat",
         ":group",
+        ":group_moderation",
         ":logger",
         ":mono_time",
         ":network",

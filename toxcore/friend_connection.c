@@ -197,7 +197,7 @@ Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_id)
     return &fr_c->conns[friendcon_id];
 }
 
-/** 
+/**
  * @return friendcon_id corresponding to the real public key on success.
  * @retval -1 on failure.
  */
@@ -882,7 +882,8 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
 
     if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {
         packet[0] = PACKET_ID_FRIEND_REQUESTS;
-        return write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, packet, SIZEOF_VLA(packet), false) != -1 ? 1 : 0;
+        return write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, packet, SIZEOF_VLA(packet),
+                                 false) != -1 ? 1 : 0;
     }
 
     packet[0] = CRYPTO_PACKET_FRIEND_REQ;

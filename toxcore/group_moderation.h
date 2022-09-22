@@ -36,9 +36,17 @@ extern "C" {
 /* The max size of a groupchat packet with 100 bytes reserved for header data */
 #define MAX_PACKET_SIZE_NO_HEADERS 49900
 
-/* These values must take into account the maximum allowed packet size and headers. */
-#define MOD_MAX_NUM_MODERATORS (((MAX_PACKET_SIZE_NO_HEADERS) / (MOD_LIST_ENTRY_SIZE)))
-#define MOD_MAX_NUM_SANCTIONS  (((MAX_PACKET_SIZE_NO_HEADERS - (MOD_SANCTIONS_CREDS_SIZE)) / (MOD_SANCTION_PACKED_SIZE)))
+/* The maximum possible number of moderators that can be sent in a group packet sequence. */
+#define MOD_MAX_NUM_MODERATORS_LIMIT (((MAX_PACKET_SIZE_NO_HEADERS) / (MOD_LIST_ENTRY_SIZE)))
+
+/* The maximum number of moderators that we allow in a group: 100 */
+#define MOD_MAX_NUM_MODERATORS       ((MOD_MAX_NUM_MODERATORS_LIMIT / 16) + 3)
+
+/* The maximum number of sanctions that be sent in a group packet sequence. */
+#define MOD_MAX_NUM_SANCTIONS_LIMIT  (((MAX_PACKET_SIZE_NO_HEADERS - (MOD_SANCTIONS_CREDS_SIZE)) / (MOD_SANCTION_PACKED_SIZE)))
+
+/* The maximum number of sanctions that we allow in a group: 30 */
+#define MOD_MAX_NUM_SANCTIONS        (MOD_MAX_NUM_SANCTIONS_LIMIT / 12)
 
 typedef enum Mod_Sanction_Type {
     SA_OBSERVER = 0x00,

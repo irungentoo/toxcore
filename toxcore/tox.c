@@ -19,6 +19,8 @@
 #include "Messenger.h"
 #include "ccompat.h"
 #include "group.h"
+#include "group_chats.h"
+#include "group_moderation.h"
 #include "logger.h"
 #include "mono_time.h"
 #include "network.h"
@@ -54,6 +56,10 @@ static_assert(TOX_MAX_NAME_LENGTH == MAX_NAME_LENGTH,
               "TOX_MAX_NAME_LENGTH is assumed to be equal to MAX_NAME_LENGTH");
 static_assert(TOX_MAX_STATUS_MESSAGE_LENGTH == MAX_STATUSMESSAGE_LENGTH,
               "TOX_MAX_STATUS_MESSAGE_LENGTH is assumed to be equal to MAX_STATUSMESSAGE_LENGTH");
+static_assert(TOX_GROUP_MAX_MESSAGE_LENGTH == GROUP_MAX_MESSAGE_LENGTH,
+              "TOX_GROUP_MAX_MESSAGE_LENGTH is assumed to be equal to GROUP_MAX_MESSAGE_LENGTH");
+static_assert(TOX_MAX_CUSTOM_PACKET_SIZE == MAX_GC_CUSTOM_PACKET_SIZE,
+              "TOX_MAX_CUSTOM_PACKET_SIZE is assumed to be equal to MAX_GC_CUSTOM_PACKET_SIZE");
 
 struct Tox_Userdata {
     Tox *tox;
@@ -317,8 +323,8 @@ static void tox_dht_get_nodes_response_handler(const DHT *dht, const Node_format
 
     Ip_Ntoa ip_str;
     tox_data->tox->dht_get_nodes_response_callback(
-            tox_data->tox, node->public_key, net_ip_ntoa(&node->ip_port.ip, &ip_str), net_ntohs(node->ip_port.port),
-            tox_data->user_data);
+        tox_data->tox, node->public_key, net_ip_ntoa(&node->ip_port.ip, &ip_str), net_ntohs(node->ip_port.port),
+        tox_data->user_data);
 }
 
 static m_friend_lossy_packet_cb tox_friend_lossy_packet_handler;
@@ -353,6 +359,218 @@ static void tox_friend_lossless_packet_handler(Messenger *m, uint32_t friend_num
     }
 }
 
+#ifndef VANILLA_NACL
+non_null(1, 4) nullable(6)
+static void tox_group_peer_name_handler(const Messenger *m, uint32_t group_number, uint32_t peer_id,
+                                        const uint8_t *name, size_t length, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_peer_name_callback != nullptr) {
+        tox_data->tox->group_peer_name_callback(tox_data->tox, group_number, peer_id, name, length, tox_data->user_data);
+    }
+}
+
+non_null(1) nullable(5)
+static void tox_group_peer_status_handler(const Messenger *m, uint32_t group_number, uint32_t peer_id,
+        unsigned int status, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_peer_status_callback != nullptr) {
+        tox_data->tox->group_peer_status_callback(tox_data->tox, group_number, peer_id, (Tox_User_Status)status,
+                tox_data->user_data);
+    }
+}
+
+non_null(1, 4) nullable(6)
+static void tox_group_topic_handler(const Messenger *m, uint32_t group_number, uint32_t peer_id, const uint8_t *topic,
+                                    size_t length, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_topic_callback != nullptr) {
+        tox_data->tox->group_topic_callback(tox_data->tox, group_number, peer_id, topic, length, tox_data->user_data);
+    }
+}
+
+non_null(1) nullable(4)
+static void tox_group_topic_lock_handler(const Messenger *m, uint32_t group_number, unsigned int topic_lock,
+        void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_topic_lock_callback != nullptr) {
+        tox_data->tox->group_topic_lock_callback(tox_data->tox, group_number, (Tox_Group_Topic_Lock)topic_lock,
+                tox_data->user_data);
+    }
+}
+
+non_null(1) nullable(4)
+static void tox_group_voice_state_handler(const Messenger *m, uint32_t group_number, unsigned int voice_state,
+        void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_voice_state_callback != nullptr) {
+        tox_data->tox->group_voice_state_callback(tox_data->tox, group_number, (Tox_Group_Voice_State)voice_state,
+                tox_data->user_data);
+    }
+}
+
+non_null(1) nullable(4)
+static void tox_group_peer_limit_handler(const Messenger *m, uint32_t group_number, uint32_t peer_limit,
+        void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_peer_limit_callback != nullptr) {
+        tox_data->tox->group_peer_limit_callback(tox_data->tox, group_number, peer_limit, tox_data->user_data);
+    }
+}
+
+non_null(1) nullable(4)
+static void tox_group_privacy_state_handler(const Messenger *m, uint32_t group_number, unsigned int privacy_state,
+        void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_privacy_state_callback != nullptr) {
+        tox_data->tox->group_privacy_state_callback(tox_data->tox, group_number, (Tox_Group_Privacy_State)privacy_state,
+                tox_data->user_data);
+    }
+}
+
+non_null(1) nullable(3, 5)
+static void tox_group_password_handler(const Messenger *m, uint32_t group_number, const uint8_t *password,
+                                       size_t length, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_password_callback != nullptr) {
+        tox_data->tox->group_password_callback(tox_data->tox, group_number, password, length, tox_data->user_data);
+    }
+}
+
+non_null(1, 5) nullable(8)
+static void tox_group_message_handler(const Messenger *m, uint32_t group_number, uint32_t peer_id, unsigned int type,
+                                      const uint8_t *message, size_t length, uint32_t message_id, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_message_callback != nullptr) {
+        tox_data->tox->group_message_callback(tox_data->tox, group_number, peer_id, (Tox_Message_Type)type, message, length,
+                                              message_id, tox_data->user_data);
+    }
+}
+
+non_null(1, 5) nullable(7)
+static void tox_group_private_message_handler(const Messenger *m, uint32_t group_number, uint32_t peer_id,
+        unsigned int type, const uint8_t *message, size_t length, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_private_message_callback != nullptr) {
+        tox_data->tox->group_private_message_callback(tox_data->tox, group_number, peer_id, (Tox_Message_Type)type, message,
+                length,
+                tox_data->user_data);
+    }
+}
+
+non_null(1, 4) nullable(6)
+static void tox_group_custom_packet_handler(const Messenger *m, uint32_t group_number, uint32_t peer_id,
+        const uint8_t *data, size_t length, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_custom_packet_callback != nullptr) {
+        tox_data->tox->group_custom_packet_callback(tox_data->tox, group_number, peer_id, data, length, tox_data->user_data);
+    }
+}
+
+non_null(1, 4) nullable(6)
+static void tox_group_custom_private_packet_handler(const Messenger *m, uint32_t group_number, uint32_t peer_id,
+        const uint8_t *data, size_t length, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_custom_private_packet_callback != nullptr) {
+        tox_data->tox->group_custom_private_packet_callback(tox_data->tox, group_number, peer_id, data, length,
+                tox_data->user_data);
+    }
+}
+
+non_null(1, 3, 5) nullable(7)
+static void tox_group_invite_handler(const Messenger *m, uint32_t friend_number, const uint8_t *invite_data,
+                                     size_t length, const uint8_t *group_name, size_t group_name_length, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_invite_callback != nullptr) {
+        tox_data->tox->group_invite_callback(tox_data->tox, friend_number, invite_data, length, group_name, group_name_length,
+                                             tox_data->user_data);
+    }
+}
+
+non_null(1) nullable(4)
+static void tox_group_peer_join_handler(const Messenger *m, uint32_t group_number, uint32_t peer_id, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_peer_join_callback != nullptr) {
+        tox_data->tox->group_peer_join_callback(tox_data->tox, group_number, peer_id, tox_data->user_data);
+    }
+}
+
+non_null(1, 5) nullable(7, 9)
+static void tox_group_peer_exit_handler(const Messenger *m, uint32_t group_number, uint32_t peer_id,
+                                        unsigned int exit_type, const uint8_t *name, size_t name_length,
+                                        const uint8_t *part_message, size_t length, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_peer_exit_callback != nullptr) {
+        tox_data->tox->group_peer_exit_callback(tox_data->tox, group_number, peer_id, (Tox_Group_Exit_Type) exit_type, name,
+                                                name_length,
+                                                part_message, length, tox_data->user_data);
+    }
+}
+
+non_null(1) nullable(3)
+static void tox_group_self_join_handler(const Messenger *m, uint32_t group_number, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_self_join_callback != nullptr) {
+        tox_data->tox->group_self_join_callback(tox_data->tox, group_number, tox_data->user_data);
+    }
+}
+
+non_null(1) nullable(4)
+static void tox_group_join_fail_handler(const Messenger *m, uint32_t group_number, unsigned int fail_type,
+                                        void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_join_fail_callback != nullptr) {
+        tox_data->tox->group_join_fail_callback(tox_data->tox, group_number, (Tox_Group_Join_Fail)fail_type,
+                                                tox_data->user_data);
+    }
+}
+
+non_null(1) nullable(6)
+static void tox_group_moderation_handler(const Messenger *m, uint32_t group_number, uint32_t source_peer_number,
+        uint32_t target_peer_number, unsigned int mod_type, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->group_moderation_callback != nullptr) {
+        tox_data->tox->group_moderation_callback(tox_data->tox, group_number, source_peer_number, target_peer_number,
+                (Tox_Group_Mod_Event)mod_type,
+                tox_data->user_data);
+    }
+}
+#endif
 
 bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
 {
@@ -522,6 +740,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
     const Tox_System *sys = tox_options_get_operating_system(opts);
     const Tox_System default_system = tox_default_system();
+
     if (sys == nullptr) {
         sys = &default_system;
     }
@@ -553,7 +772,8 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
         const char *const proxy_host = tox_options_get_proxy_host(opts);
 
-        if (proxy_host == nullptr || !addr_resolve_or_parse_ip(&tox->ns, proxy_host, &m_options.proxy_info.ip_port.ip, nullptr)) {
+        if (proxy_host == nullptr
+                || !addr_resolve_or_parse_ip(&tox->ns, proxy_host, &m_options.proxy_info.ip_port.ip, nullptr)) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
             // TODO(irungentoo): TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
             tox_options_free(default_options);
@@ -671,6 +891,27 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     custom_lossy_packet_registerhandler(tox->m, tox_friend_lossy_packet_handler);
     custom_lossless_packet_registerhandler(tox->m, tox_friend_lossless_packet_handler);
 
+#ifndef VANILLA_NACL
+    m_callback_group_invite(tox->m, tox_group_invite_handler);
+    gc_callback_message(tox->m, tox_group_message_handler);
+    gc_callback_private_message(tox->m, tox_group_private_message_handler);
+    gc_callback_custom_packet(tox->m, tox_group_custom_packet_handler);
+    gc_callback_custom_private_packet(tox->m, tox_group_custom_private_packet_handler);
+    gc_callback_moderation(tox->m, tox_group_moderation_handler);
+    gc_callback_nick_change(tox->m, tox_group_peer_name_handler);
+    gc_callback_status_change(tox->m, tox_group_peer_status_handler);
+    gc_callback_topic_change(tox->m, tox_group_topic_handler);
+    gc_callback_peer_limit(tox->m, tox_group_peer_limit_handler);
+    gc_callback_privacy_state(tox->m, tox_group_privacy_state_handler);
+    gc_callback_topic_lock(tox->m, tox_group_topic_lock_handler);
+    gc_callback_password(tox->m, tox_group_password_handler);
+    gc_callback_peer_join(tox->m, tox_group_peer_join_handler);
+    gc_callback_peer_exit(tox->m, tox_group_peer_exit_handler);
+    gc_callback_self_join(tox->m, tox_group_self_join_handler);
+    gc_callback_rejected(tox->m, tox_group_join_fail_handler);
+    gc_callback_voice_state(tox->m, tox_group_voice_state_handler);
+#endif
+
     tox_options_free(default_options);
 
     tox_unlock(tox);
@@ -714,9 +955,9 @@ size_t tox_get_savedata_size(const Tox *tox)
     assert(tox != nullptr);
     tox_lock(tox);
     const size_t ret = 2 * sizeof(uint32_t)
-                 + messenger_size(tox->m)
-                 + conferences_size(tox->m->conferences_object)
-                 + end_size();
+                       + messenger_size(tox->m)
+                       + conferences_size(tox->m->conferences_object)
+                       + end_size();
     tox_unlock(tox);
     return ret;
 }
@@ -749,7 +990,8 @@ void tox_get_savedata(const Tox *tox, uint8_t *savedata)
 }
 
 non_null(5) nullable(1, 2, 4, 6)
-static int32_t resolve_bootstrap_node(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, IP_Port **root, Tox_Err_Bootstrap *error)
+static int32_t resolve_bootstrap_node(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key,
+                                      IP_Port **root, Tox_Err_Bootstrap *error)
 {
     assert(tox != nullptr);
     assert(root != nullptr);
@@ -2580,3 +2822,1760 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, Tox_Err_Get_Port *error)
     tox_unlock(tox);
     return 0;
 }
+
+/* GROUPCHAT FUNCTIONS */
+
+#ifndef VANILLA_NACL
+void tox_callback_group_invite(Tox *tox, tox_group_invite_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_invite_callback = callback;
+}
+
+void tox_callback_group_message(Tox *tox, tox_group_message_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_message_callback = callback;
+}
+
+void tox_callback_group_private_message(Tox *tox, tox_group_private_message_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_private_message_callback = callback;
+}
+
+void tox_callback_group_custom_packet(Tox *tox, tox_group_custom_packet_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_custom_packet_callback = callback;
+}
+
+void tox_callback_group_custom_private_packet(Tox *tox, tox_group_custom_private_packet_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_custom_private_packet_callback = callback;
+}
+
+void tox_callback_group_moderation(Tox *tox, tox_group_moderation_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_moderation_callback = callback;
+}
+
+void tox_callback_group_peer_name(Tox *tox, tox_group_peer_name_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_peer_name_callback = callback;
+}
+
+void tox_callback_group_peer_status(Tox *tox, tox_group_peer_status_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_peer_status_callback = callback;
+}
+
+void tox_callback_group_topic(Tox *tox, tox_group_topic_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_topic_callback = callback;
+}
+
+void tox_callback_group_privacy_state(Tox *tox, tox_group_privacy_state_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_privacy_state_callback = callback;
+}
+
+void tox_callback_group_topic_lock(Tox *tox, tox_group_topic_lock_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_topic_lock_callback = callback;
+}
+
+void tox_callback_group_voice_state(Tox *tox, tox_group_voice_state_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_voice_state_callback = callback;
+}
+
+void tox_callback_group_peer_limit(Tox *tox, tox_group_peer_limit_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_peer_limit_callback = callback;
+}
+
+void tox_callback_group_password(Tox *tox, tox_group_password_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_password_callback = callback;
+}
+
+void tox_callback_group_peer_join(Tox *tox, tox_group_peer_join_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_peer_join_callback = callback;
+}
+
+void tox_callback_group_peer_exit(Tox *tox, tox_group_peer_exit_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_peer_exit_callback = callback;
+}
+
+void tox_callback_group_self_join(Tox *tox, tox_group_self_join_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_self_join_callback = callback;
+}
+
+void tox_callback_group_join_fail(Tox *tox, tox_group_join_fail_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->group_join_fail_callback = callback;
+}
+
+uint32_t tox_group_new(Tox *tox, Tox_Group_Privacy_State privacy_state, const uint8_t *group_name,
+                       size_t group_name_length, const uint8_t *name, size_t name_length, Tox_Err_Group_New *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const int ret = gc_group_add(tox->m->group_handler, (Group_Privacy_State) privacy_state,
+                                 group_name, group_name_length, name, name_length);
+    tox_unlock(tox);
+
+    if (ret >= 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_OK);
+        return ret;
+    }
+
+    switch (ret) {
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_TOO_LONG);
+            return UINT32_MAX;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_EMPTY);
+            return UINT32_MAX;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_INIT);
+            return UINT32_MAX;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_STATE);
+            return UINT32_MAX;
+        }
+
+        case -5: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_ANNOUNCE);
+            return UINT32_MAX;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return UINT32_MAX;
+}
+
+uint32_t tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *name, size_t name_length,
+                        const uint8_t *password, size_t password_length, Tox_Err_Group_Join *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const int ret = gc_group_join(tox->m->group_handler, chat_id, name, name_length, password, password_length);
+    tox_unlock(tox);
+
+    if (ret >= 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_OK);
+        return ret;
+    }
+
+    switch (ret) {
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_INIT);
+            return UINT32_MAX;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_BAD_CHAT_ID);
+            return UINT32_MAX;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_TOO_LONG);
+            return UINT32_MAX;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_EMPTY);
+            return UINT32_MAX;
+        }
+
+        case -5: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_PASSWORD);
+            return UINT32_MAX;
+        }
+
+        case -6: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_CORE);
+            return UINT32_MAX;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return UINT32_MAX;
+}
+
+bool tox_group_is_connected(const Tox *tox, uint32_t group_number, Tox_Err_Group_Is_Connected *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_IS_CONNECTED_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_IS_CONNECTED_OK);
+
+    const bool ret = chat->connection_state == CS_CONNECTED;
+    tox_unlock(tox);
+
+    return ret;
+}
+
+bool tox_group_disconnect(const Tox *tox, uint32_t group_number, Tox_Err_Group_Disconnect *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_DISCONNECT_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    if (chat->connection_state == CS_DISCONNECTED) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_DISCONNECT_ALREADY_DISCONNECTED);
+        tox_unlock(tox);
+        return false;
+    }
+
+
+    const bool ret = gc_disconnect_from_group(tox->m->group_handler, chat);
+
+    tox_unlock(tox);
+
+    if (!ret) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_DISCONNECT_GROUP_NOT_FOUND);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_DISCONNECT_OK);
+
+    return true;
+}
+
+bool tox_group_reconnect(Tox *tox, uint32_t group_number, Tox_Err_Group_Reconnect *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_RECONNECT_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_rejoin_group(tox->m->group_handler, chat);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_RECONNECT_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_RECONNECT_GROUP_NOT_FOUND);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_RECONNECT_CORE);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_leave(Tox *tox, uint32_t group_number, const uint8_t *part_message, size_t length,
+                     Tox_Err_Group_Leave *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_LEAVE_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_group_exit(tox->m->group_handler, chat, part_message, length);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_LEAVE_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_LEAVE_TOO_LONG);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_LEAVE_FAIL_SEND);
+            return true;   /* the group was still successfully deleted */
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_self_set_name(const Tox *tox, uint32_t group_number, const uint8_t *name, size_t length,
+                             Tox_Err_Group_Self_Name_Set *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const int ret = gc_set_self_nick(tox->m, group_number, name, length);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SET_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SET_GROUP_NOT_FOUND);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SET_TOO_LONG);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SET_INVALID);
+            return false;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SET_FAIL_SEND);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+size_t tox_group_self_get_name_size(const Tox *tox, uint32_t group_number, Tox_Err_Group_Self_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_OK);
+
+    const size_t ret = gc_get_self_nick_size(chat);
+    tox_unlock(tox);
+
+    return ret;
+}
+
+bool tox_group_self_get_name(const Tox *tox, uint32_t group_number, uint8_t *name, Tox_Err_Group_Self_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_OK);
+
+    gc_get_self_nick(chat, name);
+    tox_unlock(tox);
+
+    return true;
+}
+
+bool tox_group_self_set_status(const Tox *tox, uint32_t group_number, Tox_User_Status status,
+                               Tox_Err_Group_Self_Status_Set *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const int ret = gc_set_self_status(tox->m, group_number, (Group_Peer_Status) status);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_GROUP_NOT_FOUND);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_FAIL_SEND);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+Tox_User_Status tox_group_self_get_status(const Tox *tox, uint32_t group_number, Tox_Err_Group_Self_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return (Tox_User_Status) - 1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_OK);
+
+    const uint8_t status = gc_get_self_status(chat);
+    tox_unlock(tox);
+
+    return (Tox_User_Status)status;
+}
+
+Tox_Group_Role tox_group_self_get_role(const Tox *tox, uint32_t group_number, Tox_Err_Group_Self_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return (Tox_Group_Role) - 1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_OK);
+
+    const Group_Role role = gc_get_self_role(chat);
+    tox_unlock(tox);
+
+    return (Tox_Group_Role)role;
+}
+
+uint32_t tox_group_self_get_peer_id(const Tox *tox, uint32_t group_number, Tox_Err_Group_Self_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_OK);
+
+    const uint32_t ret = gc_get_self_peer_id(chat);
+    tox_unlock(tox);
+
+    return ret;
+}
+
+bool tox_group_self_get_public_key(const Tox *tox, uint32_t group_number, uint8_t *public_key,
+                                   Tox_Err_Group_Self_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_OK);
+
+    gc_get_self_public_key(chat, public_key);
+    tox_unlock(tox);
+
+    return true;
+}
+
+size_t tox_group_peer_get_name_size(const Tox *tox, uint32_t group_number, uint32_t peer_id,
+                                    Tox_Err_Group_Peer_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return -1;
+    }
+
+    const int ret = gc_get_peer_nick_size(chat, peer_id);
+    tox_unlock(tox);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
+        return -1;
+    } else {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_OK);
+        return ret;
+    }
+}
+
+bool tox_group_peer_get_name(const Tox *tox, uint32_t group_number, uint32_t peer_id, uint8_t *name,
+                             Tox_Err_Group_Peer_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const bool ret = gc_get_peer_nick(chat, peer_id, name);
+    tox_unlock(tox);
+
+    if (!ret) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_OK);
+    return true;
+}
+
+Tox_User_Status tox_group_peer_get_status(const Tox *tox, uint32_t group_number, uint32_t peer_id,
+        Tox_Err_Group_Peer_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return (Tox_User_Status) - 1;
+    }
+
+    const uint8_t ret = gc_get_status(chat, peer_id);
+    tox_unlock(tox);
+
+    if (ret == UINT8_MAX) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
+        return (Tox_User_Status) - 1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_OK);
+    return (Tox_User_Status)ret;
+}
+
+Tox_Group_Role tox_group_peer_get_role(const Tox *tox, uint32_t group_number, uint32_t peer_id,
+                                       Tox_Err_Group_Peer_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return (Tox_Group_Role) - 1;
+    }
+
+    const uint8_t ret = gc_get_role(chat, peer_id);
+    tox_unlock(tox);
+
+    if (ret == (uint8_t) -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
+        return (Tox_Group_Role) - 1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_OK);
+    return (Tox_Group_Role)ret;
+}
+
+bool tox_group_peer_get_public_key(const Tox *tox, uint32_t group_number, uint32_t peer_id, uint8_t *public_key,
+                                   Tox_Err_Group_Peer_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_get_peer_public_key_by_peer_id(chat, peer_id, public_key);
+    tox_unlock(tox);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_OK);
+    return true;
+}
+
+Tox_Connection tox_group_peer_get_connection_status(const Tox *tox, uint32_t group_number, uint32_t peer_id,
+        Tox_Err_Group_Peer_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return TOX_CONNECTION_NONE;
+    }
+
+    const unsigned int ret = gc_get_peer_connection_status(chat, peer_id);
+    tox_unlock(tox);
+
+    if (ret == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
+        return TOX_CONNECTION_NONE;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_OK);
+    return (Tox_Connection)ret;
+}
+
+bool tox_group_set_topic(const Tox *tox, uint32_t group_number, const uint8_t *topic, size_t length,
+                         Tox_Err_Group_Topic_Set *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    if (chat->connection_state == CS_DISCONNECTED) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_DISCONNECTED);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_set_topic(chat, topic, length);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_TOO_LONG);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_PERMISSIONS);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_FAIL_CREATE);
+            return false;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_FAIL_SEND);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+size_t tox_group_get_topic_size(const Tox *tox, uint32_t group_number, Tox_Err_Group_State_Queries *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
+
+    const size_t ret = gc_get_topic_size(chat);
+    tox_unlock(tox);
+
+    return ret;
+}
+
+bool tox_group_get_topic(const Tox *tox, uint32_t group_number, uint8_t *topic, Tox_Err_Group_State_Queries *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    gc_get_topic(chat, topic);
+    tox_unlock(tox);
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
+    return true;
+}
+
+size_t tox_group_get_name_size(const Tox *tox, uint32_t group_number, Tox_Err_Group_State_Queries *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
+
+    const size_t ret = gc_get_group_name_size(chat);
+    tox_unlock(tox);
+
+    return ret;
+}
+
+bool tox_group_get_name(const Tox *tox, uint32_t group_number, uint8_t *group_name, Tox_Err_Group_State_Queries *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    gc_get_group_name(chat, group_name);
+    tox_unlock(tox);
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
+
+    return true;
+}
+
+bool tox_group_get_chat_id(const Tox *tox, uint32_t group_number, uint8_t *chat_id, Tox_Err_Group_State_Queries *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
+    gc_get_chat_id(chat, chat_id);
+    tox_unlock(tox);
+
+    return true;
+}
+
+uint32_t tox_group_get_number_groups(const Tox *tox)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const uint32_t ret = gc_count_groups(tox->m->group_handler);
+    tox_unlock(tox);
+
+    return ret;
+}
+
+Tox_Group_Privacy_State tox_group_get_privacy_state(const Tox *tox, uint32_t group_number,
+        Tox_Err_Group_State_Queries *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return (Tox_Group_Privacy_State) - 1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
+
+    const uint8_t state = gc_get_privacy_state(chat);
+    tox_unlock(tox);
+
+    return (Tox_Group_Privacy_State)state;
+}
+
+Tox_Group_Topic_Lock tox_group_get_topic_lock(const Tox *tox, uint32_t group_number, Tox_Err_Group_State_Queries *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return (Tox_Group_Topic_Lock) - 1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
+
+    const Group_Topic_Lock topic_lock = gc_get_topic_lock_state(chat);
+    tox_unlock(tox);
+
+    return (Tox_Group_Topic_Lock)topic_lock;
+}
+
+Tox_Group_Voice_State tox_group_get_voice_state(const Tox *tox, uint32_t group_number,
+        Tox_Err_Group_State_Queries *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return (Tox_Group_Voice_State) - 1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
+
+    const Group_Voice_State voice_state = gc_get_voice_state(chat);
+    tox_unlock(tox);
+
+    return (Tox_Group_Voice_State)voice_state;
+}
+
+uint16_t tox_group_get_peer_limit(const Tox *tox, uint32_t group_number, Tox_Err_Group_State_Queries *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
+
+    const uint16_t ret = gc_get_max_peers(chat);
+    tox_unlock(tox);
+
+    return ret;
+}
+
+size_t tox_group_get_password_size(const Tox *tox, uint32_t group_number, Tox_Err_Group_State_Queries *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
+
+    const size_t ret = gc_get_password_size(chat);
+    tox_unlock(tox);
+
+    return ret;
+}
+
+bool tox_group_get_password(const Tox *tox, uint32_t group_number, uint8_t *password,
+                            Tox_Err_Group_State_Queries *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
+
+    gc_get_password(chat, password);
+    tox_unlock(tox);
+
+    return true;
+}
+
+bool tox_group_send_message(const Tox *tox, uint32_t group_number, Tox_Message_Type type, const uint8_t *message,
+                            size_t length, uint32_t *message_id, Tox_Err_Group_Send_Message *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    if (chat->connection_state == CS_DISCONNECTED) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_DISCONNECTED);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_send_message(chat, message, length, type, message_id);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_TOO_LONG);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_EMPTY);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_BAD_TYPE);
+            return false;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_PERMISSIONS);
+            return false;
+        }
+
+        case -5: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_FAIL_SEND);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_send_private_message(const Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Message_Type type,
+                                    const uint8_t *message, size_t length, Tox_Err_Group_Send_Private_Message *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    if (chat->connection_state == CS_DISCONNECTED) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_DISCONNECTED);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_send_private_message(chat, peer_id, type, message, length);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_TOO_LONG);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_EMPTY);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PEER_NOT_FOUND);
+            return false;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_BAD_TYPE);
+            return false;
+        }
+
+        case -5: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PERMISSIONS);
+            return false;
+        }
+
+        case -6: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_FAIL_SEND);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_send_custom_packet(const Tox *tox, uint32_t group_number, bool lossless, const uint8_t *data,
+                                  size_t length, Tox_Err_Group_Send_Custom_Packet *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    if (chat->connection_state == CS_DISCONNECTED) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_DISCONNECTED);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_send_custom_packet(chat, lossless, data, length);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_TOO_LONG);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_EMPTY);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_PERMISSIONS);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_send_custom_private_packet(const Tox *tox, uint32_t group_number, uint32_t peer_id, bool lossless,
+        const uint8_t *data, size_t length,
+        Tox_Err_Group_Send_Custom_Private_Packet *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    if (chat->connection_state == CS_DISCONNECTED) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_DISCONNECTED);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_send_custom_private_packet(chat, lossless, peer_id, data, length);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_TOO_LONG);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_EMPTY);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_PEER_NOT_FOUND);
+            return false;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_PERMISSIONS);
+            return false;
+        }
+
+        case -5: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_FAIL_SEND);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_invite_friend(const Tox *tox, uint32_t group_number, uint32_t friend_number,
+                             Tox_Err_Group_Invite_Friend *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    if (chat->connection_state == CS_DISCONNECTED) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_DISCONNECTED);
+        tox_unlock(tox);
+        return false;
+    }
+
+    if (!friend_is_valid(tox->m, friend_number)) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_FRIEND_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_invite_friend(tox->m->group_handler, chat, friend_number, send_group_invite_packet);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_FRIEND_NOT_FOUND);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_INVITE_FAIL);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_FAIL_SEND);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+uint32_t tox_group_invite_accept(Tox *tox, uint32_t friend_number, const uint8_t *invite_data, size_t length,
+                                 const uint8_t *name, size_t name_length, const uint8_t *password,
+                                 size_t password_length, Tox_Err_Group_Invite_Accept *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const int ret = gc_accept_invite(tox->m->group_handler, friend_number, invite_data, length, name, name_length, password,
+                                     password_length);
+    tox_unlock(tox);
+
+    if (ret >= 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_OK);
+        return ret;
+    }
+
+    switch (ret) {
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_BAD_INVITE);
+            return UINT32_MAX;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_INIT_FAILED);
+            return UINT32_MAX;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_TOO_LONG);
+            return UINT32_MAX;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_EMPTY);
+            return UINT32_MAX;
+        }
+
+        case -5: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_PASSWORD);
+            return UINT32_MAX;
+        }
+
+        case -6: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_CORE);
+            return UINT32_MAX;
+        }
+
+        case -7: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_FAIL_SEND);
+            return UINT32_MAX;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return UINT32_MAX;
+}
+
+bool tox_group_founder_set_password(const Tox *tox, uint32_t group_number, const uint8_t *password, size_t length,
+                                    Tox_Err_Group_Founder_Set_Password *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    if (chat->connection_state == CS_DISCONNECTED) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_DISCONNECTED);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_founder_set_password(chat, password, length);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_PERMISSIONS);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_TOO_LONG);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_FAIL_SEND);
+            return false;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_MALLOC);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_founder_set_privacy_state(const Tox *tox, uint32_t group_number, Tox_Group_Privacy_State privacy_state,
+        Tox_Err_Group_Founder_Set_Privacy_State *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const int ret = gc_founder_set_privacy_state(tox->m, group_number, (Group_Privacy_State) privacy_state);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_GROUP_NOT_FOUND);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_PERMISSIONS);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_DISCONNECTED);
+            return false;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_FAIL_SET);
+            return false;
+        }
+
+        case -5: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_FAIL_SEND);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_founder_set_topic_lock(const Tox *tox, uint32_t group_number, Tox_Group_Topic_Lock topic_lock,
+                                      Tox_Err_Group_Founder_Set_Topic_Lock *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const int ret = gc_founder_set_topic_lock(tox->m, group_number, (Group_Topic_Lock) topic_lock);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_GROUP_NOT_FOUND);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_INVALID);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_PERMISSIONS);
+            return false;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_DISCONNECTED);
+            return false;
+        }
+
+        case -5: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_FAIL_SET);
+            return false;
+        }
+
+        case -6: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_FAIL_SEND);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_founder_set_voice_state(const Tox *tox, uint32_t group_number, Tox_Group_Voice_State voice_state,
+                                       Tox_Err_Group_Founder_Set_Voice_State *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const int ret = gc_founder_set_voice_state(tox->m, group_number, (Group_Voice_State)voice_state);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_GROUP_NOT_FOUND);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_PERMISSIONS);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_DISCONNECTED);
+            return false;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_FAIL_SET);
+            return false;
+        }
+
+        case -5: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_FAIL_SEND);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_founder_set_peer_limit(const Tox *tox, uint32_t group_number, uint16_t max_peers,
+                                      Tox_Err_Group_Founder_Set_Peer_Limit *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    if (chat->connection_state == CS_DISCONNECTED) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_DISCONNECTED);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_founder_set_max_peers(chat, max_peers);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_PERMISSIONS);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_FAIL_SET);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_FAIL_SEND);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_set_ignore(const Tox *tox, uint32_t group_number, uint32_t peer_id, bool ignore,
+                          Tox_Err_Group_Set_Ignore *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SET_IGNORE_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_set_ignore(chat, peer_id, ignore);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SET_IGNORE_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SET_IGNORE_PEER_NOT_FOUND);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SET_IGNORE_SELF);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_mod_set_role(const Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Group_Role role,
+                            Tox_Err_Group_Mod_Set_Role *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const int ret = gc_set_peer_role(tox->m, group_number, peer_id, (Group_Role) role);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_GROUP_NOT_FOUND);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_PEER_NOT_FOUND);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_PERMISSIONS);
+            return false;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_ASSIGNMENT);
+            return false;
+        }
+
+        case -5: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_FAIL_ACTION);
+            return false;
+        }
+
+        case -6: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_SELF);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+bool tox_group_mod_kick_peer(const Tox *tox, uint32_t group_number, uint32_t peer_id,
+                             Tox_Err_Group_Mod_Kick_Peer *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const int ret = gc_kick_peer(tox->m, group_number, peer_id);
+    tox_unlock(tox);
+
+    switch (ret) {
+        case 0: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_KICK_PEER_OK);
+            return true;
+        }
+
+        case -1: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_KICK_PEER_GROUP_NOT_FOUND);
+            return false;
+        }
+
+        case -2: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_KICK_PEER_PEER_NOT_FOUND);
+            return false;
+        }
+
+        case -3: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_KICK_PEER_PERMISSIONS);
+            return false;
+        }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_KICK_PEER_FAIL_ACTION);
+            return false;
+        }
+
+        case -5: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_KICK_PEER_FAIL_SEND);
+            return false;
+        }
+
+        case -6: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_KICK_PEER_SELF);
+            return false;
+        }
+    }
+
+    /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
+    return false;
+}
+
+#endif /* VANILLA_NACL */
+

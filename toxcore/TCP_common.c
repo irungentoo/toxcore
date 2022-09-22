@@ -286,7 +286,7 @@ int read_packet_TCP_secure_connection(
     }
 
     if (len_packet != *next_packet_length) {
-        LOGGER_ERROR(logger, "invalid packet length: %d, expected %d", len_packet, *next_packet_length);
+        LOGGER_WARNING(logger, "invalid packet length: %d, expected %d", len_packet, *next_packet_length);
         return 0;
     }
 

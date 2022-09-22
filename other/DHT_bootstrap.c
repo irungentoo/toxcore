@@ -17,6 +17,7 @@
 #include "../toxcore/LAN_discovery.h"
 #include "../toxcore/ccompat.h"
 #include "../toxcore/friend_requests.h"
+#include "../toxcore/group_onion_announce.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/mono_time.h"
 #include "../toxcore/tox.h"
@@ -150,7 +151,8 @@ int main(int argc, char *argv[])
     DHT *dht = new_dht(logger, rng, ns, mono_time, new_networking_ex(logger, ns, &ip, start_port, end_port, nullptr), true, true);
     Onion *onion = new_onion(logger, mono_time, rng, dht);
     Forwarding *forwarding = new_forwarding(logger, rng, mono_time, dht);
-    const Onion_Announce *onion_a = new_onion_announce(logger, rng, mono_time, dht);
+    GC_Announces_List *gc_announces_list = new_gca_list();
+    Onion_Announce *onion_a = new_onion_announce(logger, rng, mono_time, dht);
 
 #ifdef DHT_NODE_EXTRA_PACKETS
     bootstrap_set_callbacks(dht_get_net(dht), DHT_VERSION_NUMBER, DHT_MOTD, sizeof(DHT_MOTD));
@@ -160,6 +162,8 @@ int main(int argc, char *argv[])
         printf("Something failed to initialize.\n");
         exit(1);
     }
+
+    gca_onion_init(gc_announces_list, onion_a);
 
     perror("Initialization");
 

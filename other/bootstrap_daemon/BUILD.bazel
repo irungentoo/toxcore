@@ -15,6 +15,7 @@ cc_binary(
         "//c-toxcore/toxcore:TCP_server",
         "//c-toxcore/toxcore:announce",
         "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:group_onion_announce",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
         "//c-toxcore/toxcore:onion_announce",

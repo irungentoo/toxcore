@@ -339,7 +339,8 @@ bool ip_is_lan(const IP *ip)
 }
 
 
-bool lan_discovery_send(const Networking_Core *net, const Broadcast_Info *broadcast, const uint8_t *dht_pk, uint16_t port)
+bool lan_discovery_send(const Networking_Core *net, const Broadcast_Info *broadcast, const uint8_t *dht_pk,
+                        uint16_t port)
 {
     if (broadcast == nullptr) {
         return false;

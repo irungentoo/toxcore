@@ -166,7 +166,7 @@ static void free_accepted_connection_array(TCP_Server *tcp_server)
     tcp_server->size_accepted_connections = 0;
 }
 
-/** 
+/**
  * @return index corresponding to connection with peer on success
  * @retval -1 on failure.
  */
@@ -388,7 +388,7 @@ non_null()
 static int send_routing_response(const Logger *logger, TCP_Secure_Connection *con, uint8_t rpid,
                                  const uint8_t *public_key)
 {
-    uint8_t data[1 + 1 + CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t data[2 + CRYPTO_PUBLIC_KEY_SIZE];
     data[0] = TCP_PACKET_ROUTING_RESPONSE;
     data[1] = rpid;
     memcpy(data + 2, public_key, CRYPTO_PUBLIC_KEY_SIZE);
