@@ -216,10 +216,10 @@ sudo grep "tox-bootstrapd" /var/log/syslog
 
 ### Setting up
 
-If you are familiar with Docker and would rather run the daemon in a Docker container, you may download the latest official docker image. Check the GitHub [releases](https://github.com/TokTok/c-toxcore/releases) page for the latest version (e.g. v0.2.11), and run:
+If you are familiar with Docker and would rather run the daemon in a Docker container, you may download the latest official docker image. To download the latest image run:
 
 ```sh
-docker pull toxchat/bootstrap-node:0.2.11
+docker pull toxchat/bootstrap-node:latest
 docker run --rm -it --entrypoint=sha256sum toxchat/bootstrap-node:latest /usr/local/bin/tox-bootstrapd
 ```
 
