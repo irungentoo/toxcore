@@ -1734,7 +1734,7 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
     } else {
         Ip_Ntoa ip_str;
         LOGGER_ERROR(log, "cannot connect to %s:%d which is neither IPv4 nor IPv6",
-                     net_ip_ntoa(&ip_port->ip, &ip_str), ip_port->port);
+                     net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port));
         return false;
     }
 
@@ -1746,7 +1746,7 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
 
     Ip_Ntoa ip_str;
     LOGGER_DEBUG(log, "connecting socket %d to %s:%d",
-                 (int)sock.sock, net_ip_ntoa(&ip_port->ip, &ip_str), ip_port->port);
+                 (int)sock.sock, net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port));
     errno = 0;
 
     if (connect(sock.sock, (struct sockaddr *)&addr, addrsize) == -1) {
@@ -1756,7 +1756,7 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
         if (!should_ignore_connect_error(error)) {
             char *net_strerror = net_new_strerror(error);
             LOGGER_ERROR(log, "failed to connect to %s:%d: %d (%s)",
-                         net_ip_ntoa(&ip_port->ip, &ip_str), ip_port->port, error, net_strerror);
+                         net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port), error, net_strerror);
             net_kill_strerror(net_strerror);
             return false;
         }
