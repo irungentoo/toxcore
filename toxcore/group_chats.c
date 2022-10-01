@@ -5485,7 +5485,9 @@ static bool send_gc_handshake_packet(const GC_Chat *chat, GC_Connection *gconn, 
     Node_format node;
     memset(&node, 0, sizeof(node));
 
-    gcc_copy_tcp_relay(chat->rng, &node, gconn);
+    if (!gcc_copy_tcp_relay(chat->rng, &node, gconn)) {
+        LOGGER_TRACE(chat->log, "Failed to copy TCP relay during handshake (%u TCP relays)", gconn->tcp_relays_count);
+    }
 
     uint8_t packet[GC_MIN_ENCRYPTED_HS_PAYLOAD_SIZE + sizeof(Node_format)];
     const int length = make_gc_handshake_packet(chat, gconn, handshake_type, request_type, join_type, packet,
@@ -5658,6 +5660,7 @@ static int handle_gc_handshake_request(GC_Chat *chat, const IP_Port *ipp, const 
     }
 
     if (chat->connection_state <= CS_DISCONNECTED) {
+        LOGGER_DEBUG(chat->log, "Handshake request ignored; state is disconnected");
         return -1;
     }
 
@@ -5688,6 +5691,7 @@ static int handle_gc_handshake_request(GC_Chat *chat, const IP_Port *ipp, const 
         GC_Connection *gconn = get_gc_connection(chat, peer_number);
 
         if (gconn == nullptr) {
+            LOGGER_WARNING(chat->log, "Invalid peer number");
             return -1;
         }
 
@@ -5700,6 +5704,7 @@ static int handle_gc_handshake_request(GC_Chat *chat, const IP_Port *ipp, const 
         // peers sent handshake request at same time so the closer peer becomes the requestor
         // and ignores the request packet while further peer continues on with the response
         if (gconn->self_is_closer) {
+            LOGGER_DEBUG(chat->log, "Simultaneous handshake requests; other peer is closer");
             return 0;
         }
     }
@@ -5707,6 +5712,7 @@ static int handle_gc_handshake_request(GC_Chat *chat, const IP_Port *ipp, const 
     GC_Connection *gconn = get_gc_connection(chat, peer_number);
 
     if (gconn == nullptr) {
+        LOGGER_DEBUG(chat->log, "Peer connection invalid");
         return -1;
     }
 
@@ -5720,7 +5726,7 @@ static int handle_gc_handshake_request(GC_Chat *chat, const IP_Port *ipp, const 
 
     if (nodes_count <= 0 && ipp == nullptr) {
         if (is_new_peer) {
-            LOGGER_WARNING(chat->log, "broken tcp relay for new peer");
+            LOGGER_WARNING(chat->log, "Broken tcp relay for new peer");
             gcc_mark_for_deletion(gconn, chat->tcp_conn, GC_EXIT_TYPE_DISCONNECTED, nullptr, 0);
         }
 
@@ -5732,7 +5738,7 @@ static int handle_gc_handshake_request(GC_Chat *chat, const IP_Port *ipp, const 
                                    &node->ip_port, node->public_key);
 
         if (add_tcp_result < 0 && is_new_peer && ipp == nullptr) {
-            LOGGER_WARNING(chat->log, "broken tcp relay for new peer");
+            LOGGER_WARNING(chat->log, "Broken tcp relay for new peer");
             gcc_mark_for_deletion(gconn, chat->tcp_conn, GC_EXIT_TYPE_DISCONNECTED, nullptr, 0);
             return -1;
         }
@@ -5750,6 +5756,7 @@ static int handle_gc_handshake_request(GC_Chat *chat, const IP_Port *ipp, const 
 
     if (join_type == HJ_PUBLIC && !is_public_chat(chat)) {
         gcc_mark_for_deletion(gconn, chat->tcp_conn, GC_EXIT_TYPE_DISCONNECTED, nullptr, 0);
+        LOGGER_DEBUG(chat->log, "Ignoring invalid invite request");
         return -1;
     }
 
@@ -7876,6 +7883,8 @@ int handle_gc_invite_confirmed_packet(const GC_Session *c, int friend_number, co
 
     if (num_nodes > 0) {
         tcp_relays_added = add_gc_tcp_relays(chat, gconn, tcp_relays, num_nodes);
+    } else {
+        LOGGER_WARNING(chat->log, "Invite confirm packet did not contain any TCP relays");
     }
 
     if (tcp_relays_added == 0 && !copy_ip_port_result) {
@@ -7990,7 +7999,7 @@ int gc_accept_invite(GC_Session *c, int32_t friend_number, const uint8_t *data, 
     const uint8_t *chat_id = data;
     const uint8_t *invite_chat_pk = data + CHAT_ID_SIZE;
 
-    const int group_number = create_new_group(c, nick, nick_length, false, GI_PRIVATE);
+    const int group_number = create_new_group(c, nick, nick_length, false, GI_PUBLIC);
 
     if (group_number == -1) {
         return -2;
