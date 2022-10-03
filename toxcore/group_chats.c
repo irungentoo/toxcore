@@ -6023,7 +6023,7 @@ static bool handle_gc_lossless_packet(const GC_Session *c, GC_Chat *chat, const 
     if (len < 0) {
         Ip_Ntoa ip_str;
         LOGGER_DEBUG(chat->log, "Failed to unwrap lossless packet from %s:%d: %d",
-                     net_ip_ntoa(&gconn->addr.ip_port.ip, &ip_str), gconn->addr.ip_port.port, len);
+                     net_ip_ntoa(&gconn->addr.ip_port.ip, &ip_str), net_ntohs(gconn->addr.ip_port.port), len);
         free(data);
         return false;
     }
@@ -6143,7 +6143,7 @@ static bool handle_gc_lossy_packet(const GC_Session *c, GC_Chat *chat, const uin
     if (len <= 0) {
         Ip_Ntoa ip_str;
         LOGGER_DEBUG(chat->log, "Failed to unwrap lossy packet from %s:%d: %d",
-                     net_ip_ntoa(&gconn->addr.ip_port.ip, &ip_str), gconn->addr.ip_port.port, len);
+                     net_ip_ntoa(&gconn->addr.ip_port.ip, &ip_str), net_ntohs(gconn->addr.ip_port.port), len);
         free(data);
         return false;
     }
