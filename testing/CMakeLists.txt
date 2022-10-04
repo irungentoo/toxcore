@@ -2,7 +2,7 @@
 set(misc_tools_SOURCES
   misc_tools.c
   misc_tools.h)
-add_library(misc_tools ${misc_tools_SOURCES})
+add_library(misc_tools STATIC ${misc_tools_SOURCES})
 target_link_modules(misc_tools toxcore)
 
 ################################################################################
