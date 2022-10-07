@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 set -e -x
 
@@ -61,6 +61,8 @@ build() {
     echo "SET(CROSSCOMPILING_EMULATOR /usr/bin/wine)" >>windows_toolchain.cmake
   fi
 
+  # Silly way to bypass a shellharden check
+  read -ra EXTRA_CMAKE_FLAGS_ARRAY <<<"$EXTRA_CMAKE_FLAGS"
   cmake -DCMAKE_TOOLCHAIN_FILE=windows_toolchain.cmake \
     -DCMAKE_INSTALL_PREFIX="$STATIC_TOXCORE_PREFIX_DIR" \
     -DENABLE_SHARED=OFF \
@@ -69,7 +71,7 @@ build() {
     -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS" \
     -DCMAKE_EXE_LINKER_FLAGS="$CMAKE_EXE_LINKER_FLAGS -fstack-protector" \
     -DCMAKE_SHARED_LINKER_FLAGS="$CMAKE_SHARED_LINKER_FLAGS" \
-    $EXTRA_CMAKE_FLAGS \
+    "${EXTRA_CMAKE_FLAGS_ARRAY[@]}" \
     -S ..
   cmake --build . --target install -- -j"$(nproc)"
 

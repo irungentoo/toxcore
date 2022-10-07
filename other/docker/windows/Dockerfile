@@ -32,4 +32,4 @@ ENV ENABLE_TEST=false \
     ENABLE_ARCH_x86_64=true \
     EXTRA_CMAKE_FLAGS="-DTEST_TIMEOUT_SECONDS=90"
 
-ENTRYPOINT ["sh", "./build_toxcore.sh"]
+ENTRYPOINT ["bash", "./build_toxcore.sh"]
