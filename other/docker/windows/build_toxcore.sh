@@ -70,7 +70,7 @@ build() {
     -DCMAKE_EXE_LINKER_FLAGS="$CMAKE_EXE_LINKER_FLAGS -fstack-protector" \
     -DCMAKE_SHARED_LINKER_FLAGS="$CMAKE_SHARED_LINKER_FLAGS" \
     $EXTRA_CMAKE_FLAGS \
-    ..
+    -S ..
   cmake --build . --target install -- -j"$(nproc)"
 
   if [ "$ENABLE_TEST" = "true" ]; then
