@@ -149,3 +149,20 @@ bool tox_dht_get_nodes(const Tox *tox, const uint8_t *public_key, const char *ip
 
     return true;
 }
+
+uint16_t tox_dht_get_num_closelist(const Tox *tox) {
+    tox_lock(tox);
+    const uint16_t num_total = dht_get_num_closelist(tox->m->dht);
+    tox_unlock(tox);
+
+    return num_total;
+}
+
+uint16_t tox_dht_get_num_closelist_announce_capable(const Tox *tox){
+    tox_lock(tox);
+    const uint16_t num_cap = dht_get_num_closelist_announce_capable(tox->m->dht);
+    tox_unlock(tox);
+
+    return num_cap;
+}
+

@@ -515,6 +515,24 @@ bool dht_isconnected(const DHT *dht);
 non_null()
 bool dht_non_lan_connected(const DHT *dht);
 
+/**
+ * This function returns the ratio of close dht nodes that are known to support announce/store.
+ * This function returns the number of DHT nodes in the closelist.
+ *
+ * @return number
+ */
+non_null()
+uint16_t dht_get_num_closelist(const DHT *dht);
+
+/**
+ * This function returns the number of DHT nodes in the closelist,
+ * that are capable to store annouce data (introduced in version 0.2.18).
+ *
+ * @return number
+ */
+non_null()
+uint16_t dht_get_num_closelist_announce_capable(const DHT *dht);
+
 /** @brief Attempt to add client with ip_port and public_key to the friends client list
  * and close_clientlist.
  *

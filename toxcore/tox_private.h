@@ -140,6 +140,22 @@ typedef enum Tox_Err_Dht_Get_Nodes {
 bool tox_dht_get_nodes(const Tox *tox, const uint8_t *public_key, const char *ip, uint16_t port,
                        const uint8_t *target_public_key, Tox_Err_Dht_Get_Nodes *error);
 
+/**
+ * This function returns the ratio of close dht nodes that are known to support announce/store.
+ * This function returns the number of DHT nodes in the closelist.
+ *
+ * @return number
+ */
+uint16_t tox_dht_get_num_closelist(const Tox *tox);
+
+/**
+ * This function returns the number of DHT nodes in the closelist,
+ * that are capable to store annouce data (introduced in version 0.2.18).
+ *
+ * @return number
+ */
+uint16_t tox_dht_get_num_closelist_announce_capable(const Tox *tox);
+
 #ifdef __cplusplus
 }
 #endif
