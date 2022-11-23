@@ -10,7 +10,7 @@ environment:
     - job_name: shared
 
 install:
-  - set PATH=C:\Python310-x64\Scripts;%PATH%
+  - set PATH=C:\Python311-x64\Scripts;%PATH%
   - py -3 -m pip install conan
   - git submodule update --init --recursive
 
