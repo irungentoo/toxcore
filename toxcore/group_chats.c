@@ -4893,10 +4893,26 @@ static int handle_gc_private_message(const GC_Session *c, const GC_Chat *chat, c
     return 0;
 }
 
+/** @brief Returns false if a custom packet is too large. */
+static bool custom_gc_packet_length_is_valid(uint16_t length, bool lossless)
+{
+    if (lossless) {
+        if (length > MAX_GC_CUSTOM_LOSSLESS_PACKET_SIZE) {
+            return false;
+        }
+    } else {
+        if (length > MAX_GC_CUSTOM_LOSSY_PACKET_SIZE) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 int gc_send_custom_private_packet(const GC_Chat *chat, bool lossless, uint32_t peer_id, const uint8_t *message,
                                   uint16_t length)
 {
-    if (length > MAX_GC_CUSTOM_PACKET_SIZE) {
+    if (!custom_gc_packet_length_is_valid(length, lossless)) {
         return -1;
     }
 
@@ -4926,16 +4942,23 @@ int gc_send_custom_private_packet(const GC_Chat *chat, bool lossless, uint32_t p
 
     return ret ? 0 : -5;
 }
+
+
+
 /** @brief Handles a custom private packet.
  *
  * @retval 0 if packet is handled correctly.
  * @retval -1 if packet has invalid size.
  */
-non_null(1, 2, 3, 4) nullable(6)
+non_null(1, 2, 3, 4) nullable(7)
 static int handle_gc_custom_private_packet(const GC_Session *c, const GC_Chat *chat, const GC_Peer *peer,
-        const uint8_t *data, uint16_t length, void *userdata)
+        const uint8_t *data, uint16_t length, bool lossless, void *userdata)
 {
-    if (data == nullptr || length == 0 || length > MAX_GC_CUSTOM_PACKET_SIZE) {
+    if (!custom_gc_packet_length_is_valid(length, lossless)) {
+        return -1;
+    }
+
+    if (data == nullptr || length == 0) {
         return -1;
     }
 
@@ -4952,7 +4975,7 @@ static int handle_gc_custom_private_packet(const GC_Session *c, const GC_Chat *c
 
 int gc_send_custom_packet(const GC_Chat *chat, bool lossless, const uint8_t *data, uint16_t length)
 {
-    if (length > MAX_GC_CUSTOM_PACKET_SIZE) {
+    if (!custom_gc_packet_length_is_valid(length, lossless)) {
         return -1;
     }
 
@@ -4978,11 +5001,15 @@ int gc_send_custom_packet(const GC_Chat *chat, bool lossless, const uint8_t *dat
  * Return 0 if packet is handled correctly.
  * Return -1 if packet has invalid size.
  */
-non_null(1, 2, 3, 4) nullable(6)
+non_null(1, 2, 3, 4) nullable(7)
 static int handle_gc_custom_packet(const GC_Session *c, const GC_Chat *chat, const GC_Peer *peer, const uint8_t *data,
-                                   uint16_t length, void *userdata)
+                                   uint16_t length, bool lossless, void *userdata)
 {
-    if (data == nullptr || length == 0 || length > MAX_GC_CUSTOM_PACKET_SIZE) {
+    if (!custom_gc_packet_length_is_valid(length, lossless)) {
+        return -1;
+    }
+
+    if (data == nullptr || length == 0) {
         return -1;
     }
 
@@ -5913,12 +5940,12 @@ bool handle_gc_lossless_helper(const GC_Session *c, GC_Chat *chat, uint32_t peer
         }
 
         case GP_CUSTOM_PACKET: {
-            ret = handle_gc_custom_packet(c, chat, peer, data, length, userdata);
+            ret = handle_gc_custom_packet(c, chat, peer, data, length, true, userdata);
             break;
         }
 
         case GP_CUSTOM_PRIVATE_PACKET: {
-            ret = handle_gc_custom_private_packet(c, chat, peer, data, length, userdata);
+            ret = handle_gc_custom_private_packet(c, chat, peer, data, length, true, userdata);
             break;
         }
 
@@ -6168,12 +6195,12 @@ static bool handle_gc_lossy_packet(const GC_Session *c, GC_Chat *chat, const uin
         }
 
         case GP_CUSTOM_PACKET: {
-            ret = handle_gc_custom_packet(c, chat, peer, data, payload_len, userdata);
+            ret = handle_gc_custom_packet(c, chat, peer, data, payload_len, false, userdata);
             break;
         }
 
         case GP_CUSTOM_PRIVATE_PACKET: {
-            ret = handle_gc_custom_private_packet(c, chat, peer, data, payload_len, userdata);
+            ret = handle_gc_custom_private_packet(c, chat, peer, data, payload_len, false, userdata);
             break;
         }
 

@@ -3304,6 +3304,16 @@ uint32_t tox_group_max_part_length(void);
 #define TOX_GROUP_MAX_MESSAGE_LENGTH    1368
 
 /**
+ * Maximum length of a group custom lossy packet.
+ */
+#define TOX_GROUP_MAX_CUSTOM_LOSSY_PACKET_LENGTH 500
+
+/**
+ * Maximum length of a group custom lossless packet.
+ */
+#define TOX_GROUP_MAX_CUSTOM_LOSSLESS_PACKET_LENGTH 1373
+
+/**
  * Maximum length of a group name.
  */
 #define TOX_GROUP_MAX_GROUP_NAME_LENGTH 48
@@ -4477,7 +4487,9 @@ typedef enum Tox_Err_Group_Send_Custom_Packet {
     TOX_ERR_GROUP_SEND_CUSTOM_PACKET_GROUP_NOT_FOUND,
 
     /**
-     * Message length exceeded TOX_GROUP_MAX_MESSAGE_LENGTH.
+     * Message length exceeded TOX_GROUP_MAX_CUSTOM_LOSSY_PACKET_LENGTH if the
+     * packet was lossy, or TOX_GROUP_MAX_CUSTOM_LOSSLESS_PACKET_LENGTH if the
+     * packet was lossless.
      */
     TOX_ERR_GROUP_SEND_CUSTOM_PACKET_TOO_LONG,
 
@@ -4541,7 +4553,9 @@ typedef enum Tox_Err_Group_Send_Custom_Private_Packet {
     TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_GROUP_NOT_FOUND,
 
     /**
-     * Message length exceeded TOX_MAX_CUSTOM_PACKET_SIZE.
+     * Message length exceeded TOX_GROUP_MAX_CUSTOM_LOSSY_PACKET_LENGTH if the
+     * packet was lossy, or TOX_GROUP_MAX_CUSTOM_LOSSLESS_PACKET_LENGTH if the
+     * packet was lossless.
      */
     TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_TOO_LONG,
 

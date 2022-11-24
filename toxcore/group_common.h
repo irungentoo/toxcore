@@ -23,18 +23,22 @@
 #define GC_MESSAGE_PSEUDO_ID_SIZE 4
 #define GROUP_MAX_MESSAGE_LENGTH  1368
 
-#define MAX_GC_MESSAGE_SIZE       GROUP_MAX_MESSAGE_LENGTH
-#define MAX_GC_MESSAGE_RAW_SIZE   (MAX_GC_MESSAGE_SIZE + GC_MESSAGE_PSEUDO_ID_SIZE)
-#define MAX_GC_CUSTOM_PACKET_SIZE 1373
+/* Max size of a packet chunk. Packets larger than this must be split up.
+ *
+ * For an explanation on why this value was chosen, see the following link: https://archive.ph/vsCOG
+ */
+#define MAX_GC_PACKET_CHUNK_SIZE 500
+
+#define MAX_GC_MESSAGE_SIZE GROUP_MAX_MESSAGE_LENGTH
+#define MAX_GC_MESSAGE_RAW_SIZE (MAX_GC_MESSAGE_SIZE + GC_MESSAGE_PSEUDO_ID_SIZE)
+#define MAX_GC_CUSTOM_LOSSLESS_PACKET_SIZE 1373
+#define MAX_GC_CUSTOM_LOSSY_PACKET_SIZE MAX_GC_PACKET_CHUNK_SIZE
 #define MAX_GC_PASSWORD_SIZE 32
 #define MAX_GC_SAVED_INVITES 10
 #define MAX_GC_PEERS_DEFAULT 100
 #define MAX_GC_SAVED_TIMEOUTS 12
 #define GC_MAX_SAVED_PEERS 100
 #define GC_SAVED_PEER_SIZE (ENC_PUBLIC_KEY_SIZE + sizeof(Node_format) + sizeof(IP_Port))
-
-/* Max size of a packet chunk. Packets larger than this must be split up. */
-#define MAX_GC_PACKET_CHUNK_SIZE 500
 
 /* Max size of a complete encrypted packet including headers. */
 #define MAX_GC_PACKET_SIZE (MAX_GC_PACKET_CHUNK_SIZE * 100)
