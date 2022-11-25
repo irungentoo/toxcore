@@ -242,8 +242,7 @@ void gc_get_topic(const GC_Chat *chat, uint8_t *topic);
 
 /** @brief Returns the topic length.
  *
- * The return value is equal to the `length` agument received by the last topic
- * callback.
+ * The return value is equal to the `length` agument received by the last topic callback.
  */
 non_null()
 uint16_t gc_get_topic_size(const GC_Chat *chat);

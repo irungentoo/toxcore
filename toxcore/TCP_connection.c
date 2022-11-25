@@ -277,7 +277,6 @@ static TCP_con *get_tcp_connection(const TCP_Connections *tcp_c, int tcp_connect
     return &tcp_c->tcp_connections[tcp_connections_number];
 }
 
-/** Returns the number of connected TCP relays */
 uint32_t tcp_connected_relays_count(const TCP_Connections *tcp_c)
 {
     uint32_t count = 0;
@@ -633,6 +632,11 @@ static int find_tcp_connection_relay(const TCP_Connections *tcp_c, const uint8_t
     }
 
     return -1;
+}
+
+bool tcp_relay_is_valid(const TCP_Connections *tcp_c, const uint8_t *relay_pk)
+{
+    return find_tcp_connection_relay(tcp_c, relay_pk) != -1;
 }
 
 /** @brief Create a new TCP connection to public_key.

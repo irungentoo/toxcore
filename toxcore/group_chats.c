@@ -2016,7 +2016,7 @@ static bool send_gc_tcp_relays(const GC_Chat *chat, GC_Connection *gconn)
 
     for (uint32_t i = 0; i < n; ++i) {
         add_tcp_relay_connection(chat->tcp_conn, gconn->tcp_connection_num, &tcp_relays[i].ip_port,
-                                     tcp_relays[i].public_key);
+                                 tcp_relays[i].public_key);
     }
 
     const int nodes_len = pack_nodes(chat->log, data, sizeof(data), tcp_relays, n);
@@ -7050,9 +7050,10 @@ static void do_gc_tcp(const GC_Session *c, GC_Chat *chat, void *userdata)
         set_tcp_connection_to_status(chat->tcp_conn, gconn->tcp_connection_num, tcp_set);
     }
 
-    if (mono_time_is_timeout(chat->mono_time, chat->last_checked_tcp_relays, TCP_RELAYS_CHECK_INTERVAL) &&
-            tcp_connected_relays_count(chat->tcp_conn) != chat->tcp_connections) {
+    if (mono_time_is_timeout(chat->mono_time, chat->last_checked_tcp_relays, TCP_RELAYS_CHECK_INTERVAL)
+            && tcp_connected_relays_count(chat->tcp_conn) != chat->connected_tcp_relays) {
         add_tcp_relays_to_chat(c, chat);
+        chat->connected_tcp_relays = tcp_connected_relays_count(chat->tcp_conn);
         chat->last_checked_tcp_relays = mono_time_get(chat->mono_time);
     }
 }
@@ -7061,7 +7062,8 @@ static void do_gc_tcp(const GC_Session *c, GC_Chat *chat, void *userdata)
  * Updates our TCP and UDP connection status and flags a new announcement if our connection has
  * changed and we have either a UDP or TCP connection.
  */
-#define GC_SELF_CONNECTION_CHECK_INTERVAL 2
+#define GC_SELF_CONNECTION_CHECK_INTERVAL 5  // how often in seconds we should run this function
+#define GC_SELF_REFRESH_ANNOUNCE_INTERVAL (60 * 20)  // how often in seconds we force refresh our group announcement
 non_null()
 static void do_self_connection(const GC_Session *c, GC_Chat *chat)
 {
@@ -7069,19 +7071,18 @@ static void do_self_connection(const GC_Session *c, GC_Chat *chat)
         return;
     }
 
-    const uint32_t tcp_connections = tcp_connected_relays_count(chat->tcp_conn);
-
-    const Messenger *m = c->messenger;
-    const unsigned int self_udp_status = ipport_self_copy(m->dht, &chat->self_ip_port);
-
+    const unsigned int self_udp_status = ipport_self_copy(c->messenger->dht, &chat->self_ip_port);
     const bool udp_change = (chat->self_udp_status != self_udp_status) && (self_udp_status != SELF_UDP_STATUS_NONE);
-    const bool tcp_change = tcp_connections != chat->tcp_connections;
 
-    if (is_public_chat(chat) && (udp_change || tcp_change)) {
+    // We flag a group announce if our UDP status has changed since last run, or if our last announced TCP
+    // relay is no longer valid. Additionally, we will always flag an announce in the specified interval
+    // regardless of the prior conditions. Private groups are never announced.
+    if (is_public_chat(chat) &&
+            ((udp_change || !tcp_relay_is_valid(chat->tcp_conn, chat->announced_tcp_relay_pk))
+             || mono_time_is_timeout(chat->mono_time, chat->last_time_self_announce, GC_SELF_REFRESH_ANNOUNCE_INTERVAL))) {
         chat->update_self_announces = true;
     }
 
-    chat->tcp_connections = tcp_connections;
     chat->self_udp_status = (Self_UDP_Status) self_udp_status;
     chat->last_self_announce_check = mono_time_get(chat->mono_time);
 }

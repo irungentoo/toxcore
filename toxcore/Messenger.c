@@ -2573,6 +2573,13 @@ static bool self_announce_group(const Messenger *m, GC_Chat *chat, Onion_Friend 
 
     onion_friend_set_gc_data(onion_friend, gc_data, (uint16_t)length);
     chat->update_self_announces = false;
+    chat->last_time_self_announce = mono_time_get(chat->mono_time);
+
+    if (tcp_num > 0) {
+        pk_copy(chat->announced_tcp_relay_pk, announce.base_announce.tcp_relays[0].public_key);
+    } else {
+        memset(chat->announced_tcp_relay_pk, 0, sizeof(chat->announced_tcp_relay_pk));
+    }
 
     LOGGER_DEBUG(chat->log, "Published group announce. TCP relays: %d, UDP status: %d", tcp_num,
                  chat->self_udp_status);

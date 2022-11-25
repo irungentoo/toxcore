@@ -249,13 +249,13 @@ typedef struct GC_Chat {
     const Logger    *log;
     const Random    *rng;
 
+    uint32_t        connected_tcp_relays;
     Self_UDP_Status self_udp_status;
     IP_Port         self_ip_port;
 
     Networking_Core *net;
     TCP_Connections *tcp_conn;
 
-    uint32_t        tcp_connections; // the number of global TCP relays we're connected to
     uint64_t        last_checked_tcp_relays;
     Group_Handshake_Join_Type join_type;
 
@@ -312,6 +312,8 @@ typedef struct GC_Chat {
 
     bool        update_self_announces;  // true if we should try to update our announcements
     uint64_t    last_self_announce_check;  // the last time we checked if we should update our announcements
+    uint64_t    last_time_self_announce;  // the last time we announced the group
+    uint8_t     announced_tcp_relay_pk[CRYPTO_PUBLIC_KEY_SIZE];  // The pk of the last TCP relay we announced
 
     uint8_t     m_group_public_key[CRYPTO_PUBLIC_KEY_SIZE];  // public key for group's messenger friend connection
     int         friend_connection_id;  // identifier for group's messenger friend connection

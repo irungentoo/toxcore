@@ -78,9 +78,13 @@ const uint8_t *tcp_connections_public_key(const TCP_Connections *tcp_c);
 non_null()
 uint32_t tcp_connections_count(const TCP_Connections *tcp_c);
 
-/** Returns the number of connected TCP relays */
+/** @brief Returns the number of connected TCP relays. */
 non_null()
 uint32_t tcp_connected_relays_count(const TCP_Connections *tcp_c);
+
+/** @brief Returns true if we know of a valid TCP relay with the passed public key. */
+non_null()
+bool tcp_relay_is_valid(const TCP_Connections *tcp_c, const uint8_t *relay_pk);
 
 /** @brief Send a packet to the TCP connection.
  *
