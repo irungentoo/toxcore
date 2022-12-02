@@ -1008,7 +1008,7 @@ static int32_t resolve_bootstrap_node(Tox *tox, const char *host, uint16_t port,
 
     const int32_t count = net_getipport(host, root, TOX_SOCK_DGRAM);
 
-    if (count == -1) {
+    if (count < 1) {
         LOGGER_DEBUG(tox->m->log, "could not resolve bootstrap node '%s'", host);
         net_freeipport(*root);
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
