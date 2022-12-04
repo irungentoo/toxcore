@@ -1033,12 +1033,15 @@ TCP_Server *new_TCP_server(const Logger *logger, const Random *rng, const Networ
 non_null()
 static void do_TCP_accept_new(TCP_Server *tcp_server)
 {
-    for (uint32_t i = 0; i < tcp_server->num_listening_socks; ++i) {
-        Socket sock;
+    for (uint32_t sock_idx = 0; sock_idx < tcp_server->num_listening_socks; ++sock_idx) {
 
-        do {
-            sock = net_accept(tcp_server->ns, tcp_server->socks_listening[i]);
-        } while (accept_connection(tcp_server, sock) != -1);
+        for (uint32_t connection_idx = 0; connection_idx < MAX_INCOMING_CONNECTIONS; ++connection_idx) {
+            const Socket sock = net_accept(tcp_server->ns, tcp_server->socks_listening[sock_idx]);
+
+            if (accept_connection(tcp_server, sock) == -1) {
+                break;
+            }
+        }
     }
 }
 #endif
