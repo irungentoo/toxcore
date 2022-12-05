@@ -69,19 +69,19 @@ static constexpr Network_Funcs fuzz_network_funcs = {
     /* .listen = */ ![](Fuzz_System *self, int sock, int backlog) { return 0; },
     /* .recvbuf = */
     ![](Fuzz_System *self, int sock) {
-        assert(sock == 42);
+        assert(sock == 42 || sock == 1337);
         const size_t count = random_u16(self->rng.get());
         return static_cast<int>(std::min(count, self->data.size));
     },
     /* .recv = */
     ![](Fuzz_System *self, int sock, uint8_t *buf, size_t len) {
-        assert(sock == 42);
+        assert(sock == 42 || sock == 1337);
         // Receive data from the fuzzer.
         return recv_common(self->data, buf, len);
     },
     /* .recvfrom = */
     ![](Fuzz_System *self, int sock, uint8_t *buf, size_t len, Network_Addr *addr) {
-        assert(sock == 42);
+        assert(sock == 42 || sock == 1337);
 
         addr->addr = sockaddr_storage{};
         // Dummy Addr
@@ -97,13 +97,13 @@ static constexpr Network_Funcs fuzz_network_funcs = {
     },
     /* .send = */
     ![](Fuzz_System *self, int sock, const uint8_t *buf, size_t len) {
-        assert(sock == 42);
+        assert(sock == 42 || sock == 1337);
         // Always succeed.
         return static_cast<int>(len);
     },
     /* .sendto = */
     ![](Fuzz_System *self, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
-        assert(sock == 42);
+        assert(sock == 42 || sock == 1337);
         // Always succeed.
         return static_cast<int>(len);
     },
