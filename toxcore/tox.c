@@ -1121,6 +1121,7 @@ Tox_Connection tox_self_get_connection_status(const Tox *tox)
     }
 
     LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+    return TOX_CONNECTION_NONE;
 }
 
 
