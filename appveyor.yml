@@ -19,12 +19,12 @@ for:
       only:
         - job_name: static
     before_build:
-      - conan install -if _build -o with_tests=True .
+      - conan install -if _build -o with_tests=False .
   - matrix:
       only:
         - job_name: shared
     before_build:
-      - conan install -if _build -o with_tests=True -o shared=True .
+      - conan install -if _build -o with_tests=False -o shared=True .
 
 build_script:
   - set CONAN_CPU_COUNT=50
