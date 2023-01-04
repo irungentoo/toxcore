@@ -525,8 +525,9 @@ static void test_client(void)
     ip_port_tcp_s.ip = get_loopback();
 
     TCP_Client_Connection *conn = new_tcp_connection(logger, mem, mono_time, rng, ns, &ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, nullptr);
-    do_tcp_connection(logger, mono_time, conn, nullptr);
+    // TCP sockets might need a moment before they can be written to.
     c_sleep(50);
+    do_tcp_connection(logger, mono_time, conn, nullptr);
 
     // The connection status should be unconfirmed here because we have finished
     // sending our data and are awaiting a response.
@@ -560,6 +561,7 @@ static void test_client(void)
     ip_port_tcp_s.port = net_htons(ports[random_u32(rng) % NUM_PORTS]);
     TCP_Client_Connection *conn2 = new_tcp_connection(logger, mem, mono_time, rng, ns, &ip_port_tcp_s, self_public_key, f2_public_key,
                                    f2_secret_key, nullptr);
+    c_sleep(50);
 
     // The client should call this function (defined earlier) during the routing process.
     routing_response_handler(conn, response_callback, (char *)conn + 2);
