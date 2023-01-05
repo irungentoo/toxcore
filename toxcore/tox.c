@@ -3050,7 +3050,7 @@ bool tox_group_is_connected(const Tox *tox, uint32_t group_number, Tox_Err_Group
 
     SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_IS_CONNECTED_OK);
 
-    const bool ret = chat->connection_state == CS_CONNECTED;
+    const bool ret = chat->connection_state == CS_CONNECTED || chat->connection_state == CS_CONNECTING;
     tox_unlock(tox);
 
     return ret;
