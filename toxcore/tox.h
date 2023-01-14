@@ -4892,11 +4892,12 @@ typedef enum Tox_Group_Exit_Type {
  *   and cannot be used for API calls.
  * @param exit_type The type of exit event. One of Tox_Group_Exit_Type.
  * @param name The nickname of the peer who left the group.
+ * @param name_length The length of the peer name.
  * @param part_message The parting message data.
- * @param length The length of the parting message.
+ * @param part_message_length The length of the parting message.
  */
 typedef void tox_group_peer_exit_cb(Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Group_Exit_Type exit_type,
-                                    const uint8_t *name, size_t name_length, const uint8_t *part_message, size_t length, void *user_data);
+                                    const uint8_t *name, size_t name_length, const uint8_t *part_message, size_t part_message_length, void *user_data);
 
 
 /**
