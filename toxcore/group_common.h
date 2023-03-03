@@ -21,7 +21,7 @@
 #define MAX_GC_TOPIC_SIZE 512
 #define MAX_GC_GROUP_NAME_SIZE 48
 #define GC_MESSAGE_PSEUDO_ID_SIZE 4
-#define GROUP_MAX_MESSAGE_LENGTH  1368
+#define GROUP_MAX_MESSAGE_LENGTH  1372
 
 /* Max size of a packet chunk. Packets larger than this must be split up.
  *

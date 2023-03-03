@@ -3301,7 +3301,7 @@ uint32_t tox_group_max_part_length(void);
 /**
  * Maximum length of a group text message.
  */
-#define TOX_GROUP_MAX_MESSAGE_LENGTH    1368
+#define TOX_GROUP_MAX_MESSAGE_LENGTH    1372
 
 /**
  * Maximum length of a group custom lossy packet.
