@@ -5,9 +5,10 @@
 #include "events_alloc.h"
 
 #include <assert.h>
-#include <stdlib.h>
 
 #include "../ccompat.h"
+#include "../mem.h"
+#include "../tox_event.h"
 #include "../tox_events.h"
 
 Tox_Events_State *tox_events_alloc(void *user_data)

@@ -248,6 +248,24 @@ set(toxcore_SOURCES
   toxcore/events/friend_status_message.c
   toxcore/events/friend_typing.c
   toxcore/events/self_connection_status.c
+  toxcore/events/group_custom_packet.c
+  toxcore/events/group_custom_private_packet.c
+  toxcore/events/group_invite.c
+  toxcore/events/group_join_fail.c
+  toxcore/events/group_message.c
+  toxcore/events/group_moderation.c
+  toxcore/events/group_password.c
+  toxcore/events/group_peer_exit.c
+  toxcore/events/group_peer_join.c
+  toxcore/events/group_peer_limit.c
+  toxcore/events/group_peer_name.c
+  toxcore/events/group_peer_status.c
+  toxcore/events/group_privacy_state.c
+  toxcore/events/group_private_message.c
+  toxcore/events/group_self_join.c
+  toxcore/events/group_topic.c
+  toxcore/events/group_topic_lock.c
+  toxcore/events/group_voice_state.c
   toxcore/forwarding.c
   toxcore/forwarding.h
   toxcore/friend_connection.c

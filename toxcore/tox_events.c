@@ -14,6 +14,8 @@
 #include "logger.h"
 #include "mem.h"
 #include "tox.h"
+#include "tox_event.h"
+#include "tox_private.h"
 #include "tox_struct.h"
 
 
@@ -47,6 +49,24 @@ void tox_events_init(Tox *tox)
     tox_callback_friend_status(tox, tox_events_handle_friend_status);
     tox_callback_friend_typing(tox, tox_events_handle_friend_typing);
     tox_callback_self_connection_status(tox, tox_events_handle_self_connection_status);
+    tox_callback_group_peer_name(tox, tox_events_handle_group_peer_name);
+    tox_callback_group_peer_status(tox, tox_events_handle_group_peer_status);
+    tox_callback_group_topic(tox, tox_events_handle_group_topic);
+    tox_callback_group_privacy_state(tox, tox_events_handle_group_privacy_state);
+    tox_callback_group_voice_state(tox, tox_events_handle_group_voice_state);
+    tox_callback_group_topic_lock(tox, tox_events_handle_group_topic_lock);
+    tox_callback_group_peer_limit(tox, tox_events_handle_group_peer_limit);
+    tox_callback_group_password(tox, tox_events_handle_group_password);
+    tox_callback_group_message(tox, tox_events_handle_group_message);
+    tox_callback_group_private_message(tox, tox_events_handle_group_private_message);
+    tox_callback_group_custom_packet(tox, tox_events_handle_group_custom_packet);
+    tox_callback_group_custom_private_packet(tox, tox_events_handle_group_custom_private_packet);
+    tox_callback_group_invite(tox, tox_events_handle_group_invite);
+    tox_callback_group_peer_join(tox, tox_events_handle_group_peer_join);
+    tox_callback_group_peer_exit(tox, tox_events_handle_group_peer_exit);
+    tox_callback_group_self_join(tox, tox_events_handle_group_self_join);
+    tox_callback_group_join_fail(tox, tox_events_handle_group_join_fail);
+    tox_callback_group_moderation(tox, tox_events_handle_group_moderation);
 }
 
 uint32_t tox_events_get_size(const Tox_Events *events)

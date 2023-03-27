@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright © 2023 The TokTok team.
+// Copyright © 2023-2024 The TokTok team.
 
 // this file can be used to generate event.c files
 // requires c++17
@@ -119,22 +119,54 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
         exit(1);
     }
 
+    bool need_stdlib_h = false;
+    bool need_string_h = false;
+    bool need_tox_unpack_h = false;
+    for (const auto& t : event_types) {
+        std::visit(
+            overloaded{
+                [&](const EventTypeTrivial& t) {
+                    if (bin_unpack_name_from_type(t.type).rfind("tox_", 0) == 0) {
+                        need_tox_unpack_h = true;
+                    }
+                },
+                [&](const EventTypeByteRange&) {
+                    need_stdlib_h = true;
+                    need_string_h = true;
+                }
+            },
+            t
+        );
+    }
+
     f << R"(/* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2023 The TokTok team.
+ * Copyright © 2023-2024 The TokTok team.
  */
 
 #include "events_alloc.h"
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
+#include <assert.h>)";
+    if (need_stdlib_h) {
+        f << R"(
+#include <stdlib.h>)";
+    }
+    if (need_string_h) {
+        f << R"(
+#include <string.h>)";
+    }
+    f << R"(
 
 #include "../bin_pack.h"
 #include "../bin_unpack.h"
 #include "../ccompat.h"
+#include "../mem.h"
 #include "../tox.h"
-#include "../tox_events.h"
-#include "../tox_unpack.h"
+#include "../tox_events.h")";
+    if (need_tox_unpack_h) {
+        f << R"(
+#include "../tox_unpack.h")";
+    }
+    f << R"(
 
 
 /*****************************************************
@@ -205,10 +237,11 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
                     f << "        " << event_name_l << "->" << t.name_data << " = nullptr;\n";
                     f << "        " << event_name_l << "->" << t.name_length << " = 0;\n";
                     f << "    }\n\n";
-                    f << "    " << event_name_l << "->" << t.name_data << " = (uint8_t *)malloc(" << t.name_length << ");\n\n";
-                    f << "    if (" << event_name_l << "->" << t.name_data << " == nullptr) {\n";
+                    f << "    uint8_t *" << t.name_data << "_copy = (uint8_t *)malloc(" << t.name_length << ");\n\n";
+                    f << "    if (" << t.name_data << "_copy == nullptr) {\n";
                     f << "        return false;\n    }\n\n";
-                    f << "    memcpy(" << event_name_l << "->" << t.name_data << ", " << t.name_data << ", " << t.name_length << ");\n";
+                    f << "    memcpy(" << t.name_data << "_copy, " << t.name_data << ", " << t.name_length << ");\n";
+                    f << "    " << event_name_l << "->" << t.name_data << " = " << t.name_data << "_copy;\n";
                     f << "    " << event_name_l << "->" << t.name_length << " = " << t.name_length << ";\n";
                     f << "    return true;\n";
                 }
@@ -626,7 +659,6 @@ int main(int argc, char** argv) {
             }
         },
 
-#if 0 // not yet :)
         {
             "Group_Peer_Name",
             {
@@ -768,7 +800,6 @@ int main(int argc, char** argv) {
                 EventTypeTrivial{"Tox_Group_Mod_Event", "mod_type"},
             }
         },
-#endif
     };
 
     if (argc < 2) {

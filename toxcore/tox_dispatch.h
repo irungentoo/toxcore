@@ -93,6 +93,42 @@ typedef void tox_events_friend_typing_cb(
     Tox *tox, const Tox_Event_Friend_Typing *event, void *user_data);
 typedef void tox_events_self_connection_status_cb(
     Tox *tox, const Tox_Event_Self_Connection_Status *event, void *user_data);
+typedef void tox_events_group_peer_name_cb(
+    Tox *tox, const Tox_Event_Group_Peer_Name *event, void *user_data);
+typedef void tox_events_group_peer_status_cb(
+    Tox *tox, const Tox_Event_Group_Peer_Status *event, void *user_data);
+typedef void tox_events_group_topic_cb(
+    Tox *tox, const Tox_Event_Group_Topic *event, void *user_data);
+typedef void tox_events_group_privacy_state_cb(
+    Tox *tox, const Tox_Event_Group_Privacy_State *event, void *user_data);
+typedef void tox_events_group_voice_state_cb(
+    Tox *tox, const Tox_Event_Group_Voice_State *event, void *user_data);
+typedef void tox_events_group_topic_lock_cb(
+    Tox *tox, const Tox_Event_Group_Topic_Lock *event, void *user_data);
+typedef void tox_events_group_peer_limit_cb(
+    Tox *tox, const Tox_Event_Group_Peer_Limit *event, void *user_data);
+typedef void tox_events_group_password_cb(
+    Tox *tox, const Tox_Event_Group_Password *event, void *user_data);
+typedef void tox_events_group_message_cb(
+    Tox *tox, const Tox_Event_Group_Message *event, void *user_data);
+typedef void tox_events_group_private_message_cb(
+    Tox *tox, const Tox_Event_Group_Private_Message *event, void *user_data);
+typedef void tox_events_group_custom_packet_cb(
+    Tox *tox, const Tox_Event_Group_Custom_Packet *event, void *user_data);
+typedef void tox_events_group_custom_private_packet_cb(
+    Tox *tox, const Tox_Event_Group_Custom_Private_Packet *event, void *user_data);
+typedef void tox_events_group_invite_cb(
+    Tox *tox, const Tox_Event_Group_Invite *event, void *user_data);
+typedef void tox_events_group_peer_join_cb(
+    Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data);
+typedef void tox_events_group_peer_exit_cb(
+    Tox *tox, const Tox_Event_Group_Peer_Exit *event, void *user_data);
+typedef void tox_events_group_self_join_cb(
+    Tox *tox, const Tox_Event_Group_Self_Join *event, void *user_data);
+typedef void tox_events_group_join_fail_cb(
+    Tox *tox, const Tox_Event_Group_Join_Fail *event, void *user_data);
+typedef void tox_events_group_moderation_cb(
+    Tox *tox, const Tox_Event_Group_Moderation *event, void *user_data);
 
 void tox_events_callback_conference_connected(
     Tox_Dispatch *dispatch, tox_events_conference_connected_cb *callback);
@@ -136,6 +172,42 @@ void tox_events_callback_friend_typing(
     Tox_Dispatch *dispatch, tox_events_friend_typing_cb *callback);
 void tox_events_callback_self_connection_status(
     Tox_Dispatch *dispatch, tox_events_self_connection_status_cb *callback);
+void tox_events_callback_group_peer_name(
+    Tox_Dispatch *dispatch, tox_events_group_peer_name_cb *callback);
+void tox_events_callback_group_peer_status(
+    Tox_Dispatch *dispatch, tox_events_group_peer_status_cb *callback);
+void tox_events_callback_group_topic(
+    Tox_Dispatch *dispatch, tox_events_group_topic_cb *callback);
+void tox_events_callback_group_privacy_state(
+    Tox_Dispatch *dispatch, tox_events_group_privacy_state_cb *callback);
+void tox_events_callback_group_voice_state(
+    Tox_Dispatch *dispatch, tox_events_group_voice_state_cb *callback);
+void tox_events_callback_group_topic_lock(
+    Tox_Dispatch *dispatch, tox_events_group_topic_lock_cb *callback);
+void tox_events_callback_group_peer_limit(
+    Tox_Dispatch *dispatch, tox_events_group_peer_limit_cb *callback);
+void tox_events_callback_group_password(
+    Tox_Dispatch *dispatch, tox_events_group_password_cb *callback);
+void tox_events_callback_group_message(
+    Tox_Dispatch *dispatch, tox_events_group_message_cb *callback);
+void tox_events_callback_group_private_message(
+    Tox_Dispatch *dispatch, tox_events_group_private_message_cb *callback);
+void tox_events_callback_group_custom_packet(
+    Tox_Dispatch *dispatch, tox_events_group_custom_packet_cb *callback);
+void tox_events_callback_group_custom_private_packet(
+    Tox_Dispatch *dispatch, tox_events_group_custom_private_packet_cb *callback);
+void tox_events_callback_group_invite(
+    Tox_Dispatch *dispatch, tox_events_group_invite_cb *callback);
+void tox_events_callback_group_peer_join(
+    Tox_Dispatch *dispatch, tox_events_group_peer_join_cb *callback);
+void tox_events_callback_group_peer_exit(
+    Tox_Dispatch *dispatch, tox_events_group_peer_exit_cb *callback);
+void tox_events_callback_group_self_join(
+    Tox_Dispatch *dispatch, tox_events_group_self_join_cb *callback);
+void tox_events_callback_group_join_fail(
+    Tox_Dispatch *dispatch, tox_events_group_join_fail_cb *callback);
+void tox_events_callback_group_moderation(
+    Tox_Dispatch *dispatch, tox_events_group_moderation_cb *callback);
 
 #ifdef __cplusplus
 }

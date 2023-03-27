@@ -42,6 +42,24 @@ typedef union Tox_Event_Data {
     Tox_Event_Friend_Status_Message *friend_status_message;
     Tox_Event_Friend_Typing *friend_typing;
     Tox_Event_Self_Connection_Status *self_connection_status;
+    Tox_Event_Group_Peer_Name *group_peer_name;
+    Tox_Event_Group_Peer_Status *group_peer_status;
+    Tox_Event_Group_Topic *group_topic;
+    Tox_Event_Group_Privacy_State *group_privacy_state;
+    Tox_Event_Group_Voice_State *group_voice_state;
+    Tox_Event_Group_Topic_Lock *group_topic_lock;
+    Tox_Event_Group_Peer_Limit *group_peer_limit;
+    Tox_Event_Group_Password *group_password;
+    Tox_Event_Group_Message *group_message;
+    Tox_Event_Group_Private_Message *group_private_message;
+    Tox_Event_Group_Custom_Packet *group_custom_packet;
+    Tox_Event_Group_Custom_Private_Packet *group_custom_private_packet;
+    Tox_Event_Group_Invite *group_invite;
+    Tox_Event_Group_Peer_Join *group_peer_join;
+    Tox_Event_Group_Peer_Exit *group_peer_exit;
+    Tox_Event_Group_Self_Join *group_self_join;
+    Tox_Event_Group_Join_Fail *group_join_fail;
+    Tox_Event_Group_Moderation *group_moderation;
 } Tox_Event_Data;
 
 struct Tox_Event {
@@ -75,6 +93,24 @@ non_null() Tox_Event_Friend_Status_Message *tox_event_friend_status_message_new(
 non_null() Tox_Event_Friend_Status *tox_event_friend_status_new(const Memory *mem);
 non_null() Tox_Event_Friend_Typing *tox_event_friend_typing_new(const Memory *mem);
 non_null() Tox_Event_Self_Connection_Status *tox_event_self_connection_status_new(const Memory *mem);
+non_null() Tox_Event_Group_Peer_Name *tox_event_group_peer_name_new(const Memory *mem);
+non_null() Tox_Event_Group_Peer_Status *tox_event_group_peer_status_new(const Memory *mem);
+non_null() Tox_Event_Group_Topic *tox_event_group_topic_new(const Memory *mem);
+non_null() Tox_Event_Group_Privacy_State *tox_event_group_privacy_state_new(const Memory *mem);
+non_null() Tox_Event_Group_Voice_State *tox_event_group_voice_state_new(const Memory *mem);
+non_null() Tox_Event_Group_Topic_Lock *tox_event_group_topic_lock_new(const Memory *mem);
+non_null() Tox_Event_Group_Peer_Limit *tox_event_group_peer_limit_new(const Memory *mem);
+non_null() Tox_Event_Group_Password *tox_event_group_password_new(const Memory *mem);
+non_null() Tox_Event_Group_Message *tox_event_group_message_new(const Memory *mem);
+non_null() Tox_Event_Group_Private_Message *tox_event_group_private_message_new(const Memory *mem);
+non_null() Tox_Event_Group_Custom_Packet *tox_event_group_custom_packet_new(const Memory *mem);
+non_null() Tox_Event_Group_Custom_Private_Packet *tox_event_group_custom_private_packet_new(const Memory *mem);
+non_null() Tox_Event_Group_Invite *tox_event_group_invite_new(const Memory *mem);
+non_null() Tox_Event_Group_Peer_Join *tox_event_group_peer_join_new(const Memory *mem);
+non_null() Tox_Event_Group_Peer_Exit *tox_event_group_peer_exit_new(const Memory *mem);
+non_null() Tox_Event_Group_Self_Join *tox_event_group_self_join_new(const Memory *mem);
+non_null() Tox_Event_Group_Join_Fail *tox_event_group_join_fail_new(const Memory *mem);
+non_null() Tox_Event_Group_Moderation *tox_event_group_moderation_new(const Memory *mem);
 
 /**
  * Destructor.
@@ -102,6 +138,24 @@ non_null(2) nullable(1) void tox_event_friend_status_message_free(Tox_Event_Frie
 non_null(2) nullable(1) void tox_event_friend_status_free(Tox_Event_Friend_Status *friend_status, const Memory *mem);
 non_null(2) nullable(1) void tox_event_friend_typing_free(Tox_Event_Friend_Typing *friend_typing, const Memory *mem);
 non_null(2) nullable(1) void tox_event_self_connection_status_free(Tox_Event_Self_Connection_Status *self_connection_status, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_peer_name_free(Tox_Event_Group_Peer_Name *group_peer_name, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_peer_status_free(Tox_Event_Group_Peer_Status *group_peer_status, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_topic_free(Tox_Event_Group_Topic *group_topic, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_privacy_state_free(Tox_Event_Group_Privacy_State *group_privacy_state, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_voice_state_free(Tox_Event_Group_Voice_State *group_voice_state, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_topic_lock_free(Tox_Event_Group_Topic_Lock *group_topic_lock, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_peer_limit_free(Tox_Event_Group_Peer_Limit *group_peer_limit, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_password_free(Tox_Event_Group_Password *group_password, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_message_free(Tox_Event_Group_Message *group_message, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_private_message_free(Tox_Event_Group_Private_Message *group_private_message, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_custom_packet_free(Tox_Event_Group_Custom_Packet *group_custom_packet, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_custom_private_packet_free(Tox_Event_Group_Custom_Private_Packet *group_custom_private_packet, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_invite_free(Tox_Event_Group_Invite *group_invite, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_peer_join_free(Tox_Event_Group_Peer_Join *group_peer_join, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_peer_exit_free(Tox_Event_Group_Peer_Exit *group_peer_exit, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_self_join_free(Tox_Event_Group_Self_Join *group_self_join, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_join_fail_free(Tox_Event_Group_Join_Fail *group_join_fail, const Memory *mem);
+non_null(2) nullable(1) void tox_event_group_moderation_free(Tox_Event_Group_Moderation *group_moderation, const Memory *mem);
 
 /**
  * Pack into msgpack.
@@ -129,6 +183,24 @@ non_null() bool tox_event_friend_status_message_pack(const Tox_Event_Friend_Stat
 non_null() bool tox_event_friend_status_pack(const Tox_Event_Friend_Status *event, Bin_Pack *bp);
 non_null() bool tox_event_friend_typing_pack(const Tox_Event_Friend_Typing *event, Bin_Pack *bp);
 non_null() bool tox_event_self_connection_status_pack(const Tox_Event_Self_Connection_Status *event, Bin_Pack *bp);
+non_null() bool tox_event_group_peer_name_pack(const Tox_Event_Group_Peer_Name *event, Bin_Pack *bp);
+non_null() bool tox_event_group_peer_status_pack(const Tox_Event_Group_Peer_Status *event, Bin_Pack *bp);
+non_null() bool tox_event_group_topic_pack(const Tox_Event_Group_Topic *event, Bin_Pack *bp);
+non_null() bool tox_event_group_privacy_state_pack(const Tox_Event_Group_Privacy_State *event, Bin_Pack *bp);
+non_null() bool tox_event_group_voice_state_pack(const Tox_Event_Group_Voice_State *event, Bin_Pack *bp);
+non_null() bool tox_event_group_topic_lock_pack(const Tox_Event_Group_Topic_Lock *event, Bin_Pack *bp);
+non_null() bool tox_event_group_peer_limit_pack(const Tox_Event_Group_Peer_Limit *event, Bin_Pack *bp);
+non_null() bool tox_event_group_password_pack(const Tox_Event_Group_Password *event, Bin_Pack *bp);
+non_null() bool tox_event_group_message_pack(const Tox_Event_Group_Message *event, Bin_Pack *bp);
+non_null() bool tox_event_group_private_message_pack(const Tox_Event_Group_Private_Message *event, Bin_Pack *bp);
+non_null() bool tox_event_group_custom_packet_pack(const Tox_Event_Group_Custom_Packet *event, Bin_Pack *bp);
+non_null() bool tox_event_group_custom_private_packet_pack(const Tox_Event_Group_Custom_Private_Packet *event, Bin_Pack *bp);
+non_null() bool tox_event_group_invite_pack(const Tox_Event_Group_Invite *event, Bin_Pack *bp);
+non_null() bool tox_event_group_peer_join_pack(const Tox_Event_Group_Peer_Join *event, Bin_Pack *bp);
+non_null() bool tox_event_group_peer_exit_pack(const Tox_Event_Group_Peer_Exit *event, Bin_Pack *bp);
+non_null() bool tox_event_group_self_join_pack(const Tox_Event_Group_Self_Join *event, Bin_Pack *bp);
+non_null() bool tox_event_group_join_fail_pack(const Tox_Event_Group_Join_Fail *event, Bin_Pack *bp);
+non_null() bool tox_event_group_moderation_pack(const Tox_Event_Group_Moderation *event, Bin_Pack *bp);
 
 /**
  * Unpack from msgpack.
@@ -156,6 +228,24 @@ non_null() bool tox_event_friend_status_message_unpack(Tox_Event_Friend_Status_M
 non_null() bool tox_event_friend_status_unpack(Tox_Event_Friend_Status **event, Bin_Unpack *bu, const Memory *mem);
 non_null() bool tox_event_friend_typing_unpack(Tox_Event_Friend_Typing **event, Bin_Unpack *bu, const Memory *mem);
 non_null() bool tox_event_self_connection_status_unpack(Tox_Event_Self_Connection_Status **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_peer_name_unpack(Tox_Event_Group_Peer_Name **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_peer_status_unpack(Tox_Event_Group_Peer_Status **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_topic_unpack(Tox_Event_Group_Topic **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_privacy_state_unpack(Tox_Event_Group_Privacy_State **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_voice_state_unpack(Tox_Event_Group_Voice_State **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_topic_lock_unpack(Tox_Event_Group_Topic_Lock **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_peer_limit_unpack(Tox_Event_Group_Peer_Limit **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_password_unpack(Tox_Event_Group_Password **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_message_unpack(Tox_Event_Group_Message **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_private_message_unpack(Tox_Event_Group_Private_Message **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_custom_packet_unpack(Tox_Event_Group_Custom_Packet **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_custom_private_packet_unpack(Tox_Event_Group_Custom_Private_Packet **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_invite_unpack(Tox_Event_Group_Invite **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_peer_join_unpack(Tox_Event_Group_Peer_Join **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_peer_exit_unpack(Tox_Event_Group_Peer_Exit **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_self_join_unpack(Tox_Event_Group_Self_Join **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_join_fail_unpack(Tox_Event_Group_Join_Fail **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_group_moderation_unpack(Tox_Event_Group_Moderation **event, Bin_Unpack *bu, const Memory *mem);
 
 #ifdef __cplusplus
 }
