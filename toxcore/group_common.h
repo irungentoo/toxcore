@@ -28,6 +28,8 @@
  * For an explanation on why this value was chosen, see the following link: https://archive.ph/vsCOG
  */
 #define MAX_GC_PACKET_CHUNK_SIZE 500
+/* Max size of an incoming packet chunk that is allowed */
+#define MAX_GC_PACKET_INCOMING_CHUNK_SIZE 1372
 
 #define MAX_GC_MESSAGE_SIZE GROUP_MAX_MESSAGE_LENGTH
 #define MAX_GC_MESSAGE_RAW_SIZE (MAX_GC_MESSAGE_SIZE + GC_MESSAGE_PSEUDO_ID_SIZE)
