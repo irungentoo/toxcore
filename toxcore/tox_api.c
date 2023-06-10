@@ -88,6 +88,42 @@ uint32_t tox_max_hostname_length(void)
 {
     return TOX_MAX_HOSTNAME_LENGTH;
 }
+uint32_t tox_group_max_topic_length(void)
+{
+    return TOX_GROUP_MAX_TOPIC_LENGTH;
+}
+uint32_t tox_group_max_part_length(void)
+{
+    return TOX_GROUP_MAX_PART_LENGTH;
+}
+uint32_t tox_group_max_message_length(void)
+{
+    return TOX_GROUP_MAX_MESSAGE_LENGTH;
+}
+uint32_t tox_group_max_custom_lossy_packet_length(void)
+{
+    return TOX_GROUP_MAX_CUSTOM_LOSSY_PACKET_LENGTH;
+}
+uint32_t tox_group_max_custom_lossless_packet_length(void)
+{
+    return TOX_GROUP_MAX_CUSTOM_LOSSLESS_PACKET_LENGTH;
+}
+uint32_t tox_group_max_group_name_length(void)
+{
+    return TOX_GROUP_MAX_GROUP_NAME_LENGTH;
+}
+uint32_t tox_group_max_password_size(void)
+{
+    return TOX_GROUP_MAX_PASSWORD_SIZE;
+}
+uint32_t tox_group_chat_id_size(void)
+{
+    return TOX_GROUP_CHAT_ID_SIZE;
+}
+uint32_t tox_group_peer_public_key_size(void)
+{
+    return TOX_GROUP_PEER_PUBLIC_KEY_SIZE;
+}
 uint32_t tox_dht_node_ip_string_size(void)
 {
     return TOX_DHT_NODE_IP_STRING_SIZE;

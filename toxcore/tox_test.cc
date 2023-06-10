@@ -48,6 +48,15 @@ TEST(Tox, ConstantsAreNonZero)
     EXPECT_GT(tox_file_id_length(), 0);
     EXPECT_GT(tox_max_filename_length(), 0);
     EXPECT_GT(tox_max_hostname_length(), 0);
+    EXPECT_GT(tox_group_max_topic_length(), 0);
+    EXPECT_GT(tox_group_max_part_length(), 0);
+    EXPECT_GT(tox_group_max_message_length(), 0);
+    EXPECT_GT(tox_group_max_custom_lossy_packet_length(), 0);
+    EXPECT_GT(tox_group_max_custom_lossless_packet_length(), 0);
+    EXPECT_GT(tox_group_max_group_name_length(), 0);
+    EXPECT_GT(tox_group_max_password_size(), 0);
+    EXPECT_GT(tox_group_chat_id_size(), 0);
+    EXPECT_GT(tox_group_peer_public_key_size(), 0);
     EXPECT_GT(tox_dht_node_ip_string_size(), 0);
     EXPECT_GT(tox_dht_node_public_key_size(), 0);
 }
