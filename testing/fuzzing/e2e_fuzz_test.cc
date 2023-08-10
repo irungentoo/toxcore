@@ -24,7 +24,7 @@ void setup_callbacks(Tox_Dispatch *dispatch)
         });
     tox_events_callback_conference_connected(
         dispatch, [](Tox *tox, const Tox_Event_Conference_Connected *event, void *user_data) {
-            assert(event == nullptr);
+            assert(event != nullptr);
         });
     tox_events_callback_conference_invite(
         dispatch, [](Tox *tox, const Tox_Event_Conference_Invite *event, void *user_data) {
@@ -35,19 +35,19 @@ void setup_callbacks(Tox_Dispatch *dispatch)
         });
     tox_events_callback_conference_message(
         dispatch, [](Tox *tox, const Tox_Event_Conference_Message *event, void *user_data) {
-            assert(event == nullptr);
+            assert(event != nullptr);
         });
     tox_events_callback_conference_peer_list_changed(dispatch,
         [](Tox *tox, const Tox_Event_Conference_Peer_List_Changed *event, void *user_data) {
-            assert(event == nullptr);
+            assert(event != nullptr);
         });
     tox_events_callback_conference_peer_name(
         dispatch, [](Tox *tox, const Tox_Event_Conference_Peer_Name *event, void *user_data) {
-            assert(event == nullptr);
+            assert(event != nullptr);
         });
     tox_events_callback_conference_title(
         dispatch, [](Tox *tox, const Tox_Event_Conference_Title *event, void *user_data) {
-            assert(event == nullptr);
+            assert(event != nullptr);
         });
     tox_events_callback_file_chunk_request(
         dispatch, [](Tox *tox, const Tox_Event_File_Chunk_Request *event, void *user_data) {
@@ -61,11 +61,11 @@ void setup_callbacks(Tox_Dispatch *dispatch)
         });
     tox_events_callback_file_recv_chunk(
         dispatch, [](Tox *tox, const Tox_Event_File_Recv_Chunk *event, void *user_data) {
-            assert(event == nullptr);
+            assert(event != nullptr);
         });
     tox_events_callback_file_recv_control(
         dispatch, [](Tox *tox, const Tox_Event_File_Recv_Control *event, void *user_data) {
-            assert(event == nullptr);
+            assert(event != nullptr);
         });
     tox_events_callback_friend_connection_status(
         dispatch, [](Tox *tox, const Tox_Event_Friend_Connection_Status *event, void *user_data) {

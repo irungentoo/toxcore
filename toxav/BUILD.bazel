@@ -54,6 +54,7 @@ cc_library(
         "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:tox",
         "//c-toxcore/toxcore:util",
     ],
 )
@@ -68,6 +69,7 @@ cc_library(
         "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:tox",
         "//c-toxcore/toxcore:util",
     ],
 )
@@ -94,6 +96,7 @@ cc_library(
         "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:util",
         "@opus",
     ],
 )
@@ -113,6 +116,7 @@ cc_library(
         ":public_api",
         ":ring_buffer",
         ":rtp",
+        "//c-toxcore/toxcore:Messenger",
         "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
@@ -129,6 +133,7 @@ cc_library(
     deps = [
         "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:group",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
         "//c-toxcore/toxcore:tox",

@@ -59,6 +59,7 @@ cc_library(
     hdrs = ["bin_pack.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
+        ":attributes",
         ":ccompat",
         "//c-toxcore/third_party:cmp",
     ],
@@ -70,6 +71,7 @@ cc_library(
     hdrs = ["bin_unpack.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
+        ":attributes",
         ":ccompat",
         "//c-toxcore/third_party:cmp",
     ],
@@ -93,6 +95,7 @@ cc_library(
     hdrs = ["crypto_core.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
+        ":attributes",
         ":ccompat",
         "@libsodium",
     ],
@@ -115,7 +118,10 @@ cc_library(
     name = "list",
     srcs = ["list.c"],
     hdrs = ["list.h"],
-    deps = [":ccompat"],
+    deps = [
+        ":attributes",
+        ":ccompat",
+    ],
 )
 
 cc_test(
@@ -139,7 +145,10 @@ cc_library(
         "//c-toxcore/other/bootstrap_daemon:__pkg__",
         "//c-toxcore/toxav:__pkg__",
     ],
-    deps = [":ccompat"],
+    deps = [
+        ":attributes",
+        ":ccompat",
+    ],
 )
 
 cc_library(
@@ -164,6 +173,7 @@ cc_library(
         "//c-toxcore/toxav:__pkg__",
     ],
     deps = [
+        ":attributes",
         ":ccompat",
         "@pthread",
     ],
@@ -301,6 +311,7 @@ cc_library(
     ],
     deps = [
         ":LAN_discovery",
+        ":attributes",
         ":ccompat",
         ":crypto_core",
         ":logger",
@@ -344,6 +355,7 @@ cc_library(
         ":DHT",
         ":ccompat",
         ":crypto_core",
+        ":logger",
         ":mono_time",
         ":shared_key_cache",
         ":util",
@@ -398,7 +410,9 @@ cc_library(
     hdrs = ["TCP_common.h"],
     visibility = ["//c-toxcore/auto_tests:__pkg__"],
     deps = [
+        ":attributes",
         ":ccompat",
+        ":crypto_core",
         ":network",
     ],
 )
@@ -436,8 +450,10 @@ cc_library(
     deps = [
         ":TCP_common",
         ":ccompat",
+        ":crypto_core",
         ":forwarding",
         ":mono_time",
+        ":network",
         ":util",
     ],
 )
@@ -478,9 +494,11 @@ cc_library(
     visibility = ["//c-toxcore/auto_tests:__pkg__"],
     deps = [
         ":DHT",
+        ":LAN_discovery",
         ":TCP_connection",
         ":ccompat",
         ":list",
+        ":logger",
         ":mono_time",
         ":util",
     ],
@@ -499,6 +517,7 @@ cc_library(
         ":DHT",
         ":LAN_discovery",
         ":ccompat",
+        ":logger",
         ":mono_time",
         ":onion",
         ":shared_key_cache",
@@ -577,6 +596,7 @@ cc_library(
         ":net_crypto",
         ":network",
         ":onion_announce",
+        ":ping_array",
         ":util",
     ],
 )
@@ -588,6 +608,7 @@ cc_library(
     visibility = ["//c-toxcore/auto_tests:__pkg__"],
     deps = [
         ":DHT",
+        ":LAN_discovery",
         ":ccompat",
         ":mono_time",
         ":net_crypto",
@@ -698,6 +719,7 @@ cc_library(
         ":forwarding",
         ":friend_connection",
         ":friend_requests",
+        ":group_announce",
         ":group_moderation",
         ":group_onion_announce",
         ":logger",
@@ -768,6 +790,7 @@ cc_library(
     hdrs = ["tox_unpack.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
+        ":attributes",
         ":bin_unpack",
         ":ccompat",
         ":tox",
@@ -783,6 +806,7 @@ cc_library(
     hdrs = ["tox_events.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
+        ":attributes",
         ":bin_pack",
         ":bin_unpack",
         ":ccompat",
