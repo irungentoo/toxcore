@@ -20,6 +20,7 @@
  *   bazel build //c-toxcore/testing/fuzzing:protodump_bin && \
  *     bazel-bin/c-toxcore/testing/fuzzing/protodump_bin
  */
+#include <array>
 #include <cassert>
 #include <cstdio>
 #include <cstring>
