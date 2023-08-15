@@ -10,7 +10,7 @@ ABI=${1:-"armeabi-v7a"}
 case $ABI in
   armeabi-v7a)
     TARGET=armv7a-linux-androideabi
-    NDK_API=16
+    NDK_API=19
     ;;
   arm64-v8a)
     TARGET=aarch64-linux-android
@@ -18,7 +18,7 @@ case $ABI in
     ;;
   x86)
     TARGET=i686-linux-android
-    NDK_API=16
+    NDK_API=19
     ;;
   x86_64)
     TARGET=x86_64-linux-android
@@ -47,7 +47,7 @@ fi
 cd libsodium
 git clean -ffdx
 autoreconf -fi
-./configure --prefix="$PREFIX" --host="$TARGET" --with-sysroot="$SYSROOT" --disable-shared
+./configure --prefix="$PREFIX" --host="$TARGET" --with-sysroot="$SYSROOT" --disable-shared --disable-pie
 make -j"$(nproc)" install
 cd ..
 
