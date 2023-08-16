@@ -358,7 +358,7 @@ int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
 /**
  * @brief Fast encrypt/decrypt operations.
  *
- * Use if this is not a one-time communication. @ref encrypt_precompute does the
+ * Use if this is not a one-time communication. `encrypt_precompute` does the
  * shared-key generation once so it does not have to be performed on every
  * encrypt/decrypt.
  */
