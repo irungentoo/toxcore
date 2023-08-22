@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2022 The TokTok team.
+ * Copyright © 2023 The TokTok team.
  */
 
 #include "events_alloc.h"
@@ -27,19 +27,6 @@ struct Tox_Event_File_Recv_Control {
     uint32_t file_number;
     Tox_File_Control control;
 };
-
-non_null()
-static void tox_event_file_recv_control_construct(Tox_Event_File_Recv_Control *file_recv_control)
-{
-    *file_recv_control = (Tox_Event_File_Recv_Control) {
-        0
-    };
-}
-non_null()
-static void tox_event_file_recv_control_destruct(Tox_Event_File_Recv_Control *file_recv_control)
-{
-    return;
-}
 
 non_null()
 static void tox_event_file_recv_control_set_friend_number(Tox_Event_File_Recv_Control *file_recv_control,
@@ -81,7 +68,19 @@ Tox_File_Control tox_event_file_recv_control_get_control(const Tox_Event_File_Re
 }
 
 non_null()
-static bool tox_event_file_recv_control_pack(
+static void tox_event_file_recv_control_construct(Tox_Event_File_Recv_Control *file_recv_control)
+{
+    *file_recv_control = (Tox_Event_File_Recv_Control) {
+        0
+    };
+}
+non_null()
+static void tox_event_file_recv_control_destruct(Tox_Event_File_Recv_Control *file_recv_control, const Memory *mem)
+{
+    return;
+}
+
+bool tox_event_file_recv_control_pack(
     const Tox_Event_File_Recv_Control *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
@@ -94,7 +93,7 @@ static bool tox_event_file_recv_control_pack(
 }
 
 non_null()
-static bool tox_event_file_recv_control_unpack(
+static bool tox_event_file_recv_control_unpack_into(
     Tox_Event_File_Recv_Control *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
@@ -110,90 +109,120 @@ static bool tox_event_file_recv_control_unpack(
 
 /*****************************************************
  *
- * :: add/clear/get
+ * :: new/free/add/get/size/unpack
  *
  *****************************************************/
 
-
-non_null()
-static Tox_Event_File_Recv_Control *tox_events_add_file_recv_control(Tox_Events *events)
+const Tox_Event_File_Recv_Control *tox_event_get_file_recv_control(const Tox_Event *event)
 {
-    if (events->file_recv_control_size == UINT32_MAX) {
+    return event->type == TOX_EVENT_FILE_RECV_CONTROL ? event->data.file_recv_control : nullptr;
+}
+
+Tox_Event_File_Recv_Control *tox_event_file_recv_control_new(const Memory *mem)
+{
+    Tox_Event_File_Recv_Control *const file_recv_control =
+        (Tox_Event_File_Recv_Control *)mem_alloc(mem, sizeof(Tox_Event_File_Recv_Control));
+
+    if (file_recv_control == nullptr) {
         return nullptr;
     }
 
-    if (events->file_recv_control_size == events->file_recv_control_capacity) {
-        const uint32_t new_file_recv_control_capacity = events->file_recv_control_capacity * 2 + 1;
-        Tox_Event_File_Recv_Control *new_file_recv_control = (Tox_Event_File_Recv_Control *)realloc(
-                    events->file_recv_control, new_file_recv_control_capacity * sizeof(Tox_Event_File_Recv_Control));
-
-        if (new_file_recv_control == nullptr) {
-            return nullptr;
-        }
-
-        events->file_recv_control = new_file_recv_control;
-        events->file_recv_control_capacity = new_file_recv_control_capacity;
-    }
-
-    Tox_Event_File_Recv_Control *const file_recv_control = &events->file_recv_control[events->file_recv_control_size];
     tox_event_file_recv_control_construct(file_recv_control);
-    ++events->file_recv_control_size;
     return file_recv_control;
 }
 
-void tox_events_clear_file_recv_control(Tox_Events *events)
+void tox_event_file_recv_control_free(Tox_Event_File_Recv_Control *file_recv_control, const Memory *mem)
 {
-    if (events == nullptr) {
-        return;
+    if (file_recv_control != nullptr) {
+        tox_event_file_recv_control_destruct(file_recv_control, mem);
     }
-
-    for (uint32_t i = 0; i < events->file_recv_control_size; ++i) {
-        tox_event_file_recv_control_destruct(&events->file_recv_control[i]);
-    }
-
-    free(events->file_recv_control);
-    events->file_recv_control = nullptr;
-    events->file_recv_control_size = 0;
-    events->file_recv_control_capacity = 0;
+    mem_delete(mem, file_recv_control);
 }
 
-uint32_t tox_events_get_file_recv_control_size(const Tox_Events *events)
+non_null()
+static Tox_Event_File_Recv_Control *tox_events_add_file_recv_control(Tox_Events *events, const Memory *mem)
 {
-    if (events == nullptr) {
-        return 0;
+    Tox_Event_File_Recv_Control *const file_recv_control = tox_event_file_recv_control_new(mem);
+
+    if (file_recv_control == nullptr) {
+        return nullptr;
     }
 
-    return events->file_recv_control_size;
+    Tox_Event event;
+    event.type = TOX_EVENT_FILE_RECV_CONTROL;
+    event.data.file_recv_control = file_recv_control;
+
+    tox_events_add(events, &event);
+    return file_recv_control;
 }
 
 const Tox_Event_File_Recv_Control *tox_events_get_file_recv_control(const Tox_Events *events, uint32_t index)
 {
-    assert(index < events->file_recv_control_size);
-    assert(events->file_recv_control != nullptr);
-    return &events->file_recv_control[index];
-}
-
-bool tox_events_pack_file_recv_control(const Tox_Events *events, Bin_Pack *bp)
-{
-    const uint32_t size = tox_events_get_file_recv_control_size(events);
+    uint32_t file_recv_control_index = 0;
+    const uint32_t size = tox_events_get_size(events);
 
     for (uint32_t i = 0; i < size; ++i) {
-        if (!tox_event_file_recv_control_pack(tox_events_get_file_recv_control(events, i), bp)) {
-            return false;
+        if (file_recv_control_index > index) {
+            return nullptr;
+        }
+
+        if (events->events[i].type == TOX_EVENT_FILE_RECV_CONTROL) {
+            const Tox_Event_File_Recv_Control *file_recv_control = events->events[i].data.file_recv_control;
+            if (file_recv_control_index == index) {
+                return file_recv_control;
+            }
+            ++file_recv_control_index;
         }
     }
-    return true;
+
+    return nullptr;
 }
 
-bool tox_events_unpack_file_recv_control(Tox_Events *events, Bin_Unpack *bu)
+uint32_t tox_events_get_file_recv_control_size(const Tox_Events *events)
 {
-    Tox_Event_File_Recv_Control *event = tox_events_add_file_recv_control(events);
+    uint32_t file_recv_control_size = 0;
+    const uint32_t size = tox_events_get_size(events);
 
-    if (event == nullptr) {
+    for (uint32_t i = 0; i < size; ++i) {
+        if (events->events[i].type == TOX_EVENT_FILE_RECV_CONTROL) {
+            ++file_recv_control_size;
+        }
+    }
+
+    return file_recv_control_size;
+}
+
+bool tox_event_file_recv_control_unpack(
+    Tox_Event_File_Recv_Control **event, Bin_Unpack *bu, const Memory *mem)
+{
+    assert(event != nullptr);
+    *event = tox_event_file_recv_control_new(mem);
+
+    if (*event == nullptr) {
         return false;
     }
 
-    return tox_event_file_recv_control_unpack(event, bu);
+    return tox_event_file_recv_control_unpack_into(*event, bu);
+}
+
+non_null()
+static Tox_Event_File_Recv_Control *tox_event_file_recv_control_alloc(void *user_data)
+{
+    Tox_Events_State *state = tox_events_alloc(user_data);
+    assert(state != nullptr);
+
+    if (state->events == nullptr) {
+        return nullptr;
+    }
+
+    Tox_Event_File_Recv_Control *file_recv_control = tox_events_add_file_recv_control(state->events, state->mem);
+
+    if (file_recv_control == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
+        return nullptr;
+    }
+
+    return file_recv_control;
 }
 
 
@@ -204,20 +233,12 @@ bool tox_events_unpack_file_recv_control(Tox_Events *events, Bin_Unpack *bu)
  *****************************************************/
 
 
-void tox_events_handle_file_recv_control(Tox *tox, uint32_t friend_number, uint32_t file_number,
-        Tox_File_Control control, void *user_data)
+void tox_events_handle_file_recv_control(Tox *tox, uint32_t friend_number, uint32_t file_number, Tox_File_Control control,
+        void *user_data)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    assert(state != nullptr);
-
-    if (state->events == nullptr) {
-        return;
-    }
-
-    Tox_Event_File_Recv_Control *file_recv_control = tox_events_add_file_recv_control(state->events);
+    Tox_Event_File_Recv_Control *file_recv_control = tox_event_file_recv_control_alloc(user_data);
 
     if (file_recv_control == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 

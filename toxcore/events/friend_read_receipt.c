@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2022 The TokTok team.
+ * Copyright © 2023 The TokTok team.
  */
 
 #include "events_alloc.h"
@@ -12,6 +12,7 @@
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -25,19 +26,6 @@ struct Tox_Event_Friend_Read_Receipt {
     uint32_t friend_number;
     uint32_t message_id;
 };
-
-non_null()
-static void tox_event_friend_read_receipt_construct(Tox_Event_Friend_Read_Receipt *friend_read_receipt)
-{
-    *friend_read_receipt = (Tox_Event_Friend_Read_Receipt) {
-        0
-    };
-}
-non_null()
-static void tox_event_friend_read_receipt_destruct(Tox_Event_Friend_Read_Receipt *friend_read_receipt)
-{
-    return;
-}
 
 non_null()
 static void tox_event_friend_read_receipt_set_friend_number(Tox_Event_Friend_Read_Receipt *friend_read_receipt,
@@ -66,7 +54,19 @@ uint32_t tox_event_friend_read_receipt_get_message_id(const Tox_Event_Friend_Rea
 }
 
 non_null()
-static bool tox_event_friend_read_receipt_pack(
+static void tox_event_friend_read_receipt_construct(Tox_Event_Friend_Read_Receipt *friend_read_receipt)
+{
+    *friend_read_receipt = (Tox_Event_Friend_Read_Receipt) {
+        0
+    };
+}
+non_null()
+static void tox_event_friend_read_receipt_destruct(Tox_Event_Friend_Read_Receipt *friend_read_receipt, const Memory *mem)
+{
+    return;
+}
+
+bool tox_event_friend_read_receipt_pack(
     const Tox_Event_Friend_Read_Receipt *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
@@ -78,7 +78,7 @@ static bool tox_event_friend_read_receipt_pack(
 }
 
 non_null()
-static bool tox_event_friend_read_receipt_unpack(
+static bool tox_event_friend_read_receipt_unpack_into(
     Tox_Event_Friend_Read_Receipt *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
@@ -93,91 +93,120 @@ static bool tox_event_friend_read_receipt_unpack(
 
 /*****************************************************
  *
- * :: add/clear/get
+ * :: new/free/add/get/size/unpack
  *
  *****************************************************/
 
-
-non_null()
-static Tox_Event_Friend_Read_Receipt *tox_events_add_friend_read_receipt(Tox_Events *events)
+const Tox_Event_Friend_Read_Receipt *tox_event_get_friend_read_receipt(const Tox_Event *event)
 {
-    if (events->friend_read_receipt_size == UINT32_MAX) {
+    return event->type == TOX_EVENT_FRIEND_READ_RECEIPT ? event->data.friend_read_receipt : nullptr;
+}
+
+Tox_Event_Friend_Read_Receipt *tox_event_friend_read_receipt_new(const Memory *mem)
+{
+    Tox_Event_Friend_Read_Receipt *const friend_read_receipt =
+        (Tox_Event_Friend_Read_Receipt *)mem_alloc(mem, sizeof(Tox_Event_Friend_Read_Receipt));
+
+    if (friend_read_receipt == nullptr) {
         return nullptr;
     }
 
-    if (events->friend_read_receipt_size == events->friend_read_receipt_capacity) {
-        const uint32_t new_friend_read_receipt_capacity = events->friend_read_receipt_capacity * 2 + 1;
-        Tox_Event_Friend_Read_Receipt *new_friend_read_receipt = (Tox_Event_Friend_Read_Receipt *)realloc(
-                    events->friend_read_receipt, new_friend_read_receipt_capacity * sizeof(Tox_Event_Friend_Read_Receipt));
-
-        if (new_friend_read_receipt == nullptr) {
-            return nullptr;
-        }
-
-        events->friend_read_receipt = new_friend_read_receipt;
-        events->friend_read_receipt_capacity = new_friend_read_receipt_capacity;
-    }
-
-    Tox_Event_Friend_Read_Receipt *const friend_read_receipt =
-        &events->friend_read_receipt[events->friend_read_receipt_size];
     tox_event_friend_read_receipt_construct(friend_read_receipt);
-    ++events->friend_read_receipt_size;
     return friend_read_receipt;
 }
 
-void tox_events_clear_friend_read_receipt(Tox_Events *events)
+void tox_event_friend_read_receipt_free(Tox_Event_Friend_Read_Receipt *friend_read_receipt, const Memory *mem)
 {
-    if (events == nullptr) {
-        return;
+    if (friend_read_receipt != nullptr) {
+        tox_event_friend_read_receipt_destruct(friend_read_receipt, mem);
     }
-
-    for (uint32_t i = 0; i < events->friend_read_receipt_size; ++i) {
-        tox_event_friend_read_receipt_destruct(&events->friend_read_receipt[i]);
-    }
-
-    free(events->friend_read_receipt);
-    events->friend_read_receipt = nullptr;
-    events->friend_read_receipt_size = 0;
-    events->friend_read_receipt_capacity = 0;
+    mem_delete(mem, friend_read_receipt);
 }
 
-uint32_t tox_events_get_friend_read_receipt_size(const Tox_Events *events)
+non_null()
+static Tox_Event_Friend_Read_Receipt *tox_events_add_friend_read_receipt(Tox_Events *events, const Memory *mem)
 {
-    if (events == nullptr) {
-        return 0;
+    Tox_Event_Friend_Read_Receipt *const friend_read_receipt = tox_event_friend_read_receipt_new(mem);
+
+    if (friend_read_receipt == nullptr) {
+        return nullptr;
     }
 
-    return events->friend_read_receipt_size;
+    Tox_Event event;
+    event.type = TOX_EVENT_FRIEND_READ_RECEIPT;
+    event.data.friend_read_receipt = friend_read_receipt;
+
+    tox_events_add(events, &event);
+    return friend_read_receipt;
 }
 
 const Tox_Event_Friend_Read_Receipt *tox_events_get_friend_read_receipt(const Tox_Events *events, uint32_t index)
 {
-    assert(index < events->friend_read_receipt_size);
-    assert(events->friend_read_receipt != nullptr);
-    return &events->friend_read_receipt[index];
-}
-
-bool tox_events_pack_friend_read_receipt(const Tox_Events *events, Bin_Pack *bp)
-{
-    const uint32_t size = tox_events_get_friend_read_receipt_size(events);
+    uint32_t friend_read_receipt_index = 0;
+    const uint32_t size = tox_events_get_size(events);
 
     for (uint32_t i = 0; i < size; ++i) {
-        if (!tox_event_friend_read_receipt_pack(tox_events_get_friend_read_receipt(events, i), bp)) {
-            return false;
+        if (friend_read_receipt_index > index) {
+            return nullptr;
+        }
+
+        if (events->events[i].type == TOX_EVENT_FRIEND_READ_RECEIPT) {
+            const Tox_Event_Friend_Read_Receipt *friend_read_receipt = events->events[i].data.friend_read_receipt;
+            if (friend_read_receipt_index == index) {
+                return friend_read_receipt;
+            }
+            ++friend_read_receipt_index;
         }
     }
-    return true;
+
+    return nullptr;
 }
 
-bool tox_events_unpack_friend_read_receipt(Tox_Events *events, Bin_Unpack *bu)
+uint32_t tox_events_get_friend_read_receipt_size(const Tox_Events *events)
 {
-    Tox_Event_Friend_Read_Receipt *event = tox_events_add_friend_read_receipt(events);
+    uint32_t friend_read_receipt_size = 0;
+    const uint32_t size = tox_events_get_size(events);
 
-    if (event == nullptr) {
+    for (uint32_t i = 0; i < size; ++i) {
+        if (events->events[i].type == TOX_EVENT_FRIEND_READ_RECEIPT) {
+            ++friend_read_receipt_size;
+        }
+    }
+
+    return friend_read_receipt_size;
+}
+
+bool tox_event_friend_read_receipt_unpack(
+    Tox_Event_Friend_Read_Receipt **event, Bin_Unpack *bu, const Memory *mem)
+{
+    assert(event != nullptr);
+    *event = tox_event_friend_read_receipt_new(mem);
+
+    if (*event == nullptr) {
         return false;
     }
 
-    return tox_event_friend_read_receipt_unpack(event, bu);
+    return tox_event_friend_read_receipt_unpack_into(*event, bu);
+}
+
+non_null()
+static Tox_Event_Friend_Read_Receipt *tox_event_friend_read_receipt_alloc(void *user_data)
+{
+    Tox_Events_State *state = tox_events_alloc(user_data);
+    assert(state != nullptr);
+
+    if (state->events == nullptr) {
+        return nullptr;
+    }
+
+    Tox_Event_Friend_Read_Receipt *friend_read_receipt = tox_events_add_friend_read_receipt(state->events, state->mem);
+
+    if (friend_read_receipt == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
+        return nullptr;
+    }
+
+    return friend_read_receipt;
 }
 
 
@@ -188,19 +217,12 @@ bool tox_events_unpack_friend_read_receipt(Tox_Events *events, Bin_Unpack *bu)
  *****************************************************/
 
 
-void tox_events_handle_friend_read_receipt(Tox *tox, uint32_t friend_number, uint32_t message_id, void *user_data)
+void tox_events_handle_friend_read_receipt(Tox *tox, uint32_t friend_number, uint32_t message_id,
+        void *user_data)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    assert(state != nullptr);
-
-    if (state->events == nullptr) {
-        return;
-    }
-
-    Tox_Event_Friend_Read_Receipt *friend_read_receipt = tox_events_add_friend_read_receipt(state->events);
+    Tox_Event_Friend_Read_Receipt *friend_read_receipt = tox_event_friend_read_receipt_alloc(user_data);
 
     if (friend_read_receipt == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -eux
+BUILD=events
+docker build -t "toxchat/c-toxcore:$BUILD" "other/event_tooling"
+docker run --rm -v "$PWD/toxcore/events:/src/out" -t "toxchat/c-toxcore:$BUILD"
+sed -i -e 's/, uint16_t length,/, size_t length,/' toxcore/events/file_chunk_request.c
+sed -i -e 's/^        0/        TOX_CONNECTION_NONE/' toxcore/events/self_connection_status.c

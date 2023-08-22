@@ -88,7 +88,7 @@ uint32_t tox_event_file_recv_get_kind(
 typedef struct Tox_Event_File_Recv_Chunk Tox_Event_File_Recv_Chunk;
 const uint8_t *tox_event_file_recv_chunk_get_data(
     const Tox_Event_File_Recv_Chunk *file_recv_chunk);
-uint32_t tox_event_file_recv_chunk_get_length(
+uint32_t tox_event_file_recv_chunk_get_data_length(
     const Tox_Event_File_Recv_Chunk *file_recv_chunk);
 uint32_t tox_event_file_recv_chunk_get_file_number(
     const Tox_Event_File_Recv_Chunk *file_recv_chunk);
@@ -184,7 +184,7 @@ Tox_Connection tox_event_self_connection_status_get_connection_status(
     const Tox_Event_Self_Connection_Status *self_connection_status);
 
 
-typedef enum Tox_Event {
+typedef enum Tox_Event_Type {
     TOX_EVENT_SELF_CONNECTION_STATUS        = 0,
 
     TOX_EVENT_FRIEND_REQUEST                = 1,
@@ -212,7 +212,66 @@ typedef enum Tox_Event {
     TOX_EVENT_CONFERENCE_TITLE              = 19,
 
     TOX_EVENT_CONFERENCE_MESSAGE            = 20,
-} Tox_Event;
+
+    TOX_EVENT_INVALID                       = 255,
+} Tox_Event_Type;
+
+const char *tox_event_type_to_string(Tox_Event_Type type);
+
+/**
+ * A single Tox core event.
+ *
+ * It could contain any of the above event types. Use `tox_event_get_type` to
+ * find out which one it is, then use one of the `get` functions to get the
+ * actual event object out. The `get` functions will return NULL in case of type
+ * mismatch.
+ */
+typedef struct Tox_Event Tox_Event;
+
+Tox_Event_Type tox_event_get_type(const Tox_Event *event);
+
+const Tox_Event_Conference_Connected *tox_event_get_conference_connected(
+    const Tox_Event *event);
+const Tox_Event_Conference_Invite *tox_event_get_conference_invite(
+    const Tox_Event *event);
+const Tox_Event_Conference_Message *tox_event_get_conference_message(
+    const Tox_Event *event);
+const Tox_Event_Conference_Peer_List_Changed *tox_event_get_conference_peer_list_changed(
+    const Tox_Event *event);
+const Tox_Event_Conference_Peer_Name *tox_event_get_conference_peer_name(
+    const Tox_Event *event);
+const Tox_Event_Conference_Title *tox_event_get_conference_title(
+    const Tox_Event *event);
+const Tox_Event_File_Chunk_Request *tox_event_get_file_chunk_request(
+    const Tox_Event *event);
+const Tox_Event_File_Recv_Chunk *tox_event_get_file_recv_chunk(
+    const Tox_Event *event);
+const Tox_Event_File_Recv_Control *tox_event_get_file_recv_control(
+    const Tox_Event *event);
+const Tox_Event_File_Recv *tox_event_get_file_recv(
+    const Tox_Event *event);
+const Tox_Event_Friend_Connection_Status *tox_event_get_friend_connection_status(
+    const Tox_Event *event);
+const Tox_Event_Friend_Lossless_Packet *tox_event_get_friend_lossless_packet(
+    const Tox_Event *event);
+const Tox_Event_Friend_Lossy_Packet *tox_event_get_friend_lossy_packet(
+    const Tox_Event *event);
+const Tox_Event_Friend_Message *tox_event_get_friend_message(
+    const Tox_Event *event);
+const Tox_Event_Friend_Name *tox_event_get_friend_name(
+    const Tox_Event *event);
+const Tox_Event_Friend_Read_Receipt *tox_event_get_friend_read_receipt(
+    const Tox_Event *event);
+const Tox_Event_Friend_Request *tox_event_get_friend_request(
+    const Tox_Event *event);
+const Tox_Event_Friend_Status_Message *tox_event_get_friend_status_message(
+    const Tox_Event *event);
+const Tox_Event_Friend_Status *tox_event_get_friend_status(
+    const Tox_Event *event);
+const Tox_Event_Friend_Typing *tox_event_get_friend_typing(
+    const Tox_Event *event);
+const Tox_Event_Self_Connection_Status *tox_event_get_self_connection_status(
+    const Tox_Event *event);
 
 /**
  * Container object for all Tox core events.
@@ -220,6 +279,9 @@ typedef enum Tox_Event {
  * This is an immutable object once created.
  */
 typedef struct Tox_Events Tox_Events;
+
+uint32_t tox_events_get_size(const Tox_Events *events);
+const Tox_Event *tox_events_get(const Tox_Events *events, uint32_t index);
 
 uint32_t tox_events_get_conference_connected_size(const Tox_Events *events);
 uint32_t tox_events_get_conference_invite_size(const Tox_Events *events);
@@ -341,7 +403,7 @@ Tox_Events *tox_events_iterate(Tox *tox, bool fail_hard, Tox_Err_Events_Iterate 
 void tox_events_free(Tox_Events *events);
 
 uint32_t tox_events_bytes_size(const Tox_Events *events);
-void tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes);
+bool tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes);
 
 Tox_Events *tox_events_load(const Tox_System *sys, const uint8_t *bytes, uint32_t bytes_size);
 

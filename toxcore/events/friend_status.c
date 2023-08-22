@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2022 The TokTok team.
+ * Copyright © 2023 The TokTok team.
  */
 
 #include "events_alloc.h"
@@ -28,19 +28,6 @@ struct Tox_Event_Friend_Status {
 };
 
 non_null()
-static void tox_event_friend_status_construct(Tox_Event_Friend_Status *friend_status)
-{
-    *friend_status = (Tox_Event_Friend_Status) {
-        0
-    };
-}
-non_null()
-static void tox_event_friend_status_destruct(Tox_Event_Friend_Status *friend_status)
-{
-    return;
-}
-
-non_null()
 static void tox_event_friend_status_set_friend_number(Tox_Event_Friend_Status *friend_status,
         uint32_t friend_number)
 {
@@ -67,7 +54,19 @@ Tox_User_Status tox_event_friend_status_get_status(const Tox_Event_Friend_Status
 }
 
 non_null()
-static bool tox_event_friend_status_pack(
+static void tox_event_friend_status_construct(Tox_Event_Friend_Status *friend_status)
+{
+    *friend_status = (Tox_Event_Friend_Status) {
+        0
+    };
+}
+non_null()
+static void tox_event_friend_status_destruct(Tox_Event_Friend_Status *friend_status, const Memory *mem)
+{
+    return;
+}
+
+bool tox_event_friend_status_pack(
     const Tox_Event_Friend_Status *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
@@ -79,7 +78,7 @@ static bool tox_event_friend_status_pack(
 }
 
 non_null()
-static bool tox_event_friend_status_unpack(
+static bool tox_event_friend_status_unpack_into(
     Tox_Event_Friend_Status *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
@@ -94,90 +93,120 @@ static bool tox_event_friend_status_unpack(
 
 /*****************************************************
  *
- * :: add/clear/get
+ * :: new/free/add/get/size/unpack
  *
  *****************************************************/
 
-
-non_null()
-static Tox_Event_Friend_Status *tox_events_add_friend_status(Tox_Events *events)
+const Tox_Event_Friend_Status *tox_event_get_friend_status(const Tox_Event *event)
 {
-    if (events->friend_status_size == UINT32_MAX) {
+    return event->type == TOX_EVENT_FRIEND_STATUS ? event->data.friend_status : nullptr;
+}
+
+Tox_Event_Friend_Status *tox_event_friend_status_new(const Memory *mem)
+{
+    Tox_Event_Friend_Status *const friend_status =
+        (Tox_Event_Friend_Status *)mem_alloc(mem, sizeof(Tox_Event_Friend_Status));
+
+    if (friend_status == nullptr) {
         return nullptr;
     }
 
-    if (events->friend_status_size == events->friend_status_capacity) {
-        const uint32_t new_friend_status_capacity = events->friend_status_capacity * 2 + 1;
-        Tox_Event_Friend_Status *new_friend_status = (Tox_Event_Friend_Status *)realloc(
-                    events->friend_status, new_friend_status_capacity * sizeof(Tox_Event_Friend_Status));
-
-        if (new_friend_status == nullptr) {
-            return nullptr;
-        }
-
-        events->friend_status = new_friend_status;
-        events->friend_status_capacity = new_friend_status_capacity;
-    }
-
-    Tox_Event_Friend_Status *const friend_status = &events->friend_status[events->friend_status_size];
     tox_event_friend_status_construct(friend_status);
-    ++events->friend_status_size;
     return friend_status;
 }
 
-void tox_events_clear_friend_status(Tox_Events *events)
+void tox_event_friend_status_free(Tox_Event_Friend_Status *friend_status, const Memory *mem)
 {
-    if (events == nullptr) {
-        return;
+    if (friend_status != nullptr) {
+        tox_event_friend_status_destruct(friend_status, mem);
     }
-
-    for (uint32_t i = 0; i < events->friend_status_size; ++i) {
-        tox_event_friend_status_destruct(&events->friend_status[i]);
-    }
-
-    free(events->friend_status);
-    events->friend_status = nullptr;
-    events->friend_status_size = 0;
-    events->friend_status_capacity = 0;
+    mem_delete(mem, friend_status);
 }
 
-uint32_t tox_events_get_friend_status_size(const Tox_Events *events)
+non_null()
+static Tox_Event_Friend_Status *tox_events_add_friend_status(Tox_Events *events, const Memory *mem)
 {
-    if (events == nullptr) {
-        return 0;
+    Tox_Event_Friend_Status *const friend_status = tox_event_friend_status_new(mem);
+
+    if (friend_status == nullptr) {
+        return nullptr;
     }
 
-    return events->friend_status_size;
+    Tox_Event event;
+    event.type = TOX_EVENT_FRIEND_STATUS;
+    event.data.friend_status = friend_status;
+
+    tox_events_add(events, &event);
+    return friend_status;
 }
 
 const Tox_Event_Friend_Status *tox_events_get_friend_status(const Tox_Events *events, uint32_t index)
 {
-    assert(index < events->friend_status_size);
-    assert(events->friend_status != nullptr);
-    return &events->friend_status[index];
-}
-
-bool tox_events_pack_friend_status(const Tox_Events *events, Bin_Pack *bp)
-{
-    const uint32_t size = tox_events_get_friend_status_size(events);
+    uint32_t friend_status_index = 0;
+    const uint32_t size = tox_events_get_size(events);
 
     for (uint32_t i = 0; i < size; ++i) {
-        if (!tox_event_friend_status_pack(tox_events_get_friend_status(events, i), bp)) {
-            return false;
+        if (friend_status_index > index) {
+            return nullptr;
+        }
+
+        if (events->events[i].type == TOX_EVENT_FRIEND_STATUS) {
+            const Tox_Event_Friend_Status *friend_status = events->events[i].data.friend_status;
+            if (friend_status_index == index) {
+                return friend_status;
+            }
+            ++friend_status_index;
         }
     }
-    return true;
+
+    return nullptr;
 }
 
-bool tox_events_unpack_friend_status(Tox_Events *events, Bin_Unpack *bu)
+uint32_t tox_events_get_friend_status_size(const Tox_Events *events)
 {
-    Tox_Event_Friend_Status *event = tox_events_add_friend_status(events);
+    uint32_t friend_status_size = 0;
+    const uint32_t size = tox_events_get_size(events);
 
-    if (event == nullptr) {
+    for (uint32_t i = 0; i < size; ++i) {
+        if (events->events[i].type == TOX_EVENT_FRIEND_STATUS) {
+            ++friend_status_size;
+        }
+    }
+
+    return friend_status_size;
+}
+
+bool tox_event_friend_status_unpack(
+    Tox_Event_Friend_Status **event, Bin_Unpack *bu, const Memory *mem)
+{
+    assert(event != nullptr);
+    *event = tox_event_friend_status_new(mem);
+
+    if (*event == nullptr) {
         return false;
     }
 
-    return tox_event_friend_status_unpack(event, bu);
+    return tox_event_friend_status_unpack_into(*event, bu);
+}
+
+non_null()
+static Tox_Event_Friend_Status *tox_event_friend_status_alloc(void *user_data)
+{
+    Tox_Events_State *state = tox_events_alloc(user_data);
+    assert(state != nullptr);
+
+    if (state->events == nullptr) {
+        return nullptr;
+    }
+
+    Tox_Event_Friend_Status *friend_status = tox_events_add_friend_status(state->events, state->mem);
+
+    if (friend_status == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
+        return nullptr;
+    }
+
+    return friend_status;
 }
 
 
@@ -189,19 +218,11 @@ bool tox_events_unpack_friend_status(Tox_Events *events, Bin_Unpack *bu)
 
 
 void tox_events_handle_friend_status(Tox *tox, uint32_t friend_number, Tox_User_Status status,
-                                     void *user_data)
+        void *user_data)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    assert(state != nullptr);
-
-    if (state->events == nullptr) {
-        return;
-    }
-
-    Tox_Event_Friend_Status *friend_status = tox_events_add_friend_status(state->events);
+    Tox_Event_Friend_Status *friend_status = tox_event_friend_status_alloc(user_data);
 
     if (friend_status == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 

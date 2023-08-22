@@ -32,31 +32,36 @@ static void handle_events_friend_message(Tox *tox, const Tox_Event_Friend_Messag
 
 static void dump_events(const char *path, const Tox_Events *events)
 {
-    if (want_dump_events) {
-        FILE *fh = fopen(path, "w");
-        ck_assert(fh != nullptr);
-        const uint32_t len = tox_events_bytes_size(events);
-        uint8_t *buf = (uint8_t *)malloc(len);
-        ck_assert(buf != nullptr);
-        tox_events_get_bytes(events, buf);
-        fwrite(buf, 1, len, fh);
-        free(buf);
-        fclose(fh);
-    }
+    FILE *fh = fopen(path, "w");
+    ck_assert(fh != nullptr);
+    const uint32_t len = tox_events_bytes_size(events);
+    uint8_t *buf = (uint8_t *)malloc(len);
+    ck_assert(buf != nullptr);
+    ck_assert(tox_events_get_bytes(events, buf));
+    fwrite(buf, 1, len, fh);
+    free(buf);
+    fclose(fh);
 }
 
 static void print_events(const Tox_System *sys, Tox_Events *events)
 {
     const uint32_t size = tox_events_bytes_size(events);
 
-    uint8_t *bytes = (uint8_t *)malloc(size);
-    ck_assert(bytes != nullptr);
+    uint8_t *bytes1 = (uint8_t *)malloc(size);
+    uint8_t *bytes2 = (uint8_t *)malloc(size);
+    ck_assert(bytes1 != nullptr);
+    ck_assert(bytes2 != nullptr);
 
-    tox_events_get_bytes(events, bytes);
+    ck_assert(tox_events_get_bytes(events, bytes1));
+    ck_assert(tox_events_get_bytes(events, bytes2));
 
-    Tox_Events *events_copy = tox_events_load(sys, bytes, size);
+    // Make sure get_bytes is deterministic.
+    ck_assert(memcmp(bytes1, bytes2, size) == 0);
+
+    Tox_Events *events_copy = tox_events_load(sys, bytes1, size);
     ck_assert(events_copy != nullptr);
-    free(bytes);
+    free(bytes1);
+    free(bytes2);
 
     ck_assert(tox_events_equal(sys, events, events_copy));
 
@@ -74,7 +79,9 @@ static bool await_message(Tox **toxes, const Tox_Dispatch *dispatch)
         // Check if tox 2 got the message from tox 1.
         Tox_Events *events = tox_events_iterate(toxes[1], false, nullptr);
 
-        dump_events("/tmp/test.mp", events);
+        if (want_dump_events) {
+            dump_events("/tmp/test.mp", events);
+        }
 
         bool success = false;
         tox_dispatch_invoke(dispatch, events, toxes[1], &success);

@@ -918,11 +918,17 @@ cc_library(
 
 cc_library(
     name = "tox_events",
-    srcs = ["tox_events.c"] + glob([
+    srcs = [
+        "tox_event.c",
+        "tox_events.c",
+    ] + glob([
         "events/*.c",
-        "events/*.h",
     ]),
-    hdrs = ["tox_events.h"],
+    hdrs = [
+        "events/events_alloc.h",
+        "tox_event.h",
+        "tox_events.h",
+    ],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":attributes",

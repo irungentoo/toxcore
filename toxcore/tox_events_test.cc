@@ -48,14 +48,14 @@ TEST(ToxEvents, NullEventsPacksToEmptyArray)
 TEST(ToxEvents, PackedEventsCanBeUnpacked)
 {
     const Tox_System sys = tox_default_system();
-    // [[0, 1]] == Tox_Self_Connection_Status { .connection_status = TOX_CONNECTION_TCP }
-    std::array<uint8_t, 6> packed{0x91, 0x92, 0xcc, 0x00, 0xcc, 0x01};
+    // [[1, 1]] == Tox_Self_Connection_Status { .connection_status = TOX_CONNECTION_TCP }
+    std::array<uint8_t, 6> packed{0x91, 0x92, 0xcc, 0x01, 0xcc, 0x01};
     Tox_Events *events = tox_events_load(&sys, packed.data(), packed.size());
     ASSERT_NE(events, nullptr);
     std::array<uint8_t, 4> bytes;
     ASSERT_EQ(tox_events_bytes_size(events), bytes.size());
     tox_events_get_bytes(events, bytes.data());
-    EXPECT_EQ(bytes, (std::array<uint8_t, 4>{0x91, 0x92, 0x00, 0x01}));
+    EXPECT_EQ(bytes, (std::array<uint8_t, 4>{0x91, 0x92, 0x01, 0x01}));
     tox_events_free(events);
 }
 

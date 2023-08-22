@@ -7,8 +7,10 @@
 #include <stdlib.h>
 
 #include "ccompat.h"
-#include "tox.h"
+#include "events/events_alloc.h"
+#include "tox_event.h"
 #include "tox_events.h"
+#include "tox.h"
 
 struct Tox_Dispatch {
     tox_events_conference_connected_cb *conference_connected_callback;
@@ -168,321 +170,189 @@ void tox_events_callback_self_connection_status(
     dispatch->self_connection_status_callback = callback;
 }
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_conference_connected(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
+non_null(1, 2, 3) nullable(4)
+static void tox_dispatch_invoke_event(const Tox_Dispatch *dispatch, const Tox_Event *event, Tox *tox, void *user_data)
 {
-    const uint32_t size = tox_events_get_conference_connected_size(events);
+    switch (event->type) {
+        case TOX_EVENT_CONFERENCE_CONNECTED: {
+            if (dispatch->conference_connected_callback != nullptr) {
+                dispatch->conference_connected_callback(tox, event->data.conference_connected, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->conference_connected_callback != nullptr) {
-            dispatch->conference_connected_callback(
-                tox, tox_events_get_conference_connected(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_conference_invite(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_conference_invite_size(events);
+        case TOX_EVENT_CONFERENCE_INVITE: {
+            if (dispatch->conference_invite_callback != nullptr) {
+                dispatch->conference_invite_callback(tox, event->data.conference_invite, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->conference_invite_callback != nullptr) {
-            dispatch->conference_invite_callback(
-                tox, tox_events_get_conference_invite(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_conference_message(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_conference_message_size(events);
+        case TOX_EVENT_CONFERENCE_MESSAGE: {
+            if (dispatch->conference_message_callback != nullptr) {
+                dispatch->conference_message_callback(tox, event->data.conference_message, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->conference_message_callback != nullptr) {
-            dispatch->conference_message_callback(
-                tox, tox_events_get_conference_message(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_conference_peer_list_changed(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_conference_peer_list_changed_size(events);
+        case TOX_EVENT_CONFERENCE_PEER_LIST_CHANGED: {
+            if (dispatch->conference_peer_list_changed_callback != nullptr) {
+                dispatch->conference_peer_list_changed_callback(tox, event->data.conference_peer_list_changed, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->conference_peer_list_changed_callback != nullptr) {
-            dispatch->conference_peer_list_changed_callback(
-                tox, tox_events_get_conference_peer_list_changed(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_conference_peer_name(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_conference_peer_name_size(events);
+        case TOX_EVENT_CONFERENCE_PEER_NAME: {
+            if (dispatch->conference_peer_name_callback != nullptr) {
+                dispatch->conference_peer_name_callback(tox, event->data.conference_peer_name, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->conference_peer_name_callback != nullptr) {
-            dispatch->conference_peer_name_callback(
-                tox, tox_events_get_conference_peer_name(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_conference_title(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_conference_title_size(events);
+        case TOX_EVENT_CONFERENCE_TITLE: {
+            if (dispatch->conference_title_callback != nullptr) {
+                dispatch->conference_title_callback(tox, event->data.conference_title, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->conference_title_callback != nullptr) {
-            dispatch->conference_title_callback(
-                tox, tox_events_get_conference_title(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_file_chunk_request(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_file_chunk_request_size(events);
+        case TOX_EVENT_FILE_CHUNK_REQUEST: {
+            if (dispatch->file_chunk_request_callback != nullptr) {
+                dispatch->file_chunk_request_callback(tox, event->data.file_chunk_request, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->file_chunk_request_callback != nullptr) {
-            dispatch->file_chunk_request_callback(
-                tox, tox_events_get_file_chunk_request(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_file_recv(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_file_recv_size(events);
+        case TOX_EVENT_FILE_RECV_CHUNK: {
+            if (dispatch->file_recv_chunk_callback != nullptr) {
+                dispatch->file_recv_chunk_callback(tox, event->data.file_recv_chunk, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->file_recv_callback != nullptr) {
-            dispatch->file_recv_callback(
-                tox, tox_events_get_file_recv(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_file_recv_chunk(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_file_recv_chunk_size(events);
+        case TOX_EVENT_FILE_RECV_CONTROL: {
+            if (dispatch->file_recv_control_callback != nullptr) {
+                dispatch->file_recv_control_callback(tox, event->data.file_recv_control, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->file_recv_chunk_callback != nullptr) {
-            dispatch->file_recv_chunk_callback(
-                tox, tox_events_get_file_recv_chunk(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_file_recv_control(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_file_recv_control_size(events);
+        case TOX_EVENT_FILE_RECV: {
+            if (dispatch->file_recv_callback != nullptr) {
+                dispatch->file_recv_callback(tox, event->data.file_recv, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->file_recv_control_callback != nullptr) {
-            dispatch->file_recv_control_callback(
-                tox, tox_events_get_file_recv_control(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_friend_connection_status(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_friend_connection_status_size(events);
+        case TOX_EVENT_FRIEND_CONNECTION_STATUS: {
+            if (dispatch->friend_connection_status_callback != nullptr) {
+                dispatch->friend_connection_status_callback(tox, event->data.friend_connection_status, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->friend_connection_status_callback != nullptr) {
-            dispatch->friend_connection_status_callback(
-                tox, tox_events_get_friend_connection_status(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_friend_lossless_packet(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_friend_lossless_packet_size(events);
+        case TOX_EVENT_FRIEND_LOSSLESS_PACKET: {
+            if (dispatch->friend_lossless_packet_callback != nullptr) {
+                dispatch->friend_lossless_packet_callback(tox, event->data.friend_lossless_packet, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->friend_lossless_packet_callback != nullptr) {
-            dispatch->friend_lossless_packet_callback(
-                tox, tox_events_get_friend_lossless_packet(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_friend_lossy_packet(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_friend_lossy_packet_size(events);
+        case TOX_EVENT_FRIEND_LOSSY_PACKET: {
+            if (dispatch->friend_lossy_packet_callback != nullptr) {
+                dispatch->friend_lossy_packet_callback(tox, event->data.friend_lossy_packet, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->friend_lossy_packet_callback != nullptr) {
-            dispatch->friend_lossy_packet_callback(
-                tox, tox_events_get_friend_lossy_packet(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_friend_message(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_friend_message_size(events);
+        case TOX_EVENT_FRIEND_MESSAGE: {
+            if (dispatch->friend_message_callback != nullptr) {
+                dispatch->friend_message_callback(tox, event->data.friend_message, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->friend_message_callback != nullptr) {
-            dispatch->friend_message_callback(
-                tox, tox_events_get_friend_message(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_friend_name(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_friend_name_size(events);
+        case TOX_EVENT_FRIEND_NAME: {
+            if (dispatch->friend_name_callback != nullptr) {
+                dispatch->friend_name_callback(tox, event->data.friend_name, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->friend_name_callback != nullptr) {
-            dispatch->friend_name_callback(
-                tox, tox_events_get_friend_name(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_friend_read_receipt(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_friend_read_receipt_size(events);
+        case TOX_EVENT_FRIEND_READ_RECEIPT: {
+            if (dispatch->friend_read_receipt_callback != nullptr) {
+                dispatch->friend_read_receipt_callback(tox, event->data.friend_read_receipt, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->friend_read_receipt_callback != nullptr) {
-            dispatch->friend_read_receipt_callback(
-                tox, tox_events_get_friend_read_receipt(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_friend_request(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_friend_request_size(events);
+        case TOX_EVENT_FRIEND_REQUEST: {
+            if (dispatch->friend_request_callback != nullptr) {
+                dispatch->friend_request_callback(tox, event->data.friend_request, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->friend_request_callback != nullptr) {
-            dispatch->friend_request_callback(
-                tox, tox_events_get_friend_request(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_friend_status(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_friend_status_size(events);
+        case TOX_EVENT_FRIEND_STATUS: {
+            if (dispatch->friend_status_callback != nullptr) {
+                dispatch->friend_status_callback(tox, event->data.friend_status, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->friend_status_callback != nullptr) {
-            dispatch->friend_status_callback(
-                tox, tox_events_get_friend_status(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_friend_status_message(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_friend_status_message_size(events);
+        case TOX_EVENT_FRIEND_STATUS_MESSAGE: {
+            if (dispatch->friend_status_message_callback != nullptr) {
+                dispatch->friend_status_message_callback(tox, event->data.friend_status_message, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->friend_status_message_callback != nullptr) {
-            dispatch->friend_status_message_callback(
-                tox, tox_events_get_friend_status_message(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_friend_typing(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_friend_typing_size(events);
+        case TOX_EVENT_FRIEND_TYPING: {
+            if (dispatch->friend_typing_callback != nullptr) {
+                dispatch->friend_typing_callback(tox, event->data.friend_typing, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->friend_typing_callback != nullptr) {
-            dispatch->friend_typing_callback(
-                tox, tox_events_get_friend_typing(events, i), user_data);
+            break;
         }
-    }
-}
 
-non_null(1, 3) nullable(2, 4)
-static void tox_dispatch_invoke_self_connection_status(
-    const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
-{
-    const uint32_t size = tox_events_get_self_connection_status_size(events);
+        case TOX_EVENT_SELF_CONNECTION_STATUS: {
+            if (dispatch->self_connection_status_callback != nullptr) {
+                dispatch->self_connection_status_callback(tox, event->data.self_connection_status, user_data);
+            }
 
-    for (uint32_t i = 0; i < size; ++i) {
-        if (dispatch->self_connection_status_callback != nullptr) {
-            dispatch->self_connection_status_callback(
-                tox, tox_events_get_self_connection_status(events, i), user_data);
+            break;
+        }
+
+        case TOX_EVENT_INVALID: {
+            break;
         }
     }
 }
 
 void tox_dispatch_invoke(const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
-    tox_dispatch_invoke_conference_connected(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_conference_invite(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_conference_message(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_conference_peer_list_changed(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_conference_peer_name(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_conference_title(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_file_chunk_request(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_file_recv(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_file_recv_chunk(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_file_recv_control(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_friend_connection_status(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_friend_lossless_packet(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_friend_lossy_packet(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_friend_message(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_friend_name(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_friend_read_receipt(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_friend_request(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_friend_status(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_friend_status_message(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_friend_typing(dispatch, events, tox, user_data);
-    tox_dispatch_invoke_self_connection_status(dispatch, events, tox, user_data);
+    const uint32_t size = tox_events_get_size(events);
+    for (uint32_t i = 0; i < size; ++i) {
+        const Tox_Event *event = &events->events[i];
+        tox_dispatch_invoke_event(dispatch, event, tox, user_data);
+    }
 }

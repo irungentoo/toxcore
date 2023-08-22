@@ -524,7 +524,7 @@ int main(int argc, char** argv) {
                 EventTypeTrivial{"uint32_t", "file_number"},
                 EventTypeTrivial{"uint32_t", "kind"},
                 EventTypeTrivial{"uint64_t", "file_size"},
-                EventTypeByteRange{"filename", "filename_length", "length"}, // the latter two are ideally the same
+                EventTypeByteRange{"filename", "filename_length", "filename_length"},
             }
         },
         {

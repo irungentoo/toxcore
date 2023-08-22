@@ -14,13 +14,14 @@ Tox_Events_State *tox_events_alloc(void *user_data)
 {
     Tox_Events_State *state = (Tox_Events_State *)user_data;
     assert(state != nullptr);
+    assert(state->mem != nullptr);
 
     if (state->events != nullptr) {
         // Already allocated.
         return state;
     }
 
-    Tox_Events *events = (Tox_Events *)calloc(1, sizeof(Tox_Events));
+    Tox_Events *events = (Tox_Events *)mem_alloc(state->mem, sizeof(Tox_Events));
 
     if (events == nullptr) {
         // It's still null => allocation failed.
@@ -33,6 +34,7 @@ Tox_Events_State *tox_events_alloc(void *user_data)
         nullptr
     };
     state->events = events;
+    state->events->mem = state->mem;
 
     return state;
 }
@@ -43,26 +45,35 @@ void tox_events_free(Tox_Events *events)
         return;
     }
 
-    tox_events_clear_conference_connected(events);
-    tox_events_clear_conference_invite(events);
-    tox_events_clear_conference_message(events);
-    tox_events_clear_conference_peer_list_changed(events);
-    tox_events_clear_conference_peer_name(events);
-    tox_events_clear_conference_title(events);
-    tox_events_clear_file_chunk_request(events);
-    tox_events_clear_file_recv_chunk(events);
-    tox_events_clear_file_recv_control(events);
-    tox_events_clear_file_recv(events);
-    tox_events_clear_friend_connection_status(events);
-    tox_events_clear_friend_lossless_packet(events);
-    tox_events_clear_friend_lossy_packet(events);
-    tox_events_clear_friend_message(events);
-    tox_events_clear_friend_name(events);
-    tox_events_clear_friend_read_receipt(events);
-    tox_events_clear_friend_request(events);
-    tox_events_clear_friend_status(events);
-    tox_events_clear_friend_status_message(events);
-    tox_events_clear_friend_typing(events);
-    tox_events_clear_self_connection_status(events);
-    free(events);
+    for (uint32_t i = 0; i < events->events_size; ++i) {
+        tox_event_destruct(&events->events[i], events->mem);
+    }
+
+    mem_delete(events->mem, events->events);
+    mem_delete(events->mem, events);
+}
+
+bool tox_events_add(Tox_Events *events, const Tox_Event *event)
+{
+    if (events->events_size == UINT32_MAX) {
+        return false;
+    }
+
+    if (events->events_size == events->events_capacity) {
+        const uint32_t new_events_capacity = events->events_capacity * 2 + 1;
+        Tox_Event *new_events = (Tox_Event *)mem_vrealloc(
+                    events->mem, events->events, new_events_capacity, sizeof(Tox_Event));
+
+        if (new_events == nullptr) {
+            return false;
+        }
+
+        events->events = new_events;
+        events->events_capacity = new_events_capacity;
+    }
+
+    events->events[events->events_size] = *event;
+    ++events->events_size;
+
+    return true;
 }
