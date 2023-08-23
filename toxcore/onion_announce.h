@@ -131,7 +131,7 @@ void onion_announce_extra_data_callback(Onion_Announce *onion_a, uint16_t extra_
                                         pack_extra_data_cb *extra_data_callback, void *extra_data_object);
 
 non_null()
-Onion_Announce *new_onion_announce(const Logger *log, const Random *rng, const Mono_Time *mono_time, DHT *dht);
+Onion_Announce *new_onion_announce(const Logger *log, const Memory *mem, const Random *rng, const Mono_Time *mono_time, DHT *dht);
 
 nullable(1)
 void kill_onion_announce(Onion_Announce *onion_a);

@@ -24,6 +24,28 @@ cc_library(
 )
 
 cc_library(
+    name = "mem",
+    srcs = ["mem.c"],
+    hdrs = ["mem.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        ":attributes",
+        ":ccompat",
+    ],
+)
+
+cc_test(
+    name = "mem_test",
+    size = "small",
+    srcs = ["mem_test.cc"],
+    deps = [
+        ":mem",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "util",
     srcs = ["util.c"],
     hdrs = ["util.h"],
@@ -37,6 +59,7 @@ cc_library(
     deps = [
         ":attributes",
         ":ccompat",
+        ":mem",
         "@pthread",
     ],
 )
@@ -175,6 +198,7 @@ cc_library(
     deps = [
         ":attributes",
         ":ccompat",
+        ":mem",
         "@pthread",
     ],
 )
@@ -204,6 +228,7 @@ cc_library(
     deps = [
         ":ccompat",
         ":crypto_core",
+        ":mem",
         ":mono_time",
     ],
 )
@@ -223,6 +248,7 @@ cc_library(
         ":ccompat",
         ":crypto_core",
         ":logger",
+        ":mem",
         ":mono_time",
         ":util",
         "@libsodium",
@@ -260,6 +286,7 @@ cc_library(
     deps = [
         ":ccompat",
         ":crypto_core",
+        ":mem",
         ":mono_time",
         ":util",
     ],
@@ -315,6 +342,7 @@ cc_library(
         ":ccompat",
         ":crypto_core",
         ":logger",
+        ":mem",
         ":mono_time",
         ":network",
         ":ping_array",
@@ -413,6 +441,7 @@ cc_library(
         ":attributes",
         ":ccompat",
         ":crypto_core",
+        ":mem",
         ":network",
     ],
 )
@@ -766,6 +795,7 @@ cc_library(
         ":group",
         ":group_moderation",
         ":logger",
+        ":mem",
         ":mono_time",
         ":network",
         "//c-toxcore/toxencryptsave:defines",
@@ -810,6 +840,7 @@ cc_library(
         ":bin_pack",
         ":bin_unpack",
         ":ccompat",
+        ":mem",
         ":tox",
         ":tox_unpack",
         "//c-toxcore/third_party:cmp",
@@ -822,6 +853,7 @@ cc_test(
     srcs = ["tox_events_test.cc"],
     deps = [
         ":crypto_core",
+        ":tox",
         ":tox_events",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
@@ -832,7 +864,10 @@ cc_fuzz_test(
     name = "tox_events_fuzz_test",
     srcs = ["tox_events_fuzz_test.cc"],
     corpus = ["//tools/toktok-fuzzer/corpus:tox_events_fuzz_test"],
-    deps = [":tox_events"],
+    deps = [
+        ":tox_events",
+        "//c-toxcore/testing/fuzzing:fuzz_support",
+    ],
 )
 
 cc_library(

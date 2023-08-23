@@ -102,56 +102,58 @@ typedef struct Forwarding_Subtox {
     Announcements *announce;
 } Forwarding_Subtox;
 
-static Forwarding_Subtox *new_forwarding_subtox(bool no_udp, uint32_t *index, uint16_t port)
+static Forwarding_Subtox *new_forwarding_subtox(const Memory *mem, bool no_udp, uint32_t *index, uint16_t port)
 {
+    const Random *rng = system_random();
+    ck_assert(rng != nullptr);
+    const Network *ns = system_network();
+    ck_assert(ns != nullptr);
+
     Forwarding_Subtox *subtox = (Forwarding_Subtox *)calloc(1, sizeof(Forwarding_Subtox));
     ck_assert(subtox != nullptr);
 
     subtox->log = logger_new();
     ck_assert(subtox->log != nullptr);
     logger_callback_log(subtox->log, print_debug_logger, nullptr, index);
-    subtox->mono_time = mono_time_new(nullptr, nullptr);
-
-    const Random *rng= system_random();
-    ck_assert(rng != nullptr);
-    const Network *ns = system_network();
-    ck_assert(ns != nullptr);
+    subtox->mono_time = mono_time_new(mem, nullptr, nullptr);
 
     if (no_udp) {
-        subtox->net = new_networking_no_udp(subtox->log, ns);
+        subtox->net = new_networking_no_udp(subtox->log, mem, ns);
     } else {
         const IP ip = get_loopback();
-        subtox->net = new_networking_ex(subtox->log, ns, &ip, port, port, nullptr);
+        subtox->net = new_networking_ex(subtox->log, mem, ns, &ip, port, port, nullptr);
     }
 
-    subtox->dht = new_dht(subtox->log, rng, ns, subtox->mono_time, subtox->net, true, true);
+    subtox->dht = new_dht(subtox->log, mem, rng, ns, subtox->mono_time, subtox->net, true, true);
 
     const TCP_Proxy_Info inf = {{{{0}}}};
-    subtox->c = new_net_crypto(subtox->log, rng, ns, subtox->mono_time, subtox->dht, &inf);
+    subtox->c = new_net_crypto(subtox->log, mem, rng, ns, subtox->mono_time, subtox->dht, &inf);
 
     subtox->forwarding = new_forwarding(subtox->log, rng, subtox->mono_time, subtox->dht);
     ck_assert(subtox->forwarding != nullptr);
 
-    subtox->announce = new_announcements(subtox->log, rng, subtox->mono_time, subtox->forwarding);
+    subtox->announce = new_announcements(subtox->log, mem, rng, subtox->mono_time, subtox->forwarding);
     ck_assert(subtox->announce != nullptr);
 
     return subtox;
 }
 
-static void kill_forwarding_subtox(Forwarding_Subtox *subtox)
+static void kill_forwarding_subtox(const Memory *mem, Forwarding_Subtox *subtox)
 {
     kill_announcements(subtox->announce);
     kill_forwarding(subtox->forwarding);
     kill_net_crypto(subtox->c);
     kill_dht(subtox->dht);
     kill_networking(subtox->net);
-    mono_time_free(subtox->mono_time);
+    mono_time_free(mem, subtox->mono_time);
     logger_kill(subtox->log);
     free(subtox);
 }
 
 static void test_forwarding(void)
 {
+    const Memory *mem = system_memory();
+    ck_assert(mem != nullptr);
     const Random *rng = system_random();
     ck_assert(rng != nullptr);
     const Network *ns = system_network();
@@ -165,7 +167,7 @@ static void test_forwarding(void)
 
     for (uint32_t i = 0; i < NUM_FORWARDER; ++i) {
         index[i] = i + 1;
-        subtoxes[i] = new_forwarding_subtox(i < NUM_FORWARDER_TCP, &index[i], FORWARDING_BASE_PORT + i);
+        subtoxes[i] = new_forwarding_subtox(mem, i < NUM_FORWARDER_TCP, &index[i], FORWARDING_BASE_PORT + i);
 
         test_data[i].net = subtoxes[i]->net;
         test_data[i].send_back = 0;
@@ -317,7 +319,7 @@ static void test_forwarding(void)
 
 
     for (uint32_t i = 0; i < NUM_FORWARDER; ++i) {
-        kill_forwarding_subtox(subtoxes[i]);
+        kill_forwarding_subtox(mem, subtoxes[i]);
     }
 
     tox_kill(relay);

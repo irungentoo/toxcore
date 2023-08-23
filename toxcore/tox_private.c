@@ -11,6 +11,7 @@
 #include <assert.h>
 
 #include "ccompat.h"
+#include "mem.h"
 #include "network.h"
 #include "tox_struct.h"
 
@@ -28,6 +29,7 @@ Tox_System tox_default_system(void)
         nullptr,  // mono_time_user_data
         system_random(),
         system_network(),
+        system_memory(),
     };
     return sys;
 }
@@ -115,11 +117,11 @@ bool tox_dht_get_nodes(const Tox *tox, const uint8_t *public_key, const char *ip
 
     IP_Port *root;
 
-    const int32_t count = net_getipport(ip, &root, TOX_SOCK_DGRAM);
+    const int32_t count = net_getipport(tox->sys.mem, ip, &root, TOX_SOCK_DGRAM);
 
     if (count < 1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DHT_GET_NODES_BAD_IP);
-        net_freeipport(root);
+        net_freeipport(tox->sys.mem, root);
         tox_unlock(tox);
         return false;
     }
@@ -136,7 +138,7 @@ bool tox_dht_get_nodes(const Tox *tox, const uint8_t *public_key, const char *ip
 
     tox_unlock(tox);
 
-    net_freeipport(root);
+    net_freeipport(tox->sys.mem, root);
 
     if (!success) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DHT_GET_NODES_FAIL);

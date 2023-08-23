@@ -7,7 +7,7 @@ namespace {
 void TestModListUnpack(Fuzz_Data &input)
 {
     CONSUME1_OR_RETURN(const uint16_t num_mods, input);
-    Moderation mods{};
+    Moderation mods{system_memory()};
     mod_list_unpack(&mods, input.data, input.size, num_mods);
     mod_list_cleanup(&mods);
 }

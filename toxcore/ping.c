@@ -336,18 +336,18 @@ void ping_iterate(Ping *ping)
 }
 
 
-Ping *ping_new(const Mono_Time *mono_time, const Random *rng, DHT *dht)
+Ping *ping_new(const Memory *mem, const Mono_Time *mono_time, const Random *rng, DHT *dht)
 {
-    Ping *ping = (Ping *)calloc(1, sizeof(Ping));
+    Ping *ping = (Ping *)mem_alloc(mem, sizeof(Ping));
 
     if (ping == nullptr) {
         return nullptr;
     }
 
-    ping->ping_array = ping_array_new(PING_NUM_MAX, PING_TIMEOUT);
+    ping->ping_array = ping_array_new(mem, PING_NUM_MAX, PING_TIMEOUT);
 
     if (ping->ping_array == nullptr) {
-        free(ping);
+        mem_delete(mem, ping);
         return nullptr;
     }
 
@@ -360,7 +360,7 @@ Ping *ping_new(const Mono_Time *mono_time, const Random *rng, DHT *dht)
     return ping;
 }
 
-void ping_kill(Ping *ping)
+void ping_kill(const Memory *mem, Ping *ping)
 {
     if (ping == nullptr) {
         return;
@@ -370,5 +370,5 @@ void ping_kill(Ping *ping)
     networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_RESPONSE, nullptr, nullptr);
     ping_array_kill(ping->ping_array);
 
-    free(ping);
+    mem_delete(mem, ping);
 }

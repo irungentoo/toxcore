@@ -280,15 +280,17 @@ int main(int argc, char *argv[])
     }
 
     const uint16_t end_port = start_port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM);
+    const Memory *mem = system_memory();
+    const Random *rng = system_random();
     const Network *ns = system_network();
-    Networking_Core *net = new_networking_ex(logger, ns, &ip, start_port, end_port, nullptr);
+    Networking_Core *net = new_networking_ex(logger, mem, ns, &ip, start_port, end_port, nullptr);
 
     if (net == nullptr) {
         if (enable_ipv6 && enable_ipv4_fallback) {
             log_write(LOG_LEVEL_WARNING, "Couldn't initialize IPv6 networking. Falling back to using IPv4.\n");
             enable_ipv6 = 0;
             ip_init(&ip, enable_ipv6);
-            net = new_networking_ex(logger, ns, &ip, start_port, end_port, nullptr);
+            net = new_networking_ex(logger, mem, ns, &ip, start_port, end_port, nullptr);
 
             if (net == nullptr) {
                 log_write(LOG_LEVEL_ERROR, "Couldn't fallback to IPv4. Exiting.\n");
@@ -308,7 +310,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    Mono_Time *const mono_time = mono_time_new(nullptr, nullptr);
+    Mono_Time *const mono_time = mono_time_new(mem, nullptr, nullptr);
 
     if (mono_time == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize monotonic timer. Exiting.\n");
@@ -322,12 +324,11 @@ int main(int argc, char *argv[])
 
     mono_time_update(mono_time);
 
-    const Random *rng = system_random();
-    DHT *const dht = new_dht(logger, rng, ns, mono_time, net, true, enable_lan_discovery);
+    DHT *const dht = new_dht(logger, mem, rng, ns, mono_time, net, true, enable_lan_discovery);
 
     if (dht == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
-        mono_time_free(mono_time);
+        mono_time_free(mem, mono_time);
         kill_networking(net);
         logger_kill(logger);
         free(motd);
@@ -341,7 +342,7 @@ int main(int argc, char *argv[])
     if (forwarding == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize forwarding. Exiting.\n");
         kill_dht(dht);
-        mono_time_free(mono_time);
+        mono_time_free(mem, mono_time);
         kill_networking(net);
         logger_kill(logger);
         free(motd);
@@ -350,13 +351,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Announcements *announce = new_announcements(logger, rng, mono_time, forwarding);
+    Announcements *announce = new_announcements(logger, mem, rng, mono_time, forwarding);
 
     if (announce == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize DHT announcements. Exiting.\n");
         kill_forwarding(forwarding);
         kill_dht(dht);
-        mono_time_free(mono_time);
+        mono_time_free(mem, mono_time);
         kill_networking(net);
         logger_kill(logger);
         free(motd);
@@ -372,7 +373,7 @@ int main(int argc, char *argv[])
         kill_announcements(announce);
         kill_forwarding(forwarding);
         kill_dht(dht);
-        mono_time_free(mono_time);
+        mono_time_free(mem, mono_time);
         kill_networking(net);
         logger_kill(logger);
         free(motd);
@@ -381,14 +382,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Onion *onion = new_onion(logger, mono_time, rng, dht);
+    Onion *onion = new_onion(logger, mem, mono_time, rng, dht);
 
     if (!onion) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion. Exiting.\n");
         kill_announcements(announce);
         kill_forwarding(forwarding);
         kill_dht(dht);
-        mono_time_free(mono_time);
+        mono_time_free(mem, mono_time);
         kill_networking(net);
         logger_kill(logger);
         free(motd);
@@ -397,7 +398,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Onion_Announce *onion_a = new_onion_announce(logger, rng, mono_time, dht);
+    Onion_Announce *onion_a = new_onion_announce(logger, mem, rng, mono_time, dht);
 
     if (!onion_a) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion Announce. Exiting.\n");
@@ -406,7 +407,7 @@ int main(int argc, char *argv[])
         kill_announcements(announce);
         kill_forwarding(forwarding);
         kill_dht(dht);
-        mono_time_free(mono_time);
+        mono_time_free(mem, mono_time);
         kill_networking(net);
         logger_kill(logger);
         free(motd);
@@ -429,7 +430,7 @@ int main(int argc, char *argv[])
             kill_announcements(announce);
             kill_forwarding(forwarding);
             kill_dht(dht);
-            mono_time_free(mono_time);
+            mono_time_free(mem, mono_time);
             kill_networking(net);
             logger_kill(logger);
             free(motd);
@@ -450,7 +451,7 @@ int main(int argc, char *argv[])
         kill_announcements(announce);
         kill_forwarding(forwarding);
         kill_dht(dht);
-        mono_time_free(mono_time);
+        mono_time_free(mem, mono_time);
         kill_networking(net);
         logger_kill(logger);
         free(tcp_relay_ports);
@@ -469,14 +470,15 @@ int main(int argc, char *argv[])
             kill_forwarding(forwarding);
             kill_onion(onion);
             kill_dht(dht);
-            mono_time_free(mono_time);
+            mono_time_free(mem, mono_time);
             kill_networking(net);
             logger_kill(logger);
             free(tcp_relay_ports);
             return 1;
         }
 
-        tcp_server = new_TCP_server(logger, rng, ns, enable_ipv6, tcp_relay_port_count, tcp_relay_ports,
+        tcp_server = new_TCP_server(logger, mem, rng, ns, enable_ipv6,
+                                    tcp_relay_port_count, tcp_relay_ports,
                                     dht_get_self_secret_key(dht), onion, forwarding);
 
         free(tcp_relay_ports);
@@ -515,7 +517,7 @@ int main(int argc, char *argv[])
             kill_announcements(announce);
             kill_forwarding(forwarding);
             kill_dht(dht);
-            mono_time_free(mono_time);
+            mono_time_free(mem, mono_time);
             kill_networking(net);
             logger_kill(logger);
             return 1;
@@ -533,7 +535,7 @@ int main(int argc, char *argv[])
         kill_announcements(announce);
         kill_forwarding(forwarding);
         kill_dht(dht);
-        mono_time_free(mono_time);
+        mono_time_free(mem, mono_time);
         kill_networking(net);
         logger_kill(logger);
         return 1;
@@ -616,7 +618,7 @@ int main(int argc, char *argv[])
     kill_announcements(announce);
     kill_forwarding(forwarding);
     kill_dht(dht);
-    mono_time_free(mono_time);
+    mono_time_free(mem, mono_time);
     kill_networking(net);
     logger_kill(logger);
 

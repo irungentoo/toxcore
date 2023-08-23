@@ -22,6 +22,7 @@
 #include "group_chats.h"
 #include "group_moderation.h"
 #include "logger.h"
+#include "mem.h"
 #include "mono_time.h"
 #include "network.h"
 #include "tox_private.h"
@@ -626,18 +627,6 @@ static int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
 
 Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 {
-    Tox *tox = (Tox *)calloc(1, sizeof(Tox));
-
-    if (tox == nullptr) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
-        return nullptr;
-    }
-
-    Messenger_Options m_options = {0};
-
-    bool load_savedata_sk = false;
-    bool load_savedata_tox = false;
-
     struct Tox_Options *default_options = nullptr;
 
     if (options == nullptr) {
@@ -651,7 +640,6 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
             case TOX_ERR_OPTIONS_NEW_MALLOC: {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
-                free(tox);
                 return nullptr;
             }
         }
@@ -660,11 +648,28 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     const struct Tox_Options *const opts = options != nullptr ? options : default_options;
     assert(opts != nullptr);
 
+    const Tox_System *sys = tox_options_get_operating_system(opts);
+    const Tox_System default_system = tox_default_system();
+
+    if (sys == nullptr) {
+        sys = &default_system;
+    }
+
+    if (sys->rng == nullptr || sys->ns == nullptr || sys->mem == nullptr) {
+        // TODO(iphydf): Not quite right, but similar.
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+        return nullptr;
+    }
+
+    Messenger_Options m_options = {0};
+
+    bool load_savedata_sk = false;
+    bool load_savedata_tox = false;
+
     if (tox_options_get_savedata_type(opts) != TOX_SAVEDATA_TYPE_NONE) {
         if (tox_options_get_savedata_data(opts) == nullptr || tox_options_get_savedata_length(opts) == 0) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
             tox_options_free(default_options);
-            free(tox);
             return nullptr;
         }
     }
@@ -673,7 +678,6 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         if (tox_options_get_savedata_length(opts) != TOX_SECRET_KEY_SIZE) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
             tox_options_free(default_options);
-            free(tox);
             return nullptr;
         }
 
@@ -682,14 +686,12 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         if (tox_options_get_savedata_length(opts) < TOX_ENC_SAVE_MAGIC_LENGTH) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
             tox_options_free(default_options);
-            free(tox);
             return nullptr;
         }
 
         if (memcmp(tox_options_get_savedata_data(opts), TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
             tox_options_free(default_options);
-            free(tox);
             return nullptr;
         }
 
@@ -707,6 +709,13 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
     if (m_options.udp_disabled) {
         m_options.local_discovery_enabled = false;
+    }
+
+    Tox *tox = (Tox *)mem_alloc(sys->mem, sizeof(Tox));
+
+    if (tox == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+        return nullptr;
     }
 
     tox->log_callback = tox_options_get_log_callback(opts);
@@ -733,34 +742,18 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         default: {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_TYPE);
             tox_options_free(default_options);
-            free(tox);
+            mem_delete(sys->mem, tox);
             return nullptr;
         }
     }
 
-    const Tox_System *sys = tox_options_get_operating_system(opts);
-    const Tox_System default_system = tox_default_system();
-
-    if (sys == nullptr) {
-        sys = &default_system;
-    }
-
-    if (sys->rng == nullptr || sys->ns == nullptr) {
-        // TODO(iphydf): Not quite right, but similar.
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
-        tox_options_free(default_options);
-        free(tox);
-        return nullptr;
-    }
-
-    tox->rng = *sys->rng;
-    tox->ns = *sys->ns;
+    tox->sys = *sys;
 
     if (m_options.proxy_info.proxy_type != TCP_PROXY_NONE) {
         if (tox_options_get_proxy_port(opts) == 0) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_PORT);
             tox_options_free(default_options);
-            free(tox);
+            mem_delete(sys->mem, tox);
             return nullptr;
         }
 
@@ -773,33 +766,33 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         const char *const proxy_host = tox_options_get_proxy_host(opts);
 
         if (proxy_host == nullptr
-                || !addr_resolve_or_parse_ip(&tox->ns, proxy_host, &m_options.proxy_info.ip_port.ip, nullptr)) {
+                || !addr_resolve_or_parse_ip(tox->sys.ns, proxy_host, &m_options.proxy_info.ip_port.ip, nullptr)) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
             // TODO(irungentoo): TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
             tox_options_free(default_options);
-            free(tox);
+            mem_delete(sys->mem, tox);
             return nullptr;
         }
 
         m_options.proxy_info.ip_port.port = net_htons(tox_options_get_proxy_port(opts));
     }
 
-    tox->mono_time = mono_time_new(sys->mono_time_callback, sys->mono_time_user_data);
+    tox->mono_time = mono_time_new(tox->sys.mem, sys->mono_time_callback, sys->mono_time_user_data);
 
     if (tox->mono_time == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
         tox_options_free(default_options);
-        free(tox);
+        mem_delete(sys->mem, tox);
         return nullptr;
     }
 
     if (tox_options_get_experimental_thread_safety(opts)) {
-        tox->mutex = (pthread_mutex_t *)calloc(1, sizeof(pthread_mutex_t));
+        tox->mutex = (pthread_mutex_t *)mem_alloc(sys->mem, sizeof(pthread_mutex_t));
 
         if (tox->mutex == nullptr) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
             tox_options_free(default_options);
-            free(tox);
+            mem_delete(sys->mem, tox);
             return nullptr;
         }
 
@@ -816,7 +809,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     tox_lock(tox);
 
     Messenger_Error m_error;
-    tox->m = new_messenger(tox->mono_time, &tox->rng, &tox->ns, &m_options, &m_error);
+    tox->m = new_messenger(tox->mono_time, tox->sys.mem, tox->sys.rng, tox->sys.ns, &m_options, &m_error);
 
     if (tox->m == nullptr) {
         if (m_error == MESSENGER_ERROR_PORT) {
@@ -827,7 +820,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
         }
 
-        mono_time_free(tox->mono_time);
+        mono_time_free(tox->sys.mem, tox->mono_time);
         tox_options_free(default_options);
         tox_unlock(tox);
 
@@ -835,15 +828,15 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
             pthread_mutex_destroy(tox->mutex);
         }
 
-        free(tox->mutex);
-        free(tox);
+        mem_delete(sys->mem, tox->mutex);
+        mem_delete(sys->mem, tox);
         return nullptr;
     }
 
     if (new_groupchats(tox->mono_time, tox->m) == nullptr) {
         kill_messenger(tox->m);
 
-        mono_time_free(tox->mono_time);
+        mono_time_free(tox->sys.mem, tox->mono_time);
         tox_options_free(default_options);
         tox_unlock(tox);
 
@@ -851,8 +844,8 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
             pthread_mutex_destroy(tox->mutex);
         }
 
-        free(tox->mutex);
-        free(tox);
+        mem_delete(sys->mem, tox->mutex);
+        mem_delete(sys->mem, tox);
 
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
         return nullptr;
@@ -928,15 +921,15 @@ void tox_kill(Tox *tox)
     LOGGER_ASSERT(tox->m->log, tox->m->msi_packet == nullptr, "Attempted to kill tox while toxav is still alive");
     kill_groupchats(tox->m->conferences_object);
     kill_messenger(tox->m);
-    mono_time_free(tox->mono_time);
+    mono_time_free(tox->sys.mem, tox->mono_time);
     tox_unlock(tox);
 
     if (tox->mutex != nullptr) {
         pthread_mutex_destroy(tox->mutex);
-        free(tox->mutex);
+        mem_delete(tox->sys.mem, tox->mutex);
     }
 
-    free(tox);
+    mem_delete(tox->sys.mem, tox);
 }
 
 static uint32_t end_size(void)
@@ -1006,11 +999,11 @@ static int32_t resolve_bootstrap_node(Tox *tox, const char *host, uint16_t port,
         return -1;
     }
 
-    const int32_t count = net_getipport(host, root, TOX_SOCK_DGRAM);
+    const int32_t count = net_getipport(tox->sys.mem, host, root, TOX_SOCK_DGRAM);
 
     if (count < 1) {
         LOGGER_DEBUG(tox->m->log, "could not resolve bootstrap node '%s'", host);
-        net_freeipport(*root);
+        net_freeipport(tox->sys.mem, *root);
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
         return -1;
     }
@@ -1054,7 +1047,7 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
 
     tox_unlock(tox);
 
-    net_freeipport(root);
+    net_freeipport(tox->sys.mem, root);
 
     if (count == 0 || !onion_success || !udp_success) {
         LOGGER_DEBUG(tox->m->log, "bootstrap node '%s' resolved to %d IP_Ports%s (onion: %s, UDP: %s)",
@@ -1091,7 +1084,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t 
 
     tox_unlock(tox);
 
-    net_freeipport(root);
+    net_freeipport(tox->sys.mem, root);
 
     if (count == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
@@ -1944,7 +1937,7 @@ uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t
 
     if (file_id == nullptr) {
         /* Tox keys are 32 bytes like FILE_ID_LENGTH. */
-        new_symmetric_key(&tox->rng, f_id);
+        new_symmetric_key(tox->sys.rng, f_id);
         file_id = f_id;
     }
 
@@ -2099,7 +2092,7 @@ uint32_t tox_conference_new(Tox *tox, Tox_Err_Conference_New *error)
 {
     assert(tox != nullptr);
     tox_lock(tox);
-    const int ret = add_groupchat(tox->m->conferences_object, &tox->rng, GROUPCHAT_TYPE_TEXT);
+    const int ret = add_groupchat(tox->m->conferences_object, tox->sys.rng, GROUPCHAT_TYPE_TEXT);
     tox_unlock(tox);
 
     if (ret == -1) {
@@ -4580,3 +4573,8 @@ bool tox_group_mod_kick_peer(const Tox *tox, uint32_t group_number, uint32_t pee
 
 #endif /* VANILLA_NACL */
 
+const Tox_System *tox_get_system(Tox *tox)
+{
+    assert(tox != nullptr);
+    return &tox->sys;
+}

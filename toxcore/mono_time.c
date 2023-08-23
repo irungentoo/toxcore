@@ -122,25 +122,25 @@ static uint64_t current_time_monotonic_default(void *user_data)
 #endif // !OS_WIN32
 
 
-Mono_Time *mono_time_new(mono_time_current_time_cb *current_time_callback, void *user_data)
+Mono_Time *mono_time_new(const Memory *mem, mono_time_current_time_cb *current_time_callback, void *user_data)
 {
-    Mono_Time *mono_time = (Mono_Time *)calloc(1, sizeof(Mono_Time));
+    Mono_Time *mono_time = (Mono_Time *)mem_alloc(mem, sizeof(Mono_Time));
 
     if (mono_time == nullptr) {
         return nullptr;
     }
 
 #ifndef ESP_PLATFORM
-    mono_time->time_update_lock = (pthread_rwlock_t *)calloc(1, sizeof(pthread_rwlock_t));
+    mono_time->time_update_lock = (pthread_rwlock_t *)mem_alloc(mem, sizeof(pthread_rwlock_t));
 
     if (mono_time->time_update_lock == nullptr) {
-        free(mono_time);
+        mem_delete(mem, mono_time);
         return nullptr;
     }
 
     if (pthread_rwlock_init(mono_time->time_update_lock, nullptr) < 0) {
-        free(mono_time->time_update_lock);
-        free(mono_time);
+        mem_delete(mem, mono_time->time_update_lock);
+        mem_delete(mem, mono_time);
         return nullptr;
     }
 #endif
@@ -153,8 +153,8 @@ Mono_Time *mono_time_new(mono_time_current_time_cb *current_time_callback, void 
     mono_time->last_clock_update = false;
 
     if (pthread_mutex_init(&mono_time->last_clock_lock, nullptr) < 0) {
-        free(mono_time->time_update_lock);
-        free(mono_time);
+        mem_delete(mem, mono_time->time_update_lock);
+        mem_delete(mem, mono_time);
         return nullptr;
     }
 
@@ -173,7 +173,7 @@ Mono_Time *mono_time_new(mono_time_current_time_cb *current_time_callback, void 
     return mono_time;
 }
 
-void mono_time_free(Mono_Time *mono_time)
+void mono_time_free(const Memory *mem, Mono_Time *mono_time)
 {
     if (mono_time == nullptr) {
         return;
@@ -183,9 +183,9 @@ void mono_time_free(Mono_Time *mono_time)
 #endif
 #ifndef ESP_PLATFORM
     pthread_rwlock_destroy(mono_time->time_update_lock);
-    free(mono_time->time_update_lock);
+    mem_delete(mem, mono_time->time_update_lock);
 #endif
-    free(mono_time);
+    mem_delete(mem, mono_time);
 }
 
 void mono_time_update(Mono_Time *mono_time)

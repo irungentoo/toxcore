@@ -247,6 +247,7 @@ typedef struct GC_TopicInfo {
 typedef struct GC_Chat {
     Mono_Time       *mono_time;
     const Logger    *log;
+    const Memory    *mem;
     const Random    *rng;
 
     uint32_t        connected_tcp_relays;

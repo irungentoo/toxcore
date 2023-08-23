@@ -23,6 +23,7 @@ struct Tox_System {
     void *mono_time_user_data;
     const struct Random *rng;
     const struct Network *ns;
+    const struct Memory *mem;
 };
 
 Tox_System tox_default_system(void);

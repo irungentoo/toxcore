@@ -1,5 +1,5 @@
 FROM toxchat/c-toxcore:sources AS src
-FROM ubuntu:20.04 AS build
+FROM ubuntu:22.04 AS build
 
 RUN apt-get update && \
  DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
@@ -31,8 +31,8 @@ SHELL ["/bin/bash", "-c"]
 WORKDIR /work
 COPY --from=src /src/ /work/
 RUN source .github/scripts/flags-coverage.sh \
- && go get github.com/things-go/go-socks5 \
- && go build other/proxy/proxy_server.go \
+ && go version \
+ && (cd other/proxy && go get github.com/things-go/go-socks5 && go build proxy_server.go) \
  && cmake -B_build -H. -GNinja \
  -DCMAKE_C_FLAGS="$C_FLAGS" \
  -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
@@ -46,6 +46,7 @@ RUN source .github/scripts/flags-coverage.sh \
  -DAUTOTEST=ON \
  -DPROXY_TEST=ON \
  -DUSE_IPV6=OFF \
+ -DTEST_TIMEOUT_SECONDS=30 \
  && cmake --build _build --parallel 8 --target install
 
 WORKDIR /work/_build

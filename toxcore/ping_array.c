@@ -24,6 +24,7 @@ typedef struct Ping_Array_Entry {
 } Ping_Array_Entry;
 
 struct Ping_Array {
+    const Memory *mem;
     Ping_Array_Entry *entries;
 
     uint32_t last_deleted; /* number representing the next entry to be deleted. */
@@ -32,7 +33,7 @@ struct Ping_Array {
     uint32_t timeout;      /* The timeout after which entries are cleared. */
 };
 
-Ping_Array *ping_array_new(uint32_t size, uint32_t timeout)
+Ping_Array *ping_array_new(const Memory *mem, uint32_t size, uint32_t timeout)
 {
     if (size == 0 || timeout == 0) {
         return nullptr;
@@ -43,16 +44,17 @@ Ping_Array *ping_array_new(uint32_t size, uint32_t timeout)
         return nullptr;
     }
 
-    Ping_Array *const empty_array = (Ping_Array *)calloc(1, sizeof(Ping_Array));
+    Ping_Array *const empty_array = (Ping_Array *)mem_alloc(mem, sizeof(Ping_Array));
 
     if (empty_array == nullptr) {
         return nullptr;
     }
 
-    empty_array->entries = (Ping_Array_Entry *)calloc(size, sizeof(Ping_Array_Entry));
+    empty_array->mem = mem;
+    empty_array->entries = (Ping_Array_Entry *)mem_valloc(mem, size, sizeof(Ping_Array_Entry));
 
     if (empty_array->entries == nullptr) {
-        free(empty_array);
+        mem_delete(mem, empty_array);
         return nullptr;
     }
 
@@ -67,7 +69,7 @@ non_null()
 static void clear_entry(Ping_Array *array, uint32_t index)
 {
     const Ping_Array_Entry empty = {nullptr};
-    free(array->entries[index].data);
+    mem_delete(array->mem, array->entries[index].data);
     array->entries[index] = empty;
 }
 
@@ -83,8 +85,8 @@ void ping_array_kill(Ping_Array *array)
         ++array->last_deleted;
     }
 
-    free(array->entries);
-    free(array);
+    mem_delete(array->mem, array->entries);
+    mem_delete(array->mem, array);
 }
 
 /** Clear timed out entries. */
@@ -114,7 +116,7 @@ uint64_t ping_array_add(Ping_Array *array, const Mono_Time *mono_time, const Ran
         clear_entry(array, index);
     }
 
-    array->entries[index].data = (uint8_t *)malloc(length);
+    array->entries[index].data = (uint8_t *)mem_balloc(array->mem, length);
 
     if (array->entries[index].data == nullptr) {
         return 0;

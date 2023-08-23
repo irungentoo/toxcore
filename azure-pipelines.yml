@@ -9,7 +9,7 @@ jobs:
         shared:
           conan.shared: "True"
     steps:
-      - bash: python -m pip install conan
+      - bash: python -m pip install conan==1.59.0
       - bash: git submodule update --init --recursive
       - bash: conan install -if _build -o with_tests=True -o shared=$(conan.shared) .
       - bash: CONAN_CPU_COUNT=50 CTEST_OUTPUT_ON_FAILURE=1 conan build -bf _build -if _build .

@@ -14,6 +14,7 @@
 #include "attributes.h"
 #include "crypto_core.h"
 #include "logger.h"
+#include "mem.h"
 #include "mono_time.h"
 #include "network.h"
 #include "ping_array.h"
@@ -219,7 +220,7 @@ int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_
  * @retval -1 on failure.
  */
 non_null()
-int dht_create_packet(const Random *rng,
+int dht_create_packet(const Memory *mem, const Random *rng,
                       const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
                       const uint8_t *shared_key, const uint8_t type,
                       const uint8_t *plain, size_t plain_length,
@@ -494,8 +495,8 @@ int dht_load(DHT *dht, const uint8_t *data, uint32_t length);
 
 /** Initialize DHT. */
 non_null()
-DHT *new_dht(const Logger *log, const Random *rng, const Network *ns, Mono_Time *mono_time, Networking_Core *net,
-             bool hole_punching_enabled, bool lan_discovery_enabled);
+DHT *new_dht(const Logger *log, const Memory *mem, const Random *rng, const Network *ns,
+             Mono_Time *mono_time, Networking_Core *net, bool hole_punching_enabled, bool lan_discovery_enabled);
 
 nullable(1)
 void kill_dht(DHT *dht);

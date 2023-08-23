@@ -54,14 +54,17 @@ static void test_store_data(void)
     ck_assert(rng != nullptr);
     const Network *ns = system_network();
     ck_assert(ns != nullptr);
+    const Memory *mem = system_memory();
+    ck_assert(mem != nullptr);
+
     Logger *log = logger_new();
     ck_assert(log != nullptr);
     logger_callback_log(log, print_debug_logger, nullptr, nullptr);
-    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
-    Networking_Core *net = new_networking_no_udp(log, ns);
-    DHT *dht = new_dht(log, rng, ns, mono_time, net, true, true);
+    Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
+    Networking_Core *net = new_networking_no_udp(log, mem, ns);
+    DHT *dht = new_dht(log, mem, rng, ns, mono_time, net, true, true);
     Forwarding *forwarding = new_forwarding(log, rng, mono_time, dht);
-    Announcements *announce = new_announcements(log, rng, mono_time, forwarding);
+    Announcements *announce = new_announcements(log, mem, rng, mono_time, forwarding);
     ck_assert(announce != nullptr);
 
     /* Just to prevent CI from complaining that set_synch_offset is unused: */
@@ -103,7 +106,7 @@ static void test_store_data(void)
     kill_forwarding(forwarding);
     kill_dht(dht);
     kill_networking(net);
-    mono_time_free(mono_time);
+    mono_time_free(mem, mono_time);
     logger_kill(log);
 }
 

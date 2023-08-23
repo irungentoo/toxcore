@@ -172,7 +172,7 @@ void TestEndToEnd(Fuzz_Data &input)
     while (input.size > 0) {
         Tox_Err_Events_Iterate error_iterate;
         Tox_Events *events = tox_events_iterate(tox, true, &error_iterate);
-        assert(tox_events_equal(events, events));
+        assert(tox_events_equal(tox_get_system(tox), events, events));
         tox_dispatch_invoke(dispatch, events, tox, nullptr);
         tox_events_free(events);
         sys.clock += std::max(System::MIN_ITERATION_INTERVAL, random_u08(sys.rng.get()));

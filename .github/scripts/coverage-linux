@@ -9,7 +9,7 @@ sudo apt-get install -y --no-install-recommends \
   libopus-dev \
   libsodium-dev \
   libvpx-dev \
-  llvm-11 \
+  llvm-14 \
   ninja-build
 git clone --depth=1 https://github.com/ralight/mallocfail /tmp/mallocfail
 cd /tmp/mallocfail # pushd
@@ -21,7 +21,7 @@ export CC=clang
 export CXX=clang++
 
 sudo install other/docker/coverage/run_mallocfail /usr/local/bin/run_mallocfail
-(cd other/proxy && go build)
+(cd other/proxy && go get && go build)
 other/proxy/proxy &
 
 . ".github/scripts/flags-coverage.sh"
@@ -58,4 +58,4 @@ cd - # popd
 #  --exclude testing \
 #  --gcov-options '\-lp'
 
-bash <(curl -s https://codecov.io/bash) -x "llvm-cov-11 gcov"
+bash <(curl -s https://codecov.io/bash) -x "llvm-cov-14 gcov"

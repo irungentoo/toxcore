@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include "attributes.h"
+#include "mem.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,11 +48,11 @@ typedef struct Mono_Time Mono_Time;
 
 typedef uint64_t mono_time_current_time_cb(void *user_data);
 
-nullable(1, 2)
-Mono_Time *mono_time_new(mono_time_current_time_cb *current_time_callback, void *user_data);
+non_null(1) nullable(2, 3)
+Mono_Time *mono_time_new(const Memory *mem, mono_time_current_time_cb *current_time_callback, void *user_data);
 
-nullable(1)
-void mono_time_free(Mono_Time *mono_time);
+non_null(1) nullable(2)
+void mono_time_free(const Memory *mem, Mono_Time *mono_time);
 
 /**
  * Update mono_time; subsequent calls to mono_time_get or mono_time_is_timeout

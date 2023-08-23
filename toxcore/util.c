@@ -24,7 +24,7 @@ bool is_power_of_2(uint64_t x)
     return x != 0 && (x & (~x + 1)) == x;
 }
 
-void free_uint8_t_pointer_array(uint8_t **ary, size_t n_items)
+void free_uint8_t_pointer_array(const Memory *mem, uint8_t **ary, size_t n_items)
 {
     if (ary == nullptr) {
         return;
@@ -32,11 +32,11 @@ void free_uint8_t_pointer_array(uint8_t **ary, size_t n_items)
 
     for (size_t i = 0; i < n_items; ++i) {
         if (ary[i] != nullptr) {
-            free(ary[i]);
+            mem_delete(mem, ary[i]);
         }
     }
 
-    free(ary);
+    mem_delete(mem, ary);
 }
 
 uint16_t data_checksum(const uint8_t *data, uint32_t length)

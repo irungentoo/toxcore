@@ -244,12 +244,12 @@ void RecordBootstrap()
         Tox_Events *events;
 
         events = tox_events_iterate(tox1, true, &error_iterate);
-        assert(tox_events_equal(events, events));
+        assert(tox_events_equal(sys1.sys.get(), events, events));
         tox_dispatch_invoke(dispatch, events, tox1, &done1);
         tox_events_free(events);
 
         events = tox_events_iterate(tox2, true, &error_iterate);
-        assert(tox_events_equal(events, events));
+        assert(tox_events_equal(sys2.sys.get(), events, events));
         tox_dispatch_invoke(dispatch, events, tox2, &done2);
         tox_events_free(events);
 

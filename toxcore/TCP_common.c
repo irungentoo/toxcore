@@ -10,13 +10,13 @@
 
 #include "ccompat.h"
 
-void wipe_priority_list(TCP_Priority_List *p)
+void wipe_priority_list(const Memory *mem, TCP_Priority_List *p)
 {
     while (p != nullptr) {
         TCP_Priority_List *pp = p;
         p = p->next;
-        free(pp->data);
-        free(pp);
+        mem_delete(mem, pp->data);
+        mem_delete(mem, pp);
     }
 }
 
@@ -74,8 +74,8 @@ int send_pending_data(const Logger *logger, TCP_Connection *con)
 
         TCP_Priority_List *pp = p;
         p = p->next;
-        free(pp->data);
-        free(pp);
+        mem_delete(con->mem, pp->data);
+        mem_delete(con->mem, pp);
     }
 
     con->priority_queue_start = p;
@@ -89,14 +89,14 @@ int send_pending_data(const Logger *logger, TCP_Connection *con)
 }
 
 /**
- * @retval false on failure (only if calloc fails)
+ * @retval false on failure (only if mem_alloc fails)
  * @retval true on success
  */
 non_null()
 static bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
 {
     TCP_Priority_List *p = con->priority_queue_end;
-    TCP_Priority_List *new_list = (TCP_Priority_List *)calloc(1, sizeof(TCP_Priority_List));
+    TCP_Priority_List *new_list = (TCP_Priority_List *)mem_alloc(con->mem, sizeof(TCP_Priority_List));
 
     if (new_list == nullptr) {
         return false;
@@ -105,10 +105,10 @@ static bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t si
     new_list->next = nullptr;
     new_list->size = size;
     new_list->sent = sent;
-    new_list->data = (uint8_t *)malloc(size);
+    new_list->data = (uint8_t *)mem_balloc(con->mem, size);
 
     if (new_list->data == nullptr) {
-        free(new_list);
+        mem_delete(con->mem, new_list);
         return false;
     }
 
@@ -195,7 +195,8 @@ int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con
  * return length on success
  * return -1 on failure/no data in buffer.
  */
-int read_TCP_packet(const Logger *logger, const Network *ns, Socket sock, uint8_t *data, uint16_t length, const IP_Port *ip_port)
+int read_TCP_packet(
+        const Logger *logger, const Memory *mem, const Network *ns, Socket sock, uint8_t *data, uint16_t length, const IP_Port *ip_port)
 {
     const uint16_t count = net_socket_data_recv_buffer(ns, sock);
 
@@ -222,7 +223,7 @@ int read_TCP_packet(const Logger *logger, const Network *ns, Socket sock, uint8_
  * return -1 on failure.
  */
 non_null()
-static uint16_t read_TCP_length(const Logger *logger, const Network *ns, Socket sock, const IP_Port *ip_port)
+static uint16_t read_TCP_length(const Logger *logger, const Memory *mem, const Network *ns, Socket sock, const IP_Port *ip_port)
 {
     const uint16_t count = net_socket_data_recv_buffer(ns, sock);
 
@@ -255,12 +256,13 @@ static uint16_t read_TCP_length(const Logger *logger, const Network *ns, Socket 
  * @retval -1 on failure (connection must be killed).
  */
 int read_packet_TCP_secure_connection(
-        const Logger *logger, const Network *ns, Socket sock, uint16_t *next_packet_length,
+        const Logger *logger, const Memory *mem, const Network *ns,
+        Socket sock, uint16_t *next_packet_length,
         const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data,
         uint16_t max_len, const IP_Port *ip_port)
 {
     if (*next_packet_length == 0) {
-        const uint16_t len = read_TCP_length(logger, ns, sock, ip_port);
+        const uint16_t len = read_TCP_length(logger, mem, ns, sock, ip_port);
 
         if (len == (uint16_t) -1) {
             return -1;
@@ -279,7 +281,7 @@ int read_packet_TCP_secure_connection(
     }
 
     VLA(uint8_t, data_encrypted, (int) *next_packet_length);
-    const int len_packet = read_TCP_packet(logger, ns, sock, data_encrypted, *next_packet_length, ip_port);
+    const int len_packet = read_TCP_packet(logger, mem, ns, sock, data_encrypted, *next_packet_length, ip_port);
 
     if (len_packet == -1) {
         return 0;

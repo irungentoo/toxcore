@@ -181,7 +181,7 @@ ToxAV *toxav_new(Tox *tox, Toxav_Err_New *error)
 
     av->tox = tox;
     av->m = m;
-    av->toxav_mono_time = mono_time_new(nullptr, nullptr);
+    av->toxav_mono_time = mono_time_new(tox->sys.mem, nullptr, nullptr);
     av->msi = msi_new(av->m);
 
     if (av->msi == nullptr) {
@@ -239,7 +239,7 @@ void toxav_kill(ToxAV *av)
         }
     }
 
-    mono_time_free(av->toxav_mono_time);
+    mono_time_free(av->tox->sys.mem, av->toxav_mono_time);
 
     pthread_mutex_unlock(av->mutex);
     pthread_mutex_destroy(av->mutex);

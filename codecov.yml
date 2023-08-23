@@ -11,3 +11,7 @@ coverage:
         # because of the above range, but toxcore coverage fluctuates a lot due
         # to low coverage of error paths that sometimes happen.
         threshold: 2%
+
+ignore:
+  - "auto_tests" # ignore tests in coverage analysis
+  - "other" # we don't test the bootstrap daemon

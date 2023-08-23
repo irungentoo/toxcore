@@ -106,6 +106,7 @@ struct Onion_Client {
     const Mono_Time *mono_time;
     const Logger *logger;
     const Random *rng;
+    const Memory *mem;
 
     DHT     *dht;
     Net_Crypto *c;
@@ -731,12 +732,12 @@ static int onion_client_cmp_entry(const void *a, const void *b)
 }
 
 non_null()
-static void sort_onion_node_list(Onion_Node *list, unsigned int length, const Mono_Time *mono_time,
-                                 const uint8_t *comp_public_key)
+static void sort_onion_node_list(const Memory *mem, const Mono_Time *mono_time,
+                                 Onion_Node *list, unsigned int length, const uint8_t *comp_public_key)
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
-    Onion_Client_Cmp_Data *cmp_list = (Onion_Client_Cmp_Data *)calloc(length, sizeof(Onion_Client_Cmp_Data));
+    Onion_Client_Cmp_Data *cmp_list = (Onion_Client_Cmp_Data *)mem_valloc(mem, length, sizeof(Onion_Client_Cmp_Data));
 
     if (cmp_list == nullptr) {
         return;
@@ -754,7 +755,7 @@ static void sort_onion_node_list(Onion_Node *list, unsigned int length, const Mo
         list[i] = cmp_list[i].entry;
     }
 
-    free(cmp_list);
+    mem_delete(mem, cmp_list);
 }
 
 non_null()
@@ -787,7 +788,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
         list_length = MAX_ONION_CLIENTS;
     }
 
-    sort_onion_node_list(node_list, list_length, onion_c->mono_time, reference_id);
+    sort_onion_node_list(onion_c->mem, onion_c->mono_time, node_list, list_length, reference_id);
 
     int index = -1;
     bool stored = false;
@@ -1457,19 +1458,19 @@ int onion_friend_num(const Onion_Client *onion_c, const uint8_t *public_key)
 
 /** @brief Set the size of the friend list to num.
  *
- * @retval -1 if realloc fails.
+ * @retval -1 if mem_vrealloc fails.
  * @retval 0 if it succeeds.
  */
 non_null()
 static int realloc_onion_friends(Onion_Client *onion_c, uint32_t num)
 {
     if (num == 0) {
-        free(onion_c->friends_list);
+        mem_delete(onion_c->mem, onion_c->friends_list);
         onion_c->friends_list = nullptr;
         return 0;
     }
 
-    Onion_Friend *newonion_friends = (Onion_Friend *)realloc(onion_c->friends_list, num * sizeof(Onion_Friend));
+    Onion_Friend *newonion_friends = (Onion_Friend *)mem_vrealloc(onion_c->mem, onion_c->friends_list, num, sizeof(Onion_Friend));
 
     if (newonion_friends == nullptr) {
         return -1;
@@ -2074,28 +2075,29 @@ void do_onion_client(Onion_Client *onion_c)
     onion_c->last_run = mono_time_get(onion_c->mono_time);
 }
 
-Onion_Client *new_onion_client(const Logger *logger, const Random *rng, const Mono_Time *mono_time, Net_Crypto *c)
+Onion_Client *new_onion_client(const Logger *logger, const Memory *mem, const Random *rng, const Mono_Time *mono_time, Net_Crypto *c)
 {
     if (c == nullptr) {
         return nullptr;
     }
 
-    Onion_Client *onion_c = (Onion_Client *)calloc(1, sizeof(Onion_Client));
+    Onion_Client *onion_c = (Onion_Client *)mem_alloc(mem, sizeof(Onion_Client));
 
     if (onion_c == nullptr) {
         return nullptr;
     }
 
-    onion_c->announce_ping_array = ping_array_new(ANNOUNCE_ARRAY_SIZE, ANNOUNCE_TIMEOUT);
+    onion_c->announce_ping_array = ping_array_new(mem, ANNOUNCE_ARRAY_SIZE, ANNOUNCE_TIMEOUT);
 
     if (onion_c->announce_ping_array == nullptr) {
-        free(onion_c);
+        mem_delete(mem, onion_c);
         return nullptr;
     }
 
     onion_c->mono_time = mono_time;
     onion_c->logger = logger;
     onion_c->rng = rng;
+    onion_c->mem = mem;
     onion_c->dht = nc_get_dht(c);
     onion_c->net = dht_get_net(onion_c->dht);
     onion_c->c = c;
@@ -2117,6 +2119,8 @@ void kill_onion_client(Onion_Client *onion_c)
         return;
     }
 
+    const Memory *mem = onion_c->mem;
+
     ping_array_kill(onion_c->announce_ping_array);
     realloc_onion_friends(onion_c, 0);
     networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, nullptr, nullptr);
@@ -2126,5 +2130,5 @@ void kill_onion_client(Onion_Client *onion_c)
     cryptopacket_registerhandler(onion_c->dht, CRYPTO_PACKET_DHTPK, nullptr, nullptr);
     set_onion_packet_tcp_connection_callback(nc_get_tcp_c(onion_c->c), nullptr, nullptr);
     crypto_memzero(onion_c, sizeof(Onion_Client));
-    free(onion_c);
+    mem_delete(mem, onion_c);
 }

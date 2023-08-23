@@ -16,7 +16,8 @@ uint8_t announce_response_of_request_type(uint8_t request_type);
 typedef struct Announcements Announcements;
 
 non_null()
-Announcements *new_announcements(const Logger *log, const Random *rng, const Mono_Time *mono_time, Forwarding *forwarding);
+Announcements *new_announcements(const Logger *log, const Memory *mem, const Random *rng, const Mono_Time *mono_time,
+                                 Forwarding *forwarding);
 
 /**
  * @brief If data is stored, run `on_retrieve_callback` on it.

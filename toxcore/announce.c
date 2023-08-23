@@ -50,6 +50,7 @@ typedef struct Announce_Entry {
 
 struct Announcements {
     const Logger *log;
+    const Memory *mem;
     const Random *rng;
     Forwarding *forwarding;
     const Mono_Time *mono_time;
@@ -593,8 +594,8 @@ static int create_reply(Announcements *announce, const IP_Port *source,
 
     const uint8_t response_type = announce_response_of_request_type(data[0]);
 
-    return dht_create_packet(announce->rng, announce->public_key, shared_key, response_type,
-                             plain_reply, plain_reply_len, reply, reply_max_length);
+    return dht_create_packet(announce->mem, announce->rng, announce->public_key, shared_key,
+                             response_type, plain_reply, plain_reply_len, reply, reply_max_length);
 }
 
 non_null(1, 2, 3, 5) nullable(7)
@@ -636,7 +637,7 @@ static int handle_dht_announce_request(void *object, const IP_Port *source,
     return sendpacket(announce->net, source, reply, len) == len ? 0 : -1;
 }
 
-Announcements *new_announcements(const Logger *log, const Random *rng, const Mono_Time *mono_time,
+Announcements *new_announcements(const Logger *log, const Memory *mem, const Random *rng, const Mono_Time *mono_time,
                                  Forwarding *forwarding)
 {
     if (log == nullptr || mono_time == nullptr || forwarding == nullptr) {
@@ -650,6 +651,7 @@ Announcements *new_announcements(const Logger *log, const Random *rng, const Mon
     }
 
     announce->log = log;
+    announce->mem = mem;
     announce->rng = rng;
     announce->forwarding = forwarding;
     announce->mono_time = mono_time;
@@ -658,7 +660,7 @@ Announcements *new_announcements(const Logger *log, const Random *rng, const Mon
     announce->public_key = dht_get_self_public_key(announce->dht);
     announce->secret_key = dht_get_self_secret_key(announce->dht);
     new_hmac_key(announce->rng, announce->hmac_key);
-    announce->shared_keys = shared_key_cache_new(mono_time, announce->secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    announce->shared_keys = shared_key_cache_new(mono_time, mem, announce->secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
     if (announce->shared_keys == nullptr) {
         free(announce);
         return nullptr;

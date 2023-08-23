@@ -18,10 +18,10 @@
 typedef struct Ping Ping;
 
 non_null()
-Ping *ping_new(const Mono_Time *mono_time, const Random *rng, DHT *dht);
+Ping *ping_new(const Memory *mem, const Mono_Time *mono_time, const Random *rng, DHT *dht);
 
-nullable(1)
-void ping_kill(Ping *ping);
+non_null(1) nullable(2)
+void ping_kill(const Memory *mem, Ping *ping);
 
 /** @brief Add nodes to the to_ping list.
  * All nodes in this list are pinged every TIME_TO_PING seconds

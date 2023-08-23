@@ -78,6 +78,7 @@ typedef struct Mod_Sanction {
 } Mod_Sanction;
 
 typedef struct Moderation {
+    const       Memory *mem;
     const       Logger *log;
 
     Mod_Sanction *sanctions;

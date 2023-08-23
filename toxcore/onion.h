@@ -20,6 +20,7 @@ typedef struct Onion {
     const Logger *log;
     const Mono_Time *mono_time;
     const Random *rng;
+    const Memory *mem;
     DHT *dht;
     Networking_Core *net;
     uint8_t secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
@@ -147,7 +148,7 @@ non_null(1) nullable(2, 3)
 void set_callback_handle_recv_1(Onion *onion, onion_recv_1_cb *function, void *object);
 
 non_null()
-Onion *new_onion(const Logger *log, const Mono_Time *mono_time, const Random *rng, DHT *dht);
+Onion *new_onion(const Logger *log, const Memory *mem, const Mono_Time *mono_time, const Random *rng, DHT *dht);
 
 nullable(1)
 void kill_onion(Onion *onion);

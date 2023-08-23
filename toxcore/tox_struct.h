@@ -7,6 +7,7 @@
 #define C_TOXCORE_TOXCORE_TOX_STRUCT_H
 
 #include "Messenger.h"
+#include "mem.h"
 #include "tox.h"
 #include "tox_private.h"
 
@@ -17,8 +18,7 @@ extern "C" {
 struct Tox {
     Messenger *m;
     Mono_Time *mono_time;
-    Random rng;
-    Network ns;
+    Tox_System sys;
     pthread_mutex_t *mutex;
 
     tox_log_cb *log_callback;

@@ -62,13 +62,14 @@ struct with<IP_Port> {
 
 /** @brief Construct a Networking_Core object using the Network vtable passed.
  *
- * Use `with<Logger>{} >> with<Networking_Core>{input, ns} >> ...` to construct
+ * Use `with<Logger>{} >> with<Networking_Core>{input, ns, mem} >> ...` to construct
  * a logger and pass it to the Networking_Core constructor function.
  */
 template <>
 struct with<Networking_Core> {
     Fuzz_Data &input_;
     const Network *ns_;
+    const Memory *mem_;
     Ptr<Logger> logger_{nullptr, logger_kill};
 
     friend with operator>>(with<Logger> f, with self)
@@ -82,7 +83,7 @@ struct with<Networking_Core> {
     {
         with<IP_Port>{input_} >> [&f, this](const IP_Port &ipp) {
             Ptr<Networking_Core> net(
-                new_networking_ex(logger_.get(), ns_, &ipp.ip, ipp.port, ipp.port + 100, nullptr),
+                new_networking_ex(logger_.get(), mem_, ns_, &ipp.ip, ipp.port, ipp.port + 100, nullptr),
                 kill_networking);
             if (net == nullptr) {
                 return;

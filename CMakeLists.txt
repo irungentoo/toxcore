@@ -268,6 +268,8 @@ set(toxcore_SOURCES
   toxcore/logger.h
   toxcore/Messenger.c
   toxcore/Messenger.h
+  toxcore/mem.c
+  toxcore/mem.h
   toxcore/mono_time.c
   toxcore/mono_time.h
   toxcore/net_crypto.c
@@ -434,6 +436,7 @@ unit_test(toxcore bin_pack)
 unit_test(toxcore crypto_core)
 unit_test(toxcore group_announce)
 unit_test(toxcore group_moderation)
+unit_test(toxcore mem)
 unit_test(toxcore mono_time)
 unit_test(toxcore ping_array)
 unit_test(toxcore tox)

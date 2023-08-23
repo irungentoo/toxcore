@@ -8,6 +8,7 @@ namespace {
 
 struct Announces : ::testing::Test {
 protected:
+    const Memory *mem_ = system_memory();
     uint64_t clock_ = 0;
     Mono_Time *mono_time_ = nullptr;
     GC_Announces_List *gca_ = nullptr;
@@ -16,7 +17,7 @@ protected:
 
     void SetUp() override
     {
-        mono_time_ = mono_time_new(nullptr, nullptr);
+        mono_time_ = mono_time_new(mem_, nullptr, nullptr);
         ASSERT_NE(mono_time_, nullptr);
         mono_time_set_current_time_callback(
             mono_time_, [](void *user_data) { return *static_cast<uint64_t *>(user_data); },
@@ -28,7 +29,7 @@ protected:
     ~Announces() override
     {
         kill_gca(gca_);
-        mono_time_free(mono_time_);
+        mono_time_free(mem_, mono_time_);
     }
 
     void advance_clock(uint64_t increment)

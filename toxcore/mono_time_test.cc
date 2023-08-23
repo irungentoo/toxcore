@@ -6,7 +6,8 @@ namespace {
 
 TEST(MonoTime, UnixTimeIncreasesOverTime)
 {
-    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
+    const Memory *mem = system_memory();
+    Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
     ASSERT_NE(mono_time, nullptr);
 
     mono_time_update(mono_time);
@@ -19,12 +20,13 @@ TEST(MonoTime, UnixTimeIncreasesOverTime)
     uint64_t const end = mono_time_get(mono_time);
     EXPECT_GT(end, start);
 
-    mono_time_free(mono_time);
+    mono_time_free(mem, mono_time);
 }
 
 TEST(MonoTime, IsTimeout)
 {
-    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
+    const Memory *mem = system_memory();
+    Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
     ASSERT_NE(mono_time, nullptr);
 
     uint64_t const start = mono_time_get(mono_time);
@@ -36,12 +38,13 @@ TEST(MonoTime, IsTimeout)
 
     EXPECT_TRUE(mono_time_is_timeout(mono_time, start, 1));
 
-    mono_time_free(mono_time);
+    mono_time_free(mem, mono_time);
 }
 
 TEST(MonoTime, CustomTime)
 {
-    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
+    const Memory *mem = system_memory();
+    Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
     ASSERT_NE(mono_time, nullptr);
 
     uint64_t test_time = current_time_monotonic(mono_time) + 42137;
@@ -61,7 +64,7 @@ TEST(MonoTime, CustomTime)
 
     EXPECT_EQ(current_time_monotonic(mono_time), test_time);
 
-    mono_time_free(mono_time);
+    mono_time_free(mem, mono_time);
 }
 
 }  // namespace

@@ -127,6 +127,7 @@ static const Crypto_Connection empty_crypto_connection = {{0}};
 
 struct Net_Crypto {
     const Logger *log;
+    const Memory *mem;
     const Random *rng;
     Mono_Time *mono_time;
     const Network *ns;
@@ -758,7 +759,7 @@ static uint32_t num_packets_array(const Packets_Array *array)
  * @retval 0 on success.
  */
 non_null()
-static int add_data_to_buffer(Packets_Array *array, uint32_t number, const Packet_Data *data)
+static int add_data_to_buffer(const Memory *mem, Packets_Array *array, uint32_t number, const Packet_Data *data)
 {
     if (number - array->buffer_start >= CRYPTO_PACKET_BUFFER_SIZE) {
         return -1;
@@ -770,7 +771,7 @@ static int add_data_to_buffer(Packets_Array *array, uint32_t number, const Packe
         return -1;
     }
 
-    Packet_Data *new_d = (Packet_Data *)calloc(1, sizeof(Packet_Data));
+    Packet_Data *new_d = (Packet_Data *)mem_alloc(mem, sizeof(Packet_Data));
 
     if (new_d == nullptr) {
         return -1;
@@ -817,7 +818,7 @@ static int get_data_pointer(const Packets_Array *array, Packet_Data **data, uint
  * @return packet number on success.
  */
 non_null()
-static int64_t add_data_end_of_buffer(const Logger *logger, Packets_Array *array, const Packet_Data *data)
+static int64_t add_data_end_of_buffer(const Logger *logger, const Memory *mem, Packets_Array *array, const Packet_Data *data)
 {
     const uint32_t num_spots = num_packets_array(array);
 
@@ -826,7 +827,7 @@ static int64_t add_data_end_of_buffer(const Logger *logger, Packets_Array *array
         return -1;
     }
 
-    Packet_Data *new_d = (Packet_Data *)calloc(1, sizeof(Packet_Data));
+    Packet_Data *new_d = (Packet_Data *)mem_alloc(mem, sizeof(Packet_Data));
 
     if (new_d == nullptr) {
         LOGGER_ERROR(logger, "packet data allocation failed");
@@ -846,7 +847,7 @@ static int64_t add_data_end_of_buffer(const Logger *logger, Packets_Array *array
  * @return packet number on success.
  */
 non_null()
-static int64_t read_data_beg_buffer(Packets_Array *array, Packet_Data *data)
+static int64_t read_data_beg_buffer(const Memory *mem, Packets_Array *array, Packet_Data *data)
 {
     if (array->buffer_end == array->buffer_start) {
         return -1;
@@ -861,7 +862,7 @@ static int64_t read_data_beg_buffer(Packets_Array *array, Packet_Data *data)
     *data = *array->buffer[num];
     const uint32_t id = array->buffer_start;
     ++array->buffer_start;
-    free(array->buffer[num]);
+    mem_delete(mem, array->buffer[num]);
     array->buffer[num] = nullptr;
     return id;
 }
@@ -872,7 +873,7 @@ static int64_t read_data_beg_buffer(Packets_Array *array, Packet_Data *data)
  * @retval 0 on success
  */
 non_null()
-static int clear_buffer_until(Packets_Array *array, uint32_t number)
+static int clear_buffer_until(const Memory *mem, Packets_Array *array, uint32_t number)
 {
     const uint32_t num_spots = num_packets_array(array);
 
@@ -886,7 +887,7 @@ static int clear_buffer_until(Packets_Array *array, uint32_t number)
         const uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
 
         if (array->buffer[num] != nullptr) {
-            free(array->buffer[num]);
+            mem_delete(mem, array->buffer[num]);
             array->buffer[num] = nullptr;
         }
     }
@@ -896,7 +897,7 @@ static int clear_buffer_until(Packets_Array *array, uint32_t number)
 }
 
 non_null()
-static int clear_buffer(Packets_Array *array)
+static int clear_buffer(const Memory *mem, Packets_Array *array)
 {
     uint32_t i;
 
@@ -904,7 +905,7 @@ static int clear_buffer(Packets_Array *array)
         const uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
 
         if (array->buffer[num] != nullptr) {
-            free(array->buffer[num]);
+            mem_delete(mem, array->buffer[num]);
             array->buffer[num] = nullptr;
         }
     }
@@ -995,7 +996,7 @@ static int generate_request_packet(uint8_t *data, uint16_t length, const Packets
  * @return number of requested packets on success.
  */
 non_null()
-static int handle_request_packet(Mono_Time *mono_time, Packets_Array *send_array,
+static int handle_request_packet(const Memory *mem, Mono_Time *mono_time, Packets_Array *send_array,
                                  const uint8_t *data, uint16_t length,
                                  uint64_t *latest_send_time, uint64_t rtt_time)
 {
@@ -1044,7 +1045,7 @@ static int handle_request_packet(Mono_Time *mono_time, Packets_Array *send_array
             if (send_array->buffer[num] != nullptr) {
                 l_sent_time = max_u64(l_sent_time, send_array->buffer[num]->sent_time);
 
-                free(send_array->buffer[num]);
+                mem_delete(mem, send_array->buffer[num]);
                 send_array->buffer[num] = nullptr;
             }
         }
@@ -1204,7 +1205,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
     dt.length = length;
     memcpy(dt.data, data, length);
     pthread_mutex_lock(conn->mutex);
-    const int64_t packet_num = add_data_end_of_buffer(c->log, &conn->send_array, &dt);
+    const int64_t packet_num = add_data_end_of_buffer(c->log, c->mem, &conn->send_array, &dt);
     pthread_mutex_unlock(conn->mutex);
 
     if (packet_num == -1) {
@@ -1384,14 +1385,14 @@ static int new_temp_packet(const Net_Crypto *c, int crypt_connection_id, const u
         return -1;
     }
 
-    uint8_t *temp_packet = (uint8_t *)malloc(length);
+    uint8_t *temp_packet = (uint8_t *)mem_balloc(c->mem, length);
 
     if (temp_packet == nullptr) {
         return -1;
     }
 
     if (conn->temp_packet != nullptr) {
-        free(conn->temp_packet);
+        mem_delete(c->mem, conn->temp_packet);
     }
 
     memcpy(temp_packet, packet, length);
@@ -1417,7 +1418,7 @@ static int clear_temp_packet(const Net_Crypto *c, int crypt_connection_id)
     }
 
     if (conn->temp_packet != nullptr) {
-        free(conn->temp_packet);
+        mem_delete(c->mem, conn->temp_packet);
     }
 
     conn->temp_packet = nullptr;
@@ -1575,7 +1576,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
             rtt_calc_time = packet_time->sent_time;
         }
 
-        if (clear_buffer_until(&conn->send_array, buffer_start) != 0) {
+        if (clear_buffer_until(c->mem, &conn->send_array, buffer_start) != 0) {
             return -1;
         }
     }
@@ -1616,9 +1617,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
             rtt_time = DEFAULT_TCP_PING_CONNECTION;
         }
 
-        const int requested = handle_request_packet(c->mono_time, &conn->send_array,
-                              real_data, real_length,
-                              &rtt_calc_time, rtt_time);
+        const int requested = handle_request_packet(c->mem, c->mono_time, &conn->send_array, real_data, real_length, &rtt_calc_time, rtt_time);
 
         if (requested == -1) {
             return -1;
@@ -1630,13 +1629,13 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
         dt.length = real_length;
         memcpy(dt.data, real_data, real_length);
 
-        if (add_data_to_buffer(&conn->recv_array, num, &dt) != 0) {
+        if (add_data_to_buffer(c->mem, &conn->recv_array, num, &dt) != 0) {
             return -1;
         }
 
         while (true) {
             pthread_mutex_lock(conn->mutex);
-            const int ret = read_data_beg_buffer(&conn->recv_array, &dt);
+            const int ret = read_data_beg_buffer(c->mem, &conn->recv_array, &dt);
             pthread_mutex_unlock(conn->mutex);
 
             if (ret == -1) {
@@ -1804,20 +1803,20 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, cons
 
 /** @brief Set the size of the friend list to numfriends.
  *
- * @retval -1 if realloc fails.
+ * @retval -1 if mem_vrealloc fails.
  * @retval 0 if it succeeds.
  */
 non_null()
 static int realloc_cryptoconnection(Net_Crypto *c, uint32_t num)
 {
     if (num == 0) {
-        free(c->crypto_connections);
+        mem_delete(c->mem, c->crypto_connections);
         c->crypto_connections = nullptr;
         return 0;
     }
 
-    Crypto_Connection *newcrypto_connections = (Crypto_Connection *)realloc(c->crypto_connections,
-            num * sizeof(Crypto_Connection));
+    Crypto_Connection *newcrypto_connections = (Crypto_Connection *)mem_vrealloc(
+            c->mem, c->crypto_connections, num, sizeof(Crypto_Connection));
 
     if (newcrypto_connections == nullptr) {
         return -1;
@@ -1870,7 +1869,7 @@ static int create_crypto_connection(Net_Crypto *c)
         c->crypto_connections[id].last_packets_left_rem = 0;
         c->crypto_connections[id].packet_send_rate_requested = 0;
         c->crypto_connections[id].last_packets_left_requested_rem = 0;
-        c->crypto_connections[id].mutex = (pthread_mutex_t *)calloc(1, sizeof(pthread_mutex_t));
+        c->crypto_connections[id].mutex = (pthread_mutex_t *)mem_alloc(c->mem, sizeof(pthread_mutex_t));
 
         if (c->crypto_connections[id].mutex == nullptr) {
             pthread_mutex_unlock(&c->connections_mutex);
@@ -1878,7 +1877,7 @@ static int create_crypto_connection(Net_Crypto *c)
         }
 
         if (pthread_mutex_init(c->crypto_connections[id].mutex, nullptr) != 0) {
-            free(c->crypto_connections[id].mutex);
+            mem_delete(c->mem, c->crypto_connections[id].mutex);
             pthread_mutex_unlock(&c->connections_mutex);
             return -1;
         }
@@ -1915,7 +1914,7 @@ static int wipe_crypto_connection(Net_Crypto *c, int crypt_connection_id)
     uint32_t i;
 
     pthread_mutex_destroy(c->crypto_connections[crypt_connection_id].mutex);
-    free(c->crypto_connections[crypt_connection_id].mutex);
+    mem_delete(c->mem, c->crypto_connections[crypt_connection_id].mutex);
     crypto_memzero(&c->crypto_connections[crypt_connection_id], sizeof(Crypto_Connection));
 
     /* check if we can resize the connections array */
@@ -2019,7 +2018,7 @@ static int handle_new_connection_handshake(Net_Crypto *c, const IP_Port *source,
         void *userdata)
 {
     New_Connection n_c;
-    n_c.cookie = (uint8_t *)malloc(COOKIE_LENGTH);
+    n_c.cookie = (uint8_t *)mem_balloc(c->mem, COOKIE_LENGTH);
 
     if (n_c.cookie == nullptr) {
         return -1;
@@ -2030,7 +2029,7 @@ static int handle_new_connection_handshake(Net_Crypto *c, const IP_Port *source,
 
     if (!handle_crypto_handshake(c, n_c.recv_nonce, n_c.peersessionpublic_key, n_c.public_key, n_c.dht_public_key,
                                  n_c.cookie, data, length, nullptr)) {
-        free(n_c.cookie);
+        mem_delete(c->mem, n_c.cookie);
         return -1;
     }
 
@@ -2047,7 +2046,7 @@ static int handle_new_connection_handshake(Net_Crypto *c, const IP_Port *source,
             connection_kill(c, crypt_connection_id, userdata);
         } else {
             if (conn->status != CRYPTO_CONN_COOKIE_REQUESTING && conn->status != CRYPTO_CONN_HANDSHAKE_SENT) {
-                free(n_c.cookie);
+                mem_delete(c->mem, n_c.cookie);
                 return -1;
             }
 
@@ -2058,18 +2057,18 @@ static int handle_new_connection_handshake(Net_Crypto *c, const IP_Port *source,
             crypto_connection_add_source(c, crypt_connection_id, source);
 
             if (create_send_handshake(c, crypt_connection_id, n_c.cookie, n_c.dht_public_key) != 0) {
-                free(n_c.cookie);
+                mem_delete(c->mem, n_c.cookie);
                 return -1;
             }
 
             conn->status = CRYPTO_CONN_NOT_CONFIRMED;
-            free(n_c.cookie);
+            mem_delete(c->mem, n_c.cookie);
             return 0;
         }
     }
 
     const int ret = c->new_connection_callback(c->new_connection_callback_object, &n_c);
-    free(n_c.cookie);
+    mem_delete(c->mem, n_c.cookie);
     return ret;
 }
 
@@ -3045,8 +3044,8 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
         bs_list_remove(&c->ip_port_list, (uint8_t *)&conn->ip_portv4, crypt_connection_id);
         bs_list_remove(&c->ip_port_list, (uint8_t *)&conn->ip_portv6, crypt_connection_id);
         clear_temp_packet(c, crypt_connection_id);
-        clear_buffer(&conn->send_array);
-        clear_buffer(&conn->recv_array);
+        clear_buffer(c->mem, &conn->send_array);
+        clear_buffer(c->mem, &conn->recv_array);
         ret = wipe_crypto_connection(c, crypt_connection_id);
     }
 
@@ -3109,27 +3108,29 @@ void load_secret_key(Net_Crypto *c, const uint8_t *sk)
 /** @brief Create new instance of Net_Crypto.
  * Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(const Logger *log, const Random *rng, const Network *ns, Mono_Time *mono_time, DHT *dht, const TCP_Proxy_Info *proxy_info)
+Net_Crypto *new_net_crypto(const Logger *log, const Memory *mem, const Random *rng, const Network *ns,
+                           Mono_Time *mono_time, DHT *dht, const TCP_Proxy_Info *proxy_info)
 {
     if (dht == nullptr) {
         return nullptr;
     }
 
-    Net_Crypto *temp = (Net_Crypto *)calloc(1, sizeof(Net_Crypto));
+    Net_Crypto *temp = (Net_Crypto *)mem_alloc(mem, sizeof(Net_Crypto));
 
     if (temp == nullptr) {
         return nullptr;
     }
 
     temp->log = log;
+    temp->mem = mem;
     temp->rng = rng;
     temp->mono_time = mono_time;
     temp->ns = ns;
 
-    temp->tcp_c = new_tcp_connections(log, rng, ns, mono_time, dht_get_self_secret_key(dht), proxy_info);
+    temp->tcp_c = new_tcp_connections(log, mem, rng, ns, mono_time, dht_get_self_secret_key(dht), proxy_info);
 
     if (temp->tcp_c == nullptr) {
-        free(temp);
+        mem_delete(mem, temp);
         return nullptr;
     }
 
@@ -3139,7 +3140,7 @@ Net_Crypto *new_net_crypto(const Logger *log, const Random *rng, const Network *
     if (create_recursive_mutex(&temp->tcp_mutex) != 0 ||
             pthread_mutex_init(&temp->connections_mutex, nullptr) != 0) {
         kill_tcp_connections(temp->tcp_c);
-        free(temp);
+        mem_delete(mem, temp);
         return nullptr;
     }
 
@@ -3210,6 +3211,8 @@ void kill_net_crypto(Net_Crypto *c)
         return;
     }
 
+    const Memory *mem = c->mem;
+
     for (uint32_t i = 0; i < c->crypto_connections_length; ++i) {
         crypto_kill(c, i);
     }
@@ -3224,5 +3227,5 @@ void kill_net_crypto(Net_Crypto *c)
     networking_registerhandler(dht_get_net(c->dht), NET_PACKET_CRYPTO_HS, nullptr, nullptr);
     networking_registerhandler(dht_get_net(c->dht), NET_PACKET_CRYPTO_DATA, nullptr, nullptr);
     crypto_memzero(c, sizeof(Net_Crypto));
-    free(c);
+    mem_delete(mem, c);
 }

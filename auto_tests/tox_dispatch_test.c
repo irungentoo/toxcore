@@ -43,7 +43,7 @@ static void dump_events(const char *path, const Tox_Events *events)
     }
 }
 
-static void print_events(Tox_Events *events)
+static void print_events(const Tox_System *sys, Tox_Events *events)
 {
     const uint32_t size = tox_events_bytes_size(events);
 
@@ -52,11 +52,11 @@ static void print_events(Tox_Events *events)
 
     tox_events_get_bytes(events, bytes);
 
-    Tox_Events *events_copy = tox_events_load(bytes, size);
+    Tox_Events *events_copy = tox_events_load(sys, bytes, size);
     ck_assert(events_copy != nullptr);
     free(bytes);
 
-    ck_assert(tox_events_equal(events, events_copy));
+    ck_assert(tox_events_equal(sys, events, events_copy));
 
     tox_events_free(events_copy);
     tox_events_free(events);
@@ -64,9 +64,11 @@ static void print_events(Tox_Events *events)
 
 static bool await_message(Tox **toxes, const Tox_Dispatch *dispatch)
 {
+    const Tox_System *sys = tox_get_system(toxes[0]);
+
     for (uint32_t i = 0; i < 100; ++i) {
         // Ignore events on tox 1.
-        print_events(tox_events_iterate(toxes[0], false, nullptr));
+        print_events(sys, tox_events_iterate(toxes[0], false, nullptr));
         // Check if tox 2 got the message from tox 1.
         Tox_Events *events = tox_events_iterate(toxes[1], false, nullptr);
 
@@ -74,7 +76,7 @@ static bool await_message(Tox **toxes, const Tox_Dispatch *dispatch)
 
         bool success = false;
         tox_dispatch_invoke(dispatch, events, toxes[1], &success);
-        print_events(events);
+        print_events(sys, events);
 
         if (success) {
             return true;
@@ -101,6 +103,8 @@ static void test_tox_events(void)
         ck_assert_msg(toxes[i] != nullptr, "failed to create tox instances %u", i);
     }
 
+    const Tox_System *sys = tox_get_system(toxes[0]);
+
     Tox_Err_Dispatch_New err_new;
     Tox_Dispatch *dispatch = tox_dispatch_new(&err_new);
     ck_assert_msg(dispatch != nullptr, "failed to create event dispatcher");
@@ -123,8 +127,8 @@ static void test_tox_events(void)
     while (tox_self_get_connection_status(toxes[0]) == TOX_CONNECTION_NONE ||
             tox_self_get_connection_status(toxes[1]) == TOX_CONNECTION_NONE) {
         // Ignore connection events for now.
-        print_events(tox_events_iterate(toxes[0], false, nullptr));
-        print_events(tox_events_iterate(toxes[1], false, nullptr));
+        print_events(sys, tox_events_iterate(toxes[0], false, nullptr));
+        print_events(sys, tox_events_iterate(toxes[1], false, nullptr));
 
         c_sleep(tox_iteration_interval(toxes[0]));
     }
@@ -134,8 +138,8 @@ static void test_tox_events(void)
     while (tox_friend_get_connection_status(toxes[0], 0, nullptr) == TOX_CONNECTION_NONE ||
             tox_friend_get_connection_status(toxes[1], 0, nullptr) == TOX_CONNECTION_NONE) {
         // Ignore connection events for now.
-        print_events(tox_events_iterate(toxes[0], false, nullptr));
-        print_events(tox_events_iterate(toxes[1], false, nullptr));
+        print_events(sys, tox_events_iterate(toxes[0], false, nullptr));
+        print_events(sys, tox_events_iterate(toxes[1], false, nullptr));
 
         c_sleep(tox_iteration_interval(toxes[0]));
     }

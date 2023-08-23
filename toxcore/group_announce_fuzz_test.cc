@@ -1,6 +1,7 @@
 #include "group_announce.h"
 
 #include <cassert>
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -44,9 +45,10 @@ void TestUnpackPublicAnnounce(Fuzz_Data &input)
 
 void TestDoGca(Fuzz_Data &input)
 {
+    const Memory *mem = system_memory();
     std::unique_ptr<Logger, void (*)(Logger *)> logger(logger_new(), logger_kill);
-    std::unique_ptr<Mono_Time, void (*)(Mono_Time *)> mono_time(
-        mono_time_new(nullptr, nullptr), mono_time_free);
+    std::unique_ptr<Mono_Time, std::function<void(Mono_Time *)>> mono_time(
+        mono_time_new(mem, nullptr, nullptr), [mem](Mono_Time *ptr) { mono_time_free(mem, ptr); });
     assert(mono_time != nullptr);
     uint64_t clock = 1;
     mono_time_set_current_time_callback(

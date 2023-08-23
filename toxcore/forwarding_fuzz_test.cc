@@ -12,8 +12,10 @@ void TestSendForwardRequest(Fuzz_Data &input)
 {
     const Network *ns = system_network();  // TODO(iphydf): fuzz_network
     assert(ns != nullptr);
+    const Memory *mem = system_memory();  // TODO(iphydf): fuzz_memory
+    assert(mem != nullptr);
 
-    with<Logger>{} >> with<Networking_Core>{input, ns} >> [&input](Ptr<Networking_Core> net) {
+    with<Logger>{} >> with<Networking_Core>{input, ns, mem} >> [&input](Ptr<Networking_Core> net) {
         with<IP_Port>{input} >> [net = std::move(net), &input](const IP_Port &forwarder) {
             CONSUME1_OR_RETURN(const uint16_t chain_length, input);
             const uint16_t chain_keys_size = chain_length * CRYPTO_PUBLIC_KEY_SIZE;
@@ -29,8 +31,10 @@ void TestForwardReply(Fuzz_Data &input)
 {
     const Network *ns = system_network();  // TODO(iphydf): fuzz_network
     assert(ns != nullptr);
+    const Memory *mem = system_memory();  // TODO(iphydf): fuzz_memory
+    assert(mem != nullptr);
 
-    with<Logger>{} >> with<Networking_Core>{input, ns} >> [&input](Ptr<Networking_Core> net) {
+    with<Logger>{} >> with<Networking_Core>{input, ns, mem} >> [&input](Ptr<Networking_Core> net) {
         with<IP_Port>{input} >> [net = std::move(net), &input](const IP_Port &forwarder) {
             CONSUME1_OR_RETURN(const uint16_t sendback_length, input);
             CONSUME_OR_RETURN(const uint8_t *sendback, input, sendback_length);

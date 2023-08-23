@@ -14,6 +14,7 @@
 #include <stdint.h>     // uint*_t
 
 #include "logger.h"
+#include "mem.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -533,7 +534,7 @@ void networking_poll(const Networking_Core *net, void *userdata);
  * Return false on failure.
  */
 non_null()
-bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port);
+bool net_connect(const Memory *mem, const Logger *log, Socket sock, const IP_Port *ip_port);
 
 /** @brief High-level getaddrinfo implementation.
  *
@@ -549,11 +550,11 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port);
  * @retval -1 on error.
  */
 non_null()
-int32_t net_getipport(const char *node, IP_Port **res, int tox_type);
+int32_t net_getipport(const Memory *mem, const char *node, IP_Port **res, int tox_type);
 
 /** Deallocates memory allocated by net_getipport */
-nullable(1)
-void net_freeipport(IP_Port *ip_ports);
+non_null(1) nullable(2)
+void net_freeipport(const Memory *mem, IP_Port *ip_ports);
 
 /**
  * @return true on success, false on failure.
@@ -600,13 +601,13 @@ void net_kill_strerror(char *strerror);
  *
  * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
-non_null(1, 2, 3) nullable(6)
+non_null(1, 2, 3, 4) nullable(7)
 Networking_Core *new_networking_ex(
-        const Logger *log, const Network *ns, const IP *ip,
+        const Logger *log, const Memory *mem, const Network *ns, const IP *ip,
         uint16_t port_from, uint16_t port_to, unsigned int *error);
 
 non_null()
-Networking_Core *new_networking_no_udp(const Logger *log, const Network *ns);
+Networking_Core *new_networking_no_udp(const Logger *log, const Memory *mem, const Network *ns);
 
 /** Function to cleanup networking stuff (doesn't do much right now). */
 nullable(1)

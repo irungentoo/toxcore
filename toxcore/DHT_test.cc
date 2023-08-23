@@ -187,12 +187,14 @@ TEST(Request, CreateAndParse)
 
 TEST(AnnounceNodes, SetAndTest)
 {
-    Logger *log = logger_new();
-    Mono_Time *mono_time = mono_time_new(nullptr, nullptr);
     const Random *rng = system_random();
     const Network *ns = system_network();
-    Networking_Core *net = new_networking_no_udp(log, ns);
-    DHT *dht = new_dht(log, rng, ns, mono_time, net, true, true);
+    const Memory *mem = system_memory();
+
+    Logger *log = logger_new();
+    Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
+    Networking_Core *net = new_networking_no_udp(log, mem, ns);
+    DHT *dht = new_dht(log, mem, rng, ns, mono_time, net, true, true);
     ASSERT_NE(dht, nullptr);
 
     uint8_t pk_data[CRYPTO_PUBLIC_KEY_SIZE];
@@ -224,7 +226,7 @@ TEST(AnnounceNodes, SetAndTest)
 
     kill_dht(dht);
     kill_networking(net);
-    mono_time_free(mono_time);
+    mono_time_free(mem, mono_time);
     logger_kill(log);
 }
 

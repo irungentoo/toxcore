@@ -58,6 +58,7 @@ typedef struct TCP_Secure_Connection {
 
 struct TCP_Server {
     const Logger *logger;
+    const Memory *mem;
     const Random *rng;
     const Network *ns;
     Onion *onion;
@@ -117,9 +118,9 @@ static int alloc_new_connections(TCP_Server *tcp_server, uint32_t num)
         return -1;
     }
 
-    TCP_Secure_Connection *new_connections = (TCP_Secure_Connection *)realloc(
-                tcp_server->accepted_connection_array,
-                new_size * sizeof(TCP_Secure_Connection));
+    TCP_Secure_Connection *new_connections = (TCP_Secure_Connection *)mem_vrealloc(
+                tcp_server->mem, tcp_server->accepted_connection_array,
+                new_size, sizeof(TCP_Secure_Connection));
 
     if (new_connections == nullptr) {
         return -1;
@@ -138,7 +139,7 @@ non_null()
 static void wipe_secure_connection(TCP_Secure_Connection *con)
 {
     if (con->status != 0) {
-        wipe_priority_list(con->con.priority_queue_start);
+        wipe_priority_list(con->con.mem, con->con.priority_queue_start);
         crypto_memzero(con, sizeof(TCP_Secure_Connection));
     }
 }
@@ -161,7 +162,7 @@ static void free_accepted_connection_array(TCP_Server *tcp_server)
         wipe_secure_connection(&tcp_server->accepted_connection_array[i]);
     }
 
-    free(tcp_server->accepted_connection_array);
+    mem_delete(tcp_server->mem, tcp_server->accepted_connection_array);
     tcp_server->accepted_connection_array = nullptr;
     tcp_server->size_accepted_connections = 0;
 }
@@ -369,7 +370,7 @@ non_null()
 static int read_connection_handshake(const Logger *logger, TCP_Secure_Connection *con, const uint8_t *self_secret_key)
 {
     uint8_t data[TCP_CLIENT_HANDSHAKE_SIZE];
-    const int len = read_TCP_packet(logger, con->con.ns, con->con.sock, data, TCP_CLIENT_HANDSHAKE_SIZE, &con->con.ip_port);
+    const int len = read_TCP_packet(logger, con->con.mem, con->con.ns, con->con.sock, data, TCP_CLIENT_HANDSHAKE_SIZE, &con->con.ip_port);
 
     if (len == -1) {
         LOGGER_TRACE(logger, "connection handshake is not ready yet");
@@ -892,6 +893,7 @@ static int accept_connection(TCP_Server *tcp_server, Socket sock)
 
     conn->status = TCP_STATUS_CONNECTED;
     conn->con.ns = tcp_server->ns;
+    conn->con.mem = tcp_server->mem;
     conn->con.rng = tcp_server->rng;
     conn->con.sock = sock;
     conn->next_packet_length = 0;
@@ -935,7 +937,7 @@ static Socket new_listening_TCP_socket(const Logger *logger, const Network *ns, 
     return sock;
 }
 
-TCP_Server *new_TCP_server(const Logger *logger, const Random *rng, const Network *ns,
+TCP_Server *new_TCP_server(const Logger *logger, const Memory *mem, const Random *rng, const Network *ns,
                            bool ipv6_enabled, uint16_t num_sockets,
                            const uint16_t *ports, const uint8_t *secret_key, Onion *onion, Forwarding *forwarding)
 {
@@ -949,7 +951,7 @@ TCP_Server *new_TCP_server(const Logger *logger, const Random *rng, const Networ
         return nullptr;
     }
 
-    TCP_Server *temp = (TCP_Server *)calloc(1, sizeof(TCP_Server));
+    TCP_Server *temp = (TCP_Server *)mem_alloc(mem, sizeof(TCP_Server));
 
     if (temp == nullptr) {
         LOGGER_ERROR(logger, "TCP server allocation failed");
@@ -957,14 +959,15 @@ TCP_Server *new_TCP_server(const Logger *logger, const Random *rng, const Networ
     }
 
     temp->logger = logger;
+    temp->mem = mem;
     temp->ns = ns;
     temp->rng = rng;
 
-    temp->socks_listening = (Socket *)calloc(num_sockets, sizeof(Socket));
+    temp->socks_listening = (Socket *)mem_valloc(mem, num_sockets, sizeof(Socket));
 
     if (temp->socks_listening == nullptr) {
         LOGGER_ERROR(logger, "socket allocation failed");
-        free(temp);
+        mem_delete(mem, temp);
         return nullptr;
     }
 
@@ -973,8 +976,8 @@ TCP_Server *new_TCP_server(const Logger *logger, const Random *rng, const Networ
 
     if (temp->efd == -1) {
         LOGGER_ERROR(logger, "epoll initialisation failed");
-        free(temp->socks_listening);
-        free(temp);
+        mem_delete(mem, temp->socks_listening);
+        mem_delete(mem, temp);
         return nullptr;
     }
 
@@ -1006,8 +1009,8 @@ TCP_Server *new_TCP_server(const Logger *logger, const Random *rng, const Networ
     }
 
     if (temp->num_listening_socks == 0) {
-        free(temp->socks_listening);
-        free(temp);
+        mem_delete(mem, temp->socks_listening);
+        mem_delete(mem, temp);
         return nullptr;
     }
 
@@ -1096,7 +1099,7 @@ static int do_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_time, ui
     LOGGER_TRACE(tcp_server->logger, "handling unconfirmed TCP connection %d", i);
 
     uint8_t packet[MAX_PACKET_SIZE];
-    const int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
+    const int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
 
     if (len == 0) {
         return -1;
@@ -1116,7 +1119,7 @@ static bool tcp_process_secure_packet(TCP_Server *tcp_server, uint32_t i)
     TCP_Secure_Connection *const conn = &tcp_server->accepted_connection_array[i];
 
     uint8_t packet[MAX_PACKET_SIZE];
-    const int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
+    const int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
     LOGGER_TRACE(tcp_server->logger, "processing packet for %d: %d", i, len);
 
     if (len == 0) {
@@ -1406,6 +1409,6 @@ void kill_TCP_server(TCP_Server *tcp_server)
 
     crypto_memzero(tcp_server->secret_key, sizeof(tcp_server->secret_key));
 
-    free(tcp_server->socks_listening);
-    free(tcp_server);
+    mem_delete(tcp_server->mem, tcp_server->socks_listening);
+    mem_delete(tcp_server->mem, tcp_server);
 }

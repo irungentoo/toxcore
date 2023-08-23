@@ -59,6 +59,23 @@ struct Fuzz_Data {
     }                                   \
     DECL = INPUT.consume1()
 
+/** @brief Consumes 1 byte of the fuzzer input or returns a value if no data
+ * available.
+ *
+ * This advances the fuzzer input data by 1 byte and consumes that byte in the
+ * declaration.
+ *
+ * @example
+ * @code
+ * CONSUME1_OR_RETURN_VAL(const uint8_t one_byte, input, nullptr);
+ * @endcode
+ */
+#define CONSUME1_OR_RETURN_VAL(DECL, INPUT, VAL) \
+    if (INPUT.size < 1) {                        \
+        return VAL;                              \
+    }                                            \
+    DECL = INPUT.consume1()
+
 /** @brief Consumes SIZE bytes of the fuzzer input or returns if not enough data available.
  *
  * This advances the fuzzer input data by SIZE byte and consumes those bytes in
@@ -100,11 +117,13 @@ void fuzz_select_target(const uint8_t *data, std::size_t size, Args &&... args)
     return fuzz_select_target(selector, input, std::forward<Args>(args)...);
 }
 
+struct Memory;
 struct Network;
 struct Random;
 
 struct System {
     std::unique_ptr<Tox_System> sys;
+    std::unique_ptr<Memory> mem;
     std::unique_ptr<Network> ns;
     std::unique_ptr<Random> rng;
 

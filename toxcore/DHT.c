@@ -91,6 +91,7 @@ struct DHT {
     const Logger *log;
     const Network *ns;
     Mono_Time *mono_time;
+    const Memory *mem;
     const Random *rng;
     Networking_Core *net;
 
@@ -414,12 +415,13 @@ int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_
     }
 }
 
-int dht_create_packet(const Random *rng, const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
+int dht_create_packet(const Memory *mem, const Random *rng,
+                      const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
                       const uint8_t *shared_key, const uint8_t type,
                       const uint8_t *plain, size_t plain_length,
                       uint8_t *packet, size_t length)
 {
-    uint8_t *encrypted = (uint8_t *)malloc(plain_length + CRYPTO_MAC_SIZE);
+    uint8_t *encrypted = (uint8_t *)mem_balloc(mem, plain_length + CRYPTO_MAC_SIZE);
     uint8_t nonce[CRYPTO_NONCE_SIZE];
 
     if (encrypted == nullptr) {
@@ -431,12 +433,12 @@ int dht_create_packet(const Random *rng, const uint8_t public_key[CRYPTO_PUBLIC_
     const int encrypted_length = encrypt_data_symmetric(shared_key, nonce, plain, plain_length, encrypted);
 
     if (encrypted_length == -1) {
-        free(encrypted);
+        mem_delete(mem, encrypted);
         return -1;
     }
 
     if (length < 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + encrypted_length) {
-        free(encrypted);
+        mem_delete(mem, encrypted);
         return -1;
     }
 
@@ -445,7 +447,7 @@ int dht_create_packet(const Random *rng, const uint8_t public_key[CRYPTO_PUBLIC_
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, nonce, CRYPTO_NONCE_SIZE);
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE, encrypted, encrypted_length);
 
-    free(encrypted);
+    mem_delete(mem, encrypted);
     return 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + encrypted_length;
 }
 
@@ -937,7 +939,8 @@ static bool send_announce_ping(DHT *dht, const uint8_t *public_key, const IP_Por
 
     uint8_t request[1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + sizeof(plain) + CRYPTO_MAC_SIZE];
 
-    if (dht_create_packet(dht->rng, dht->self_public_key, shared_key, NET_PACKET_DATA_SEARCH_REQUEST,
+    if (dht_create_packet(dht->mem, dht->rng,
+                          dht->self_public_key, shared_key, NET_PACKET_DATA_SEARCH_REQUEST,
                           plain, sizeof(plain), request, sizeof(request)) != sizeof(request)) {
         return false;
     }
@@ -1008,12 +1011,12 @@ static bool store_node_ok(const Client_data *client, uint64_t cur_time, const ui
 }
 
 non_null()
-static void sort_client_list(Client_data *list, uint64_t cur_time, unsigned int length,
+static void sort_client_list(const Memory *mem, Client_data *list, uint64_t cur_time, unsigned int length,
                              const uint8_t *comp_public_key)
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
-    DHT_Cmp_Data *cmp_list = (DHT_Cmp_Data *)calloc(length, sizeof(DHT_Cmp_Data));
+    DHT_Cmp_Data *cmp_list = (DHT_Cmp_Data *)mem_valloc(mem, length, sizeof(DHT_Cmp_Data));
 
     if (cmp_list == nullptr) {
         return;
@@ -1031,7 +1034,7 @@ static void sort_client_list(Client_data *list, uint64_t cur_time, unsigned int 
         list[i] = cmp_list[i].entry;
     }
 
-    free(cmp_list);
+    mem_delete(mem, cmp_list);
 }
 
 non_null()
@@ -1092,7 +1095,7 @@ static bool replace_all(const DHT *dht,
         return false;
     }
 
-    sort_client_list(list, dht->cur_time, length, comp_public_key);
+    sort_client_list(dht->mem, list, dht->cur_time, length, comp_public_key);
 
     Client_data *const client = &list[0];
     pk_copy(client->public_key, public_key);
@@ -1392,7 +1395,7 @@ bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, c
 
     const uint8_t *shared_key = dht_get_shared_key_sent(dht, public_key);
 
-    const int len = dht_create_packet(dht->rng,
+    const int len = dht_create_packet(dht->mem, dht->rng,
                                       dht->self_public_key, shared_key, NET_PACKET_GET_NODES,
                                       plain, sizeof(plain), data, sizeof(data));
 
@@ -1442,7 +1445,7 @@ static int sendnodes_ipv6(const DHT *dht, const IP_Port *ip_port, const uint8_t 
     const uint32_t crypto_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE;
     VLA(uint8_t, data, 1 + nodes_length + length + crypto_size);
 
-    const int len = dht_create_packet(dht->rng,
+    const int len = dht_create_packet(dht->mem, dht->rng,
                                       dht->self_public_key, shared_encryption_key, NET_PACKET_SEND_NODES_IPV6,
                                       plain, 1 + nodes_length + length, data, SIZEOF_VLA(data));
 
@@ -1681,7 +1684,7 @@ int dht_addfriend(DHT *dht, const uint8_t *public_key, dht_ip_cb *ip_callback,
         return 0;
     }
 
-    DHT_Friend *const temp = (DHT_Friend *)realloc(dht->friends_list, sizeof(DHT_Friend) * (dht->num_friends + 1));
+    DHT_Friend *const temp = (DHT_Friend *)mem_vrealloc(dht->mem, dht->friends_list, dht->num_friends + 1, sizeof(DHT_Friend));
 
     if (temp == nullptr) {
         return -1;
@@ -1726,12 +1729,12 @@ int dht_delfriend(DHT *dht, const uint8_t *public_key, uint32_t lock_token)
     }
 
     if (dht->num_friends == 0) {
-        free(dht->friends_list);
+        mem_delete(dht->mem, dht->friends_list);
         dht->friends_list = nullptr;
         return 0;
     }
 
-    DHT_Friend *const temp = (DHT_Friend *)realloc(dht->friends_list, sizeof(DHT_Friend) * dht->num_friends);
+    DHT_Friend *const temp = (DHT_Friend *)mem_vrealloc(dht->mem, dht->friends_list, dht->num_friends, sizeof(DHT_Friend));
 
     if (temp == nullptr) {
         return -1;
@@ -1784,14 +1787,14 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
     const uint64_t temp_time = mono_time_get(dht->mono_time);
 
     uint32_t num_nodes = 0;
-    Client_data **client_list = (Client_data **)calloc(list_count * 2, sizeof(Client_data *));
-    IPPTsPng **assoc_list = (IPPTsPng **)calloc(list_count * 2, sizeof(IPPTsPng *));
+    Client_data **client_list = (Client_data **)mem_valloc(dht->mem, list_count * 2, sizeof(Client_data *));
+    IPPTsPng **assoc_list = (IPPTsPng **)mem_valloc(dht->mem, list_count * 2, sizeof(IPPTsPng *));
     unsigned int sort = 0;
     bool sort_ok = false;
 
     if (client_list == nullptr || assoc_list == nullptr) {
-        free(assoc_list);
-        free(client_list);
+        mem_delete(dht->mem, assoc_list);
+        mem_delete(dht->mem, client_list);
         return 0;
     }
 
@@ -1831,7 +1834,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
     }
 
     if (sortable && sort_ok) {
-        sort_client_list(list, dht->cur_time, list_count, public_key);
+        sort_client_list(dht->mem, list, dht->cur_time, list_count, public_key);
     }
 
     if (num_nodes > 0 && (mono_time_is_timeout(dht->mono_time, *lastgetnode, GET_NODE_INTERVAL)
@@ -1848,8 +1851,8 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
         ++*bootstrap_times;
     }
 
-    free(assoc_list);
-    free(client_list);
+    mem_delete(dht->mem, assoc_list);
+    mem_delete(dht->mem, client_list);
     return not_kill;
 }
 
@@ -2606,14 +2609,15 @@ static int handle_LANdiscovery(void *object, const IP_Port *source, const uint8_
 
 /*----------------------------------------------------------------------------------*/
 
-DHT *new_dht(const Logger *log, const Random *rng, const Network *ns, Mono_Time *mono_time, Networking_Core *net,
+DHT *new_dht(const Logger *log, const Memory *mem, const Random *rng, const Network *ns,
+             Mono_Time *mono_time, Networking_Core *net,
              bool hole_punching_enabled, bool lan_discovery_enabled)
 {
     if (net == nullptr) {
         return nullptr;
     }
 
-    DHT *const dht = (DHT *)calloc(1, sizeof(DHT));
+    DHT *const dht = (DHT *)mem_alloc(mem, sizeof(DHT));
 
     if (dht == nullptr) {
         return nullptr;
@@ -2625,11 +2629,12 @@ DHT *new_dht(const Logger *log, const Random *rng, const Network *ns, Mono_Time 
     dht->log = log;
     dht->net = net;
     dht->rng = rng;
+    dht->mem = mem;
 
     dht->hole_punching_enabled = hole_punching_enabled;
     dht->lan_discovery_enabled = lan_discovery_enabled;
 
-    dht->ping = ping_new(mono_time, rng, dht);
+    dht->ping = ping_new(mem, mono_time, rng, dht);
 
     if (dht->ping == nullptr) {
         kill_dht(dht);
@@ -2648,8 +2653,8 @@ DHT *new_dht(const Logger *log, const Random *rng, const Network *ns, Mono_Time 
 
     crypto_new_keypair(rng, dht->self_public_key, dht->self_secret_key);
 
-    dht->shared_keys_recv = shared_key_cache_new(mono_time, dht->self_secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
-    dht->shared_keys_sent = shared_key_cache_new(mono_time, dht->self_secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    dht->shared_keys_recv = shared_key_cache_new(mono_time, mem, dht->self_secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    dht->shared_keys_sent = shared_key_cache_new(mono_time, mem, dht->self_secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
 
     if (dht->shared_keys_recv == nullptr || dht->shared_keys_sent == nullptr) {
         kill_dht(dht);
@@ -2657,7 +2662,7 @@ DHT *new_dht(const Logger *log, const Random *rng, const Network *ns, Mono_Time 
     }
 
 
-    dht->dht_ping_array = ping_array_new(DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
+    dht->dht_ping_array = ping_array_new(mem, DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
 
     if (dht->dht_ping_array == nullptr) {
         kill_dht(dht);
@@ -2722,11 +2727,11 @@ void kill_dht(DHT *dht)
     shared_key_cache_free(dht->shared_keys_recv);
     shared_key_cache_free(dht->shared_keys_sent);
     ping_array_kill(dht->dht_ping_array);
-    ping_kill(dht->ping);
-    free(dht->friends_list);
-    free(dht->loaded_nodes_list);
+    ping_kill(dht->mem, dht->ping);
+    mem_delete(dht->mem, dht->friends_list);
+    mem_delete(dht->mem, dht->loaded_nodes_list);
     crypto_memzero(dht->self_secret_key, sizeof(dht->self_secret_key));
-    free(dht);
+    mem_delete(dht->mem, dht);
 }
 
 /* new DHT format for load/save, more robust and forward compatible */
@@ -2780,7 +2785,7 @@ void dht_save(const DHT *dht, uint8_t *data)
     /* get right offset. we write the actual header later. */
     data = state_write_section_header(data, DHT_STATE_COOKIE_TYPE, 0, 0);
 
-    Node_format *clients = (Node_format *)calloc(MAX_SAVED_DHT_NODES, sizeof(Node_format));
+    Node_format *clients = (Node_format *)mem_valloc(dht->mem, MAX_SAVED_DHT_NODES, sizeof(Node_format));
 
     if (clients == nullptr) {
         LOGGER_ERROR(dht->log, "could not allocate %u nodes", MAX_SAVED_DHT_NODES);
@@ -2829,7 +2834,7 @@ void dht_save(const DHT *dht, uint8_t *data)
     state_write_section_header(old_data, DHT_STATE_COOKIE_TYPE, pack_nodes(dht->log, data, sizeof(Node_format) * num,
                                clients, num), DHT_STATE_TYPE_NODES);
 
-    free(clients);
+    mem_delete(dht->mem, clients);
 }
 
 /** Bootstrap from this number of nodes every time `dht_connect_after_load()` is called */
@@ -2847,7 +2852,7 @@ int dht_connect_after_load(DHT *dht)
 
     /* DHT is connected, stop. */
     if (dht_non_lan_connected(dht)) {
-        free(dht->loaded_nodes_list);
+        mem_delete(dht->mem, dht->loaded_nodes_list);
         dht->loaded_nodes_list = nullptr;
         dht->loaded_num_nodes = 0;
         return 0;
@@ -2873,9 +2878,9 @@ static State_Load_Status dht_load_state_callback(void *outer, const uint8_t *dat
                 break;
             }
 
-            free(dht->loaded_nodes_list);
+            mem_delete(dht->mem, dht->loaded_nodes_list);
             // Copy to loaded_clients_list
-            dht->loaded_nodes_list = (Node_format *)calloc(MAX_SAVED_DHT_NODES, sizeof(Node_format));
+            dht->loaded_nodes_list = (Node_format *)mem_valloc(dht->mem, MAX_SAVED_DHT_NODES, sizeof(Node_format));
 
             if (dht->loaded_nodes_list == nullptr) {
                 LOGGER_ERROR(dht->log, "could not allocate %u nodes", MAX_SAVED_DHT_NODES);

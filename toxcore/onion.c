@@ -668,13 +668,13 @@ void set_callback_handle_recv_1(Onion *onion, onion_recv_1_cb *function, void *o
     onion->callback_object = object;
 }
 
-Onion *new_onion(const Logger *log, const Mono_Time *mono_time, const Random *rng, DHT *dht)
+Onion *new_onion(const Logger *log, const Memory *mem, const Mono_Time *mono_time, const Random *rng, DHT *dht)
 {
     if (dht == nullptr) {
         return nullptr;
     }
 
-    Onion *onion = (Onion *)calloc(1, sizeof(Onion));
+    Onion *onion = (Onion *)mem_alloc(mem, sizeof(Onion));
 
     if (onion == nullptr) {
         return nullptr;
@@ -685,13 +685,14 @@ Onion *new_onion(const Logger *log, const Mono_Time *mono_time, const Random *rn
     onion->net = dht_get_net(dht);
     onion->mono_time = mono_time;
     onion->rng = rng;
+    onion->mem = mem;
     new_symmetric_key(rng, onion->secret_symmetric_key);
     onion->timestamp = mono_time_get(onion->mono_time);
 
     const uint8_t *secret_key = dht_get_self_secret_key(dht);
-    onion->shared_keys_1 = shared_key_cache_new(mono_time, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
-    onion->shared_keys_2 = shared_key_cache_new(mono_time, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
-    onion->shared_keys_3 = shared_key_cache_new(mono_time, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    onion->shared_keys_1 = shared_key_cache_new(mono_time, mem, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    onion->shared_keys_2 = shared_key_cache_new(mono_time, mem, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    onion->shared_keys_3 = shared_key_cache_new(mono_time, mem, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
 
     if (onion->shared_keys_1 == nullptr ||
         onion->shared_keys_2 == nullptr ||
@@ -732,5 +733,5 @@ void kill_onion(Onion *onion)
     shared_key_cache_free(onion->shared_keys_2);
     shared_key_cache_free(onion->shared_keys_3);
 
-    free(onion);
+    mem_delete(onion->mem, onion);
 }

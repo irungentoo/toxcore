@@ -134,6 +134,8 @@ void setup_callbacks(Tox_Dispatch *dispatch)
 void TestEndToEnd(Fuzz_Data &input)
 {
     Fuzz_System sys(input);
+    // Used for places where we want all allocations to succeed.
+    Null_System null_sys;
 
     Ptr<Tox_Options> opts(tox_options_new(nullptr), tox_options_free);
     assert(opts != nullptr);
@@ -170,7 +172,7 @@ void TestEndToEnd(Fuzz_Data &input)
     while (input.size > 0) {
         Tox_Err_Events_Iterate error_iterate;
         Tox_Events *events = tox_events_iterate(tox, true, &error_iterate);
-        assert(tox_events_equal(events, events));
+        assert(tox_events_equal(null_sys.sys.get(), events, events));
         tox_dispatch_invoke(dispatch, events, tox, nullptr);
         tox_events_free(events);
         // Move the clock forward a decent amount so all the time-based checks

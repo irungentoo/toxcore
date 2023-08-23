@@ -61,7 +61,7 @@ int mod_list_unpack(Moderation *moderation, const uint8_t *data, uint16_t length
         tmp_list[i] = (uint8_t *)malloc(sizeof(uint8_t) * MOD_LIST_ENTRY_SIZE);
 
         if (tmp_list[i] == nullptr) {
-            free_uint8_t_pointer_array(tmp_list, i);
+            free_uint8_t_pointer_array(moderation->mem, tmp_list, i);
             return -1;
         }
 
@@ -221,7 +221,7 @@ bool mod_list_add_entry(Moderation *moderation, const uint8_t *mod_data)
 
 void mod_list_cleanup(Moderation *moderation)
 {
-    free_uint8_t_pointer_array(moderation->mod_list, moderation->num_mods);
+    free_uint8_t_pointer_array(moderation->mem, moderation->mod_list, moderation->num_mods);
     moderation->num_mods = 0;
     moderation->mod_list = nullptr;
 }

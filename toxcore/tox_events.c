@@ -4,6 +4,7 @@
 
 #include "tox_events.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +12,9 @@
 #include "bin_unpack.h"
 #include "ccompat.h"
 #include "events/events_alloc.h"
+#include "mem.h"
 #include "tox.h"
+#include "tox_private.h"
 
 
 /*****************************************************
@@ -231,7 +234,7 @@ void tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes)
     bin_pack_obj(tox_events_bin_pack_handler, events, bytes, UINT32_MAX);
 }
 
-Tox_Events *tox_events_load(const uint8_t *bytes, uint32_t bytes_size)
+Tox_Events *tox_events_load(const Tox_System *sys, const uint8_t *bytes, uint32_t bytes_size)
 {
     Bin_Unpack *bu = bin_unpack_new(bytes, bytes_size);
 
@@ -239,7 +242,7 @@ Tox_Events *tox_events_load(const uint8_t *bytes, uint32_t bytes_size)
         return nullptr;
     }
 
-    Tox_Events *events = (Tox_Events *)calloc(1, sizeof(Tox_Events));
+    Tox_Events *events = (Tox_Events *)mem_alloc(sys->mem, sizeof(Tox_Events));
 
     if (events == nullptr) {
         bin_unpack_free(bu);
@@ -260,8 +263,11 @@ Tox_Events *tox_events_load(const uint8_t *bytes, uint32_t bytes_size)
     return events;
 }
 
-bool tox_events_equal(const Tox_Events *a, const Tox_Events *b)
+bool tox_events_equal(const Tox_System *sys, const Tox_Events *a, const Tox_Events *b)
 {
+    assert(sys != nullptr);
+    assert(sys->mem != nullptr);
+
     const uint32_t a_size = tox_events_bytes_size(a);
     const uint32_t b_size = tox_events_bytes_size(b);
 
@@ -269,12 +275,12 @@ bool tox_events_equal(const Tox_Events *a, const Tox_Events *b)
         return false;
     }
 
-    uint8_t *a_bytes = (uint8_t *)malloc(a_size);
-    uint8_t *b_bytes = (uint8_t *)malloc(b_size);
+    uint8_t *a_bytes = (uint8_t *)mem_balloc(sys->mem, a_size);
+    uint8_t *b_bytes = (uint8_t *)mem_balloc(sys->mem, b_size);
 
     if (a_bytes == nullptr || b_bytes == nullptr) {
-        free(b_bytes);
-        free(a_bytes);
+        mem_delete(sys->mem, b_bytes);
+        mem_delete(sys->mem, a_bytes);
         return false;
     }
 
@@ -283,8 +289,8 @@ bool tox_events_equal(const Tox_Events *a, const Tox_Events *b)
 
     const bool ret = memcmp(a_bytes, b_bytes, a_size) == 0;
 
-    free(b_bytes);
-    free(a_bytes);
+    mem_delete(sys->mem, b_bytes);
+    mem_delete(sys->mem, a_bytes);
 
     return ret;
 }

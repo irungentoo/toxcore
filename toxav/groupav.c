@@ -536,7 +536,7 @@ bool groupchat_av_enabled(const Group_Chats *g_c, uint32_t groupnumber)
  */
 int add_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_cb *audio_callback, void *userdata)
 {
-    const int groupnumber = add_groupchat(g_c, &tox->rng, GROUPCHAT_TYPE_AV);
+    const int groupnumber = add_groupchat(g_c, tox->sys.rng, GROUPCHAT_TYPE_AV);
 
     if (groupnumber == -1) {
         return -1;

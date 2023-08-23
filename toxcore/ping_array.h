@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include "crypto_core.h"
+#include "mem.h"
 #include "mono_time.h"
 
 #ifdef __cplusplus
@@ -29,7 +30,8 @@ typedef struct Ping_Array Ping_Array;
  *
  * @return pointer to allocated Ping_Array on success, nullptr on failure.
  */
-struct Ping_Array *ping_array_new(uint32_t size, uint32_t timeout);
+non_null()
+struct Ping_Array *ping_array_new(const Memory *mem, uint32_t size, uint32_t timeout);
 
 /**
  * @brief Free all the allocated memory in a @ref Ping_Array.
