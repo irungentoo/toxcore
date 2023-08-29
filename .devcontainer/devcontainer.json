@@ -1,0 +1,11 @@
+{
+	"image": "mcr.microsoft.com/devcontainers/universal:2",
+	"features": {
+		"ghcr.io/devcontainers-contrib/features/bash-command:1": {
+			"command": "git submodule update --init --recursive"
+		},
+		"ghcr.io/devcontainers-contrib/features/apt-packages:1": {
+			"packages": "libconfig-dev,libopus-dev,libvpx-dev,ninja-build"
+		}
+	}
+}
