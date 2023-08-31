@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
 #ifdef TCP_RELAY_ENABLED
 #define NUM_PORTS 3
     uint16_t ports[NUM_PORTS] = {443, 3389, PORT};
-    TCP_Server *tcp_s = new_TCP_server(logger, mem, rng, ns, ipv6enabled, NUM_PORTS, ports, dht_get_self_secret_key(dht), onion, forwarding);
+    TCP_Server *tcp_s = new_tcp_server(logger, mem, rng, ns, ipv6enabled, NUM_PORTS, ports, dht_get_self_secret_key(dht), onion, forwarding);
 
     if (tcp_s == nullptr) {
         printf("TCP server failed to initialize.\n");
@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 
     int is_waiting_for_dht_connection = 1;
 
-    uint64_t last_LANdiscovery = 0;
+    uint64_t last_lan_discovery = 0;
     const Broadcast_Info *broadcast = lan_discovery_init(ns);
 
     while (1) {
@@ -241,13 +241,13 @@ int main(int argc, char *argv[])
 
         do_dht(dht);
 
-        if (mono_time_is_timeout(mono_time, last_LANdiscovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
+        if (mono_time_is_timeout(mono_time, last_lan_discovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
             lan_discovery_send(dht_get_net(dht), broadcast, dht_get_self_public_key(dht), net_htons(PORT));
-            last_LANdiscovery = mono_time_get(mono_time);
+            last_lan_discovery = mono_time_get(mono_time);
         }
 
 #ifdef TCP_RELAY_ENABLED
-        do_TCP_server(tcp_s, mono_time);
+        do_tcp_server(tcp_s, mono_time);
 #endif
         networking_poll(dht_get_net(dht), nullptr);
 

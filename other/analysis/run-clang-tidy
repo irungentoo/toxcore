@@ -6,18 +6,32 @@ CHECKS="*"
 CHECKS="$CHECKS,-clang-diagnostic-pointer-bool-conversion"
 CHECKS="$CHECKS,-clang-diagnostic-tautological-pointer-compare"
 
-# TODO(iphydf): We might want some of these. For the ones we don't want, add a
-# comment explaining why not.
+CHECKS="$CHECKS,-clang-diagnostic-unknown-warning-option"
+
+# Short variable names are used quite a lot, and we don't consider them a
+# readability issue.
+CHECKS="$CHECKS,-readability-identifier-length"
+
+# This finds all the do {} while (0) loops and tells us to unroll them.
 CHECKS="$CHECKS,-altera-unroll-loops"
+
+# We target systems other than Android, so we don't want to use non-standard
+# functions from the Android libc.
 CHECKS="$CHECKS,-android-cloexec-accept"
 CHECKS="$CHECKS,-android-cloexec-fopen"
-CHECKS="$CHECKS,-bugprone-not-null-terminated-result"
+
+# This catches all the feature test macros (_POSIX_SOURCE etc.).
 CHECKS="$CHECKS,-bugprone-reserved-identifier"
-CHECKS="$CHECKS,-bugprone-sizeof-expression"
 CHECKS="$CHECKS,-cert-dcl37-c"
 CHECKS="$CHECKS,-cert-dcl51-cpp"
+
+# We intentionally send some not null-terminated strings in tests and use it for
+# the toxencryptsave magic number.
+CHECKS="$CHECKS,-bugprone-not-null-terminated-result"
+
+# TODO(iphydf): We might want some of these. For the ones we don't want, add a
+# comment explaining why not.
 CHECKS="$CHECKS,-clang-analyzer-optin.performance.Padding"
-CHECKS="$CHECKS,-cppcoreguidelines-avoid-magic-numbers"
 CHECKS="$CHECKS,-cppcoreguidelines-init-variables"
 CHECKS="$CHECKS,-hicpp-multiway-paths-covered"
 CHECKS="$CHECKS,-hicpp-signed-bitwise"
@@ -50,6 +64,11 @@ CHECKS="$CHECKS,-cppcoreguidelines-narrowing-conversions"
 CHECKS="$CHECKS,-google-readability-casting"
 CHECKS="$CHECKS,-misc-no-recursion"
 
+# TODO(iphydf): Probably fix these.
+CHECKS="$CHECKS,-cert-err33-c"
+CHECKS="$CHECKS,-cppcoreguidelines-avoid-magic-numbers"
+CHECKS="$CHECKS,-modernize-macro-to-enum"
+
 ERRORS="*"
 
 # TODO(iphydf): Fix these.
@@ -60,7 +79,6 @@ ERRORS="$ERRORS,-cert-err34-c"
 ERRORS="$ERRORS,-cert-str34-c"
 ERRORS="$ERRORS,-hicpp-uppercase-literal-suffix"
 ERRORS="$ERRORS,-readability-suspicious-call-argument"
-ERRORS="$ERRORS,-readability-uppercase-literal-suffix"
 
 set -eux
 
@@ -70,7 +88,7 @@ run() {
   for i in "${!EXTRA_ARGS[@]}"; do
     EXTRA_ARGS[$i]="--extra-arg=${EXTRA_ARGS[$i]}"
   done
-  clang-tidy-12 \
+  clang-tidy-14 \
     -p=_build \
     --extra-arg=-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE \
     "${EXTRA_ARGS[@]}" \
@@ -83,5 +101,7 @@ run() {
     toxcore/*.c \
     toxencryptsave/*.c
 }
+
+cmake . -B_build -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 . other/analysis/variants.sh

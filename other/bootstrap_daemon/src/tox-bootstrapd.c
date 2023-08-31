@@ -477,7 +477,7 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        tcp_server = new_TCP_server(logger, mem, rng, ns, enable_ipv6,
+        tcp_server = new_tcp_server(logger, mem, rng, ns, enable_ipv6,
                                     tcp_relay_port_count, tcp_relay_ports,
                                     dht_get_self_secret_key(dht), onion, forwarding);
 
@@ -528,7 +528,7 @@ int main(int argc, char *argv[])
         log_write(LOG_LEVEL_INFO, "List of bootstrap nodes read successfully.\n");
     } else {
         log_write(LOG_LEVEL_ERROR, "Couldn't read list of bootstrap nodes in %s. Exiting.\n", cfg_file_path);
-        kill_TCP_server(tcp_server);
+        kill_tcp_server(tcp_server);
         kill_onion_announce(onion_a);
         kill_gca(group_announce);
         kill_onion(onion);
@@ -543,7 +543,7 @@ int main(int argc, char *argv[])
 
     print_public_key(dht_get_self_public_key(dht));
 
-    uint64_t last_LANdiscovery = 0;
+    uint64_t last_lan_discovery = 0;
     const uint16_t net_htons_port = net_htons(start_port);
 
     int waiting_for_dht_connection = 1;
@@ -578,13 +578,13 @@ int main(int argc, char *argv[])
 
         do_dht(dht);
 
-        if (enable_lan_discovery && mono_time_is_timeout(mono_time, last_LANdiscovery, LAN_DISCOVERY_INTERVAL)) {
+        if (enable_lan_discovery && mono_time_is_timeout(mono_time, last_lan_discovery, LAN_DISCOVERY_INTERVAL)) {
             lan_discovery_send(dht_get_net(dht), broadcast, dht_get_self_public_key(dht), net_htons_port);
-            last_LANdiscovery = mono_time_get(mono_time);
+            last_lan_discovery = mono_time_get(mono_time);
         }
 
         if (enable_tcp_relay) {
-            do_TCP_server(tcp_server, mono_time);
+            do_tcp_server(tcp_server, mono_time);
         }
 
         networking_poll(dht_get_net(dht), nullptr);
@@ -611,7 +611,7 @@ int main(int argc, char *argv[])
     }
 
     lan_discovery_kill(broadcast);
-    kill_TCP_server(tcp_server);
+    kill_tcp_server(tcp_server);
     kill_onion_announce(onion_a);
     kill_gca(group_announce);
     kill_onion(onion);

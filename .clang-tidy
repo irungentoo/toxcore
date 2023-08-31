@@ -1,0 +1,35 @@
+# vim:ft=yaml
+CheckOptions:
+  - key:             readability-identifier-naming.ClassCase
+    value:           Camel_Snake_Case
+  - key:             readability-identifier-naming.ConstantCase
+    value:           lower_case
+  # bootstrap-daemon has these.
+  - key:             readability-identifier-naming.ConstantIgnoredRegexp
+    value:           "^NAME_.*"
+  - key:             readability-identifier-naming.EnumCase
+    value:           Camel_Snake_Case
+  - key:             readability-identifier-naming.EnumConstantCase
+    value:           UPPER_CASE
+  - key:             readability-identifier-naming.FunctionCase
+    value:           lower_case
+  - key:             readability-identifier-naming.GlobalConstantCase
+    value:           lower_case
+  - key:             readability-identifier-naming.MemberCase
+    value:           lower_case
+  - key:             readability-identifier-naming.MacroDefinitionCase
+    value:           UPPER_CASE
+  - key:             readability-identifier-naming.MacroDefinitionIgnoredRegexp
+    value:           "^_.*|nullable|non_null|nullptr|static_assert|ck_.*"
+  - key:             readability-identifier-naming.ParameterCase
+    value:           lower_case
+  - key:             readability-identifier-naming.StructCase
+    value:           Camel_Snake_Case
+  - key:             readability-identifier-naming.TypedefCase
+    value:           Camel_Snake_Case
+  - key:             readability-identifier-naming.TypedefIgnoredRegexp
+    value:           ".*_cb"
+  - key:             readability-identifier-naming.UnionCase
+    value:           Camel_Snake_Case
+  - key:             readability-identifier-naming.VariableCase
+    value:           lower_case

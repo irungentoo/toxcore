@@ -5691,13 +5691,13 @@ static int handle_gc_handshake_request(GC_Chat *chat, const IP_Port *ipp, const 
         return -1;
     }
 
-    if (chat->connection_O_metre >= GC_NEW_PEER_CONNECTION_LIMIT) {
+    if (chat->connection_o_metre >= GC_NEW_PEER_CONNECTION_LIMIT) {
         chat->block_handshakes = true;
         LOGGER_DEBUG(chat->log, "Handshake overflow. Blocking handshakes.");
         return -1;
     }
 
-    ++chat->connection_O_metre;
+    ++chat->connection_o_metre;
 
     const uint8_t *public_sig_key = data + ENC_PUBLIC_KEY_SIZE;
 
@@ -7015,7 +7015,7 @@ static void do_gc_ping_and_key_rotation(GC_Chat *chat)
 non_null()
 static void do_new_connection_cooldown(GC_Chat *chat)
 {
-    if (chat->connection_O_metre == 0) {
+    if (chat->connection_o_metre == 0) {
         return;
     }
 
@@ -7023,9 +7023,9 @@ static void do_new_connection_cooldown(GC_Chat *chat)
 
     if (chat->connection_cooldown_timer < tm) {
         chat->connection_cooldown_timer = tm;
-        --chat->connection_O_metre;
+        --chat->connection_o_metre;
 
-        if (chat->connection_O_metre == 0 && chat->block_handshakes) {
+        if (chat->connection_o_metre == 0 && chat->block_handshakes) {
             chat->block_handshakes = false;
             LOGGER_DEBUG(chat->log, "Unblocking handshakes");
         }

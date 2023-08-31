@@ -165,7 +165,7 @@ int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num, onion_dht_pk_cb
  * return 0 on success.
  */
 non_null()
-int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uint8_t *dht_key);
+int onion_set_friend_dht_pubkey(Onion_Client *onion_c, int friend_num, const uint8_t *dht_key);
 
 /** @brief Copy friends DHT public key into dht_key.
  *
@@ -173,7 +173,7 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
  * return 1 on success (key copied).
  */
 non_null()
-unsigned int onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_num, uint8_t *dht_key);
+unsigned int onion_getfriend_dht_pubkey(const Onion_Client *onion_c, int friend_num, uint8_t *dht_key);
 
 #define ONION_DATA_IN_RESPONSE_MIN_SIZE (CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE)
 #define ONION_CLIENT_MAX_DATA_SIZE (MAX_DATA_REQUEST_SIZE - ONION_DATA_IN_RESPONSE_MIN_SIZE)

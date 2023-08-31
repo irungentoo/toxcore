@@ -144,10 +144,9 @@ jobs:
       - run:
           apt-get install -y --no-install-recommends
             ca-certificates
-            clang-tidy-12
+            clang-tidy-14
       - checkout
       - run: git submodule update --init --recursive
-      - run: cmake . -B_build -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
       - run:
           other/analysis/run-clang-tidy ||
           other/analysis/run-clang-tidy ||

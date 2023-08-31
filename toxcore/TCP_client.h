@@ -58,19 +58,19 @@ void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value);
 
 /** Create new TCP connection to ip_port/public_key */
 non_null(1, 2, 3, 4, 5, 6, 7, 8, 9) nullable(10)
-TCP_Client_Connection *new_TCP_connection(
+TCP_Client_Connection *new_tcp_connection(
         const Logger *logger, const Memory *mem, const Mono_Time *mono_time, const Random *rng, const Network *ns,
         const IP_Port *ip_port, const uint8_t *public_key, const uint8_t *self_public_key, const uint8_t *self_secret_key,
         const TCP_Proxy_Info *proxy_info);
 
 /** Run the TCP connection */
 non_null(1, 2, 3) nullable(4)
-void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
+void do_tcp_connection(const Logger *logger, const Mono_Time *mono_time,
                        TCP_Client_Connection *tcp_connection, void *userdata);
 
 /** Kill the TCP connection */
 nullable(1)
-void kill_TCP_connection(TCP_Client_Connection *tcp_connection);
+void kill_tcp_connection(TCP_Client_Connection *tcp_connection);
 
 typedef int tcp_onion_response_cb(void *object, const uint8_t *data, uint16_t length, void *userdata);
 

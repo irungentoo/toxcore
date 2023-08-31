@@ -172,7 +172,7 @@ static void free_accepted_connection_array(TCP_Server *tcp_server)
  * @retval -1 on failure.
  */
 non_null()
-static int get_TCP_connection_index(const TCP_Server *tcp_server, const uint8_t *public_key)
+static int get_tcp_connection_index(const TCP_Server *tcp_server, const uint8_t *public_key)
 {
     return bs_list_find(&tcp_server->accepted_key_list, public_key);
 }
@@ -189,7 +189,7 @@ static int kill_accepted(TCP_Server *tcp_server, int index);
 non_null()
 static int add_accepted(TCP_Server *tcp_server, const Mono_Time *mono_time, TCP_Secure_Connection *con)
 {
-    int index = get_TCP_connection_index(tcp_server, con->public_key);
+    int index = get_tcp_connection_index(tcp_server, con->public_key);
 
     if (index != -1) { /* If an old connection to the same public key exists, kill it. */
         kill_accepted(tcp_server, index);
@@ -263,7 +263,7 @@ static int del_accepted(TCP_Server *tcp_server, int index)
 
 /** Kill a TCP_Secure_Connection */
 non_null()
-static void kill_TCP_secure_connection(TCP_Secure_Connection *con)
+static void kill_tcp_secure_connection(TCP_Secure_Connection *con)
 {
     kill_sock(con->con.ns, con->con.sock);
     wipe_secure_connection(con);
@@ -302,7 +302,7 @@ static int kill_accepted(TCP_Server *tcp_server, int index)
  * @retval -1 if the connection must be killed.
  */
 non_null()
-static int handle_TCP_handshake(const Logger *logger, TCP_Secure_Connection *con, const uint8_t *data, uint16_t length,
+static int handle_tcp_handshake(const Logger *logger, TCP_Secure_Connection *con, const uint8_t *data, uint16_t length,
                                 const uint8_t *self_secret_key)
 {
     if (length != TCP_CLIENT_HANDSHAKE_SIZE) {
@@ -370,14 +370,14 @@ non_null()
 static int read_connection_handshake(const Logger *logger, TCP_Secure_Connection *con, const uint8_t *self_secret_key)
 {
     uint8_t data[TCP_CLIENT_HANDSHAKE_SIZE];
-    const int len = read_TCP_packet(logger, con->con.mem, con->con.ns, con->con.sock, data, TCP_CLIENT_HANDSHAKE_SIZE, &con->con.ip_port);
+    const int len = read_tcp_packet(logger, con->con.mem, con->con.ns, con->con.sock, data, TCP_CLIENT_HANDSHAKE_SIZE, &con->con.ip_port);
 
     if (len == -1) {
         LOGGER_TRACE(logger, "connection handshake is not ready yet");
         return 0;
     }
 
-    return handle_TCP_handshake(logger, con, data, len, self_secret_key);
+    return handle_tcp_handshake(logger, con, data, len, self_secret_key);
 }
 
 /**
@@ -394,7 +394,7 @@ static int send_routing_response(const Logger *logger, TCP_Secure_Connection *co
     data[1] = rpid;
     memcpy(data + 2, public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
-    return write_packet_TCP_secure_connection(logger, &con->con, data, sizeof(data), true);
+    return write_packet_tcp_secure_connection(logger, &con->con, data, sizeof(data), true);
 }
 
 /**
@@ -406,7 +406,7 @@ non_null()
 static int send_connect_notification(const Logger *logger, TCP_Secure_Connection *con, uint8_t id)
 {
     uint8_t data[2] = {TCP_PACKET_CONNECTION_NOTIFICATION, (uint8_t)(id + NUM_RESERVED_PORTS)};
-    return write_packet_TCP_secure_connection(logger, &con->con, data, sizeof(data), true);
+    return write_packet_tcp_secure_connection(logger, &con->con, data, sizeof(data), true);
 }
 
 /**
@@ -418,7 +418,7 @@ non_null()
 static int send_disconnect_notification(const Logger *logger, TCP_Secure_Connection *con, uint8_t id)
 {
     uint8_t data[2] = {TCP_PACKET_DISCONNECT_NOTIFICATION, (uint8_t)(id + NUM_RESERVED_PORTS)};
-    return write_packet_TCP_secure_connection(logger, &con->con, data, sizeof(data), true);
+    return write_packet_tcp_secure_connection(logger, &con->con, data, sizeof(data), true);
 }
 
 /**
@@ -426,7 +426,7 @@ static int send_disconnect_notification(const Logger *logger, TCP_Secure_Connect
  * @retval -1 on failure (connection must be killed).
  */
 non_null()
-static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const uint8_t *public_key)
+static int handle_tcp_routing_req(TCP_Server *tcp_server, uint32_t con_id, const uint8_t *public_key)
 {
     uint32_t index = -1;
     TCP_Secure_Connection *con = &tcp_server->accepted_connection_array[con_id];
@@ -474,7 +474,7 @@ static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const
 
     con->connections[index].status = 1;
     memcpy(con->connections[index].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    const int other_index = get_TCP_connection_index(tcp_server, public_key);
+    const int other_index = get_tcp_connection_index(tcp_server, public_key);
 
     if (other_index != -1) {
         uint32_t other_id = -1;
@@ -509,7 +509,7 @@ static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const
  * @retval -1 on failure (connection must be killed).
  */
 non_null()
-static int handle_TCP_oob_send(TCP_Server *tcp_server, uint32_t con_id, const uint8_t *public_key, const uint8_t *data,
+static int handle_tcp_oob_send(TCP_Server *tcp_server, uint32_t con_id, const uint8_t *public_key, const uint8_t *data,
                                uint16_t length)
 {
     if (length == 0 || length > TCP_MAX_OOB_DATA_LENGTH) {
@@ -518,14 +518,14 @@ static int handle_TCP_oob_send(TCP_Server *tcp_server, uint32_t con_id, const ui
 
     const TCP_Secure_Connection *con = &tcp_server->accepted_connection_array[con_id];
 
-    const int other_index = get_TCP_connection_index(tcp_server, public_key);
+    const int other_index = get_tcp_connection_index(tcp_server, public_key);
 
     if (other_index != -1) {
         VLA(uint8_t, resp_packet, 1 + CRYPTO_PUBLIC_KEY_SIZE + length);
         resp_packet[0] = TCP_PACKET_OOB_RECV;
         memcpy(resp_packet + 1, con->public_key, CRYPTO_PUBLIC_KEY_SIZE);
         memcpy(resp_packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, data, length);
-        write_packet_TCP_secure_connection(tcp_server->logger, &tcp_server->accepted_connection_array[other_index].con,
+        write_packet_tcp_secure_connection(tcp_server->logger, &tcp_server->accepted_connection_array[other_index].con,
                                            resp_packet, SIZEOF_VLA(resp_packet), false);
     }
 
@@ -613,7 +613,7 @@ static int handle_onion_recv_1(void *object, const IP_Port *dest, const uint8_t 
     memcpy(packet + 1, data, length);
     packet[0] = TCP_PACKET_ONION_RESPONSE;
 
-    if (write_packet_TCP_secure_connection(tcp_server->logger, &con->con, packet, SIZEOF_VLA(packet), false) != 1) {
+    if (write_packet_tcp_secure_connection(tcp_server->logger, &con->con, packet, SIZEOF_VLA(packet), false) != 1) {
         return 1;
     }
 
@@ -653,7 +653,7 @@ static bool handle_forward_reply_tcp(void *object, const uint8_t *sendback_data,
     memcpy(packet + 1, data, length);
     packet[0] = TCP_PACKET_FORWARDING;
 
-    return write_packet_TCP_secure_connection(tcp_server->logger, &con->con, packet, SIZEOF_VLA(packet), false) == 1;
+    return write_packet_tcp_secure_connection(tcp_server->logger, &con->con, packet, SIZEOF_VLA(packet), false) == 1;
 }
 
 /**
@@ -661,7 +661,7 @@ static bool handle_forward_reply_tcp(void *object, const uint8_t *sendback_data,
  * @retval -1 on failure
  */
 non_null()
-static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint8_t *data, uint16_t length)
+static int handle_tcp_packet(TCP_Server *tcp_server, uint32_t con_id, const uint8_t *data, uint16_t length)
 {
     if (length == 0) {
         return -1;
@@ -676,7 +676,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
             }
 
             LOGGER_TRACE(tcp_server->logger, "handling routing request for %d", con_id);
-            return handle_TCP_routing_req(tcp_server, con_id, data + 1);
+            return handle_tcp_routing_req(tcp_server, con_id, data + 1);
         }
 
         case TCP_PACKET_CONNECTION_NOTIFICATION: {
@@ -707,7 +707,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
             uint8_t response[1 + sizeof(uint64_t)];
             response[0] = TCP_PACKET_PONG;
             memcpy(response + 1, data + 1, sizeof(uint64_t));
-            write_packet_TCP_secure_connection(tcp_server->logger, &con->con, response, sizeof(response), true);
+            write_packet_tcp_secure_connection(tcp_server->logger, &con->con, response, sizeof(response), true);
             return 0;
         }
 
@@ -739,7 +739,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
 
             LOGGER_TRACE(tcp_server->logger, "handling oob send for %d", con_id);
 
-            return handle_TCP_oob_send(tcp_server, con_id, data + 1, data + 1 + CRYPTO_PUBLIC_KEY_SIZE,
+            return handle_tcp_oob_send(tcp_server, con_id, data + 1, data + 1 + CRYPTO_PUBLIC_KEY_SIZE,
                                        length - (1 + CRYPTO_PUBLIC_KEY_SIZE));
         }
 
@@ -822,7 +822,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
             VLA(uint8_t, new_data, length);
             memcpy(new_data, data, length);
             new_data[0] = other_c_id;
-            const int ret = write_packet_TCP_secure_connection(tcp_server->logger,
+            const int ret = write_packet_tcp_secure_connection(tcp_server->logger,
                             &tcp_server->accepted_connection_array[index].con, new_data, length, false);
 
             if (ret == -1) {
@@ -838,20 +838,20 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
 
 
 non_null()
-static int confirm_TCP_connection(TCP_Server *tcp_server, const Mono_Time *mono_time, TCP_Secure_Connection *con,
+static int confirm_tcp_connection(TCP_Server *tcp_server, const Mono_Time *mono_time, TCP_Secure_Connection *con,
                                   const uint8_t *data, uint16_t length)
 {
     const int index = add_accepted(tcp_server, mono_time, con);
 
     if (index == -1) {
         LOGGER_DEBUG(tcp_server->logger, "dropping connection %u: not accepted", (unsigned int)con->identifier);
-        kill_TCP_secure_connection(con);
+        kill_tcp_secure_connection(con);
         return -1;
     }
 
     wipe_secure_connection(con);
 
-    if (handle_TCP_packet(tcp_server, index, data, length) == -1) {
+    if (handle_tcp_packet(tcp_server, index, data, length) == -1) {
         LOGGER_DEBUG(tcp_server->logger, "dropping connection %u: data packet (len=%d) not handled",
                      (unsigned int)con->identifier, length);
         kill_accepted(tcp_server, index);
@@ -888,7 +888,7 @@ static int accept_connection(TCP_Server *tcp_server, Socket sock)
 
     if (conn->status != TCP_STATUS_NO_STATUS) {
         LOGGER_DEBUG(tcp_server->logger, "connection %d dropped before accepting", index);
-        kill_TCP_secure_connection(conn);
+        kill_tcp_secure_connection(conn);
     }
 
     conn->status = TCP_STATUS_CONNECTED;
@@ -903,7 +903,7 @@ static int accept_connection(TCP_Server *tcp_server, Socket sock)
 }
 
 non_null()
-static Socket new_listening_TCP_socket(const Logger *logger, const Network *ns, Family family, uint16_t port)
+static Socket new_listening_tcp_socket(const Logger *logger, const Network *ns, Family family, uint16_t port)
 {
     const Socket sock = net_socket(ns, family, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
@@ -937,7 +937,7 @@ static Socket new_listening_TCP_socket(const Logger *logger, const Network *ns, 
     return sock;
 }
 
-TCP_Server *new_TCP_server(const Logger *logger, const Memory *mem, const Random *rng, const Network *ns,
+TCP_Server *new_tcp_server(const Logger *logger, const Memory *mem, const Random *rng, const Network *ns,
                            bool ipv6_enabled, uint16_t num_sockets,
                            const uint16_t *ports, const uint8_t *secret_key, Onion *onion, Forwarding *forwarding)
 {
@@ -986,7 +986,7 @@ TCP_Server *new_TCP_server(const Logger *logger, const Memory *mem, const Random
     const Family family = ipv6_enabled ? net_family_ipv6() : net_family_ipv4();
 
     for (uint32_t i = 0; i < num_sockets; ++i) {
-        const Socket sock = new_listening_TCP_socket(logger, ns, family, ports[i]);
+        const Socket sock = new_listening_tcp_socket(logger, ns, family, ports[i]);
 
         if (!sock_valid(sock)) {
             continue;
@@ -1034,7 +1034,7 @@ TCP_Server *new_TCP_server(const Logger *logger, const Memory *mem, const Random
 
 #ifndef TCP_SERVER_USE_EPOLL
 non_null()
-static void do_TCP_accept_new(TCP_Server *tcp_server)
+static void do_tcp_accept_new(TCP_Server *tcp_server)
 {
     for (uint32_t sock_idx = 0; sock_idx < tcp_server->num_listening_socks; ++sock_idx) {
 
@@ -1064,7 +1064,7 @@ static int do_incoming(TCP_Server *tcp_server, uint32_t i)
 
     if (ret == -1) {
         LOGGER_TRACE(tcp_server->logger, "incoming connection %d dropped due to failed handshake", i);
-        kill_TCP_secure_connection(conn);
+        kill_tcp_secure_connection(conn);
         return -1;
     }
 
@@ -1078,7 +1078,7 @@ static int do_incoming(TCP_Server *tcp_server, uint32_t i)
 
     if (conn_new->status != TCP_STATUS_NO_STATUS) {
         LOGGER_ERROR(tcp_server->logger, "incoming connection %d would overwrite existing", i);
-        kill_TCP_secure_connection(conn_new);
+        kill_tcp_secure_connection(conn_new);
     }
 
     move_secure_connection(conn_new, conn_old);
@@ -1099,18 +1099,18 @@ static int do_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_time, ui
     LOGGER_TRACE(tcp_server->logger, "handling unconfirmed TCP connection %d", i);
 
     uint8_t packet[MAX_PACKET_SIZE];
-    const int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
+    const int len = read_packet_tcp_secure_connection(tcp_server->logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
 
     if (len == 0) {
         return -1;
     }
 
     if (len == -1) {
-        kill_TCP_secure_connection(conn);
+        kill_tcp_secure_connection(conn);
         return -1;
     }
 
-    return confirm_TCP_connection(tcp_server, mono_time, conn, packet, len);
+    return confirm_tcp_connection(tcp_server, mono_time, conn, packet, len);
 }
 
 non_null()
@@ -1119,7 +1119,7 @@ static bool tcp_process_secure_packet(TCP_Server *tcp_server, uint32_t i)
     TCP_Secure_Connection *const conn = &tcp_server->accepted_connection_array[i];
 
     uint8_t packet[MAX_PACKET_SIZE];
-    const int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
+    const int len = read_packet_tcp_secure_connection(tcp_server->logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
     LOGGER_TRACE(tcp_server->logger, "processing packet for %d: %d", i, len);
 
     if (len == 0) {
@@ -1131,7 +1131,7 @@ static bool tcp_process_secure_packet(TCP_Server *tcp_server, uint32_t i)
         return false;
     }
 
-    if (handle_TCP_packet(tcp_server, i, packet, len) == -1) {
+    if (handle_tcp_packet(tcp_server, i, packet, len) == -1) {
         LOGGER_TRACE(tcp_server->logger, "dropping connection %d: data packet (len=%d) not handled", i, len);
         kill_accepted(tcp_server, i);
         return false;
@@ -1151,7 +1151,7 @@ static void do_confirmed_recv(TCP_Server *tcp_server, uint32_t i)
 
 #ifndef TCP_SERVER_USE_EPOLL
 non_null()
-static void do_TCP_incoming(TCP_Server *tcp_server)
+static void do_tcp_incoming(TCP_Server *tcp_server)
 {
     for (uint32_t i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
         do_incoming(tcp_server, i);
@@ -1159,7 +1159,7 @@ static void do_TCP_incoming(TCP_Server *tcp_server)
 }
 
 non_null()
-static void do_TCP_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
+static void do_tcp_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
 {
     for (uint32_t i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
         do_unconfirmed(tcp_server, mono_time, i);
@@ -1168,7 +1168,7 @@ static void do_TCP_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_tim
 #endif
 
 non_null()
-static void do_TCP_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
+static void do_tcp_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
 {
 #ifdef TCP_SERVER_USE_EPOLL
 
@@ -1196,7 +1196,7 @@ static void do_TCP_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
             }
 
             memcpy(ping + 1, &ping_id, sizeof(uint64_t));
-            const int ret = write_packet_TCP_secure_connection(tcp_server->logger, &conn->con, ping, sizeof(ping), true);
+            const int ret = write_packet_tcp_secure_connection(tcp_server->logger, &conn->con, ping, sizeof(ping), true);
 
             if (ret == 1) {
                 conn->last_pinged = mono_time_get(mono_time);
@@ -1248,13 +1248,13 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
 
                 case TCP_SOCKET_INCOMING: {
                     LOGGER_TRACE(tcp_server->logger, "incoming connection %d dropped", index);
-                    kill_TCP_secure_connection(&tcp_server->incoming_connection_queue[index]);
+                    kill_tcp_secure_connection(&tcp_server->incoming_connection_queue[index]);
                     break;
                 }
 
                 case TCP_SOCKET_UNCONFIRMED: {
                     LOGGER_TRACE(tcp_server->logger, "unconfirmed connection %d dropped", index);
-                    kill_TCP_secure_connection(&tcp_server->unconfirmed_connection_queue[index]);
+                    kill_tcp_secure_connection(&tcp_server->unconfirmed_connection_queue[index]);
                     break;
                 }
 
@@ -1297,7 +1297,7 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
 
                     if (epoll_ctl(tcp_server->efd, EPOLL_CTL_ADD, sock_new.sock, &ev) == -1) {
                         LOGGER_DEBUG(tcp_server->logger, "new connection %d was dropped due to epoll error %d", index, net_error());
-                        kill_TCP_secure_connection(&tcp_server->incoming_connection_queue[index_new]);
+                        kill_tcp_secure_connection(&tcp_server->incoming_connection_queue[index_new]);
                         continue;
                     }
                 }
@@ -1315,7 +1315,7 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
 
                     if (epoll_ctl(tcp_server->efd, EPOLL_CTL_MOD, sock.sock, &events[n]) == -1) {
                         LOGGER_DEBUG(tcp_server->logger, "incoming connection %d was dropped due to epoll error %d", index, net_error());
-                        kill_TCP_secure_connection(&tcp_server->unconfirmed_connection_queue[index_new]);
+                        kill_tcp_secure_connection(&tcp_server->unconfirmed_connection_queue[index_new]);
                         break;
                     }
                 }
@@ -1353,7 +1353,7 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
 }
 
 non_null()
-static void do_TCP_epoll(TCP_Server *tcp_server, const Mono_Time *mono_time)
+static void do_tcp_epoll(TCP_Server *tcp_server, const Mono_Time *mono_time)
 {
     while (tcp_epoll_process(tcp_server, mono_time)) {
         // Keep processing packets until there are no more FDs ready for reading.
@@ -1362,21 +1362,21 @@ static void do_TCP_epoll(TCP_Server *tcp_server, const Mono_Time *mono_time)
 }
 #endif
 
-void do_TCP_server(TCP_Server *tcp_server, const Mono_Time *mono_time)
+void do_tcp_server(TCP_Server *tcp_server, const Mono_Time *mono_time)
 {
 #ifdef TCP_SERVER_USE_EPOLL
-    do_TCP_epoll(tcp_server, mono_time);
+    do_tcp_epoll(tcp_server, mono_time);
 
 #else
-    do_TCP_accept_new(tcp_server);
-    do_TCP_incoming(tcp_server);
-    do_TCP_unconfirmed(tcp_server, mono_time);
+    do_tcp_accept_new(tcp_server);
+    do_tcp_incoming(tcp_server);
+    do_tcp_unconfirmed(tcp_server, mono_time);
 #endif
 
-    do_TCP_confirmed(tcp_server, mono_time);
+    do_tcp_confirmed(tcp_server, mono_time);
 }
 
-void kill_TCP_server(TCP_Server *tcp_server)
+void kill_tcp_server(TCP_Server *tcp_server)
 {
     if (tcp_server == nullptr) {
         return;

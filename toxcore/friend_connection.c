@@ -461,7 +461,7 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
     }
 
     friend_new_connection(fr_c, number);
-    onion_set_friend_DHT_pubkey(fr_c->onion_c, friend_con->onion_friendnum, dht_public_key);
+    onion_set_friend_dht_pubkey(fr_c->onion_c, friend_con->onion_friendnum, dht_public_key);
 }
 
 non_null()

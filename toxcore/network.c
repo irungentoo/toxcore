@@ -139,15 +139,15 @@ static const char *inet_ntop6(const struct in6_addr *addr, char *buf, size_t buf
 }
 
 non_null()
-static int inet_pton4(const char *addrString, struct in_addr *addrbuf)
+static int inet_pton4(const char *addr_string, struct in_addr *addrbuf)
 {
-    return inet_pton(AF_INET, addrString, addrbuf);
+    return inet_pton(AF_INET, addr_string, addrbuf);
 }
 
 non_null()
-static int inet_pton6(const char *addrString, struct in6_addr *addrbuf)
+static int inet_pton6(const char *addr_string, struct in6_addr *addrbuf)
 {
-    return inet_pton(AF_INET6, addrString, addrbuf);
+    return inet_pton(AF_INET6, addr_string, addrbuf);
 }
 
 #else
@@ -377,47 +377,47 @@ IP6 get_ip6_loopback(void)
 
 const Socket net_invalid_socket = { (int)INVALID_SOCKET };
 
-Family net_family_unspec()
+Family net_family_unspec(void)
 {
     return family_unspec;
 }
 
-Family net_family_ipv4()
+Family net_family_ipv4(void)
 {
     return family_ipv4;
 }
 
-Family net_family_ipv6()
+Family net_family_ipv6(void)
 {
     return family_ipv6;
 }
 
-Family net_family_tcp_server()
+Family net_family_tcp_server(void)
 {
     return family_tcp_server;
 }
 
-Family net_family_tcp_client()
+Family net_family_tcp_client(void)
 {
     return family_tcp_client;
 }
 
-Family net_family_tcp_ipv4()
+Family net_family_tcp_ipv4(void)
 {
     return family_tcp_ipv4;
 }
 
-Family net_family_tcp_ipv6()
+Family net_family_tcp_ipv6(void)
 {
     return family_tcp_ipv6;
 }
 
-Family net_family_tox_tcp_ipv4()
+Family net_family_tox_tcp_ipv4(void)
 {
     return family_tox_tcp_ipv4;
 }
 
-Family net_family_tox_tcp_ipv6()
+Family net_family_tox_tcp_ipv6(void)
 {
     return family_tox_tcp_ipv6;
 }

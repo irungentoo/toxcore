@@ -99,7 +99,7 @@ int send_pending_data(const Logger *logger, TCP_Connection *con);
  * @retval -1 on failure (connection must be killed).
  */
 non_null()
-int write_packet_TCP_secure_connection(
+int write_packet_tcp_secure_connection(
         const Logger *logger, TCP_Connection *con, const uint8_t *data, uint16_t length,
         bool priority);
 
@@ -109,7 +109,7 @@ int write_packet_TCP_secure_connection(
  * return -1 on failure/no data in buffer.
  */
 non_null()
-int read_TCP_packet(
+int read_tcp_packet(
         const Logger *logger, const Memory *mem, const Network *ns, Socket sock, uint8_t *data, uint16_t length, const IP_Port *ip_port);
 
 /**
@@ -118,7 +118,7 @@ int read_TCP_packet(
  * @retval -1 on failure (connection must be killed).
  */
 non_null()
-int read_packet_TCP_secure_connection(
+int read_packet_tcp_secure_connection(
         const Logger *logger, const Memory *mem, const Network *ns,
         Socket sock, uint16_t *next_packet_length,
         const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data,

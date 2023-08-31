@@ -759,7 +759,7 @@ bool add_to_list(Node_format *nodes_list, uint32_t length, const uint8_t *pk, co
 non_null()
 static void get_close_nodes_inner(uint64_t cur_time, const uint8_t *public_key, Node_format *nodes_list,
                                   Family sa_family, const Client_data *client_list, uint32_t client_list_length,
-                                  uint32_t *num_nodes_ptr, bool is_LAN,
+                                  uint32_t *num_nodes_ptr, bool is_lan,
                                   bool want_announce)
 {
     if (!net_family_is_ipv4(sa_family) && !net_family_is_ipv6(sa_family) && !net_family_is_unspec(sa_family)) {
@@ -794,7 +794,7 @@ static void get_close_nodes_inner(uint64_t cur_time, const uint8_t *public_key, 
         }
 
         /* don't send LAN ips to non LAN peers */
-        if (ip_is_lan(&ipptp->ip_port.ip) && !is_LAN) {
+        if (ip_is_lan(&ipptp->ip_port.ip) && !is_lan) {
             continue;
         }
 
@@ -828,27 +828,27 @@ static void get_close_nodes_inner(uint64_t cur_time, const uint8_t *public_key, 
  */
 non_null()
 static int get_somewhat_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list,
-                                    Family sa_family, bool is_LAN, bool want_announce)
+                                    Family sa_family, bool is_lan, bool want_announce)
 {
     uint32_t num_nodes = 0;
     get_close_nodes_inner(dht->cur_time, public_key, nodes_list, sa_family,
-                          dht->close_clientlist, LCLIENT_LIST, &num_nodes, is_LAN, want_announce);
+                          dht->close_clientlist, LCLIENT_LIST, &num_nodes, is_lan, want_announce);
 
     for (uint32_t i = 0; i < dht->num_friends; ++i) {
         get_close_nodes_inner(dht->cur_time, public_key, nodes_list, sa_family,
                               dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                              &num_nodes, is_LAN, want_announce);
+                              &num_nodes, is_lan, want_announce);
     }
 
     return num_nodes;
 }
 
 int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, Family sa_family,
-                    bool is_LAN, bool want_announce)
+                    bool is_lan, bool want_announce)
 {
     memset(nodes_list, 0, MAX_SENT_NODES * sizeof(Node_format));
     return get_somewhat_close_nodes(dht, public_key, nodes_list, sa_family,
-                                    is_LAN, want_announce);
+                                    is_lan, want_announce);
 }
 
 typedef struct DHT_Cmp_Data {
@@ -1884,7 +1884,7 @@ static void do_dht_friends(DHT *dht)
  * Send a get nodes request every GET_NODE_INTERVAL seconds to a random good node in the list.
  */
 non_null()
-static void do_Close(DHT *dht)
+static void do_close(DHT *dht)
 {
     for (size_t i = 0; i < dht->num_to_bootstrap; ++i) {
         dht_getnodes(dht, &dht->to_bootstrap[i].ip_port, dht->to_bootstrap[i].public_key, dht->self_public_key);
@@ -2209,7 +2209,7 @@ static uint32_t routeone_to_friend(const DHT *dht, const uint8_t *friend_id, con
 /*---------------------BEGINNING OF NAT PUNCHING FUNCTIONS--------------------------*/
 
 non_null()
-static int send_NATping(const DHT *dht, const uint8_t *public_key, uint64_t ping_id, uint8_t type)
+static int send_nat_ping(const DHT *dht, const uint8_t *public_key, uint64_t ping_id, uint8_t type)
 {
     uint8_t data[sizeof(uint64_t) + 1];
     uint8_t packet_data[MAX_CRYPTO_REQUEST_SIZE];
@@ -2244,8 +2244,8 @@ static int send_NATping(const DHT *dht, const uint8_t *public_key, uint64_t ping
 
 /** Handle a received ping request for. */
 non_null()
-static int handle_NATping(void *object, const IP_Port *source, const uint8_t *source_pubkey, const uint8_t *packet,
-                          uint16_t length, void *userdata)
+static int handle_nat_ping(void *object, const IP_Port *source, const uint8_t *source_pubkey, const uint8_t *packet,
+                           uint16_t length, void *userdata)
 {
     if (length != sizeof(uint64_t) + 1) {
         return 1;
@@ -2265,7 +2265,7 @@ static int handle_NATping(void *object, const IP_Port *source, const uint8_t *so
 
     if (packet[0] == NAT_PING_REQUEST) {
         /* 1 is reply */
-        send_NATping(dht, source_pubkey, ping_id, NAT_PING_RESPONSE);
+        send_nat_ping(dht, source_pubkey, ping_id, NAT_PING_RESPONSE);
         dht_friend->nat.recv_nat_ping_timestamp = mono_time_get(dht->mono_time);
         return 0;
     }
@@ -2397,7 +2397,7 @@ static void punch_holes(DHT *dht, const IP *ip, const uint16_t *port_list, uint1
 }
 
 non_null()
-static void do_NAT(DHT *dht)
+static void do_nat(DHT *dht)
 {
     const uint64_t temp_time = mono_time_get(dht->mono_time);
 
@@ -2411,7 +2411,7 @@ static void do_NAT(DHT *dht)
         }
 
         if (dht->friends_list[i].nat.nat_ping_timestamp + PUNCH_INTERVAL < temp_time) {
-            send_NATping(dht, dht->friends_list[i].public_key, dht->friends_list[i].nat.nat_ping_id, NAT_PING_REQUEST);
+            send_nat_ping(dht, dht->friends_list[i].public_key, dht->friends_list[i].nat.nat_ping_id, NAT_PING_REQUEST);
             dht->friends_list[i].nat.nat_ping_timestamp = temp_time;
         }
 
@@ -2586,8 +2586,8 @@ void dht_callback_get_nodes_response(DHT *dht, dht_get_nodes_response_cb *functi
 }
 
 non_null(1, 2, 3) nullable(5)
-static int handle_LANdiscovery(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
-                               void *userdata)
+static int handle_lan_discovery(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
+                                void *userdata)
 {
     DHT *dht = (DHT *)object;
 
@@ -2644,8 +2644,8 @@ DHT *new_dht(const Logger *log, const Memory *mem, const Random *rng, const Netw
     networking_registerhandler(dht->net, NET_PACKET_GET_NODES, &handle_getnodes, dht);
     networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, &handle_sendnodes_ipv6, dht);
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO, &cryptopacket_handle, dht);
-    networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
-    cryptopacket_registerhandler(dht, CRYPTO_PACKET_NAT_PING, &handle_NATping, dht);
+    networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, &handle_lan_discovery, dht);
+    cryptopacket_registerhandler(dht, CRYPTO_PACKET_NAT_PING, &handle_nat_ping, dht);
 
 #ifdef CHECK_ANNOUNCE_NODE
     networking_registerhandler(dht->net, NET_PACKET_DATA_SEARCH_RESPONSE, &handle_data_search_response, dht);
@@ -2706,9 +2706,9 @@ void do_dht(DHT *dht)
         dht_connect_after_load(dht);
     }
 
-    do_Close(dht);
+    do_close(dht);
     do_dht_friends(dht);
-    do_NAT(dht);
+    do_nat(dht);
     ping_iterate(dht->ping);
 }
 

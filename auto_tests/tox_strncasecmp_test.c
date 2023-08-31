@@ -10,7 +10,7 @@ typedef enum {
     POSITIVE
 } Comparison;
 
-static const char *Comparison_Str[] = { "NEGATIVE", "ZERO", "POSITIVE" };
+static const char *comparison_str[] = { "NEGATIVE", "ZERO", "POSITIVE" };
 
 static void verify(const char *s1, const char *s2, size_t n, Comparison expected)
 {
@@ -19,7 +19,7 @@ static void verify(const char *s1, const char *s2, size_t n, Comparison expected
 
     ck_assert_msg(actual == expected,
                   "tox_strncasecmp(\"%s\", \"%s\", %u) == %s, but expected %s.",
-                  s1, s2, (unsigned)n, Comparison_Str[actual], Comparison_Str[expected]);
+                  s1, s2, (unsigned)n, comparison_str[actual], comparison_str[expected]);
 }
 
 static void test_general(void)

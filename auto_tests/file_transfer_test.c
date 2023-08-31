@@ -172,12 +172,12 @@ static void file_transfer_test(void)
     uint32_t test = tox_friend_add(tox3, address, (const uint8_t *)"Gentoo", 7, nullptr);
     ck_assert_msg(test == 0, "Failed to add friend error code: %u", test);
 
-    uint8_t dhtKey[TOX_PUBLIC_KEY_SIZE];
-    tox_self_get_dht_id(tox1, dhtKey);
-    uint16_t dhtPort = tox_self_get_udp_port(tox1, nullptr);
+    uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
+    tox_self_get_dht_id(tox1, dht_key);
+    uint16_t dht_port = tox_self_get_udp_port(tox1, nullptr);
 
-    tox_bootstrap(tox2, TOX_LOCALHOST, dhtPort, dhtKey, nullptr);
-    tox_bootstrap(tox3, TOX_LOCALHOST, dhtPort, dhtKey, nullptr);
+    tox_bootstrap(tox2, TOX_LOCALHOST, dht_port, dht_key, nullptr);
+    tox_bootstrap(tox3, TOX_LOCALHOST, dht_port, dht_key, nullptr);
 
     printf("Waiting for toxes to come online\n");
 

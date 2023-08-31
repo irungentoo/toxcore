@@ -13,7 +13,7 @@
 #define ABORT_ON_LOG_ERROR true
 #endif
 
-Run_Auto_Options default_run_auto_options()
+Run_Auto_Options default_run_auto_options(void)
 {
     return (Run_Auto_Options) {
         .graph = GRAPH_COMPLETE,
@@ -27,7 +27,7 @@ static const struct BootstrapNodes {
     const char   *ip;
     uint16_t      port;
     const uint8_t key[32];
-} BootstrapNodes[] = {
+} bootstrap_nodes[] = {
 #ifndef USE_TEST_NETWORK
     {
         "tox.abilinski.com", 33445,
@@ -80,10 +80,10 @@ void bootstrap_tox_live_network(Tox *tox, bool enable_tcp)
 {
     ck_assert(tox != nullptr);
 
-    for (size_t j = 0; BootstrapNodes[j].ip != nullptr; ++j) {
-        const char *ip = BootstrapNodes[j].ip;
-        uint16_t port = BootstrapNodes[j].port;
-        const uint8_t *key = BootstrapNodes[j].key;
+    for (size_t j = 0; bootstrap_nodes[j].ip != nullptr; ++j) {
+        const char *ip = bootstrap_nodes[j].ip;
+        uint16_t port = bootstrap_nodes[j].port;
+        const uint8_t *key = bootstrap_nodes[j].key;
 
         Tox_Err_Bootstrap err;
         tox_bootstrap(tox, ip, port, key, &err);

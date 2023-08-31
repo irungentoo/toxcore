@@ -29,7 +29,7 @@
  */
 static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int *tcp_relay_port_count)
 {
-    const char *NAME_TCP_RELAY_PORTS = "tcp_relay_ports";
+    const char *const NAME_TCP_RELAY_PORTS = "tcp_relay_ports";
 
     *tcp_relay_port_count = 0;
 
@@ -129,15 +129,15 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
 {
     config_t cfg;
 
-    const char *NAME_PORT                 = "port";
-    const char *NAME_PID_FILE_PATH        = "pid_file_path";
-    const char *NAME_KEYS_FILE_PATH       = "keys_file_path";
-    const char *NAME_ENABLE_IPV6          = "enable_ipv6";
-    const char *NAME_ENABLE_IPV4_FALLBACK = "enable_ipv4_fallback";
-    const char *NAME_ENABLE_LAN_DISCOVERY = "enable_lan_discovery";
-    const char *NAME_ENABLE_TCP_RELAY     = "enable_tcp_relay";
-    const char *NAME_ENABLE_MOTD          = "enable_motd";
-    const char *NAME_MOTD                 = "motd";
+    const char *const NAME_PORT                 = "port";
+    const char *const NAME_PID_FILE_PATH        = "pid_file_path";
+    const char *const NAME_KEYS_FILE_PATH       = "keys_file_path";
+    const char *const NAME_ENABLE_IPV6          = "enable_ipv6";
+    const char *const NAME_ENABLE_IPV4_FALLBACK = "enable_ipv4_fallback";
+    const char *const NAME_ENABLE_LAN_DISCOVERY = "enable_lan_discovery";
+    const char *const NAME_ENABLE_TCP_RELAY     = "enable_tcp_relay";
+    const char *const NAME_ENABLE_MOTD          = "enable_motd";
+    const char *const NAME_MOTD                 = "motd";
 
     config_init(&cfg);
 
@@ -307,11 +307,11 @@ static uint8_t *bootstrap_hex_string_to_bin(const char *hex_string)
 
 int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
 {
-    const char *NAME_BOOTSTRAP_NODES = "bootstrap_nodes";
+    const char *const NAME_BOOTSTRAP_NODES = "bootstrap_nodes";
 
-    const char *NAME_PUBLIC_KEY = "public_key";
-    const char *NAME_PORT       = "port";
-    const char *NAME_ADDRESS    = "address";
+    const char *const NAME_PUBLIC_KEY = "public_key";
+    const char *const NAME_PORT       = "port";
+    const char *const NAME_ADDRESS    = "address";
 
     config_t cfg;
 

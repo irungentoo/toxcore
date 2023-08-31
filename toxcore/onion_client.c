@@ -1162,7 +1162,7 @@ static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, con
                 onion_c->friends_list[friend_num].dht_pk_callback_number, data + 1 + sizeof(uint64_t), userdata);
     }
 
-    onion_set_friend_DHT_pubkey(onion_c, friend_num, data + 1 + sizeof(uint64_t));
+    onion_set_friend_dht_pubkey(onion_c, friend_num, data + 1 + sizeof(uint64_t));
 
     const uint16_t len_nodes = length - DHTPK_DATA_MIN_LENGTH;
 
@@ -1602,7 +1602,7 @@ int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num,
  * return -1 on failure.
  * return 0 on success.
  */
-int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uint8_t *dht_key)
+int onion_set_friend_dht_pubkey(Onion_Client *onion_c, int friend_num, const uint8_t *dht_key)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends) {
         return -1;
@@ -1629,7 +1629,7 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
  * return 0 on failure (no key copied).
  * return 1 on success (key copied).
  */
-unsigned int onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_num, uint8_t *dht_key)
+unsigned int onion_getfriend_dht_pubkey(const Onion_Client *onion_c, int friend_num, uint8_t *dht_key)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends) {
         return 0;
@@ -1657,7 +1657,7 @@ int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_p
 {
     uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE];
 
-    if (onion_getfriend_DHT_pubkey(onion_c, friend_num, dht_public_key) == 0) {
+    if (onion_getfriend_dht_pubkey(onion_c, friend_num, dht_public_key) == 0) {
         return -1;
     }
 

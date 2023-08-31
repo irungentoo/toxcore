@@ -394,7 +394,7 @@ void set_announce_node(DHT *dht, const uint8_t *public_key);
  */
 non_null()
 int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, Family sa_family,
-                    bool is_LAN, bool want_announce);
+                    bool is_lan, bool want_announce);
 
 
 /** @brief Put up to max_num nodes in nodes from the random friends.

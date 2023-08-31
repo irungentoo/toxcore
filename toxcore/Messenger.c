@@ -2640,7 +2640,7 @@ void do_messenger(Messenger *m, void *userdata)
     }
 
     if (m->tcp_server != nullptr) {
-        do_TCP_server(m->tcp_server, m->mono_time);
+        do_tcp_server(m->tcp_server, m->mono_time);
     }
 
     do_net_crypto(m->net_crypto, userdata);
@@ -3664,7 +3664,7 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
 #endif /* VANILLA_NACL */
 
     if (options->tcp_server_port != 0) {
-        m->tcp_server = new_TCP_server(m->log, m->mem, m->rng, m->ns, options->ipv6enabled, 1,
+        m->tcp_server = new_tcp_server(m->log, m->mem, m->rng, m->ns, options->ipv6enabled, 1,
                                        &options->tcp_server_port, dht_get_self_secret_key(m->dht),
                                        m->onion, m->forwarding);
 
@@ -3725,7 +3725,7 @@ void kill_messenger(Messenger *m)
     }
 
     if (m->tcp_server != nullptr) {
-        kill_TCP_server(m->tcp_server);
+        kill_tcp_server(m->tcp_server);
     }
 
     kill_onion(m->onion);

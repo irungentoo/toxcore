@@ -1,7 +1,7 @@
 #include "../toxcore/tox.h"
 #include "check_compat.h"
 
-#define check(major, minor, patch, expected)                            \
+#define CHECK(major, minor, patch, expected)                            \
   do_check(TOX_VERSION_MAJOR, TOX_VERSION_MINOR, TOX_VERSION_PATCH,     \
            major, minor, patch,                                         \
            TOX_VERSION_IS_API_COMPATIBLE(major, minor, patch), expected)
@@ -26,11 +26,11 @@ int main(void)
 #define TOX_VERSION_MINOR 0
 #define TOX_VERSION_PATCH 4
     // Tox versions from 0.0.* are only compatible with themselves.
-    check(0, 0, 0, false);
-    check(0, 0, 3, false);
-    check(0, 0, 4, true);
-    check(0, 0, 5, false);
-    check(1, 0, 4, false);
+    CHECK(0, 0, 0, false);
+    CHECK(0, 0, 3, false);
+    CHECK(0, 0, 4, true);
+    CHECK(0, 0, 5, false);
+    CHECK(1, 0, 4, false);
 #undef TOX_VERSION_MAJOR
 #undef TOX_VERSION_MINOR
 #undef TOX_VERSION_PATCH
@@ -39,19 +39,19 @@ int main(void)
 #define TOX_VERSION_MINOR 1
 #define TOX_VERSION_PATCH 4
     // Tox versions from 0.1.* are only compatible with themselves or 0.1.<*
-    check(0, 0, 0, false);
-    check(0, 0, 4, false);
-    check(0, 0, 5, false);
-    check(0, 1, 0, true);
-    check(0, 1, 4, true);
-    check(0, 1, 5, false);
-    check(0, 2, 0, false);
-    check(0, 2, 4, false);
-    check(0, 2, 5, false);
-    check(1, 0, 0, false);
-    check(1, 0, 4, false);
-    check(1, 0, 5, false);
-    check(1, 1, 4, false);
+    CHECK(0, 0, 0, false);
+    CHECK(0, 0, 4, false);
+    CHECK(0, 0, 5, false);
+    CHECK(0, 1, 0, true);
+    CHECK(0, 1, 4, true);
+    CHECK(0, 1, 5, false);
+    CHECK(0, 2, 0, false);
+    CHECK(0, 2, 4, false);
+    CHECK(0, 2, 5, false);
+    CHECK(1, 0, 0, false);
+    CHECK(1, 0, 4, false);
+    CHECK(1, 0, 5, false);
+    CHECK(1, 1, 4, false);
 #undef TOX_VERSION_MAJOR
 #undef TOX_VERSION_MINOR
 #undef TOX_VERSION_PATCH
@@ -60,14 +60,14 @@ int main(void)
 #define TOX_VERSION_MINOR 0
 #define TOX_VERSION_PATCH 4
     // Beyond 0.*.* Tox is comfortable with any lower version within their major
-    check(0, 0, 4, false);
-    check(1, 0, 0, true);
-    check(1, 0, 1, true);
-    check(1, 0, 4, true);
-    check(1, 0, 5, false);
-    check(1, 1, 0, false);
-    check(2, 0, 0, false);
-    check(2, 0, 4, false);
+    CHECK(0, 0, 4, false);
+    CHECK(1, 0, 0, true);
+    CHECK(1, 0, 1, true);
+    CHECK(1, 0, 4, true);
+    CHECK(1, 0, 5, false);
+    CHECK(1, 1, 0, false);
+    CHECK(2, 0, 0, false);
+    CHECK(2, 0, 4, false);
 #undef TOX_VERSION_MAJOR
 #undef TOX_VERSION_MINOR
 #undef TOX_VERSION_PATCH
@@ -75,19 +75,19 @@ int main(void)
 #define TOX_VERSION_MAJOR 1
 #define TOX_VERSION_MINOR 1
 #define TOX_VERSION_PATCH 4
-    check(0, 0, 4, false);
-    check(1, 0, 0, true);
-    check(1, 0, 4, true);
-    check(1, 0, 5, true);
-    check(1, 1, 0, true);
-    check(1, 1, 1, true);
-    check(1, 1, 4, true);
-    check(1, 1, 5, false);
-    check(1, 2, 0, false);
-    check(1, 2, 4, false);
-    check(1, 2, 5, false);
-    check(2, 0, 0, false);
-    check(2, 1, 4, false);
+    CHECK(0, 0, 4, false);
+    CHECK(1, 0, 0, true);
+    CHECK(1, 0, 4, true);
+    CHECK(1, 0, 5, true);
+    CHECK(1, 1, 0, true);
+    CHECK(1, 1, 1, true);
+    CHECK(1, 1, 4, true);
+    CHECK(1, 1, 5, false);
+    CHECK(1, 2, 0, false);
+    CHECK(1, 2, 4, false);
+    CHECK(1, 2, 5, false);
+    CHECK(2, 0, 0, false);
+    CHECK(2, 1, 4, false);
 #undef TOX_VERSION_MAJOR
 #undef TOX_VERSION_MINOR
 #undef TOX_VERSION_PATCH

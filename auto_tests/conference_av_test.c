@@ -217,7 +217,7 @@ static bool test_audio(AutoTox *autotoxes, const bool *disabled, bool quiet)
         printf("testing sending and receiving audio\n");
     }
 
-    const int16_t PCM[GROUP_AV_TEST_SAMPLES] = {0};
+    const int16_t pcm[GROUP_AV_TEST_SAMPLES] = {0};
 
     reset_received_audio(autotoxes);
 
@@ -227,7 +227,7 @@ static bool test_audio(AutoTox *autotoxes, const bool *disabled, bool quiet)
                 continue;
             }
 
-            if (toxav_group_send_audio(autotoxes[i].tox, 0, PCM, GROUP_AV_TEST_SAMPLES, 1, 48000) != 0) {
+            if (toxav_group_send_audio(autotoxes[i].tox, 0, pcm, GROUP_AV_TEST_SAMPLES, 1, 48000) != 0) {
                 if (!quiet) {
                     ck_abort_msg("#%u failed to send audio", autotoxes[i].index);
                 }
@@ -268,12 +268,12 @@ static void test_eventual_audio(AutoTox *autotoxes, const bool *disabled, uint64
 
 static void do_audio(AutoTox *autotoxes, uint32_t iterations)
 {
-    const int16_t PCM[GROUP_AV_TEST_SAMPLES] = {0};
+    const int16_t pcm[GROUP_AV_TEST_SAMPLES] = {0};
     printf("running audio for %u iterations\n", iterations);
 
     for (uint32_t f = 0; f < iterations; ++f) {
         for (uint32_t i = 0; i < NUM_AV_GROUP_TOX; ++i) {
-            ck_assert_msg(toxav_group_send_audio(autotoxes[i].tox, 0, PCM, GROUP_AV_TEST_SAMPLES, 1, 48000) == 0,
+            ck_assert_msg(toxav_group_send_audio(autotoxes[i].tox, 0, pcm, GROUP_AV_TEST_SAMPLES, 1, 48000) == 0,
                           "#%u failed to send audio", autotoxes[i].index);
             iterate_all_wait(autotoxes, NUM_AV_GROUP_TOX, ITERATION_INTERVAL);
         }
