@@ -36,3 +36,5 @@ CheckOptions:
 
   - key:             llvmlibc-restrict-system-libc-headers.Includes
     value:           "arpa/inet.h,assert.h,ctype.h,errno.h,fcntl.h,getopt.h,libconfig.h,linux/netdevice.h,math.h,netdb.h,netinet/in.h,opus.h,pthread.h,signal.h,sodium/crypto_scalarmult_curve25519.h,sodium.h,sodium/randombytes.h,stdio.h,stdlib.h,string.h,sys/ioctl.h,syslog.h,sys/resource.h,sys/socket.h,sys/stat.h,sys/time.h,sys/types.h,time.h,unistd.h,vpx/vp8cx.h,vpx/vp8dx.h,vpx/vpx_decoder.h,vpx/vpx_encoder.h,vpx/vpx_image.h"
+  - key:             hicpp-signed-bitwise.IgnorePositiveIntegerLiterals
+    value:           true

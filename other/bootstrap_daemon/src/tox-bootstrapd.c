@@ -178,11 +178,7 @@ static LOG_LEVEL logger_level_to_log_level(Logger_Level level)
 {
     switch (level) {
         case LOGGER_LEVEL_TRACE:
-            return LOG_LEVEL_INFO;
-
         case LOGGER_LEVEL_DEBUG:
-            return LOG_LEVEL_INFO;
-
         case LOGGER_LEVEL_INFO:
             return LOG_LEVEL_INFO;
 

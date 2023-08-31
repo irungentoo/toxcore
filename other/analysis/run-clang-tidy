@@ -14,7 +14,9 @@ CHECKS="$CHECKS,-cppcoreguidelines-init-variables"
 # readability issue.
 CHECKS="$CHECKS,-readability-identifier-length"
 
-# This finds all the do {} while (0) loops and tells us to unroll them.
+# Altera checks are for GPUs (OpenCL). Our code doesn't run on GPUs.
+CHECKS="$CHECKS,-altera-id-dependent-backward-branch"
+CHECKS="$CHECKS,-altera-struct-pack-align"
 CHECKS="$CHECKS,-altera-unroll-loops"
 
 # We target systems other than Android, so we don't want to use non-standard
@@ -26,6 +28,10 @@ CHECKS="$CHECKS,-android-cloexec-fopen"
 CHECKS="$CHECKS,-bugprone-reserved-identifier"
 CHECKS="$CHECKS,-cert-dcl37-c"
 CHECKS="$CHECKS,-cert-dcl51-cpp"
+
+# Too restrictive. This makes sense if the branch clone is very large, but not
+# if it's a single line. It can make the code less readable.
+CHECKS="$CHECKS,-bugprone-branch-clone"
 
 # We intentionally send some not null-terminated strings in tests and use it for
 # the toxencryptsave magic number.
@@ -43,6 +49,14 @@ CHECKS="$CHECKS,-readability-else-after-return"
 # functions otherwise.
 CHECKS="$CHECKS,-readability-redundant-control-flow"
 
+# These are incredibly annoying, because things like
+#   uint16_t a = 0, b = 1, c = a > b ? a : b;
+#                                      ^
+# Trip the checker, which is true, because of integer promotion, but also not
+# very helpful as a diagnostic.
+CHECKS="$CHECKS,-bugprone-narrowing-conversions"
+CHECKS="$CHECKS,-cppcoreguidelines-narrowing-conversions"
+
 # TODO(iphydf): We might want some of these. For the ones we don't want, add a
 # comment explaining why not.
 CHECKS="$CHECKS,-clang-analyzer-optin.performance.Padding"
@@ -51,21 +65,13 @@ CHECKS="$CHECKS,-misc-unused-parameters"
 CHECKS="$CHECKS,-readability-function-cognitive-complexity"
 
 # TODO(iphydf): Maybe fix these?
-CHECKS="$CHECKS,-altera-id-dependent-backward-branch"
-CHECKS="$CHECKS,-altera-struct-pack-align"
-CHECKS="$CHECKS,-bugprone-branch-clone"
 CHECKS="$CHECKS,-bugprone-easily-swappable-parameters"
 CHECKS="$CHECKS,-bugprone-implicit-widening-of-multiplication-result"
 CHECKS="$CHECKS,-bugprone-integer-division"
-CHECKS="$CHECKS,-bugprone-narrowing-conversions"
-CHECKS="$CHECKS,-clang-analyzer-core.NonNullParamChecker"
 CHECKS="$CHECKS,-clang-analyzer-core.NullDereference"
-CHECKS="$CHECKS,-clang-analyzer-optin.portability.UnixAPI"
-CHECKS="$CHECKS,-clang-analyzer-unix.Malloc"
 CHECKS="$CHECKS,-clang-analyzer-valist.Uninitialized"
 CHECKS="$CHECKS,-concurrency-mt-unsafe"
 CHECKS="$CHECKS,-cppcoreguidelines-avoid-non-const-global-variables"
-CHECKS="$CHECKS,-cppcoreguidelines-narrowing-conversions"
 CHECKS="$CHECKS,-misc-no-recursion"
 
 # TODO(iphydf): Probably fix these.
@@ -75,15 +81,16 @@ CHECKS="$CHECKS,-google-readability-casting"
 CHECKS="$CHECKS,-modernize-macro-to-enum"
 CHECKS="$CHECKS,-readability-magic-numbers"
 
+# TODO(iphydf): These two trip on list.c. Investigate why.
+CHECKS="$CHECKS,-clang-analyzer-core.NonNullParamChecker"
+CHECKS="$CHECKS,-clang-analyzer-unix.Malloc"
+
 ERRORS="*"
 
 # TODO(iphydf): Fix these.
 ERRORS="$ERRORS,-bugprone-macro-parentheses"
-ERRORS="$ERRORS,-bugprone-posix-return"
-ERRORS="$ERRORS,-bugprone-signed-char-misuse"
 ERRORS="$ERRORS,-cert-err34-c"
 ERRORS="$ERRORS,-cert-str34-c"
-ERRORS="$ERRORS,-hicpp-uppercase-literal-suffix"
 ERRORS="$ERRORS,-readability-suspicious-call-argument"
 
 set -eux

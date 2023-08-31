@@ -2466,9 +2466,7 @@ static uint16_t list_nodes(const Random *rng, const Client_data *list, size_t le
         }
 
         if (!assoc_timeout(cur_time, &list[i - 1].assoc6)) {
-            if (assoc == nullptr) {
-                assoc = &list[i - 1].assoc6;
-            } else if ((random_u08(rng) % 2) != 0) {
+            if (assoc == nullptr || (random_u08(rng) % 2) != 0) {
                 assoc = &list[i - 1].assoc6;
             }
         }

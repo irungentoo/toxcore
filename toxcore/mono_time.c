@@ -138,7 +138,7 @@ Mono_Time *mono_time_new(const Memory *mem, mono_time_current_time_cb *current_t
         return nullptr;
     }
 
-    if (pthread_rwlock_init(mono_time->time_update_lock, nullptr) < 0) {
+    if (pthread_rwlock_init(mono_time->time_update_lock, nullptr) != 0) {
         mem_delete(mem, mono_time->time_update_lock);
         mem_delete(mem, mono_time);
         return nullptr;

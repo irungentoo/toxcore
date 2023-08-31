@@ -3066,9 +3066,8 @@ bool crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool
 
         const uint64_t current_time = mono_time_get(c->mono_time);
 
-        if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_timev4) > current_time) {
-            *direct_connected = true;
-        } else if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_timev6) > current_time) {
+        if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_timev4) > current_time ||
+                (UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_timev6) > current_time) {
             *direct_connected = true;
         }
     }

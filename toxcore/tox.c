@@ -812,12 +812,17 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     tox->m = new_messenger(tox->mono_time, tox->sys.mem, tox->sys.rng, tox->sys.ns, &m_options, &m_error);
 
     if (tox->m == nullptr) {
-        if (m_error == MESSENGER_ERROR_PORT) {
-            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
-        } else if (m_error == MESSENGER_ERROR_TCP_SERVER) {
-            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
-        } else {
-            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+        switch (m_error) {
+            case MESSENGER_ERROR_PORT:
+            case MESSENGER_ERROR_TCP_SERVER: {
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
+                break;
+            }
+            case MESSENGER_ERROR_OTHER:
+            case MESSENGER_ERROR_NONE: {
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+                break;
+            }
         }
 
         mono_time_free(tox->sys.mem, tox->mono_time);
