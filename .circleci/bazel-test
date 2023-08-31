@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -eux
+
+git submodule update --init --recursive
+/src/workspace/tools/inject-repo c-toxcore
+cd /src/workspace && bazel test -k \
+  --config=remote \
+  --build_tag_filters=-haskell \
+  --test_tag_filters=-haskell \
+  --remote_download_minimal \
+  -- \
+  //c-toxcore/... \
+  "$@"

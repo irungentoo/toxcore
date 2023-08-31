@@ -5,7 +5,10 @@ workflows:
   version: 2
   program-analysis:
     jobs:
-      # Dynamic analysis
+      # Dynamic analysis in the Bazel build
+      - bazel-asan
+      - bazel-tsan
+      # Dynamic analysis with CMake
       - asan
       - tsan
       - msan
@@ -18,6 +21,28 @@ workflows:
       - static-analysis
 
 jobs:
+  bazel-asan:
+    working_directory: /tmp/cirrus-ci-build
+    docker:
+      - image: toxchat/toktok-stack:latest-asan
+
+    steps:
+      - checkout
+      - run: .circleci/bazel-test
+
+  bazel-tsan:
+    working_directory: /tmp/cirrus-ci-build
+    docker:
+      - image: toxchat/toktok-stack:latest-tsan
+
+    steps:
+      - checkout
+      - run: .circleci/bazel-test
+          -//c-toxcore/auto_tests:conference_av_test
+          -//c-toxcore/auto_tests:conference_test
+          -//c-toxcore/auto_tests:onion_test
+          -//c-toxcore/auto_tests:tox_many_test
+
   asan:
     working_directory: ~/work
     docker:

@@ -156,7 +156,7 @@ endif()
 if(MSVC)
   option(MSVC_STATIC_SODIUM "Whether to link libsodium statically for MSVC" OFF)
   if(MSVC_STATIC_SODIUM)
-    add_definitions(-DSODIUM_STATIC=1 -DSODIUM_EXPORT)
+    add_definitions(-DSODIUM_STATIC=1)
   endif()
 endif()
 
