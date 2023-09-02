@@ -61,10 +61,9 @@ static int manage_keys(DHT *dht, char *keys_file_path)
 {
     enum { KEYS_SIZE = CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE };
     uint8_t keys[KEYS_SIZE];
-    FILE *keys_file;
 
     // Check if file exits, proceed to open and load keys
-    keys_file = fopen(keys_file_path, "rb");
+    FILE *keys_file = fopen(keys_file_path, "rb");
 
     if (keys_file != nullptr) {
         const size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
@@ -120,9 +119,9 @@ static void print_public_key(const uint8_t *public_key)
 static void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
 {
     // Check if the PID file exists
-    FILE *pid_file;
+    FILE *pid_file = fopen(pid_file_path, "r");
 
-    if ((pid_file = fopen(pid_file_path, "r"))) {
+    if (pid_file != nullptr) {
         log_write(LOG_LEVEL_WARNING, "Another instance of the daemon is already running, PID file %s exists.\n", pid_file_path);
         fclose(pid_file);
     }
@@ -175,38 +174,33 @@ static void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
 
 // Logs toxcore logger message using our logger facility
 
+static LOG_LEVEL logger_level_to_log_level(Logger_Level level)
+{
+    switch (level) {
+        case LOGGER_LEVEL_TRACE:
+            return LOG_LEVEL_INFO;
+
+        case LOGGER_LEVEL_DEBUG:
+            return LOG_LEVEL_INFO;
+
+        case LOGGER_LEVEL_INFO:
+            return LOG_LEVEL_INFO;
+
+        case LOGGER_LEVEL_WARNING:
+            return LOG_LEVEL_WARNING;
+
+        case LOGGER_LEVEL_ERROR:
+            return LOG_LEVEL_ERROR;
+
+        default:
+            return LOG_LEVEL_INFO;
+    }
+}
+
 static void toxcore_logger_callback(void *context, Logger_Level level, const char *file, int line,
                                     const char *func, const char *message, void *userdata)
 {
-    LOG_LEVEL log_level;
-
-    switch (level) {
-        case LOGGER_LEVEL_TRACE:
-            log_level = LOG_LEVEL_INFO;
-            break;
-
-        case LOGGER_LEVEL_DEBUG:
-            log_level = LOG_LEVEL_INFO;
-            break;
-
-        case LOGGER_LEVEL_INFO:
-            log_level = LOG_LEVEL_INFO;
-            break;
-
-        case LOGGER_LEVEL_WARNING:
-            log_level = LOG_LEVEL_WARNING;
-            break;
-
-        case LOGGER_LEVEL_ERROR:
-            log_level = LOG_LEVEL_ERROR;
-            break;
-
-        default:
-            log_level = LOG_LEVEL_INFO;
-            break;
-    }
-
-    log_write(log_level, "%s:%d(%s) %s\n", file, line, func, message);
+    log_write(logger_level_to_log_level(level), "%s:%d(%s) %s\n", file, line, func, message);
 }
 
 static volatile sig_atomic_t caught_signal = 0;
@@ -220,11 +214,10 @@ int main(int argc, char *argv[])
 {
     umask(077);
     char *cfg_file_path = nullptr;
-    LOG_BACKEND log_backend;
-    bool run_in_foreground;
+    bool run_in_foreground = false;
 
     // choose backend for printing command line argument parsing output based on whether the daemon is being run from a terminal
-    log_backend = isatty(STDOUT_FILENO) ? LOG_BACKEND_STDOUT : LOG_BACKEND_SYSLOG;
+    LOG_BACKEND log_backend = isatty(STDOUT_FILENO) ? LOG_BACKEND_STDOUT : LOG_BACKEND_SYSLOG;
 
     log_open(log_backend);
     handle_command_line_arguments(argc, argv, &cfg_file_path, &log_backend, &run_in_foreground);
@@ -236,14 +229,14 @@ int main(int argc, char *argv[])
 
     char *pid_file_path = nullptr;
     char *keys_file_path = nullptr;
-    int start_port;
-    int enable_ipv6;
-    int enable_ipv4_fallback;
-    int enable_lan_discovery;
-    int enable_tcp_relay;
+    int start_port = 0;
+    int enable_ipv6 = 0;
+    int enable_ipv4_fallback = 0;
+    int enable_lan_discovery = 0;
+    int enable_tcp_relay = 0;
     uint16_t *tcp_relay_ports = nullptr;
-    int tcp_relay_port_count;
-    int enable_motd;
+    int tcp_relay_port_count = 0;
+    int enable_motd = 0;
     char *motd = nullptr;
 
     if (get_general_config(cfg_file_path, &pid_file_path, &keys_file_path, &start_port, &enable_ipv6, &enable_ipv4_fallback,
@@ -275,7 +268,7 @@ int main(int argc, char *argv[])
 
     Logger *logger = logger_new();
 
-    if (MIN_LOGGER_LEVEL == LOGGER_LEVEL_TRACE || MIN_LOGGER_LEVEL == LOGGER_LEVEL_DEBUG) {
+    if (MIN_LOGGER_LEVEL <= LOGGER_LEVEL_DEBUG) {
         logger_callback_log(logger, toxcore_logger_callback, nullptr, nullptr);
     }
 

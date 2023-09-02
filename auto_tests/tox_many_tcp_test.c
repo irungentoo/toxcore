@@ -46,10 +46,9 @@ static void test_many_clients_tcp(void)
     long long unsigned int cur_time = time(nullptr);
     Tox *toxes[NUM_TOXES_TCP];
     uint32_t index[NUM_TOXES_TCP];
-    uint32_t i, j;
     uint32_t to_comp = 974536;
 
-    for (i = 0; i < NUM_TOXES_TCP; ++i) {
+    for (uint32_t i = 0; i < NUM_TOXES_TCP; ++i) {
         struct Tox_Options *opts = tox_options_new(nullptr);
 
         if (i == 0) {
@@ -72,7 +71,7 @@ static void test_many_clients_tcp(void)
         tox_callback_friend_request(toxes[i], accept_friend_request);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
         tox_self_get_dht_id(toxes[0], dpk);
-        Tox_Err_Bootstrap error = TOX_ERR_BOOTSTRAP_OK;
+        Tox_Err_Bootstrap error;
         ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, tcp_relay_port, dpk, &error), "add relay error, %u, %d", i,
                       error);
         uint16_t first_port = tox_self_get_udp_port(toxes[0], nullptr);
@@ -88,12 +87,12 @@ static void test_many_clients_tcp(void)
 
     uint8_t address[TOX_ADDRESS_SIZE];
 
-    for (i = 0; i < NUM_FRIENDS; ++i) {
+    for (uint32_t i = 0; i < NUM_FRIENDS; ++i) {
 loop_top:
         pairs[i].tox1 = random_u32(rng) % NUM_TOXES_TCP;
         pairs[i].tox2 = (pairs[i].tox1 + random_u32(rng) % (NUM_TOXES_TCP - 1) + 1) % NUM_TOXES_TCP;
 
-        for (j = 0; j < i; ++j) {
+        for (uint32_t j = 0; j < i; ++j) {
             if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2) {
                 goto loop_top;
             }
@@ -114,8 +113,8 @@ loop_top:
     while (true) {
         uint16_t counter = 0;
 
-        for (i = 0; i < NUM_TOXES_TCP; ++i) {
-            for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j) {
+        for (uint32_t i = 0; i < NUM_TOXES_TCP; ++i) {
+            for (uint32_t j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j) {
                 if (tox_friend_get_connection_status(toxes[i], j, nullptr) == TOX_CONNECTION_TCP) {
                     ++counter;
                 }
@@ -126,14 +125,14 @@ loop_top:
             break;
         }
 
-        for (i = 0; i < NUM_TOXES_TCP; ++i) {
+        for (uint32_t i = 0; i < NUM_TOXES_TCP; ++i) {
             tox_iterate(toxes[i], &to_comp);
         }
 
         c_sleep(50);
     }
 
-    for (i = 0; i < NUM_TOXES_TCP; ++i) {
+    for (uint32_t i = 0; i < NUM_TOXES_TCP; ++i) {
         tox_kill(toxes[i]);
     }
 
@@ -149,10 +148,9 @@ static void test_many_clients_tcp_b(void)
     long long unsigned int cur_time = time(nullptr);
     Tox *toxes[NUM_TOXES_TCP];
     uint32_t index[NUM_TOXES_TCP];
-    uint32_t i, j;
     uint32_t to_comp = 974536;
 
-    for (i = 0; i < NUM_TOXES_TCP; ++i) {
+    for (uint32_t i = 0; i < NUM_TOXES_TCP; ++i) {
         struct Tox_Options *opts = tox_options_new(nullptr);
 
         if (i < NUM_TCP_RELAYS) {
@@ -183,12 +181,12 @@ static void test_many_clients_tcp_b(void)
 
     uint8_t address[TOX_ADDRESS_SIZE];
 
-    for (i = 0; i < NUM_FRIENDS; ++i) {
+    for (uint32_t i = 0; i < NUM_FRIENDS; ++i) {
 loop_top:
         pairs[i].tox1 = random_u32(rng) % NUM_TOXES_TCP;
         pairs[i].tox2 = (pairs[i].tox1 + random_u32(rng) % (NUM_TOXES_TCP - 1) + 1) % NUM_TOXES_TCP;
 
-        for (j = 0; j < i; ++j) {
+        for (uint32_t j = 0; j < i; ++j) {
             if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2) {
                 goto loop_top;
             }
@@ -211,8 +209,8 @@ loop_top:
     while (true) {
         uint16_t counter = 0;
 
-        for (i = 0; i < NUM_TOXES_TCP; ++i) {
-            for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j) {
+        for (uint32_t i = 0; i < NUM_TOXES_TCP; ++i) {
+            for (uint32_t j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j) {
                 if (tox_friend_get_connection_status(toxes[i], j, nullptr) == TOX_CONNECTION_TCP) {
                     ++counter;
                 }
@@ -228,14 +226,14 @@ loop_top:
             break;
         }
 
-        for (i = 0; i < NUM_TOXES_TCP; ++i) {
+        for (uint32_t i = 0; i < NUM_TOXES_TCP; ++i) {
             tox_iterate(toxes[i], &to_comp);
         }
 
         c_sleep(30);
     }
 
-    for (i = 0; i < NUM_TOXES_TCP; ++i) {
+    for (uint32_t i = 0; i < NUM_TOXES_TCP; ++i) {
         tox_kill(toxes[i]);
     }
 

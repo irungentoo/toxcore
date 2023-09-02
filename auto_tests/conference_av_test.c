@@ -255,8 +255,12 @@ static void test_eventual_audio(AutoTox *autotoxes, const bool *disabled, uint64
     uint64_t start = autotoxes[0].clock;
 
     while (autotoxes[0].clock < start + timeout) {
-        if (test_audio(autotoxes, disabled, true)
-                && test_audio(autotoxes, disabled, true)) {
+        if (!test_audio(autotoxes, disabled, true)) {
+            continue;
+        }
+
+        // It needs to succeed twice in a row for the test to pass.
+        if (test_audio(autotoxes, disabled, true)) {
             printf("audio test successful after %d seconds\n", (int)((autotoxes[0].clock - start) / 1000));
             return;
         }

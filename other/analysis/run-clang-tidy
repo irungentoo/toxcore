@@ -6,7 +6,9 @@ CHECKS="*"
 CHECKS="$CHECKS,-clang-diagnostic-pointer-bool-conversion"
 CHECKS="$CHECKS,-clang-diagnostic-tautological-pointer-compare"
 
-CHECKS="$CHECKS,-clang-diagnostic-unknown-warning-option"
+# Conflicts with "Variable is assigned a value that is never used."
+# [unreadVariable]
+CHECKS="$CHECKS,-cppcoreguidelines-init-variables"
 
 # Short variable names are used quite a lot, and we don't consider them a
 # readability issue.
@@ -29,21 +31,24 @@ CHECKS="$CHECKS,-cert-dcl51-cpp"
 # the toxencryptsave magic number.
 CHECKS="$CHECKS,-bugprone-not-null-terminated-result"
 
+# We don't want default labels in enum switches.
+CHECKS="$CHECKS,-hicpp-multiway-paths-covered"
+
+# This can make readability quite a bit worse when the 2 cases look very
+# similar.
+CHECKS="$CHECKS,-llvm-else-after-return"
+CHECKS="$CHECKS,-readability-else-after-return"
+
+# We need 'return;' in empty functions because cimple won't allow empty
+# functions otherwise.
+CHECKS="$CHECKS,-readability-redundant-control-flow"
+
 # TODO(iphydf): We might want some of these. For the ones we don't want, add a
 # comment explaining why not.
 CHECKS="$CHECKS,-clang-analyzer-optin.performance.Padding"
-CHECKS="$CHECKS,-cppcoreguidelines-init-variables"
-CHECKS="$CHECKS,-hicpp-multiway-paths-covered"
 CHECKS="$CHECKS,-hicpp-signed-bitwise"
-CHECKS="$CHECKS,-llvm-else-after-return"
-CHECKS="$CHECKS,-llvmlibc-restrict-system-libc-headers"
-CHECKS="$CHECKS,-misc-redundant-expression"
 CHECKS="$CHECKS,-misc-unused-parameters"
-CHECKS="$CHECKS,-readability-else-after-return"
 CHECKS="$CHECKS,-readability-function-cognitive-complexity"
-CHECKS="$CHECKS,-readability-inconsistent-declaration-parameter-name"
-CHECKS="$CHECKS,-readability-magic-numbers"
-CHECKS="$CHECKS,-readability-redundant-control-flow"
 
 # TODO(iphydf): Maybe fix these?
 CHECKS="$CHECKS,-altera-id-dependent-backward-branch"
@@ -61,13 +66,14 @@ CHECKS="$CHECKS,-clang-analyzer-valist.Uninitialized"
 CHECKS="$CHECKS,-concurrency-mt-unsafe"
 CHECKS="$CHECKS,-cppcoreguidelines-avoid-non-const-global-variables"
 CHECKS="$CHECKS,-cppcoreguidelines-narrowing-conversions"
-CHECKS="$CHECKS,-google-readability-casting"
 CHECKS="$CHECKS,-misc-no-recursion"
 
 # TODO(iphydf): Probably fix these.
 CHECKS="$CHECKS,-cert-err33-c"
 CHECKS="$CHECKS,-cppcoreguidelines-avoid-magic-numbers"
+CHECKS="$CHECKS,-google-readability-casting"
 CHECKS="$CHECKS,-modernize-macro-to-enum"
+CHECKS="$CHECKS,-readability-magic-numbers"
 
 ERRORS="*"
 

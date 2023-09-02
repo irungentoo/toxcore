@@ -574,7 +574,6 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
 
 static void test_announce(void)
 {
-    uint32_t i, j;
     uint32_t index[NUM_ONIONS];
     Onions *onions[NUM_ONIONS];
     const Random *rng = system_random();
@@ -582,7 +581,7 @@ static void test_announce(void)
     const Memory *mem = system_memory();
     ck_assert(mem != nullptr);
 
-    for (i = 0; i < NUM_ONIONS; ++i) {
+    for (uint32_t i = 0; i < NUM_ONIONS; ++i) {
         index[i] = i + 1;
         onions[i] = new_onions(mem, rng, i + 36655, &index[i]);
         ck_assert_msg(onions[i] != nullptr, "Failed to create onions. %u", i);
@@ -590,7 +589,7 @@ static void test_announce(void)
 
     IP ip = get_loopback();
 
-    for (i = 3; i < NUM_ONIONS; ++i) {
+    for (uint32_t i = 3; i < NUM_ONIONS; ++i) {
         IP_Port ip_port = {ip, net_port(onions[i - 1]->onion->net)};
         dht_bootstrap(onions[i]->onion->dht, &ip_port, dht_get_self_public_key(onions[i - 1]->onion->dht));
         IP_Port ip_port1 = {ip, net_port(onions[i - 2]->onion->net)};
@@ -604,7 +603,7 @@ static void test_announce(void)
     do {
         connected = 0;
 
-        for (i = 0; i < NUM_ONIONS; ++i) {
+        for (uint32_t i = 0; i < NUM_ONIONS; ++i) {
             do_onions(onions[i]);
             connected += dht_isconnected(onions[i]->onion->dht);
         }
@@ -614,8 +613,8 @@ static void test_announce(void)
 
     printf("connected\n");
 
-    for (i = 0; i < 25 * 2; ++i) {
-        for (j = 0; j < NUM_ONIONS; ++j) {
+    for (uint32_t i = 0; i < 25 * 2; ++i) {
+        for (uint32_t j = 0; j < NUM_ONIONS; ++j) {
             do_onions(onions[j]);
         }
 
@@ -637,7 +636,7 @@ static void test_announce(void)
     IP_Port ip_port;
 
     do {
-        for (i = 0; i < NUM_ONIONS; ++i) {
+        for (uint32_t i = 0; i < NUM_ONIONS; ++i) {
             do_onions(onions[i]);
         }
 
@@ -647,7 +646,7 @@ static void test_announce(void)
     printf("Waiting for ips\n");
 
     do {
-        for (i = 0; i < NUM_ONIONS; ++i) {
+        for (uint32_t i = 0; i < NUM_ONIONS; ++i) {
             do_onions(onions[i]);
         }
 
@@ -657,7 +656,7 @@ static void test_announce(void)
     onion_getfriendip(onions[NUM_LAST]->onion_c, frnum, &ip_port);
     ck_assert_msg(ip_port.port == net_port(onions[NUM_FIRST]->onion->net), "Port in returned ip not correct.");
 
-    for (i = 0; i < NUM_ONIONS; ++i) {
+    for (uint32_t i = 0; i < NUM_ONIONS; ++i) {
         kill_onions(mem, onions[i]);
     }
 }

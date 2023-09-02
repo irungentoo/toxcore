@@ -82,38 +82,33 @@ static void manage_keys(DHT *dht)
     fclose(keys_file);
 }
 
+static const char *strlevel(Logger_Level level)
+{
+    switch (level) {
+        case LOGGER_LEVEL_TRACE:
+            return "TRACE";
+
+        case LOGGER_LEVEL_DEBUG:
+            return "DEBUG";
+
+        case LOGGER_LEVEL_INFO:
+            return "INFO";
+
+        case LOGGER_LEVEL_WARNING:
+            return "WARNING";
+
+        case LOGGER_LEVEL_ERROR:
+            return "ERROR";
+
+        default:
+            return "<unknown>";
+    }
+}
+
 static void print_log(void *context, Logger_Level level, const char *file, int line,
                       const char *func, const char *message, void *userdata)
 {
-    const char *strlevel;
-
-    switch (level) {
-        case LOGGER_LEVEL_TRACE:
-            strlevel = "TRACE";
-            break;
-
-        case LOGGER_LEVEL_DEBUG:
-            strlevel = "DEBUG";
-            break;
-
-        case LOGGER_LEVEL_INFO:
-            strlevel = "INFO";
-            break;
-
-        case LOGGER_LEVEL_WARNING:
-            strlevel = "WARNING";
-            break;
-
-        case LOGGER_LEVEL_ERROR:
-            strlevel = "ERROR";
-            break;
-
-        default:
-            strlevel = "<unknown>";
-            break;
-    }
-
-    fprintf(stderr, "[%s] %s:%d(%s) %s\n", strlevel, file, line, func, message);
+    fprintf(stderr, "[%s] %s:%d(%s) %s\n", strlevel(level), file, line, func, message);
 }
 
 int main(int argc, char *argv[])
@@ -139,7 +134,7 @@ int main(int argc, char *argv[])
 
     Logger *logger = logger_new();
 
-    if (MIN_LOGGER_LEVEL == LOGGER_LEVEL_TRACE || MIN_LOGGER_LEVEL == LOGGER_LEVEL_DEBUG) {
+    if (MIN_LOGGER_LEVEL <= LOGGER_LEVEL_DEBUG) {
         logger_callback_log(logger, print_log, nullptr, nullptr);
     }
 
