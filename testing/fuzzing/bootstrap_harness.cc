@@ -107,6 +107,9 @@ void setup_callbacks(Tox_Dispatch *dispatch)
 
 void TestBootstrap(Fuzz_Data &input)
 {
+    // Null system for regularly working memory allocations needed in
+    // tox_events_equal.
+    Null_System null_sys;
     Fuzz_System sys(input);
 
     Ptr<Tox_Options> opts(tox_options_new(nullptr), tox_options_free);
@@ -154,11 +157,9 @@ void TestBootstrap(Fuzz_Data &input)
 
     uint8_t pub_key[TOX_PUBLIC_KEY_SIZE] = {0};
 
-    const bool udp_success = tox_bootstrap(tox, "127.0.0.2", 33446, pub_key, nullptr);
-    assert(udp_success);
-
-    const bool tcp_success = tox_add_tcp_relay(tox, "127.0.0.2", 33446, pub_key, nullptr);
-    assert(tcp_success);
+    // These may fail, but that's ok. We ignore their return values.
+    tox_bootstrap(tox, "127.0.0.2", 33446, pub_key, nullptr);
+    tox_add_tcp_relay(tox, "127.0.0.2", 33446, pub_key, nullptr);
 
     tox_events_init(tox);
 
@@ -169,7 +170,7 @@ void TestBootstrap(Fuzz_Data &input)
     while (input.size > 0) {
         Tox_Err_Events_Iterate error_iterate;
         Tox_Events *events = tox_events_iterate(tox, true, &error_iterate);
-        assert(tox_events_equal(sys.sys.get(), events, events));
+        assert(tox_events_equal(null_sys.sys.get(), events, events));
         tox_dispatch_invoke(dispatch, events, tox, nullptr);
         tox_events_free(events);
         // Move the clock forward a decent amount so all the time-based checks

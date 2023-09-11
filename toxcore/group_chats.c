@@ -7483,6 +7483,10 @@ int gc_group_load(GC_Session *c, Bin_Unpack *bu)
     chat->last_ping_interval = tm;
     chat->friend_connection_id = -1;
 
+    // Initialise these first, because we may need to log/dealloc things on cleanup.
+    chat->moderation.log = m->log;
+    chat->moderation.mem = m->mem;
+
     if (!gc_load_unpack_group(chat, bu)) {
         LOGGER_ERROR(chat->log, "Failed to unpack group");
         return -1;
