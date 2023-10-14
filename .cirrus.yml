@@ -9,10 +9,9 @@ bazel-opt_task:
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
     - cd /src/workspace && bazel test -k
-        --remote_http_cache=http://$CIRRUS_HTTP_CACHE_HOST
+        --config=ci
         --build_tag_filters=-haskell
         --test_tag_filters=-haskell
-        --remote_download_minimal
         --
         //c-toxcore/...
         -//c-toxcore/auto_tests:tcp_relay_test # TODO(robinlinden): Why does this pass locally but not in Cirrus?
@@ -27,10 +26,9 @@ bazel-dbg_task:
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
     - cd /src/workspace && bazel test -k
-        --remote_http_cache=http://$CIRRUS_HTTP_CACHE_HOST
+        --config=ci
         --build_tag_filters=-haskell
         --test_tag_filters=-haskell
-        --remote_download_minimal
         --
         //c-toxcore/...
         -//c-toxcore/auto_tests:tcp_relay_test # TODO(robinlinden): Why does this pass locally but not in Cirrus?
@@ -45,7 +43,7 @@ cimple_task:
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
     - cd /src/workspace && bazel test -k
-        --remote_http_cache=http://$CIRRUS_HTTP_CACHE_HOST
+        --config=ci
         --build_tag_filters=haskell
         --test_tag_filters=haskell
         --

@@ -22,6 +22,8 @@
 
 const bool DEBUG = false;
 
+static constexpr tox_mono_time_cb *get_self_clock = ![](Fuzz_System *self) { return self->clock; };
+
 // TODO(iphydf): Put this somewhere shared.
 struct Network_Addr {
     struct sockaddr_storage addr;
@@ -182,7 +184,7 @@ Fuzz_System::Fuzz_System(Fuzz_Data &input)
     }
     , data(input)
 {
-    sys->mono_time_callback = ![](Fuzz_System *self) { return self->clock; };
+    sys->mono_time_callback = get_self_clock;
     sys->mono_time_user_data = this;
     sys->mem = mem.get();
     sys->ns = ns.get();
@@ -269,7 +271,7 @@ Null_System::Null_System()
         std::make_unique<Random>(Random{&null_random_funcs, this}),
     }
 {
-    sys->mono_time_callback = ![](Fuzz_System *self) { return self->clock; };
+    sys->mono_time_callback = get_self_clock;
     sys->mono_time_user_data = this;
     sys->mem = mem.get();
     sys->ns = ns.get();
@@ -400,7 +402,7 @@ Record_System::Record_System(Global &global, uint64_t seed, const char *name)
     , seed_(seed)
     , name_(name)
 {
-    sys->mono_time_callback = ![](Fuzz_System *self) { return self->clock; };
+    sys->mono_time_callback = get_self_clock;
     sys->mono_time_user_data = this;
     sys->mem = mem.get();
     sys->ns = ns.get();
