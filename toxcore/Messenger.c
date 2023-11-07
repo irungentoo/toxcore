@@ -3220,8 +3220,12 @@ static State_Load_Status groups_load(Messenger *m, const uint8_t *data, uint32_t
 
         if (group_number < 0) {
             LOGGER_WARNING(m->log, "Failed to load group %u", i);
+            // Can't recover trivially. We may need to skip over some data here.
+            break;
         }
     }
+
+    LOGGER_DEBUG(m->log, "Successfully loaded %u groups", gc_count_groups(m->group_handler));
 
     bin_unpack_free(bu);
 

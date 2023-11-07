@@ -1086,7 +1086,7 @@ void networking_poll(const Networking_Core *net, void *userdata)
     }
 
     IP_Port ip_port;
-    uint8_t data[MAX_UDP_PACKET_SIZE];
+    uint8_t data[MAX_UDP_PACKET_SIZE] = {0};
     uint32_t length;
 
     while (receivepacket(net->ns, net->mem, net->log, net->sock, &ip_port, data, &length) != -1) {

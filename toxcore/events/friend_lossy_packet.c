@@ -104,7 +104,7 @@ static bool tox_event_friend_lossy_packet_unpack(
     Tox_Event_Friend_Lossy_Packet *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-    if (!bin_unpack_array_fixed(bu, 2)) {
+    if (!bin_unpack_array_fixed(bu, 2, nullptr)) {
         return false;
     }
 

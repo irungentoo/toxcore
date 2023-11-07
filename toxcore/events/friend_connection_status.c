@@ -86,7 +86,7 @@ static bool tox_event_friend_connection_status_unpack(
     Tox_Event_Friend_Connection_Status *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-    if (!bin_unpack_array_fixed(bu, 2)) {
+    if (!bin_unpack_array_fixed(bu, 2, nullptr)) {
         return false;
     }
 

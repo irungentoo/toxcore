@@ -134,7 +134,7 @@ static bool tox_event_file_recv_chunk_unpack(
     Tox_Event_File_Recv_Chunk *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-    if (!bin_unpack_array_fixed(bu, 4)) {
+    if (!bin_unpack_array_fixed(bu, 4, nullptr)) {
         return false;
     }
 

@@ -29,12 +29,26 @@ flaky_tests = {
     "tox_many_tcp_test": True,
 }
 
+extra_args = {
+    "proxy_test": ["$(location //c-toxcore/other/proxy)"],
+}
+
+extra_data = {
+    "proxy_test": ["//c-toxcore/other/proxy"],
+}
+
 [cc_test(
     name = src[:-2],
     size = "small",
     srcs = [src],
-    args = ["$(location %s)" % src] + ["$(location //c-toxcore/other/proxy)"],
-    data = glob(["data/*"]) + ["//c-toxcore/other/proxy"],
+    args = ["$(location %s)" % src] + extra_args.get(
+        src[:-2],
+        [],
+    ),
+    data = glob(["data/*"]) + extra_data.get(
+        src[:-2],
+        [],
+    ),
     flaky = flaky_tests.get(
         src[:-2],
         False,

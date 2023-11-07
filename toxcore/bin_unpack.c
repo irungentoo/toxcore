@@ -73,10 +73,14 @@ bool bin_unpack_array(Bin_Unpack *bu, uint32_t *size)
     return cmp_read_array(&bu->ctx, size) && *size <= bu->bytes_size;
 }
 
-bool bin_unpack_array_fixed(Bin_Unpack *bu, uint32_t required_size)
+bool bin_unpack_array_fixed(Bin_Unpack *bu, uint32_t required_size, uint32_t *actual_size)
 {
-    uint32_t size;
-    return cmp_read_array(&bu->ctx, &size) && size == required_size;
+    uint32_t size = 0;
+    const bool success = cmp_read_array(&bu->ctx, &size) && size == required_size;
+    if (actual_size != nullptr) {
+        *actual_size = size;
+    }
+    return success;
 }
 
 bool bin_unpack_bool(Bin_Unpack *bu, bool *val)
@@ -126,6 +130,18 @@ bool bin_unpack_bin(Bin_Unpack *bu, uint8_t **data_ptr, uint32_t *data_length_pt
     *data_ptr = data;
     *data_length_ptr = bin_size;
     return true;
+}
+
+bool bin_unpack_bin_max(Bin_Unpack *bu, uint8_t *data, uint16_t *data_length_ptr, uint16_t max_data_length)
+{
+    uint32_t bin_size;
+    if (!bin_unpack_bin_size(bu, &bin_size) || bin_size > max_data_length) {
+        return false;
+    }
+
+    *data_length_ptr = bin_size;
+
+    return bin_unpack_bin_b(bu, data, bin_size);
 }
 
 bool bin_unpack_bin_fixed(Bin_Unpack *bu, uint8_t *data, uint32_t data_length)

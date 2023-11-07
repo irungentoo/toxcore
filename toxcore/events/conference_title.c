@@ -119,7 +119,7 @@ static bool tox_event_conference_title_unpack(
     Tox_Event_Conference_Title *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-    if (!bin_unpack_array_fixed(bu, 3)) {
+    if (!bin_unpack_array_fixed(bu, 3, nullptr)) {
         return false;
     }
 

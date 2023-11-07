@@ -7,11 +7,11 @@ workflows:
     jobs:
       # Dynamic analysis in the Bazel build
       - bazel-asan
+      - bazel-msan
       - bazel-tsan
       # Dynamic analysis with CMake
       - asan
       - tsan
-      - msan
       - ubsan
       # Static analysis
       - clang-analyze
@@ -29,6 +29,7 @@ jobs:
     steps:
       - checkout
       - run: .circleci/bazel-test
+          //c-toxcore/...
 
   bazel-tsan:
     working_directory: /tmp/cirrus-ci-build
@@ -38,10 +39,21 @@ jobs:
     steps:
       - checkout
       - run: .circleci/bazel-test
+          //c-toxcore/...
           -//c-toxcore/auto_tests:conference_av_test
           -//c-toxcore/auto_tests:conference_test
           -//c-toxcore/auto_tests:onion_test
           -//c-toxcore/auto_tests:tox_many_test
+
+  bazel-msan:
+    working_directory: /tmp/cirrus-ci-build
+    docker:
+      - image: toxchat/toktok-stack:latest-msan
+
+    steps:
+      - checkout
+      - run: .circleci/bazel-test
+          //c-toxcore/auto_tests:lossless_packet_test
 
   asan:
     working_directory: ~/work
@@ -90,21 +102,6 @@ jobs:
       - checkout
       - run: git submodule update --init --recursive
       - run: CC=clang .circleci/cmake-ubsan
-
-  msan:
-    working_directory: ~/work
-    docker:
-      - image: toxchat/toktok-stack:latest-msan
-
-    steps:
-      - checkout
-      - run: git submodule update --init --recursive
-      - run: rm -rf /src/workspace/c-toxcore/* && mv * /src/workspace/c-toxcore/
-      - run:
-          cd /src/workspace && bazel test
-            //c-toxcore/auto_tests:lossless_packet_test
-            //c-toxcore/toxav/...
-            //c-toxcore/toxcore/...
 
   infer:
     working_directory: ~/work

@@ -99,7 +99,7 @@ static bool tox_event_file_recv_control_unpack(
     Tox_Event_File_Recv_Control *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-    if (!bin_unpack_array_fixed(bu, 3)) {
+    if (!bin_unpack_array_fixed(bu, 3, nullptr)) {
         return false;
     }
 
