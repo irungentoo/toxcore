@@ -6961,12 +6961,12 @@ static bool ping_peer(const GC_Chat *chat, const GC_Connection *gconn)
 
     if (!send_lossy_group_packet(chat, gconn, data, packed_len, GP_PING)) {
         free(data);
-        return true;
+        return false;
     }
 
     free(data);
 
-    return false;
+    return true;
 }
 
 /**
