@@ -4,11 +4,12 @@ set -eux
 
 git submodule update --init --recursive
 /src/workspace/tools/inject-repo c-toxcore
+# TODO(iphydf): Re-enable fuzz-test when https://github.com/tweag/rules_nixpkgs/issues/442 is fixed.
 cd /src/workspace && bazel test -k \
+  --config=ci \
   --config=remote \
-  --build_tag_filters=-haskell \
-  --test_tag_filters=-haskell \
-  --remote_download_minimal \
+  --build_tag_filters=-haskell,-fuzz-test \
+  --test_tag_filters=-haskell,-fuzz-test \
   -- \
   //c-toxcore/... \
   "$@"

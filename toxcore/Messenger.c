@@ -2988,6 +2988,7 @@ static State_Load_Status load_nospam_keys(Messenger *m, const uint8_t *data, uin
     load_secret_key(m->net_crypto, data + sizeof(uint32_t) + CRYPTO_PUBLIC_KEY_SIZE);
 
     if (!pk_equal(data + sizeof(uint32_t), nc_get_self_public_key(m->net_crypto))) {
+        LOGGER_ERROR(m->log, "public key stored in savedata does not match its secret key");
         return STATE_LOAD_STATUS_ERROR;
     }
 
