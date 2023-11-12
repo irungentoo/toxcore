@@ -16,6 +16,7 @@ cc_binary(
     testonly = 1,
     srcs = ["DHT_bootstrap.c"],
     deps = [
+        ":bootstrap_node_packets",
         "//c-toxcore/testing:misc_tools",
         "//c-toxcore/toxcore:DHT",
         "//c-toxcore/toxcore:LAN_discovery",
