@@ -890,9 +890,6 @@ typedef enum Tox_Err_New {
  * This function will bring the instance into a valid state. Running the event
  * loop with a new instance will operate correctly.
  *
- * If loading failed or succeeded only partially, the new or partially loaded
- * instance is returned and an error code is set.
- *
  * @param options An options object as described above. If this parameter is
  *   NULL, the default options are used.
  *

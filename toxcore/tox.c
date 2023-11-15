@@ -858,12 +858,23 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
     if (load_savedata_tox
             && tox_load(tox, tox_options_get_savedata_data(opts), tox_options_get_savedata_length(opts)) == -1) {
+        mono_time_free(tox->sys.mem, tox->mono_time);
+        tox_options_free(default_options);
+        tox_unlock(tox);
+
+        if (tox->mutex != nullptr) {
+            pthread_mutex_destroy(tox->mutex);
+        }
+
+        free(tox->mutex);
+        free(tox);
+
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
-    } else if (load_savedata_sk) {
+        return nullptr;
+    }
+
+    if (load_savedata_sk) {
         load_secret_key(tox->m->net_crypto, tox_options_get_savedata_data(opts));
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
-    } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
     }
 
     m_callback_namechange(tox->m, tox_friend_name_handler);
@@ -913,6 +924,9 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     tox_options_free(default_options);
 
     tox_unlock(tox);
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
+
     return tox;
 }
 
