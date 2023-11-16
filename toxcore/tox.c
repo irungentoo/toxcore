@@ -858,6 +858,9 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
     if (load_savedata_tox
             && tox_load(tox, tox_options_get_savedata_data(opts), tox_options_get_savedata_length(opts)) == -1) {
+        kill_groupchats(tox->m->conferences_object);
+        kill_messenger(tox->m);
+
         mono_time_free(tox->sys.mem, tox->mono_time);
         tox_options_free(default_options);
         tox_unlock(tox);
@@ -866,8 +869,8 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
             pthread_mutex_destroy(tox->mutex);
         }
 
-        free(tox->mutex);
-        free(tox);
+        mem_delete(sys->mem, tox->mutex);
+        mem_delete(sys->mem, tox);
 
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
         return nullptr;
