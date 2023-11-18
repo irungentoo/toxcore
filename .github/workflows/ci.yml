@@ -60,15 +60,6 @@ jobs:
         with:
           file: other/docker/misra/Dockerfile
 
-  cimplefmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - name: Run cimplefmt
-        run: other/docker/cimplefmt/run -u $(find tox* -name "*.[ch]")
-
   build-nacl:
     runs-on: ubuntu-latest
     steps:
@@ -78,6 +69,35 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           file: other/docker/autotools/Dockerfile
+
+  build-tcc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Docker Build
+        uses: docker/build-push-action@v2
+        with:
+          file: other/docker/tcc/Dockerfile
+
+  build-compcert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Docker Build
+        uses: docker/build-push-action@v2
+        with:
+          file: other/docker/compcert/Dockerfile
+
+  cimplefmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Run cimplefmt
+        run: other/docker/cimplefmt/run -u $(find tox* -name "*.[ch]")
 
   build-win32:
     runs-on: ubuntu-latest
@@ -124,45 +144,6 @@ jobs:
           submodules: recursive
       - name: Build, test, and upload coverage
         run: .github/scripts/coverage-linux
-
-  build-tcc:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Docker Build
-        uses: docker/build-push-action@v2
-        with:
-          file: other/docker/tcc/Dockerfile
-
-  build-compcert:
-    runs-on: ubuntu-latest
-    container: toxchat/compcert
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - name: Build with CompCert
-        run:
-          ccomp
-            -o send_message_test
-            -Wall -Werror
-            -Wno-c11-extensions
-            -Wno-unknown-pragmas
-            -Wno-unused-variable
-            -fstruct-passing -fno-unprototyped -g
-            auto_tests/auto_test_support.c
-            auto_tests/send_message_test.c
-            testing/misc_tools.c
-            toxav/*.c
-            toxcore/*.c
-            toxcore/*/*.c
-            toxencryptsave/*.c
-            third_party/cmp/*.c
-            -D__COMPCERT__ -DDISABLE_VLA -Dinline=
-            -lpthread $(pkg-config --cflags --libs libsodium opus vpx)
-      - name: Run the test
-        run: "./send_message_test | grep 'tox clients connected'"
 
   build-android:
     runs-on: ubuntu-latest
