@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update && \
  DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
@@ -17,6 +17,9 @@ COPY testing/ /work/testing/
 COPY toxav/ /work/toxav/
 COPY toxcore/ /work/toxcore/
 COPY toxencryptsave/ /work/toxencryptsave/
+COPY third_party/ /work/third_party/
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN tcc \
  -Dinline=static \
@@ -31,9 +34,9 @@ RUN tcc \
  toxcore/*/*.c \
  toxencryptsave/*.c \
  third_party/cmp/*.c \
- $(pkg-config --cflags --libs libsodium opus vpx)
+ $(pkg-config --cflags --libs libsodium opus vpx) \
+ && ./send_message_test | grep 'tox clients connected'
 
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 COPY other/make_single_file /work/other/
 RUN \
  other/make_single_file \
@@ -44,4 +47,5 @@ RUN \
    -o send_message_test \
    -Wall -Werror \
    -bench -g \
-   $(pkg-config --cflags --libs libsodium opus vpx)
+   $(pkg-config --cflags --libs libsodium opus vpx) \
+ && ./send_message_test | grep 'tox clients connected'

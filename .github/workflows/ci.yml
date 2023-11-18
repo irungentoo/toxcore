@@ -128,48 +128,12 @@ jobs:
   build-tcc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Docker Build
+        uses: docker/build-push-action@v2
         with:
-          submodules: recursive
-      - name: Install dependencies
-        run:
-          sudo apt-get install -y --no-install-recommends
-            tcc
-            libconfig-dev
-            libopus-dev
-            libsodium-dev
-            libvpx-dev
-      - name: Build with TCC
-        run:
-          tcc
-            -Dinline=static
-            -o send_message_test
-            -Wall -Werror
-            -bench -g
-            auto_tests/auto_test_support.c
-            auto_tests/send_message_test.c
-            testing/misc_tools.c
-            toxav/*.c
-            toxcore/*.c
-            toxcore/*/*.c
-            toxencryptsave/*.c
-            third_party/cmp/*.c
-            $(pkg-config --cflags --libs libsodium opus vpx)
-      - name: Run the test
-        run: "./send_message_test | grep 'tox clients connected'"
-      - name: Build amalgamation file with TCC
-        run:
-          other/make_single_file
-            auto_tests/auto_test_support.c
-            auto_tests/send_message_test.c
-            testing/misc_tools.c |
-          tcc -
-            -o send_message_test
-            -Wall -Werror
-            -bench -g
-            $(pkg-config --cflags --libs libsodium opus vpx)
-      - name: Run the test again
-        run: "./send_message_test | grep 'tox clients connected'"
+          file: other/docker/tcc/Dockerfile
 
   build-compcert:
     runs-on: ubuntu-latest
