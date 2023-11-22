@@ -123,7 +123,7 @@ static void test_dht_getnodes(AutoTox *autotoxes)
         tox_self_get_dht_id(autotoxes[i].tox, public_key_list[i]);
         tox_callback_dht_get_nodes_response(autotoxes[i].tox, getnodes_response_cb);
 
-        printf("Peer %zu dht closenode count total/annouce-capable: %d/%d\n",
+        printf("Peer %zu dht closenode count total/announce-capable: %d/%d\n",
             i,
             tox_dht_get_num_closelist(autotoxes[i].tox),
             tox_dht_get_num_closelist_announce_capable(autotoxes[i].tox)

@@ -2627,7 +2627,7 @@ void do_messenger(Messenger *m, void *userdata)
         if (m->tcp_server != nullptr) {
             /* Add self tcp server. */
             IP_Port local_ip_port;
-            local_ip_port.port = m->options.tcp_server_port;
+            local_ip_port.port = net_htons(m->options.tcp_server_port);
             local_ip_port.ip.family = net_family_ipv4();
             local_ip_port.ip.ip.v4 = get_ip4_loopback();
             add_tcp_relay(m->net_crypto, &local_ip_port, tcp_server_public_key(m->tcp_server));
