@@ -80,7 +80,12 @@ enable_testing()
 set(CMAKE_MACOSX_RPATH ON)
 
 # Set standard version for compiler.
-set(CMAKE_C_STANDARD 11)
+if(MSVC)
+  # https://developercommunity.visualstudio.com/t/older-winsdk-headers-are-incompatible-with-zcprepr/1593479
+  set(CMAKE_C_STANDARD 99)
+else()
+  set(CMAKE_C_STANDARD 11)
+endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_CXX_EXTENSIONS OFF)
