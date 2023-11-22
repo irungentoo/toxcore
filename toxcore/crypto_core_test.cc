@@ -12,10 +12,29 @@ namespace {
 
 using HmacKey = std::array<uint8_t, CRYPTO_HMAC_KEY_SIZE>;
 using Hmac = std::array<uint8_t, CRYPTO_HMAC_SIZE>;
+using PublicKey = std::array<uint8_t, CRYPTO_PUBLIC_KEY_SIZE>;
+using SecretKey = std::array<uint8_t, CRYPTO_SECRET_KEY_SIZE>;
 using ExtPublicKey = std::array<uint8_t, EXT_PUBLIC_KEY_SIZE>;
 using ExtSecretKey = std::array<uint8_t, EXT_SECRET_KEY_SIZE>;
 using Signature = std::array<uint8_t, CRYPTO_SIGNATURE_SIZE>;
 using Nonce = std::array<uint8_t, CRYPTO_NONCE_SIZE>;
+
+TEST(CryptoCore, EncryptLargeData)
+{
+    const Random *rng = system_random();
+    ASSERT_NE(rng, nullptr);
+
+    Nonce nonce{};
+    PublicKey pk;
+    SecretKey sk;
+    crypto_new_keypair(rng, pk.data(), sk.data());
+
+    // 100 MiB of data (all zeroes, doesn't matter what's inside).
+    std::vector<uint8_t> plain(100 * 1024 * 1024);
+    std::vector<uint8_t> encrypted(plain.size() + CRYPTO_MAC_SIZE);
+
+    encrypt_data(pk.data(), sk.data(), nonce.data(), plain.data(), plain.size(), encrypted.data());
+}
 
 TEST(CryptoCore, IncrementNonce)
 {

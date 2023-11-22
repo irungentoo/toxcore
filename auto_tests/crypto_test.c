@@ -269,6 +269,30 @@ static void test_large_data_symmetric(void)
     free(m1);
 }
 
+static void test_very_large_data(void)
+{
+    const Random *rng = system_random();
+    ck_assert(rng != nullptr);
+
+    uint8_t nonce[CRYPTO_NONCE_SIZE] = {0};
+    uint8_t pk[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t sk[CRYPTO_SECRET_KEY_SIZE];
+    crypto_new_keypair(rng, pk, sk);
+
+    // 100 MiB of data (all zeroes, doesn't matter what's inside).
+    const uint32_t plain_size = 100 * 1024 * 1024;
+    uint8_t *plain = (uint8_t *)malloc(plain_size);
+    uint8_t *encrypted = (uint8_t *)malloc(plain_size + CRYPTO_MAC_SIZE);
+
+    ck_assert(plain != nullptr);
+    ck_assert(encrypted != nullptr);
+
+    encrypt_data(pk, sk, nonce, plain, plain_size, encrypted);
+
+    free(encrypted);
+    free(plain);
+}
+
 static void increment_nonce_number_cmp(uint8_t *nonce, uint32_t num)
 {
     uint32_t num1 = 0;
@@ -340,6 +364,7 @@ int main(void)
     test_endtoend(); /* waiting up to 15 seconds */
     test_large_data();
     test_large_data_symmetric();
+    test_very_large_data();
     test_increment_nonce();
     test_memzero();
 
