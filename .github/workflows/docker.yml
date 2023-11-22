@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [master]
 
+# Cancel old PR builds when pushing new commits.
+concurrency:
+  group: docker-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   docker-bootstrap-node:
     runs-on: ubuntu-latest
