@@ -1,3 +1,5 @@
 #!/bin/sh
 
-docker build -t toxchat/c-toxcore:autotools -f other/docker/autotools/Dockerfile .
+set -eux
+BUILD=autotools
+docker build -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/Dockerfile" .

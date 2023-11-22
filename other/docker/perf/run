@@ -3,7 +3,7 @@
 set -eux
 
 docker build -t toxchat/c-toxcore:perf -f other/docker/perf/Dockerfile .
-docker run --privileged --rm -it \
+docker run --name toxcore-perf --privileged --rm -it \
   -v "$PWD:/work/c-toxcore" \
   toxchat/c-toxcore:perf \
   "$@"

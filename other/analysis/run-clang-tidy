@@ -2,6 +2,9 @@
 
 CHECKS="*"
 
+# We don't use memcpy_s.
+CHECKS="$CHECKS,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling"
+
 # __attribute__((nonnull)) causes this warning on defensive null checks.
 CHECKS="$CHECKS,-clang-diagnostic-pointer-bool-conversion"
 CHECKS="$CHECKS,-clang-diagnostic-tautological-pointer-compare"
@@ -56,6 +59,11 @@ CHECKS="$CHECKS,-readability-redundant-control-flow"
 # very helpful as a diagnostic.
 CHECKS="$CHECKS,-bugprone-narrowing-conversions"
 CHECKS="$CHECKS,-cppcoreguidelines-narrowing-conversions"
+
+# TODO(iphydf): Probably fix this in tox-bootstrapd.c.
+CHECKS="$CHECKS,-cert-dcl03-c"
+CHECKS="$CHECKS,-hicpp-static-assert"
+CHECKS="$CHECKS,-misc-static-assert"
 
 # TODO(iphydf): We might want some of these. For the ones we don't want, add a
 # comment explaining why not.

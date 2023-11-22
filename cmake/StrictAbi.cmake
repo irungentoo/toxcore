@@ -29,7 +29,7 @@ function(_make_version_script target)
     list(GET sublib 1 ns)
 
     execute_process(
-      COMMAND ${SHELL} -c "egrep '^\\w' ${header} | grep '${ns}_[a-z0-9_]*(' | grep -v '^typedef' | grep -o '${ns}_[a-z0-9_]*(' | egrep -o '\\w+' | sort -u"
+      COMMAND ${SHELL} -c "egrep '^\\w' ${header} | grep '${ns}_[a-z0-9_]*(' | grep -v '^typedef' | grep -o '${ns}_[a-z0-9_]*(' | egrep -o '[a-z0-9_]+' | sort -u"
       OUTPUT_VARIABLE sublib_SYMS
       OUTPUT_STRIP_TRAILING_WHITESPACE)
     string(REPLACE "\n" ";" sublib_SYMS ${sublib_SYMS})

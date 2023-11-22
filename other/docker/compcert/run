@@ -1,5 +1,5 @@
 #!/bin/sh
 
 set -eux
-
-docker build -t toxchat/c-toxcore:compcert -f other/docker/compcert/Dockerfile .
+BUILD=compcert
+docker build -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/Dockerfile" .

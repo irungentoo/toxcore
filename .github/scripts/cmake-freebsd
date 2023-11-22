@@ -1,22 +1,18 @@
 #!/bin/bash
-# Copyright (C) 2018-2021 nurupo
+# Copyright (C) 2018-2023 nurupo
 
 # Toxcore building
 
 set -eux
 
-if [ "$PWD" != "/work" ]; then
-  cd ..
-  mv c-toxcore /
-  mkdir c-toxcore
-  cd /work
-fi
-
+cd .. # /work
 . cmake-freebsd-run.sh
 
 # === Get VM ready to build the code ===
 
 gunzip "$IMAGE_NAME.gz"
+
+mv c-toxcore /
 
 start_vm
 
@@ -26,27 +22,34 @@ scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P "$SSH_PORT" -
 RUN ls -lh
 
 cd /c-toxcore
-. ".github/scripts/flags-clang.sh"
+. '.github/scripts/flags-clang.sh'
 
 add_ld_flag -Wl,-z,defs
 
-# Make compilation error on a warning
+# Make compilation error on a warning.
 add_flag -Werror
 
-RUN 'cmake -B_build -Hc-toxcore \
-  -DCMAKE_C_FLAGS="$C_FLAGS" \
-  -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
-  -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" \
-  -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS" \
-  -DCMAKE_INSTALL_PREFIX:PATH="_install" \
+# This triggers on FreeBSD's clang.
+add_flag -Wno-format
+add_flag -Wno-unsafe-buffer-usage
+
+RUN "cmake -B_build -Hc-toxcore \
+  -DCMAKE_C_FLAGS='$C_FLAGS' \
+  -DCMAKE_CXX_FLAGS='$CXX_FLAGS' \
+  -DCMAKE_EXE_LINKER_FLAGS='$LD_FLAGS' \
+  -DCMAKE_SHARED_LINKER_FLAGS='$LD_FLAGS' \
+  -DCMAKE_INSTALL_PREFIX:PATH='_install' \
   -DMIN_LOGGER_LEVEL=TRACE \
   -DMUST_BUILD_TOXAV=ON \
   -DNON_HERMETIC_TESTS=ON \
   -DSTRICT_ABI=ON \
   -DTEST_TIMEOUT_SECONDS=90 \
   -DUSE_IPV6=OFF \
-  -DAUTOTEST=ON'
+  -DAUTOTEST=ON"
 
-# We created the VM with the same number of cores as the host, so the host-ran `nproc` here is fine
+# We created the VM with the same number of cores as the host, so the host-ran `nproc` here is fine.
 RUN 'gmake "-j$NPROC" -k install -C_build'
 RUN 'gmake "-j$NPROC" test ARGS="-j50" -C_build || true'
+
+# Gracefully shut down the VM.
+stop_vm

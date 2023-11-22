@@ -1184,11 +1184,11 @@ Networking_Core *new_networking_ex(
     int n = 1024 * 1024 * 2;
 
     if (net_setsockopt(ns, temp->sock, SOL_SOCKET, SO_RCVBUF, &n, sizeof(n)) != 0) {
-        LOGGER_ERROR(log, "failed to set socket option %d", SO_RCVBUF);
+        LOGGER_WARNING(log, "failed to set socket option %d", SO_RCVBUF);
     }
 
     if (net_setsockopt(ns, temp->sock, SOL_SOCKET, SO_SNDBUF, &n, sizeof(n)) != 0) {
-        LOGGER_ERROR(log, "failed to set socket option %d", SO_SNDBUF);
+        LOGGER_WARNING(log, "failed to set socket option %d", SO_SNDBUF);
     }
 
     /* Enable broadcast on socket */
