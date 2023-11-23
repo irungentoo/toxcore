@@ -2,8 +2,6 @@ load("@rules_cc//cc:defs.bzl", "cc_test")
 load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
 load("//tools:no_undefined.bzl", "cc_library")
 
-package(features = ["layering_check"])
-
 exports_files(
     srcs = ["tox.h"],
     visibility = ["//c-toxcore:__pkg__"],

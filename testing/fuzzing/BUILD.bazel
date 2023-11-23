@@ -2,8 +2,6 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
 load("@rules_fuzzing//fuzzing/private:binary.bzl", "fuzzing_binary")  # buildifier: disable=bzl-visibility
 
-package(features = ["layering_check"])
-
 cc_library(
     name = "fuzz_support",
     srcs = [

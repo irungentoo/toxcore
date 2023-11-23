@@ -1,7 +1,5 @@
 load("//tools:no_undefined.bzl", "cc_library")
 
-package(features = ["layering_check"])
-
 cc_library(
     name = "cmp",
     srcs = ["cmp/cmp.c"],

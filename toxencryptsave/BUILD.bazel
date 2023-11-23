@@ -1,7 +1,5 @@
 load("//tools:no_undefined.bzl", "cc_library")
 
-package(features = ["layering_check"])
-
 exports_files(
     srcs = ["toxencryptsave.h"],
     visibility = ["//c-toxcore:__pkg__"],

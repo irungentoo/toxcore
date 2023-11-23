@@ -1,8 +1,6 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
 load("//tools:no_undefined.bzl", "cc_library")
 
-package(features = ["layering_check"])
-
 exports_files(
     srcs = ["toxav.h"],
     visibility = ["//c-toxcore:__pkg__"],

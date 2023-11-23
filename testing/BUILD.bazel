@@ -1,7 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
-package(features = ["layering_check"])
-
 CIMPLE_FILES = [
     "//c-toxcore/toxav:cimple_files",
     "//c-toxcore/toxcore:cimple_files",
