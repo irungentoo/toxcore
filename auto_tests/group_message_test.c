@@ -44,6 +44,10 @@ typedef struct State {
 #define TEST_CUSTOM_PACKET "Why'd ya spill yer beans?"
 #define TEST_CUSTOM_PACKET_LEN (sizeof(TEST_CUSTOM_PACKET) - 1)
 
+#define TEST_CUSTOM_PACKET_LARGE "Where is it I've read that someone condemned to death says or thinks, an hour before his death, that if he had to live on some high rock, on such a narrow ledge that he'd only room to stand, and the ocean, everlasting darkness, everlasting solitude, everlasting tempest around him, if he had to remain standing on a square yard of space all his life, a thousand years, eternity, it were better to live so than to die at once. Only to live, to live and live! Life, whatever it may be! ...............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................0123456789"
+#define TEST_CUSTOM_PACKET_LARGE_LEN (sizeof(TEST_CUSTOM_PACKET_LARGE) - 1)
+static_assert(TEST_CUSTOM_PACKET_LARGE_LEN == TOX_GROUP_MAX_CUSTOM_LOSSY_PACKET_LENGTH, "Should be max");
+
 #define TEST_CUSTOM_PRIVATE_PACKET "This is a custom private packet. Enjoy."
 #define TEST_CUSTOM_PRIVATE_PACKET_LEN (sizeof(TEST_CUSTOM_PRIVATE_PACKET) - 1)
 
@@ -178,6 +182,21 @@ static void group_custom_packet_handler(Tox *tox, uint32_t groupnumber, uint32_t
 
     printf("%s sent custom packet to %s: %s\n", peer_name, self_name, message_buf);
     ck_assert(memcmp(message_buf, TEST_CUSTOM_PACKET, length) == 0);
+
+    AutoTox *autotox = (AutoTox *)user_data;
+    ck_assert(autotox != nullptr);
+
+    State *state = (State *)autotox->state;
+
+    ++state->custom_packets_received;
+}
+
+static void group_custom_packet_large_handler(Tox *tox, uint32_t groupnumber, uint32_t peer_id, const uint8_t *data,
+                                        size_t length, void *user_data)
+{
+    ck_assert_msg(length == TEST_CUSTOM_PACKET_LARGE_LEN, "Failed to receive large custom packet. Invalid length: %zu\n", length);
+
+    ck_assert(memcmp(data, TEST_CUSTOM_PACKET_LARGE, length) == 0);
 
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -450,6 +469,19 @@ static void group_message_test(AutoTox *autotoxes)
         iterate_all_wait(autotoxes, NUM_GROUP_TOXES, ITERATION_INTERVAL);
     }
 
+    // tox0 sends a large max sized lossy custom packet
+
+    // overwrite callback for larger packet
+    tox_callback_group_custom_packet(tox0, group_custom_packet_large_handler);
+
+    tox_group_send_custom_packet(tox1, group_number, false, (const uint8_t *)TEST_CUSTOM_PACKET_LARGE, TEST_CUSTOM_PACKET_LARGE_LEN,
+                                 &c_err);
+    ck_assert_msg(c_err == TOX_ERR_GROUP_SEND_CUSTOM_PACKET_OK, "%d", c_err);
+
+    while (state0->custom_packets_received < 3) {
+        iterate_all_wait(autotoxes, NUM_GROUP_TOXES, ITERATION_INTERVAL);
+    }
+
     uint8_t m[TOX_GROUP_MAX_MESSAGE_LENGTH] = {0};
 
     fprintf(stderr, "Doing lossless packet test...\n");
@@ -538,6 +570,8 @@ int main(void)
 #undef TEST_PRIVATE_MESSAGE_LEN
 #undef TEST_CUSTOM_PACKET
 #undef TEST_CUSTOM_PACKET_LEN
+#undef TEST_CUSTOM_PACKET_LARGE
+#undef TEST_CUSTOM_PACKET_LARGE_LEN
 #undef TEST_CUSTOM_PRIVATE_PACKET
 #undef TEST_CUSTOM_PRIVATE_PACKET_LEN
 #undef IGNORE_MESSAGE
