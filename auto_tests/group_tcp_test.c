@@ -244,3 +244,7 @@ int main(int argc, char **argv)
     tox_options_free(options);
     return 0;
 }
+
+#undef CODEWORD_LEN
+#undef CODEWORD
+#undef NUM_GROUP_TOXES

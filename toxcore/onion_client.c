@@ -1996,6 +1996,9 @@ static void do_announce(Onion_Client *onion_c)
         // Don't send announces to the same node twice. If we don't have many nodes,
         // the random selection below may have overlaps. This ensures that we deduplicate
         // nodes before sending packets to save some bandwidth.
+        //
+        // TODO(iphydf): Figure out why on esp32, this is necessary for the onion
+        // connection to succeed. This is an optimisation and shouldn't be necessary.
         const uint8_t *targets[MAX_ONION_CLIENTS_ANNOUNCE / 2];
         unsigned int targets_count = 0;
 

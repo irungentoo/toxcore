@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -eu
+
+qemu-system-xtensa \
+  -nographic \
+  -M esp32 \
+  -m 4 \
+  -drive file=flash.bin,if=mtd,format=raw \
+  -nic user,model=open_eth,hostfwd=tcp::80-:80 \
+  -s |
+  tee qemu.log &
+
+echo "Waiting for program to complete"
+while ! grep 'Returned from app_main' qemu.log >/dev/null; do
+  sleep 1
+done

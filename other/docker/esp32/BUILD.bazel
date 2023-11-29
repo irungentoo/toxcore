@@ -1,0 +1,15 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "host_main",
+    testonly = 1,
+    srcs = [
+        "host_main.cc",
+        "main/tox_main.cc",
+        "main/tox_main.h",
+    ],
+    deps = [
+        "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_events",
+    ],
+)

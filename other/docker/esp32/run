@@ -1,4 +1,3 @@
 #!/bin/sh
 
-docker build -t toxchat/c-toxcore:sources -f other/docker/sources/Dockerfile .
 docker build -t toxchat/c-toxcore:esp32 -f other/docker/esp32/Dockerfile .
