@@ -107,6 +107,10 @@ int64_t min_s64(int64_t a, int64_t b)
     return a < b ? a : b;
 }
 
+uint8_t max_u08(uint8_t a, uint8_t b)
+{
+    return a > b ? a : b;
+}
 uint16_t max_u16(uint16_t a, uint16_t b)
 {
     return a > b ? a : b;

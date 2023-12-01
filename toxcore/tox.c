@@ -2810,7 +2810,7 @@ uint16_t tox_self_get_udp_port(const Tox *tox, Tox_Err_Get_Port *error)
 {
     assert(tox != nullptr);
     tox_lock(tox);
-    const uint16_t port = net_htons(net_port(tox->m->net));
+    const uint16_t port = tox->m == nullptr || tox->m->net == nullptr ? 0 : net_htons(net_port(tox->m->net));
     tox_unlock(tox);
 
     if (port == 0) {
@@ -2827,7 +2827,7 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, Tox_Err_Get_Port *error)
     assert(tox != nullptr);
     tox_lock(tox);
 
-    if (tox->m->tcp_server != nullptr) {
+    if (tox->m != nullptr && tox->m->tcp_server != nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);
         const uint16_t ret = tox->m->options.tcp_server_port;
         tox_unlock(tox);

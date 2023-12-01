@@ -201,6 +201,7 @@ cc_library(
         ":attributes",
         ":ccompat",
         ":mem",
+        ":util",
         "@pthread",
     ],
 )
@@ -230,6 +231,7 @@ cc_library(
     deps = [
         ":ccompat",
         ":crypto_core",
+        ":logger",
         ":mem",
         ":mono_time",
     ],

@@ -3583,6 +3583,7 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
         mem_delete(mem, m);
 
         if (error != nullptr && net_err == 1) {
+            LOGGER_WARNING(m->log, "network initialisation failed (no ports available)");
             *error = MESSENGER_ERROR_PORT;
         }
 
@@ -3602,6 +3603,8 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
     m->net_crypto = new_net_crypto(m->log, m->mem, m->rng, m->ns, m->mono_time, m->dht, &options->proxy_info);
 
     if (m->net_crypto == nullptr) {
+        LOGGER_WARNING(m->log, "net_crypto initialisation failed");
+
         kill_dht(m->dht);
         kill_networking(m->net);
         friendreq_kill(m->fr);
@@ -3614,6 +3617,8 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
     m->group_announce = new_gca_list();
 
     if (m->group_announce == nullptr) {
+        LOGGER_WARNING(m->log, "DHT group chats initialisation failed");
+
         kill_net_crypto(m->net_crypto);
         kill_dht(m->dht);
         kill_networking(m->net);
@@ -3642,6 +3647,8 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
 
     if ((options->dht_announcements_enabled && (m->forwarding == nullptr || m->announce == nullptr)) ||
             m->onion == nullptr || m->onion_a == nullptr || m->onion_c == nullptr || m->fr_c == nullptr) {
+        LOGGER_WARNING(m->log, "onion initialisation failed");
+
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
@@ -3666,6 +3673,8 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
     m->group_handler = new_dht_groupchats(m);
 
     if (m->group_handler == nullptr) {
+        LOGGER_WARNING(m->log, "conferences initialisation failed");
+
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
@@ -3690,6 +3699,8 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
                                        m->onion, m->forwarding);
 
         if (m->tcp_server == nullptr) {
+            LOGGER_WARNING(m->log, "TCP server initialisation failed");
+
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
 #ifndef VANILLA_NACL

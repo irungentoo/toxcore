@@ -67,6 +67,9 @@ void logger_write(
     const Logger *log, Logger_Level level, const char *file, int line, const char *func,
     const char *format, ...);
 
+/* @brief Terminate the program with a signal. */
+void logger_abort(void);
+
 
 #define LOGGER_WRITE(log, level, ...)                                            \
     do {                                                                         \
@@ -85,7 +88,7 @@ void logger_write(
 #define LOGGER_FATAL(log, ...)          \
     do {                                \
         LOGGER_ERROR(log, __VA_ARGS__); \
-        abort();                        \
+        logger_abort();                 \
     } while (0)
 
 #define LOGGER_ASSERT(log, cond, ...)              \

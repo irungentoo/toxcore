@@ -120,7 +120,7 @@ bool tcp_get_random_conn_ip_port(const TCP_Connections *tcp_c, IP_Port *ip_port)
  * return -1 on failure.
  */
 non_null()
-int tcp_send_onion_request(TCP_Connections *tcp_c, unsigned int tcp_connections_number, const uint8_t *data,
+int tcp_send_onion_request(TCP_Connections *tcp_c, uint32_t tcp_connections_number, const uint8_t *data,
                            uint16_t length);
 
 /** @brief Set if we want TCP_connection to allocate some connection for onion use.

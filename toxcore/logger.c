@@ -117,3 +117,8 @@ void logger_write(const Logger *log, Logger_Level level, const char *file, int l
 
     log->callback(log->context, level, file, line, func, msg, log->userdata);
 }
+
+void logger_abort(void)
+{
+    abort();
+}

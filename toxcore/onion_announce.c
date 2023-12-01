@@ -186,11 +186,12 @@ int create_data_request(const Random *rng, uint8_t *packet, uint16_t max_packet_
  * return -1 on failure.
  * return 0 on success.
  */
-int send_announce_request(const Networking_Core *net, const Random *rng,
-                          const Onion_Path *path, const Node_format *dest,
-                          const uint8_t *public_key, const uint8_t *secret_key,
-                          const uint8_t *ping_id, const uint8_t *client_id,
-                          const uint8_t *data_public_key, uint64_t sendback_data)
+int send_announce_request(
+        const Logger *log, const Networking_Core *net, const Random *rng,
+        const Onion_Path *path, const Node_format *dest,
+        const uint8_t *public_key, const uint8_t *secret_key,
+        const uint8_t *ping_id, const uint8_t *client_id,
+        const uint8_t *data_public_key, uint64_t sendback_data)
 {
     uint8_t request[ONION_ANNOUNCE_REQUEST_MIN_SIZE];
     int len = create_announce_request(rng, request, sizeof(request), dest->public_key, public_key, secret_key, ping_id,
@@ -230,9 +231,10 @@ int send_announce_request(const Networking_Core *net, const Random *rng,
  * return -1 on failure.
  * return 0 on success.
  */
-int send_data_request(const Networking_Core *net, const Random *rng, const Onion_Path *path, const IP_Port *dest,
-                      const uint8_t *public_key, const uint8_t *encrypt_public_key, const uint8_t *nonce,
-                      const uint8_t *data, uint16_t length)
+int send_data_request(
+        const Logger *log, const Networking_Core *net, const Random *rng, const Onion_Path *path, const IP_Port *dest,
+        const uint8_t *public_key, const uint8_t *encrypt_public_key, const uint8_t *nonce,
+        const uint8_t *data, uint16_t length)
 {
     uint8_t request[ONION_MAX_DATA_SIZE];
     int len = create_data_request(rng, request, sizeof(request), public_key, encrypt_public_key, nonce, data, length);
@@ -549,7 +551,7 @@ static int handle_announce_request_common(
            ONION_ANNOUNCE_SENDBACK_DATA_LENGTH);
     memcpy(data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH, nonce, CRYPTO_NONCE_SIZE);
 
-    if (send_onion_response(onion_a->net, source, data,
+    if (send_onion_response(onion_a->log, onion_a->net, source, data,
                             1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE + len,
                             packet + (length - ONION_RETURN_3)) == -1) {
         mem_delete(onion_a->mem, response);
@@ -634,7 +636,7 @@ static int handle_data_request(void *object, const IP_Port *source, const uint8_
     data[0] = NET_PACKET_ONION_DATA_RESPONSE;
     memcpy(data + 1, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, length - (1 + CRYPTO_PUBLIC_KEY_SIZE + ONION_RETURN_3));
 
-    if (send_onion_response(onion_a->net, &onion_a->entries[index].ret_ip_port, data, SIZEOF_VLA(data),
+    if (send_onion_response(onion_a->log, onion_a->net, &onion_a->entries[index].ret_ip_port, data, SIZEOF_VLA(data),
                             onion_a->entries[index].ret) == -1) {
         return 1;
     }
@@ -665,7 +667,7 @@ Onion_Announce *new_onion_announce(const Logger *log, const Memory *mem, const R
     onion_a->extra_data_object = nullptr;
     new_hmac_key(rng, onion_a->hmac_key);
 
-    onion_a->shared_keys_recv = shared_key_cache_new(mono_time, mem, dht_get_self_secret_key(dht), KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    onion_a->shared_keys_recv = shared_key_cache_new(log, mono_time, mem, dht_get_self_secret_key(dht), KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
     if (onion_a->shared_keys_recv == nullptr) {
         kill_onion_announce(onion_a);
         return nullptr;

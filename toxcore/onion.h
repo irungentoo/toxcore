@@ -127,7 +127,8 @@ int create_onion_packet_tcp(const Random *rng, uint8_t *packet, uint16_t max_pac
  * return 0 on success.
  */
 non_null()
-int send_onion_response(const Networking_Core *net, const IP_Port *dest, const uint8_t *data, uint16_t length,
+int send_onion_response(const Logger *log, const Networking_Core *net,
+                        const IP_Port *dest, const uint8_t *data, uint16_t length,
                         const uint8_t *ret);
 
 /** @brief Function to handle/send received decrypted versions of the packet created by create_onion_packet.

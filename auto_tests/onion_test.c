@@ -53,7 +53,7 @@ static int handle_test_1(void *object, const IP_Port *source, const uint8_t *pac
     res_packet[0] = NET_PACKET_ANNOUNCE_RESPONSE;
     memcpy(res_packet + 1, res_message, sizeof(res_message));
 
-    if (send_onion_response(onion->net, source, res_packet, sizeof(res_packet),
+    if (send_onion_response(onion->log, onion->net, source, res_packet, sizeof(res_packet),
                             packet + sizeof(res_packet)) == -1) {
         return 1;
     }
@@ -293,7 +293,7 @@ static void test_basic(void)
     uint64_t s;
     memcpy(&s, sb_data, sizeof(uint64_t));
     memcpy(test_3_pub_key, nodes[3].public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    int ret = send_announce_request(onion1->net, rng, &path, &nodes[3],
+    int ret = send_announce_request(log1, onion1->net, rng, &path, &nodes[3],
                                     dht_get_self_public_key(onion1->dht),
                                     dht_get_self_secret_key(onion1->dht),
                                     zeroes,
@@ -315,7 +315,7 @@ static void test_basic(void)
     memcpy(onion_announce_entry_public_key(onion2_a, 1), dht_get_self_public_key(onion2->dht), CRYPTO_PUBLIC_KEY_SIZE);
     onion_announce_entry_set_time(onion2_a, 1, mono_time_get(mono_time2));
     networking_registerhandler(onion1->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_test_4, onion1);
-    send_announce_request(onion1->net, rng, &path, &nodes[3],
+    send_announce_request(log1, onion1->net, rng, &path, &nodes[3],
                           dht_get_self_public_key(onion1->dht),
                           dht_get_self_secret_key(onion1->dht),
                           test_3_ping_id,
@@ -340,7 +340,7 @@ static void test_basic(void)
     ck_assert_msg((onion3 != nullptr), "Onion failed initializing.");
 
     random_nonce(rng, nonce);
-    ret = send_data_request(onion3->net, rng, &path, &nodes[3].ip_port,
+    ret = send_data_request(log3, onion3->net, rng, &path, &nodes[3].ip_port,
                             dht_get_self_public_key(onion1->dht),
                             dht_get_self_public_key(onion1->dht),
                             nonce, (const uint8_t *)"Install gentoo", sizeof("Install gentoo"));

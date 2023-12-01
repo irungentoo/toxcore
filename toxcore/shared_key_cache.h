@@ -8,6 +8,7 @@
 #include <stdint.h>     // uint*_t
 
 #include "crypto_core.h"
+#include "logger.h"
 #include "mem.h"
 #include "mono_time.h"
 
@@ -27,9 +28,10 @@ typedef struct Shared_Key_Cache Shared_Key_Cache;
  * @return nullptr on error.
  */
 non_null()
-Shared_Key_Cache *shared_key_cache_new(const Mono_Time *mono_time, const Memory *mem,
-                                       const uint8_t *self_secret_key,
-                                       uint64_t timeout, uint8_t keys_per_slot);
+Shared_Key_Cache *shared_key_cache_new(
+        const Logger *log, const Mono_Time *mono_time, const Memory *mem,
+        const uint8_t *self_secret_key,
+        uint64_t timeout, uint8_t keys_per_slot);
 
 /**
  * @brief Deletes the cache and frees all resources.

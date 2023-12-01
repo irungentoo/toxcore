@@ -283,22 +283,27 @@ int create_onion_packet_tcp(const Random *rng, uint8_t *packet, uint16_t max_pac
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_response(const Networking_Core *net, const IP_Port *dest, const uint8_t *data, uint16_t length,
+int send_onion_response(const Logger *log, const Networking_Core *net,
+                        const IP_Port *dest, const uint8_t *data, uint16_t length,
                         const uint8_t *ret)
 {
     if (length > ONION_RESPONSE_MAX_DATA_SIZE || length == 0) {
         return -1;
     }
 
-    VLA(uint8_t, packet, 1 + RETURN_3 + length);
+    const uint16_t packet_size = 1 + RETURN_3 + length;
+    VLA(uint8_t, packet, packet_size);
     packet[0] = NET_PACKET_ONION_RECV_3;
     memcpy(packet + 1, ret, RETURN_3);
     memcpy(packet + 1 + RETURN_3, data, length);
 
-    if ((uint32_t)sendpacket(net, dest, packet, SIZEOF_VLA(packet)) != SIZEOF_VLA(packet)) {
+    if ((uint16_t)sendpacket(net, dest, packet, packet_size) != packet_size) {
         return -1;
     }
 
+    Ip_Ntoa ip_str;
+    LOGGER_TRACE(log, "forwarded onion RECV_3 to %s:%d (%02x in %02x, %d bytes)",
+                 net_ip_ntoa(&dest->ip, &ip_str), net_ntohs(dest->port), data[0], packet[0], packet_size);
     return 0;
 }
 
@@ -309,28 +314,42 @@ static int handle_send_initial(void *object, const IP_Port *source, const uint8_
     Onion *onion = (Onion *)object;
 
     if (length > ONION_MAX_PACKET_SIZE) {
+        LOGGER_TRACE(onion->log, "invalid initial onion packet length: %u (max: %u)",
+                     length, ONION_MAX_PACKET_SIZE);
         return 1;
     }
 
     if (length <= 1 + SEND_1) {
+        LOGGER_TRACE(onion->log, "initial onion packet cannot contain SEND_1 packet: %u <= %u",
+                     length, 1 + SEND_1);
         return 1;
     }
 
     change_symmetric_key(onion);
 
+    const int nonce_start = 1;
+    const int public_key_start = nonce_start + CRYPTO_NONCE_SIZE;
+    const int ciphertext_start = public_key_start + CRYPTO_PUBLIC_KEY_SIZE;
+
+    const int ciphertext_length = length - ciphertext_start;
+    const int plaintext_length = ciphertext_length - CRYPTO_MAC_SIZE;
+
     uint8_t plain[ONION_MAX_PACKET_SIZE];
-    const uint8_t *public_key = packet + 1 + CRYPTO_NONCE_SIZE;
+    const uint8_t *public_key = &packet[public_key_start];
     const uint8_t *shared_key = shared_key_cache_lookup(onion->shared_keys_1, public_key);
 
     if (shared_key == nullptr) {
         /* Error looking up/deriving the shared key */
+        LOGGER_TRACE(onion->log, "shared onion key lookup failed for pk %02x%02x...",
+                     public_key[0], public_key[1]);
         return 1;
     }
 
-    const int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
-                                     length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE), plain);
+    const int len = decrypt_data_symmetric(
+            shared_key, &packet[nonce_start], &packet[ciphertext_start], ciphertext_length, plain);
 
-    if (len != length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE)) {
+    if (len != plaintext_length) {
+        LOGGER_TRACE(onion->log, "decrypt failed: %d != %d", len, plaintext_length);
         return 1;
     }
 
@@ -339,7 +358,9 @@ static int handle_send_initial(void *object, const IP_Port *source, const uint8_
 
 int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, const IP_Port *source, const uint8_t *nonce)
 {
-    if (len > ONION_MAX_PACKET_SIZE + SIZE_IPPORT - (1 + CRYPTO_NONCE_SIZE + ONION_RETURN_1)) {
+    const uint16_t max_len = ONION_MAX_PACKET_SIZE + SIZE_IPPORT - (1 + CRYPTO_NONCE_SIZE + ONION_RETURN_1);
+    if (len > max_len) {
+        LOGGER_TRACE(onion->log, "invalid SEND_1 length: %d > %d", len, max_len);
         return 1;
     }
 
@@ -376,6 +397,9 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, const I
         return 1;
     }
 
+    Ip_Ntoa ip_str;
+    LOGGER_TRACE(onion->log, "forwarded onion packet to %s:%d, level 1 (%02x in %02x, %d bytes)",
+                 net_ip_ntoa(&send_to.ip, &ip_str), net_ntohs(send_to.port), plain[0], data[0], data_len);
     return 0;
 }
 
@@ -439,6 +463,9 @@ static int handle_send_1(void *object, const IP_Port *source, const uint8_t *pac
         return 1;
     }
 
+    Ip_Ntoa ip_str;
+    LOGGER_TRACE(onion->log, "forwarded onion packet to %s:%d, level 2 (%02x in %02x, %d bytes)",
+                 net_ip_ntoa(&send_to.ip, &ip_str), net_ntohs(send_to.port), packet[0], data[0], data_len);
     return 0;
 }
 
@@ -509,6 +536,9 @@ static int handle_send_2(void *object, const IP_Port *source, const uint8_t *pac
         return 1;
     }
 
+    Ip_Ntoa ip_str;
+    LOGGER_TRACE(onion->log, "forwarded onion packet to %s:%d, level 3 (%02x in %02x, %d bytes)",
+                 net_ip_ntoa(&send_to.ip, &ip_str), net_ntohs(send_to.port), packet[0], data[0], data_len);
     return 0;
 }
 
@@ -546,6 +576,7 @@ static int handle_recv_3(void *object, const IP_Port *source, const uint8_t *pac
     IP_Port send_to;
 
     if (ipport_unpack(&send_to, plain, len, false) == -1) {
+        LOGGER_DEBUG(onion->log, "failed to unpack IP/Port");
         return 1;
     }
 
@@ -559,6 +590,9 @@ static int handle_recv_3(void *object, const IP_Port *source, const uint8_t *pac
         return 1;
     }
 
+    Ip_Ntoa ip_str;
+    LOGGER_TRACE(onion->log, "forwarded onion RECV_2 to %s:%d (%02x in %02x, %d bytes)",
+                 net_ip_ntoa(&send_to.ip, &ip_str), net_ntohs(send_to.port), packet[0], data[0], data_len);
     return 0;
 }
 
@@ -608,6 +642,9 @@ static int handle_recv_2(void *object, const IP_Port *source, const uint8_t *pac
         return 1;
     }
 
+    Ip_Ntoa ip_str;
+    LOGGER_TRACE(onion->log, "forwarded onion RECV_1 to %s:%d (%02x in %02x, %d bytes)",
+                 net_ip_ntoa(&send_to.ip, &ip_str), net_ntohs(send_to.port), packet[0], data[0], data_len);
     return 0;
 }
 
@@ -644,6 +681,7 @@ static int handle_recv_1(void *object, const IP_Port *source, const uint8_t *pac
     IP_Port send_to;
 
     if (ipport_unpack(&send_to, plain, len, true) == -1) {
+        LOGGER_DEBUG(onion->log, "failed to unpack IP/Port");
         return 1;
     }
 
@@ -690,9 +728,9 @@ Onion *new_onion(const Logger *log, const Memory *mem, const Mono_Time *mono_tim
     onion->timestamp = mono_time_get(onion->mono_time);
 
     const uint8_t *secret_key = dht_get_self_secret_key(dht);
-    onion->shared_keys_1 = shared_key_cache_new(mono_time, mem, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
-    onion->shared_keys_2 = shared_key_cache_new(mono_time, mem, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
-    onion->shared_keys_3 = shared_key_cache_new(mono_time, mem, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    onion->shared_keys_1 = shared_key_cache_new(log, mono_time, mem, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    onion->shared_keys_2 = shared_key_cache_new(log, mono_time, mem, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
+    onion->shared_keys_3 = shared_key_cache_new(log, mono_time, mem, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
 
     if (onion->shared_keys_1 == nullptr ||
         onion->shared_keys_2 == nullptr ||

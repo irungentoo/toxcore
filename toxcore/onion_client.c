@@ -582,6 +582,7 @@ static int new_sendback(Onion_Client *onion_c, uint32_t num, const uint8_t *publ
     *sendback = ping_array_add(onion_c->announce_ping_array, onion_c->mono_time, onion_c->rng, data, sizeof(data));
 
     if (*sendback == 0) {
+        LOGGER_TRACE(onion_c->logger, "generating sendback in announce ping array failed");
         return -1;
     }
 
@@ -624,6 +625,7 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, con
                                         const uint8_t *dest_pubkey, const uint8_t *ping_id, uint32_t pathnum)
 {
     if (num > onion_c->num_friends) {
+        LOGGER_TRACE(onion_c->logger, "not sending announce to out of bounds friend %u (num friends: %u)", num, onion_c->num_friends);
         return -1;
     }
 
@@ -632,10 +634,12 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, con
 
     if (num == 0) {
         if (random_path(onion_c, &onion_c->onion_paths_self, pathnum, &path) == -1) {
+            LOGGER_TRACE(onion_c->logger, "cannot find path to self");
             return -1;
         }
     } else {
         if (random_path(onion_c, &onion_c->onion_paths_friends, pathnum, &path) == -1) {
+            LOGGER_TRACE(onion_c->logger, "cannot find path to friend");
             return -1;
         }
     }
@@ -682,9 +686,13 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, con
     }
 
     if (len == -1) {
+        LOGGER_TRACE(onion_c->logger, "failed to create announce request");
         return -1;
     }
 
+    Ip_Ntoa ip_str;
+    LOGGER_TRACE(onion_c->logger, "sending onion packet to %s:%d (%02x, %d bytes)",
+                 net_ip_ntoa(&dest->ip, &ip_str), net_ntohs(dest->port), request[0], len);
     return send_onion_packet_tcp_udp(onion_c, &path, dest, request, len);
 }
 
@@ -934,6 +942,8 @@ static int handle_announce_response(void *object, const IP_Port *source, const u
     Onion_Client *onion_c = (Onion_Client *)object;
 
     if (length < ONION_ANNOUNCE_RESPONSE_MIN_SIZE || length > ONION_ANNOUNCE_RESPONSE_MAX_SIZE) {
+        LOGGER_TRACE(onion_c->logger, "invalid announce response length: %u (min: %u, max: %u)",
+                     length, (unsigned int)ONION_ANNOUNCE_RESPONSE_MIN_SIZE, (unsigned int)ONION_ANNOUNCE_RESPONSE_MAX_SIZE);
         return 1;
     }
 
@@ -949,30 +959,37 @@ static int handle_announce_response(void *object, const IP_Port *source, const u
     uint8_t plain[1 + ONION_PING_ID_SIZE + ONION_ANNOUNCE_RESPONSE_MAX_SIZE - ONION_ANNOUNCE_RESPONSE_MIN_SIZE];
     const int plain_size = 1 + ONION_PING_ID_SIZE + length - ONION_ANNOUNCE_RESPONSE_MIN_SIZE;
     int len;
+    const uint16_t nonce_start = 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH;
+    const uint16_t ciphertext_start = nonce_start + CRYPTO_NONCE_SIZE;
+    const uint16_t ciphertext_size = length - ciphertext_start;
 
     if (num == 0) {
         len = decrypt_data(public_key, nc_get_self_secret_key(onion_c->c),
-                           packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH,
-                           packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE,
-                           length - (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE), plain);
+                           &packet[nonce_start], &packet[ciphertext_start], ciphertext_size, plain);
     } else {
         if (!onion_c->friends_list[num - 1].is_valid) {
+            LOGGER_TRACE(onion_c->logger, "friend number %lu is invalid", (unsigned long)(num - 1));
             return 1;
         }
 
         len = decrypt_data(public_key, onion_c->friends_list[num - 1].temp_secret_key,
-                           packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH,
-                           packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE,
-                           length - (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE), plain);
+                           &packet[nonce_start], &packet[ciphertext_start], ciphertext_size, plain);
+    }
+
+    if (len < 0) {
+        // This happens a lot, so don't log it.
+        return 1;
     }
 
     if ((uint32_t)len != plain_size) {
+        LOGGER_WARNING(onion_c->logger, "decrypted size (%lu) is not the expected plain text size (%lu)", (unsigned long)len, (unsigned long)plain_size);
         return 1;
     }
 
     const uint32_t path_used = set_path_timeouts(onion_c, num, path_num);
 
     if (client_add_to_list(onion_c, num, public_key, &ip_port, plain[0], plain + 1, path_used) == -1) {
+        LOGGER_WARNING(onion_c->logger, "failed to add client to list");
         return 1;
     }
 
@@ -989,10 +1006,12 @@ static int handle_announce_response(void *object, const IP_Port *source, const u
                                            plain_size - 2 - ONION_PING_ID_SIZE, false);
 
         if (num_nodes < 0) {
+            LOGGER_WARNING(onion_c->logger, "no nodes to unpack in onion response");
             return 1;
         }
 
         if (client_ping_nodes(onion_c, num, nodes, num_nodes, source) == -1) {
+            LOGGER_WARNING(onion_c->logger, "pinging %d nodes failed", num_nodes);
             return 1;
         }
     }
@@ -1011,6 +1030,8 @@ static int handle_announce_response(void *object, const IP_Port *source, const u
 
     // TODO(irungentoo): LAN vs non LAN ips?, if we are connected only to LAN, are we offline?
     onion_c->last_packet_recv = mono_time_get(onion_c->mono_time);
+    LOGGER_TRACE(onion_c->logger, "onion has received a packet at %llu",
+                 (unsigned long long)onion_c->last_packet_recv);
 
     return 0;
 }
@@ -1023,6 +1044,8 @@ static int handle_announce_response_old(void *object, const IP_Port *source, con
     Onion_Client *onion_c = (Onion_Client *)object;
 
     if (length < ONION_ANNOUNCE_RESPONSE_MIN_SIZE || length > ONION_ANNOUNCE_RESPONSE_MAX_SIZE) {
+        LOGGER_TRACE(onion_c->logger, "invalid announce response length: %u (min: %u, max: %u)",
+                     length, (unsigned int)ONION_ANNOUNCE_RESPONSE_MIN_SIZE, (unsigned int)ONION_ANNOUNCE_RESPONSE_MAX_SIZE);
         return 1;
     }
 
@@ -1039,30 +1062,37 @@ static int handle_announce_response_old(void *object, const IP_Port *source, con
 
     VLA(uint8_t, plain, 1 + ONION_PING_ID_SIZE + len_nodes);
     int len;
+    const uint16_t nonce_start = 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH;
+    const uint16_t ciphertext_start = nonce_start + CRYPTO_NONCE_SIZE;
+    const uint16_t ciphertext_size = length - ciphertext_start;
 
     if (num == 0) {
         len = decrypt_data(public_key, nc_get_self_secret_key(onion_c->c),
-                           packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH,
-                           packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE,
-                           length - (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE), plain);
+                           &packet[nonce_start], &packet[ciphertext_start], ciphertext_size, plain);
     } else {
         if (!onion_c->friends_list[num - 1].is_valid) {
+            LOGGER_TRACE(onion_c->logger, "friend number %lu is invalid", (unsigned long)(num - 1));
             return 1;
         }
 
         len = decrypt_data(public_key, onion_c->friends_list[num - 1].temp_secret_key,
-                           packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH,
-                           packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE,
-                           length - (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE), plain);
+                           &packet[nonce_start], &packet[ciphertext_start], ciphertext_size, plain);
+    }
+
+    if (len < 0) {
+        // This happens a lot, so don't log it.
+        return 1;
     }
 
     if ((uint32_t)len != SIZEOF_VLA(plain)) {
+        LOGGER_WARNING(onion_c->logger, "decrypted size (%lu) is not the expected plain text size (%lu)", (unsigned long)len, (unsigned long)SIZEOF_VLA(plain));
         return 1;
     }
 
     const uint32_t path_used = set_path_timeouts(onion_c, num, path_num);
 
     if (client_add_to_list(onion_c, num, public_key, &ip_port, plain[0], plain + 1, path_used) == -1) {
+        LOGGER_WARNING(onion_c->logger, "failed to add client to list");
         return 1;
     }
 
@@ -1071,16 +1101,21 @@ static int handle_announce_response_old(void *object, const IP_Port *source, con
         const int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, nullptr, plain + 1 + ONION_PING_ID_SIZE, len_nodes, false);
 
         if (num_nodes <= 0) {
+            LOGGER_WARNING(onion_c->logger, "no nodes to unpack in onion response");
             return 1;
         }
 
         if (client_ping_nodes(onion_c, num, nodes, num_nodes, source) == -1) {
+            LOGGER_WARNING(onion_c->logger, "pinging %d nodes failed", num_nodes);
             return 1;
         }
     }
 
     // TODO(irungentoo): LAN vs non LAN ips?, if we are connected only to LAN, are we offline?
     onion_c->last_packet_recv = mono_time_get(onion_c->mono_time);
+    LOGGER_TRACE(onion_c->logger, "onion has received a packet at %llu",
+                 (unsigned long long)onion_c->last_packet_recv);
+
     return 0;
 }
 
@@ -1378,6 +1413,7 @@ static int handle_dht_dhtpk(void *object, const IP_Port *source, const uint8_t *
 
     return handle_dhtpk_announce(onion_c, packet, plain, len, userdata);
 }
+
 /** @brief Send the packets to tell our friends what our DHT public key is.
  *
  * if onion_dht_both is 0, use only the onion to send the packet.
@@ -1858,6 +1894,18 @@ void onion_group_announce_register(Onion_Client *onion_c, onion_group_announce_c
 #define ANNOUNCE_INTERVAL_STABLE (ONION_NODE_PING_INTERVAL * 8)
 
 non_null()
+static bool key_list_contains(const uint8_t *const *keys, uint16_t keys_size, const uint8_t *public_key)
+{
+    for (uint16_t i = 0; i < keys_size; ++i) {
+        if (memeq(keys[i], CRYPTO_PUBLIC_KEY_SIZE, public_key, CRYPTO_PUBLIC_KEY_SIZE)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+non_null()
 static void do_announce(Onion_Client *onion_c)
 {
     unsigned int count = 0;
@@ -1945,9 +1993,27 @@ static void do_announce(Onion_Client *onion_c)
             return;
         }
 
-        for (unsigned int i = 0; i < (MAX_ONION_CLIENTS_ANNOUNCE / 2); ++i) {
+        // Don't send announces to the same node twice. If we don't have many nodes,
+        // the random selection below may have overlaps. This ensures that we deduplicate
+        // nodes before sending packets to save some bandwidth.
+        const uint8_t *targets[MAX_ONION_CLIENTS_ANNOUNCE / 2];
+        unsigned int targets_count = 0;
+
+        for (unsigned int i = 0; i < MAX_ONION_CLIENTS_ANNOUNCE / 2; ++i) {
             const uint32_t num = random_range_u32(onion_c->rng, num_nodes);
-            client_send_announce_request(onion_c, 0, &path_nodes[num].ip_port, path_nodes[num].public_key, nullptr, -1);
+            const Node_format *target = &path_nodes[num];
+
+            if (!key_list_contains(targets, targets_count, target->public_key)) {
+                client_send_announce_request(onion_c, 0, &target->ip_port, target->public_key, nullptr, -1);
+
+                targets[targets_count] = target->public_key;
+                ++targets_count;
+                assert(targets_count <= MAX_ONION_CLIENTS_ANNOUNCE / 2);
+            } else {
+                Ip_Ntoa ip_str;
+                LOGGER_TRACE(onion_c->logger, "not sending repeated announce request to %s:%d",
+                        net_ip_ntoa(&target->ip_port.ip, &ip_str), net_ntohs(target->ip_port.port));
+            }
         }
     }
 }
@@ -1959,22 +2025,25 @@ static void do_announce(Onion_Client *onion_c)
 non_null()
 static bool onion_isconnected(Onion_Client *onion_c)
 {
-    unsigned int num = 0;
+    unsigned int live = 0;
     unsigned int announced = 0;
 
     if (mono_time_is_timeout(onion_c->mono_time, onion_c->last_packet_recv, ONION_OFFLINE_TIMEOUT)) {
+        LOGGER_TRACE(onion_c->logger, "onion is NOT connected: last packet received at %llu (timeout=%u)",
+                     (unsigned long long)onion_c->last_packet_recv, ONION_OFFLINE_TIMEOUT);
         onion_c->last_populated = 0;
         return false;
     }
 
     if (onion_c->path_nodes_index == 0) {
+        LOGGER_TRACE(onion_c->logger, "onion is NOT connected: no path nodes available");
         onion_c->last_populated = 0;
         return false;
     }
 
     for (unsigned int i = 0; i < MAX_ONION_CLIENTS_ANNOUNCE; ++i) {
         if (!onion_node_timed_out(&onion_c->clients_announce_list[i], onion_c->mono_time)) {
-            ++num;
+            ++live;
 
             if (onion_c->clients_announce_list[i].is_stored != 0) {
                 ++announced;
@@ -1990,14 +2059,18 @@ static bool onion_isconnected(Onion_Client *onion_c)
 
     /* Consider ourselves online if we are announced to half or more nodes
      * we are connected to */
-    if (num != 0 && announced != 0) {
-        if ((num / 2) <= announced && (pnodes / 2) <= num) {
+    if (live != 0 && announced != 0) {
+        if ((live / 2) <= announced && (pnodes / 2) <= live) {
+            LOGGER_TRACE(onion_c->logger, "onion is connected: %u live nodes, %u announced, %d path nodes",
+                         live, announced, pnodes);
             return true;
         }
     }
 
     onion_c->last_populated = 0;
 
+    LOGGER_TRACE(onion_c->logger, "onion is NOT connected: %u live nodes, %u announced, %d path nodes",
+                 live, announced, pnodes);
     return false;
 }
 
