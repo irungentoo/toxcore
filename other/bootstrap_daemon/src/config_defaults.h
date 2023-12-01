@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2016-2018 The TokTok team.
+ * Copyright © 2016-2023 The TokTok team.
  * Copyright © 2014-2016 Tox project.
  */
 
@@ -19,8 +19,7 @@
 #define DEFAULT_ENABLE_IPV4_FALLBACK  1 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_LAN_DISCOVERY  1 // 1 - true, 0 - false
 #define DEFAULT_ENABLE_TCP_RELAY      1 // 1 - true, 0 - false
-#define DEFAULT_TCP_RELAY_PORTS       443, 3389, 33445 // comma-separated list of ports. make sure to adjust DEFAULT_TCP_RELAY_PORTS_COUNT accordingly
-#define DEFAULT_TCP_RELAY_PORTS_COUNT 3
+#define DEFAULT_TCP_RELAY_PORTS       443, 3389, 33445 // comma-separated list of ports
 #define DEFAULT_ENABLE_MOTD           1 // 1 - true, 0 - false
 #define DEFAULT_MOTD                  DAEMON_NAME
 
