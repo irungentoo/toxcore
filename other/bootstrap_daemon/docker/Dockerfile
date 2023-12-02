@@ -1,6 +1,6 @@
 ###########################################################
 # Builder image: we compile the code here (static build)
-FROM alpine:3.15.0 AS build
+FROM alpine:3.18.5 AS build
 
 RUN ["apk", "--no-cache", "add",\
  "build-base",\
@@ -62,7 +62,7 @@ RUN ["other/bootstrap_daemon/docker/get-nodes.py", "other/bootstrap_daemon/tox-b
 
 ###########################################################
 # Final image build: this is what runs the bootstrap node
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 COPY --from=build /usr/local/bin/tox-bootstrapd /usr/local/bin/
 COPY --from=build /src/c-toxcore/other/bootstrap_daemon/tox-bootstrapd.conf /etc/tox-bootstrapd.conf
