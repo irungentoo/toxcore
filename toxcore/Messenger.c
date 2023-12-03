@@ -2024,7 +2024,7 @@ non_null(1, 3) nullable(5)
 static int m_handle_packet_offline(Messenger *m, const int i, const uint8_t *data, const uint16_t data_length, void *userdata)
 {
     if (data_length == 0) {
-    	set_friend_status(m, i, FRIEND_CONFIRMED, userdata);
+        set_friend_status(m, i, FRIEND_CONFIRMED, userdata);
     }
 
     return 0;
@@ -2403,8 +2403,8 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
             return m_handle_packet_file_data(m, i, data, data_length, userdata);
         case PACKET_ID_MSI:
             return m_handle_packet_msi(m, i, data, data_length, userdata);
-	    case PACKET_ID_INVITE_GROUPCHAT:
-	        return m_handle_packet_invite_groupchat(m, i, data, data_length, userdata);
+        case PACKET_ID_INVITE_GROUPCHAT:
+            return m_handle_packet_invite_groupchat(m, i, data, data_length, userdata);
     }
 
     return handle_custom_lossless_packet(object, i, temp, len, userdata);

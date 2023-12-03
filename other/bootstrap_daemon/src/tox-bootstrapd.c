@@ -454,7 +454,7 @@ int main(int argc, char *argv[])
         if (tcp_relay_port_count == 0) {
             log_write(LOG_LEVEL_ERROR, "No TCP relay ports read. Exiting.\n");
             kill_onion_announce(onion_a);
-	        kill_gca(group_announce);
+            kill_gca(group_announce);
             kill_announcements(announce);
             kill_forwarding(forwarding);
             kill_onion(onion);
