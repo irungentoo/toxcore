@@ -3967,7 +3967,8 @@ Tox_Group_Role tox_group_peer_get_role(const Tox *tox, uint32_t group_number, ui
 /**
  * Return the type of connection we have established with a peer.
  *
- * This function will return an error if called on ourselves.
+ * If `peer_id` designates ourself, the return value indicates whether we're capable
+ * of making UDP connections with other peers, or are limited to TCP connections.
  *
  * @param group_number The group number of the group we wish to query.
  * @param peer_id The ID of the peer whose connection status we wish to query.

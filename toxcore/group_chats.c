@@ -3510,8 +3510,8 @@ unsigned int gc_get_peer_connection_status(const GC_Chat *chat, uint32_t peer_id
 {
     const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
 
-    if (peer_number_is_self(peer_number)) {  // we cannot have a connection with ourselves
-        return 0;
+    if (peer_number_is_self(peer_number)) {
+        return chat->self_udp_status ==  SELF_UDP_STATUS_NONE ? 1 : 2;
     }
 
     const GC_Connection *gconn = get_gc_connection(chat, peer_number);
