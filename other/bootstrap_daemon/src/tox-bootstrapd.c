@@ -375,6 +375,7 @@ int main(int argc, char *argv[])
 
     if (!onion) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion. Exiting.\n");
+        kill_gca(group_announce);
         kill_announcements(announce);
         kill_forwarding(forwarding);
         kill_dht(dht);
