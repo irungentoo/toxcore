@@ -73,10 +73,15 @@ static void print_information(Tox *tox)
     int length = snprintf(nospam_str, sizeof(nospam_str), "%08X", nospam);
     nospam_str[length] = '\0';
 
-    uint8_t *name = (uint8_t *)malloc(tox_self_get_name_size(tox) + 1);
-    assert(name != nullptr);
+    size_t name_size = tox_self_get_name_size(tox);
+    uint8_t *name = (uint8_t *)malloc(name_size + 1);
+
+    if (!name) {
+        return;
+    }
+
     tox_self_get_name(tox, name);
-    name[tox_self_get_name_size(tox)] = '\0';
+    name[name_size] = '\0';
 
     printf("INFORMATION\n");
     printf("----------------------------------\n");
@@ -86,6 +91,8 @@ static void print_information(Tox *tox)
     printf("Status message: %s.\n", GENERATED_STATUS_MESSAGE);
     printf("Number of friends: %zu.\n", tox_self_get_friend_list_size(tox));
     printf("----------------------------------\n");
+
+    free(name);
 }
 
 int main(int argc, char *argv[])
