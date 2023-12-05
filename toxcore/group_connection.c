@@ -453,6 +453,7 @@ int gcc_handle_packet_fragment(const GC_Session *c, GC_Chat *chat, uint32_t peer
     gconn = get_gc_connection(chat, peer_number);
 
     if (gconn == nullptr) {
+        free(payload);
         return 0;
     }
 
