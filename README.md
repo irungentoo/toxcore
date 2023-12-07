@@ -4,8 +4,6 @@
 
 [**Website**](https://tox.chat) **|** [**Wiki**](https://wiki.tox.chat/) **|** [**Blog**](https://blog.tox.chat/) **|** [**FAQ**](https://wiki.tox.chat/doku.php?id=users:faq) **|** [**Binaries/Downloads**](https://tox.chat/download.html) **|** [**Clients**](https://wiki.tox.chat/doku.php?id=clients) **|** [**Compiling**](/INSTALL.md)
 
-**IRC Channels:** Users: [#tox@libera.chat](https://web.libera.chat/#tox), Developers: [#toktok@libera.chat](https://web.libera.chat/#toktok)
-
 ## What is Tox
 
 Tox is a peer to peer (serverless) instant messenger aimed at making security
@@ -39,7 +37,7 @@ on the website, where they are updated at least once every 24 hours:
 
 Detailed installation instructions can be found in [INSTALL.md](INSTALL.md).
 
-Be advised that due to the addition of `cmp` as a submodule, you now also need to initialize the git submodules required by toxcore. This can be done by cloning the repo with the following command: `git clone --recurse-submodules https://github.com/Toktok/c-toxcore` or by running `git submodule update --init` in the root directory of the repo. 
+Be advised that due to the addition of `cmp` as a submodule, you now also need to initialize the git submodules required by toxcore. This can be done by cloning the repo with the following command: `git clone --recurse-submodules https://github.com/Toktok/c-toxcore` or by running `git submodule update --init` in the root directory of the repo.
 
 In a nutshell, if you have [libsodium](https://github.com/jedisct1/libsodium)
 installed, run:
