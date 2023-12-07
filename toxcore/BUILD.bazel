@@ -3,7 +3,10 @@ load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
 load("//tools:no_undefined.bzl", "cc_library")
 
 exports_files(
-    srcs = ["tox.h"],
+    srcs = [
+        "tox.h",
+        "tox_private.h",
+    ],
     visibility = ["//c-toxcore:__pkg__"],
 )
 
