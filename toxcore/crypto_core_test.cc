@@ -79,7 +79,8 @@ TEST(CryptoCore, Signatures)
 
     EXPECT_TRUE(create_extended_keypair(pk.data(), sk.data()));
 
-    std::vector<uint8_t> message;
+    std::vector<uint8_t> message{0};
+    message.clear();
 
     // Try a few different sizes, including empty 0 length message.
     for (uint8_t i = 0; i < 100; ++i) {
@@ -101,7 +102,8 @@ TEST(CryptoCore, Hmac)
     HmacKey sk;
     new_hmac_key(rng, sk.data());
 
-    std::vector<uint8_t> message;
+    std::vector<uint8_t> message{0};
+    message.clear();
 
     // Try a few different sizes, including empty 0 length message.
     for (uint8_t i = 0; i < 100; ++i) {

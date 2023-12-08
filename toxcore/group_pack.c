@@ -19,6 +19,32 @@
 #include "ccompat.h"
 #include "util.h"
 
+Group_Privacy_State group_privacy_state_from_int(uint8_t value)
+{
+    switch (value) {
+        case 0:
+            return GI_PUBLIC;
+        case 1:
+            return GI_PRIVATE;
+        default:
+            return GI_PUBLIC;
+    }
+}
+
+Group_Voice_State group_voice_state_from_int(uint8_t value)
+{
+    switch (value) {
+        case 0:
+            return GV_ALL;
+        case 1:
+            return GV_MODS;
+        case 2:
+            return GV_FOUNDER;
+        default:
+            return GV_ALL;
+    }
+}
+
 non_null()
 static bool load_unpack_state_values(GC_Chat *chat, Bin_Unpack *bu)
 {
@@ -44,8 +70,8 @@ static bool load_unpack_state_values(GC_Chat *chat, Bin_Unpack *bu)
     }
 
     chat->connection_state = manually_disconnected ? CS_DISCONNECTED : CS_CONNECTING;
-    chat->shared_state.privacy_state = (Group_Privacy_State)privacy_state;
-    chat->shared_state.voice_state = (Group_Voice_State)voice_state;
+    chat->shared_state.privacy_state = group_privacy_state_from_int(privacy_state);
+    chat->shared_state.voice_state = group_voice_state_from_int(voice_state);
 
     // we always load saved groups as private in case the group became private while we were offline.
     // this will have no detrimental effect if the group is public, as the correct privacy

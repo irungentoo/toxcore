@@ -757,6 +757,20 @@ int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length)
     return 0;
 }
 
+static Userstatus userstatus_from_int(uint8_t status)
+{
+    switch (status) {
+        case 0:
+            return USERSTATUS_NONE;
+        case 1:
+            return USERSTATUS_AWAY;
+        case 2:
+            return USERSTATUS_BUSY;
+        default:
+            return USERSTATUS_INVALID;
+    }
+}
+
 int m_set_userstatus(Messenger *m, uint8_t status)
 {
     if (status >= USERSTATUS_INVALID) {
@@ -767,7 +781,7 @@ int m_set_userstatus(Messenger *m, uint8_t status)
         return 0;
     }
 
-    m->userstatus = (Userstatus)status;
+    m->userstatus = userstatus_from_int(status);
 
     for (uint32_t i = 0; i < m->numfriends; ++i) {
         m->friendlist[i].userstatus_sent = false;
@@ -923,7 +937,7 @@ static int set_friend_statusmessage(const Messenger *m, int32_t friendnumber, co
 non_null()
 static void set_friend_userstatus(const Messenger *m, int32_t friendnumber, uint8_t status)
 {
-    m->friendlist[friendnumber].userstatus = (Userstatus)status;
+    m->friendlist[friendnumber].userstatus = userstatus_from_int(status);
 }
 
 non_null()
@@ -2081,9 +2095,9 @@ static int m_handle_packet_userstatus(Messenger *m, const int i, const uint8_t *
         return 0;
     }
 
-    const Userstatus status = (Userstatus)data[0];
+    const Userstatus status = userstatus_from_int(data[0]);
 
-    if (status >= USERSTATUS_INVALID) {
+    if (status == USERSTATUS_INVALID) {
         return 0;
     }
 
@@ -3622,7 +3636,9 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
     m->onion = new_onion(m->log, m->mem, m->mono_time, m->rng, m->dht);
     m->onion_a = new_onion_announce(m->log, m->mem, m->rng, m->mono_time, m->dht);
     m->onion_c = new_onion_client(m->log, m->mem, m->rng, m->mono_time, m->net_crypto);
-    m->fr_c = new_friend_connections(m->log, m->mono_time, m->ns, m->onion_c, options->local_discovery_enabled);
+    if (m->onion_c != nullptr) {
+        m->fr_c = new_friend_connections(m->log, m->mono_time, m->ns, m->onion_c, options->local_discovery_enabled);
+    }
 
     if ((options->dht_announcements_enabled && (m->forwarding == nullptr || m->announce == nullptr)) ||
             m->onion == nullptr || m->onion_a == nullptr || m->onion_c == nullptr || m->fr_c == nullptr) {

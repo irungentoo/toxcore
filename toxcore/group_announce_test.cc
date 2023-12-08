@@ -50,8 +50,10 @@ TEST_F(Announces, CanBeCreatedAndDeleted)
     GC_Public_Announce ann{};
     ann.chat_public_key[0] = 0x88;
     ASSERT_NE(gca_add_announce(mono_time_, gca_, &ann), nullptr);
+#ifndef _DEBUG
     ASSERT_EQ(gca_add_announce(mono_time_, gca_, nullptr), nullptr);
     ASSERT_EQ(gca_add_announce(mono_time_, nullptr, &ann), nullptr);
+#endif
 }
 
 TEST_F(Announces, AnnouncesCanTimeOut)
@@ -103,7 +105,9 @@ TEST_F(Announces, AnnouncesGetAndCleanup)
 
     cleanup_gca(gca_, ann2.chat_public_key);
     ASSERT_EQ(gca_get_announces(gca_, &announces, 1, ann2.chat_public_key, empty_pk), 0);
+#ifndef _DEBUG
     ASSERT_EQ(gca_get_announces(gca_, nullptr, 1, ann2.chat_public_key, empty_pk), -1);
+#endif
 }
 
 struct AnnouncesPack : ::testing::Test {
@@ -162,19 +166,23 @@ TEST_F(AnnouncesPack, PublicAnnounceCanBePackedAndUnpacked)
 
 TEST_F(AnnouncesPack, UnpackEmptyPublicAnnounce)
 {
+#ifndef _DEBUG
     GC_Public_Announce ann{};
     std::vector<uint8_t> packed(GCA_PUBLIC_ANNOUNCE_MAX_SIZE);
 
     EXPECT_EQ(gca_unpack_public_announce(logger_, nullptr, 0, &ann), -1);
     EXPECT_EQ(gca_unpack_public_announce(logger_, packed.data(), packed.size(), nullptr), -1);
+#endif
 }
 
 TEST_F(AnnouncesPack, PackEmptyPublicAnnounce)
 {
+#ifndef _DEBUG
     GC_Public_Announce ann{};
     std::vector<uint8_t> packed(GCA_PUBLIC_ANNOUNCE_MAX_SIZE);
     EXPECT_EQ(gca_pack_public_announce(logger_, packed.data(), packed.size(), nullptr), -1);
     EXPECT_EQ(gca_pack_public_announce(logger_, nullptr, 0, &ann), -1);
+#endif
 }
 
 TEST_F(AnnouncesPack, PublicAnnouncePackNull)
@@ -198,7 +206,9 @@ TEST_F(AnnouncesPack, PublicAnnouncePackNull)
 
 TEST_F(AnnouncesPack, AnnouncesValidationCheck)
 {
+#ifndef _DEBUG
     EXPECT_EQ(gca_is_valid_announce(nullptr), false);
+#endif
 
     GC_Announce announce = {0};
     EXPECT_EQ(gca_is_valid_announce(&announce), false);
@@ -217,8 +227,10 @@ TEST_F(AnnouncesPack, UnpackIncompleteAnnouncesList)
 
     GC_Announce announce;
     EXPECT_EQ(gca_unpack_announces_list(logger_, data, sizeof(data), &announce, 1), -1);
+#ifndef _DEBUG
     EXPECT_EQ(gca_unpack_announces_list(logger_, data, sizeof(data), nullptr, 1), -1);
     EXPECT_EQ(gca_unpack_announces_list(logger_, nullptr, 0, &announce, 1), -1);
+#endif
 }
 
 TEST_F(AnnouncesPack, PackedAnnouncesListCanBeUnpacked)
@@ -246,17 +258,21 @@ TEST_F(AnnouncesPack, PackingEmptyAnnounceFails)
     std::vector<uint8_t> packed(gca_pack_announces_list_size(1));
     EXPECT_EQ(
         gca_pack_announces_list(logger_, packed.data(), packed.size(), &announce, 1, nullptr), -1);
+#ifndef _DEBUG
     EXPECT_EQ(
         gca_pack_announces_list(logger_, packed.data(), packed.size(), nullptr, 1, nullptr), -1);
     EXPECT_EQ(gca_pack_announces_list(logger_, nullptr, 0, &announce, 1, nullptr), -1);
+#endif
 }
 
 TEST_F(AnnouncesPack, PackAnnounceNull)
 {
+#ifndef _DEBUG
     std::vector<uint8_t> data(GCA_ANNOUNCE_MAX_SIZE);
     GC_Announce announce;
     ASSERT_EQ(gca_pack_announce(logger_, nullptr, 0, &announce), -1);
     ASSERT_EQ(gca_pack_announce(logger_, data.data(), data.size(), nullptr), -1);
+#endif
 }
 
 }  // namespace

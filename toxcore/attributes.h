@@ -18,7 +18,7 @@
 #define GNU_PRINTF(f, a)
 #endif
 
-#if defined(__GNUC__) && defined(_DEBUG) && !defined(__OPTIMIZE__)
+#if defined(__GNUC__) && defined(_DEBUG)
 #define non_null(...) __attribute__((__nonnull__(__VA_ARGS__)))
 #else
 #define non_null(...)

@@ -369,6 +369,7 @@ cc_test(
 
 cc_fuzz_test(
     name = "DHT_fuzz_test",
+    size = "small",
     srcs = ["DHT_fuzz_test.cc"],
     corpus = ["//tools/toktok-fuzzer/corpus:DHT_fuzz_test"],
     deps = [
@@ -408,6 +409,7 @@ cc_library(
 
 cc_fuzz_test(
     name = "forwarding_fuzz_test",
+    size = "small",
     srcs = ["forwarding_fuzz_test.cc"],
     #corpus = ["//tools/toktok-fuzzer/corpus:forwarding_fuzz_test"],
     deps = [
@@ -606,6 +608,7 @@ cc_library(
 
 cc_fuzz_test(
     name = "group_announce_fuzz_test",
+    size = "small",
     srcs = ["group_announce_fuzz_test.cc"],
     #corpus = ["//tools/toktok-fuzzer/corpus:group_announce_fuzz_test"],
     deps = [
@@ -709,6 +712,7 @@ cc_test(
 
 cc_fuzz_test(
     name = "group_moderation_fuzz_test",
+    size = "small",
     srcs = ["group_moderation_fuzz_test.cc"],
     corpus = ["//tools/toktok-fuzzer/corpus:group_moderation_fuzz_test"],
     deps = [
@@ -865,6 +869,7 @@ cc_test(
 
 cc_fuzz_test(
     name = "tox_events_fuzz_test",
+    size = "small",
     srcs = ["tox_events_fuzz_test.cc"],
     corpus = ["//tools/toktok-fuzzer/corpus:tox_events_fuzz_test"],
     deps = [

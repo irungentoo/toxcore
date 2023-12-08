@@ -1270,8 +1270,8 @@ static uint16_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8
     memcpy(&voice_state, data + len_processed, sizeof(uint8_t));
     len_processed += sizeof(uint8_t);
 
-    shared_state->voice_state = (Group_Voice_State)voice_state;
-    shared_state->privacy_state = (Group_Privacy_State)privacy_state;
+    shared_state->voice_state = group_voice_state_from_int(voice_state);
+    shared_state->privacy_state = group_privacy_state_from_int(privacy_state);
 
     return len_processed;
 }
@@ -7279,7 +7279,7 @@ static bool init_gc_tcp_connection(const GC_Session *c, GC_Chat *chat)
 
 /** Initializes default shared state values. */
 non_null()
-static void init_gc_shared_state(GC_Chat *chat, const Group_Privacy_State privacy_state)
+static void init_gc_shared_state(GC_Chat *chat, Group_Privacy_State privacy_state)
 {
     chat->shared_state.maxpeers = MAX_GC_PEERS_DEFAULT;
     chat->shared_state.privacy_state = privacy_state;

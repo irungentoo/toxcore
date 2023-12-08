@@ -6,6 +6,7 @@ CACHEDIR="$HOME/cache"
 
 . ".github/scripts/flags-$CC.sh"
 add_flag -Werror
+add_flag -D_DEBUG
 add_flag -fdiagnostics-color=always
 add_flag -fno-omit-frame-pointer
 add_flag -fno-sanitize-recover=all

@@ -162,7 +162,7 @@ uint16_t gc_get_wrapped_packet_size(uint16_t length, Net_Packet_Type packet_type
  * Returns -4 if the sender does not have permission to speak.
  * Returns -5 if the packet fails to send.
  */
-non_null(1, 2, 3, 4) nullable(5)
+non_null(1, 2) nullable(5)
 int gc_send_message(const GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type,
                     uint32_t *message_id);
 

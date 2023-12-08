@@ -32,4 +32,7 @@ void gc_save_pack_group(const GC_Chat *chat, Bin_Pack *bp);
 non_null()
 bool gc_load_unpack_group(GC_Chat *chat, Bin_Unpack *bu);
 
+Group_Privacy_State group_privacy_state_from_int(uint8_t value);
+Group_Voice_State group_voice_state_from_int(uint8_t value);
+
 #endif // GROUP_PACK_H
