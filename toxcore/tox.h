@@ -3307,7 +3307,7 @@ uint32_t tox_group_max_message_length(void);
 /**
  * Maximum length of a group custom lossy packet.
  */
-#define TOX_GROUP_MAX_CUSTOM_LOSSY_PACKET_LENGTH 500
+#define TOX_GROUP_MAX_CUSTOM_LOSSY_PACKET_LENGTH 1373
 
 uint32_t tox_group_max_custom_lossy_packet_length(void);
 

@@ -182,7 +182,7 @@ static void kill_group_friend_connection(const GC_Session *c, const GC_Chat *cha
 
 uint16_t gc_get_wrapped_packet_size(uint16_t length, Net_Packet_Type packet_type)
 {
-    assert(length <= MAX_GC_PACKET_CHUNK_SIZE);
+    assert(length <= (packet_type == NET_PACKET_GC_LOSSY ? MAX_GC_CUSTOM_LOSSY_PACKET_SIZE : MAX_GC_PACKET_CHUNK_SIZE));
 
     const uint16_t min_header_size = packet_type == NET_PACKET_GC_LOSSY
                                      ? GC_MIN_LOSSY_PAYLOAD_SIZE
@@ -226,10 +226,20 @@ GC_Connection *get_gc_connection(const GC_Chat *chat, int peer_number)
     return &peer->gconn;
 }
 
-/** Returns the amount of empty padding a packet of designated length should have. */
-static uint16_t group_packet_padding_length(uint16_t length)
+/** Returns the max packet size, not wrapped */
+static uint16_t group_packet_max_packet_size(Net_Packet_Type net_packet_type)
 {
-    return (MAX_GC_PACKET_CHUNK_SIZE - length) % GC_MAX_PACKET_PADDING;
+    if (net_packet_type == NET_PACKET_GC_LOSSY) {
+        return MAX_GC_CUSTOM_LOSSY_PACKET_SIZE;
+    } else {
+        return MAX_GC_PACKET_CHUNK_SIZE;
+    }
+}
+
+/** Returns the amount of empty padding a packet of designated length should have. */
+static uint16_t group_packet_padding_length(uint16_t length, uint16_t max_length)
+{
+    return (max_length - length) % GC_MAX_PACKET_PADDING;
 }
 
 void gc_get_self_nick(const GC_Chat *chat, uint8_t *nick)
@@ -1483,9 +1493,10 @@ static int group_packet_unwrap(const Logger *log, const GC_Connection *gconn, ui
 int group_packet_wrap(
     const Logger *log, const Random *rng, const uint8_t *self_pk, const uint8_t *shared_key, uint8_t *packet,
     uint16_t packet_size, const uint8_t *data, uint16_t length, uint64_t message_id,
-    uint8_t gp_packet_type, uint8_t net_packet_type)
+    uint8_t gp_packet_type, Net_Packet_Type net_packet_type)
 {
-    const uint16_t padding_len = group_packet_padding_length(length);
+    const uint16_t max_packet_size = group_packet_max_packet_size(net_packet_type);
+    const uint16_t padding_len = group_packet_padding_length(length, max_packet_size);
     const uint16_t min_packet_size = net_packet_type == NET_PACKET_GC_LOSSLESS
                                      ? length + padding_len + CRYPTO_MAC_SIZE + 1 + ENC_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + GC_MESSAGE_ID_BYTES + 1
                                      : length + padding_len + CRYPTO_MAC_SIZE + 1 + ENC_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + 1;
@@ -1495,8 +1506,8 @@ int group_packet_wrap(
         return -1;
     }
 
-    if (length > MAX_GC_PACKET_CHUNK_SIZE) {
-        LOGGER_ERROR(log, "Packet payload size (%u) exceeds maximum (%u)", length, MAX_GC_PACKET_CHUNK_SIZE);
+    if (length > max_packet_size) {
+        LOGGER_ERROR(log, "Packet payload size (%u) exceeds maximum (%u)", length, max_packet_size);
         return -1;
     }
 
@@ -1563,7 +1574,7 @@ non_null()
 static bool send_lossy_group_packet(const GC_Chat *chat, const GC_Connection *gconn, const uint8_t *data,
                                     uint16_t length, uint8_t packet_type)
 {
-    assert(length <= MAX_GC_PACKET_CHUNK_SIZE);
+    assert(length <= MAX_GC_CUSTOM_LOSSY_PACKET_SIZE);
 
     if (!gconn->handshaked || gconn->pending_delete) {
         return false;
