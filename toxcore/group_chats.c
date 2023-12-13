@@ -7224,7 +7224,9 @@ static int get_new_group_index(GC_Session *c)
 
     c->chats[new_index] = empty_gc_chat;
 
-    memset(&c->chats[new_index].saved_invites, -1, sizeof(c->chats[new_index].saved_invites));
+    for (size_t i = 0; i < sizeof(c->chats[new_index].saved_invites)/sizeof(*c->chats[new_index].saved_invites); ++i) {
+        c->chats[new_index].saved_invites[i] = -1;
+    }
 
     ++c->chats_index;
 
