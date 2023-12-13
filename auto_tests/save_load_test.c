@@ -14,12 +14,14 @@
 #include "auto_test_support.h"
 #include "check_compat.h"
 
-/* The Travis-CI container responds poorly to ::1 as a localhost address
- * You're encouraged to -D FORCE_TESTS_IPV6 on a local test  */
+#ifndef USE_IPV6
+#define USE_IPV6 1
+#endif
+
 #ifdef TOX_LOCALHOST
 #undef TOX_LOCALHOST
 #endif
-#ifdef FORCE_TESTS_IPV6
+#if USE_IPV6
 #define TOX_LOCALHOST "::1"
 #else
 #define TOX_LOCALHOST "127.0.0.1"
@@ -74,6 +76,7 @@ static void reload_tox(Tox **tox, struct Tox_Options *const in_opts, void *user_
     }
 
     struct Tox_Options *const options = (in_opts == nullptr) ? tox_options_new(nullptr) : in_opts;
+    tox_options_set_ipv6_enabled(options, USE_IPV6);
 
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
 
@@ -138,6 +141,7 @@ static void test_few_clients(void)
     time_t con_time = 0, cur_time = time(nullptr);
 
     struct Tox_Options *opts1 = tox_options_new(nullptr);
+    tox_options_set_ipv6_enabled(opts1, USE_IPV6);
     tox_options_set_tcp_port(opts1, TCP_RELAY_PORT);
     Tox_Err_New t_n_error;
     Tox *tox1 = tox_new_log(opts1, &t_n_error, &index[0]);
@@ -145,12 +149,14 @@ static void test_few_clients(void)
     tox_options_free(opts1);
 
     struct Tox_Options *opts2 = tox_options_new(nullptr);
+    tox_options_set_ipv6_enabled(opts2, USE_IPV6);
     tox_options_set_udp_enabled(opts2, false);
     tox_options_set_local_discovery_enabled(opts2, false);
     Tox *tox2 = tox_new_log(opts2, &t_n_error, &index[1]);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "Failed to create tox instance: %d", t_n_error);
 
     struct Tox_Options *opts3 = tox_options_new(nullptr);
+    tox_options_set_ipv6_enabled(opts3, USE_IPV6);
     tox_options_set_local_discovery_enabled(opts3, false);
     Tox *tox3 = tox_new_log(opts3, &t_n_error, &index[2]);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "Failed to create tox instance: %d", t_n_error);

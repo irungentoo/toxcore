@@ -13,9 +13,14 @@
 #include "auto_test_support.h"
 #include "check_compat.h"
 
-/* The Travis-CI container responds poorly to ::1 as a localhost address
- * You're encouraged to -D FORCE_TESTS_IPV6 on a local test  */
-#ifdef FORCE_TESTS_IPV6
+#ifndef USE_IPV6
+#define USE_IPV6 1
+#endif
+
+#ifdef TOX_LOCALHOST
+#undef TOX_LOCALHOST
+#endif
+#if USE_IPV6
 #define TOX_LOCALHOST "::1"
 #else
 #define TOX_LOCALHOST "127.0.0.1"

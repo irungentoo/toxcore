@@ -13,6 +13,10 @@
 #define ABORT_ON_LOG_ERROR true
 #endif
 
+#ifndef USE_IPV6
+#define USE_IPV6 1
+#endif
+
 Run_Auto_Options default_run_auto_options(void)
 {
     return (Run_Auto_Options) {
@@ -193,6 +197,7 @@ void reload(AutoTox *autotox)
 
     struct Tox_Options *const options = tox_options_new(nullptr);
     ck_assert(options != nullptr);
+    tox_options_set_ipv6_enabled(options, USE_IPV6);
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
     tox_options_set_savedata_data(options, autotox->save_state, autotox->save_size);
     autotox->tox = tox_new_log(options, nullptr, &autotox->index);
@@ -213,6 +218,8 @@ static void initialise_autotox(struct Tox_Options *options, AutoTox *autotox, ui
     if (index == 0) {
         struct Tox_Options *default_opts = tox_options_new(nullptr);
         ck_assert(default_opts != nullptr);
+
+        tox_options_set_ipv6_enabled(default_opts, USE_IPV6);
 
         if (options == nullptr) {
             options = default_opts;
@@ -426,6 +433,7 @@ Tox *tox_new_log_lan(struct Tox_Options *options, Tox_Err_New *err, void *log_us
 
     assert(log_options != nullptr);
 
+    tox_options_set_ipv6_enabled(log_options, USE_IPV6);
     tox_options_set_local_discovery_enabled(log_options, lan_discovery);
     // Use a higher start port for non-LAN-discovery tests so it's more likely for the LAN discovery
     // test to get the default port 33445.
