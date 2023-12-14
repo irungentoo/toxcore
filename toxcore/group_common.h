@@ -401,7 +401,8 @@ int unpack_gc_saved_peers(GC_Chat *chat, const uint8_t *data, uint16_t length);
 
 /** @brief Packs all valid entries from saved peerlist into `data`.
  *
- * If `processed` is non-null it will be set to the length of the packed data.
+ * If `processed` is non-null it will be set to the length of the packed data
+ * on success, and will be untouched on error.
  *
  * Return the number of packed saved peers on success.
  * Return -1 if buffer is too small.
