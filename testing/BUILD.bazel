@@ -23,6 +23,28 @@ sh_test(
 )
 
 sh_test(
+    name = "c_test",
+    size = "small",
+    srcs = ["//hs-tokstyle/tools:check-c"],
+    args = [
+        "--cc=$(CC)",
+        "-Iexternal/libsodium/include",
+        "-Iexternal/libvpx",
+        "-Iexternal/opus/include",
+        "-Ihs-tokstyle/include",
+    ] + ["$(locations %s)" % f for f in CIMPLE_FILES],
+    data = CIMPLE_FILES + [
+        "//c-toxcore/third_party:headers",
+        "//hs-tokstyle:headers",
+        "@libsodium//:headers",
+        "@libvpx//:headers",
+        "@opus//:headers",
+    ],
+    tags = ["haskell"],
+    toolchains = ["@rules_cc//cc:current_cc_toolchain"],
+)
+
+sh_test(
     name = "cimplefmt_test",
     size = "small",
     srcs = ["//hs-cimple/tools:cimplefmt"],

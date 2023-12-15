@@ -7,3 +7,9 @@ cc_library(
     copts = ["-DCMP_NO_FLOAT"],
     visibility = ["//c-toxcore:__subpackages__"],
 )
+
+filegroup(
+    name = "headers",
+    srcs = ["cmp/cmp.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+)
