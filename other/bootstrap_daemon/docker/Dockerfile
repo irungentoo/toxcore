@@ -1,15 +1,16 @@
 ###########################################################
 # Builder image: we compile the code here (static build)
-FROM alpine:3.18.5 AS build
+FROM alpine:3.19.0 AS build
 
 RUN ["apk", "--no-cache", "add",\
- "build-base",\
+ "clang",\
  "cmake",\
  "linux-headers",\
  "libconfig-dev",\
  "libconfig-static",\
  "libsodium-dev",\
  "libsodium-static",\
+ "musl-dev",\
  "ninja",\
  "python3"\
 ]
@@ -34,9 +35,9 @@ COPY CMakeLists.txt so.version ./
 COPY other/bootstrap_daemon/CMakeLists.txt other/bootstrap_daemon/CMakeLists.txt
 COPY testing/CMakeLists.txt testing/CMakeLists.txt
 
-RUN cmake -B_build -H. \
+RUN CC=clang cmake -B_build -H. \
       -GNinja \
-      -DCMAKE_C_FLAGS="-DTCP_SERVER_USE_EPOLL -fstack-protector-all -fisolate-erroneous-paths-attribute" \
+      -DCMAKE_C_FLAGS="-DTCP_SERVER_USE_EPOLL -fsanitize=alignment,return,returns-nonnull-attribute,vla-bound,unreachable,float-cast-overflow,null -fsanitize-trap=all -fstack-protector-all" \
       -DCMAKE_UNITY_BUILD=ON \
       -DCMAKE_BUILD_TYPE=Release \
       -DFULLY_STATIC=ON \
