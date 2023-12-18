@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
+#include <thread>
+
 namespace {
 
 TEST(MonoTime, UnixTimeIncreasesOverTime)
@@ -37,6 +40,24 @@ TEST(MonoTime, IsTimeout)
     }
 
     EXPECT_TRUE(mono_time_is_timeout(mono_time, start, 1));
+
+    mono_time_free(mem, mono_time);
+}
+
+TEST(MonoTime, IsTimeoutReal)
+{
+    const Memory *mem = system_memory();
+    Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
+    ASSERT_NE(mono_time, nullptr);
+
+    uint64_t const start = mono_time_get(mono_time);
+    EXPECT_FALSE(mono_time_is_timeout(mono_time, start, 5));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    mono_time_update(mono_time);
+
+    // should still not have timed out (5sec) after sleeping ~100ms
+    EXPECT_FALSE(mono_time_is_timeout(mono_time, start, 5));
 
     mono_time_free(mem, mono_time);
 }
