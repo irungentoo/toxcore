@@ -757,17 +757,34 @@ int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length)
     return 0;
 }
 
-static Userstatus userstatus_from_int(uint8_t status)
+non_null()
+static bool userstatus_from_int(uint8_t status, Userstatus *out)
 {
     switch (status) {
-        case 0:
-            return USERSTATUS_NONE;
-        case 1:
-            return USERSTATUS_AWAY;
-        case 2:
-            return USERSTATUS_BUSY;
-        default:
-            return USERSTATUS_INVALID;
+        case USERSTATUS_NONE: {
+            *out = USERSTATUS_NONE;
+            return true;
+        }
+
+        case USERSTATUS_AWAY: {
+            *out = USERSTATUS_AWAY;
+            return true;
+        }
+
+        case USERSTATUS_BUSY: {
+            *out = USERSTATUS_BUSY;
+            return true;
+        }
+
+        case USERSTATUS_INVALID: {
+            *out = USERSTATUS_INVALID;
+            return true;
+        }
+
+        default: {
+            *out = USERSTATUS_INVALID;
+            return false;
+        }
     }
 }
 
@@ -781,7 +798,7 @@ int m_set_userstatus(Messenger *m, uint8_t status)
         return 0;
     }
 
-    m->userstatus = userstatus_from_int(status);
+    userstatus_from_int(status, &m->userstatus);
 
     for (uint32_t i = 0; i < m->numfriends; ++i) {
         m->friendlist[i].userstatus_sent = false;
@@ -937,7 +954,7 @@ static int set_friend_statusmessage(const Messenger *m, int32_t friendnumber, co
 non_null()
 static void set_friend_userstatus(const Messenger *m, int32_t friendnumber, uint8_t status)
 {
-    m->friendlist[friendnumber].userstatus = userstatus_from_int(status);
+    userstatus_from_int(status, &m->friendlist[friendnumber].userstatus);
 }
 
 non_null()
@@ -2095,9 +2112,8 @@ static int m_handle_packet_userstatus(Messenger *m, const int i, const uint8_t *
         return 0;
     }
 
-    const Userstatus status = userstatus_from_int(data[0]);
-
-    if (status == USERSTATUS_INVALID) {
+    Userstatus status;
+    if (!userstatus_from_int(data[0], &status)) {
         return 0;
     }
 

@@ -18,29 +18,48 @@
 #include "ccompat.h"
 #include "util.h"
 
-Group_Privacy_State group_privacy_state_from_int(uint8_t value)
+bool group_privacy_state_from_int(uint8_t value, Group_Privacy_State *out)
 {
     switch (value) {
-        case 0:
-            return GI_PUBLIC;
-        case 1:
-            return GI_PRIVATE;
-        default:
-            return GI_PUBLIC;
+        case GI_PUBLIC: {
+            *out = GI_PUBLIC;
+            return true;
+        }
+
+        case GI_PRIVATE: {
+            *out = GI_PRIVATE;
+            return true;
+        }
+
+        default: {
+            *out = GI_PUBLIC;
+            return false;
+        }
     }
 }
 
-Group_Voice_State group_voice_state_from_int(uint8_t value)
+bool group_voice_state_from_int(uint8_t value, Group_Voice_State *out)
 {
     switch (value) {
-        case 0:
-            return GV_ALL;
-        case 1:
-            return GV_MODS;
-        case 2:
-            return GV_FOUNDER;
-        default:
-            return GV_ALL;
+        case GV_ALL: {
+            *out = GV_ALL;
+            return true;
+        }
+
+        case GV_MODS: {
+            *out = GV_MODS;
+            return true;
+        }
+
+        case GV_FOUNDER: {
+            *out = GV_FOUNDER;
+            return true;
+        }
+
+        default: {
+            *out = GV_ALL;
+            return false;
+        }
     }
 }
 
@@ -69,8 +88,8 @@ static bool load_unpack_state_values(GC_Chat *chat, Bin_Unpack *bu)
     }
 
     chat->connection_state = manually_disconnected ? CS_DISCONNECTED : CS_CONNECTING;
-    chat->shared_state.privacy_state = group_privacy_state_from_int(privacy_state);
-    chat->shared_state.voice_state = group_voice_state_from_int(voice_state);
+    group_privacy_state_from_int(privacy_state, &chat->shared_state.privacy_state);
+    group_voice_state_from_int(voice_state, &chat->shared_state.voice_state);
 
     // we always load saved groups as private in case the group became private while we were offline.
     // this will have no detrimental effect if the group is public, as the correct privacy

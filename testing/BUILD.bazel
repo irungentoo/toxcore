@@ -15,7 +15,7 @@ sh_test(
         "-Wno-callback-names",
         "-Wno-enum-names",
         "+RTS",
-        "-N3",
+        "-N4",
         "-RTS",
     ],
     data = CIMPLE_FILES,
@@ -32,7 +32,11 @@ sh_test(
         "-Iexternal/libvpx",
         "-Iexternal/opus/include",
         "-Ihs-tokstyle/include",
-    ] + ["$(locations %s)" % f for f in CIMPLE_FILES],
+    ] + ["$(locations %s)" % f for f in CIMPLE_FILES] + [
+        "+RTS",
+        "-N4",
+        "-RTS",
+    ],
     data = CIMPLE_FILES + [
         "//c-toxcore/third_party:headers",
         "//hs-tokstyle:headers",

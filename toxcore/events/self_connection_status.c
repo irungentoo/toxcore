@@ -69,7 +69,7 @@ static bool tox_event_self_connection_status_unpack(
     Tox_Event_Self_Connection_Status *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-    return tox_unpack_connection(bu, &event->connection_status);
+    return tox_connection_unpack(bu, &event->connection_status);
 }
 
 

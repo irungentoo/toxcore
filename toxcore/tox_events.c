@@ -115,7 +115,7 @@ bool tox_events_pack(const Tox_Events *events, Bin_Pack *bp)
 }
 
 non_null()
-static bool tox_event_unpack(Tox_Events *events, Bin_Unpack *bu)
+static bool tox_events_unpack_event(Tox_Events *events, Bin_Unpack *bu)
 {
     uint32_t size;
     if (!bin_unpack_array(bu, &size)) {
@@ -210,7 +210,7 @@ bool tox_events_unpack(Tox_Events *events, Bin_Unpack *bu)
     }
 
     for (uint32_t i = 0; i < size; ++i) {
-        if (!tox_event_unpack(events, bu)) {
+        if (!tox_events_unpack_event(events, bu)) {
             return false;
         }
     }

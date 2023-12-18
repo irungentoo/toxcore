@@ -105,7 +105,7 @@ static bool tox_event_file_recv_control_unpack(
 
     return bin_unpack_u32(bu, &event->friend_number)
            && bin_unpack_u32(bu, &event->file_number)
-           && tox_unpack_file_control(bu, &event->control);
+           && tox_file_control_unpack(bu, &event->control);
 }
 
 

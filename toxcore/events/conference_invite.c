@@ -125,7 +125,7 @@ static bool tox_event_conference_invite_unpack(
     }
 
     return bin_unpack_u32(bu, &event->friend_number)
-           && tox_unpack_conference_type(bu, &event->type)
+           && tox_conference_type_unpack(bu, &event->type)
            && bin_unpack_bin(bu, &event->cookie, &event->cookie_length);
 }
 

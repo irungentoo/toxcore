@@ -1280,8 +1280,8 @@ static uint16_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8
     memcpy(&voice_state, data + len_processed, sizeof(uint8_t));
     len_processed += sizeof(uint8_t);
 
-    shared_state->voice_state = group_voice_state_from_int(voice_state);
-    shared_state->privacy_state = group_privacy_state_from_int(privacy_state);
+    group_voice_state_from_int(voice_state, &shared_state->voice_state);
+    group_privacy_state_from_int(privacy_state, &shared_state->privacy_state);
 
     return len_processed;
 }
