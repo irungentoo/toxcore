@@ -111,11 +111,6 @@ if(NOT USE_IPV6)
   add_definitions(-DUSE_IPV6=0)
 endif()
 
-option(USE_TEST_NETWORK "Use a separate test network with different packet IDs" OFF)
-if(USE_TEST_NETWORK)
-  add_definitions(-DUSE_TEST_NETWORK=1)
-endif()
-
 option(BUILD_MISC_TESTS "Build additional tests and utilities" OFF)
 option(BUILD_FUN_UTILS "Build additional just for fun utilities" OFF)
 

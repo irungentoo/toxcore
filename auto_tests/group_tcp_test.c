@@ -8,8 +8,6 @@
 
 #include "auto_test_support.h"
 
-#ifdef USE_TEST_NETWORK
-
 #define NUM_GROUP_TOXES 2
 #define CODEWORD "RONALD MCDONALD"
 #define CODEWORD_LEN (sizeof(CODEWORD) - 1)
@@ -225,31 +223,24 @@ static void group_tcp_test(AutoTox *autotoxes)
 
 #endif // VANILLA_NACL
 }
-#endif // USE_TEST_NETWORK
 
-int main(void)
+int main(int argc, char **argv)
 {
-#ifdef USE_TEST_NETWORK  // TODO(Jfreegman): Enable this test when the mainnet works with DHT groupchats
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    struct Tox_Options *options = (struct Tox_Options *)calloc(1, sizeof(struct Tox_Options));
+    struct Tox_Options *options = tox_options_new(nullptr);
     ck_assert(options != nullptr);
 
-    tox_options_default(options);
     tox_options_set_udp_enabled(options, false);
 
     Run_Auto_Options autotest_opts = default_run_auto_options();
     autotest_opts.graph = GRAPH_COMPLETE;
 
-    run_auto_test(options, NUM_GROUP_TOXES, group_tcp_test, sizeof(State), &autotest_opts);
+    // TODO(JFreegman): Fix this test and remove the "if".
+    if (argc > 2) {
+        run_auto_test(options, NUM_GROUP_TOXES, group_tcp_test, sizeof(State), &autotest_opts);
+    }
 
     tox_options_free(options);
-#endif
     return 0;
 }
-
-#ifdef USE_TEST_NETWORK
-#undef NUM_GROUP_TOXES
-#undef CODEWORD_LEN
-#undef CODEWORD
-#endif // USE_TEST_NETWORK
