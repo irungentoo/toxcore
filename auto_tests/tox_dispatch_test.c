@@ -10,6 +10,7 @@
 #include "../toxcore/tox.h"
 #include "../toxcore/tox_dispatch.h"
 #include "../toxcore/tox_events.h"
+#include "../toxcore/tox_unpack.h"
 #include "auto_test_support.h"
 #include "check_compat.h"
 
@@ -160,9 +161,22 @@ static void test_tox_events(void)
     }
 }
 
+static void fake_test_unpack(void)
+{
+    // TODO(Green-Sky): add proper unpack tests and/or implement ngc events
+    (void)tox_unpack_group_privacy_state;
+    (void)tox_unpack_group_privacy_state;
+    (void)tox_unpack_group_voice_state;
+    (void)tox_unpack_group_topic_lock;
+    (void)tox_unpack_group_join_fail;
+    (void)tox_unpack_group_mod_event;
+    (void)tox_unpack_group_exit_type;
+}
+
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
     test_tox_events();
+    fake_test_unpack();
     return 0;
 }
