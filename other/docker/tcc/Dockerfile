@@ -39,7 +39,7 @@ RUN tcc \
 
 COPY other/make_single_file /work/other/
 RUN \
- other/make_single_file \
+ other/make_single_file -core \
    auto_tests/auto_test_support.c \
    auto_tests/send_message_test.c \
    testing/misc_tools.c | \
@@ -47,5 +47,17 @@ RUN \
    -o send_message_test \
    -Wall -Werror \
    -bench -g \
-   $(pkg-config --cflags --libs libsodium opus vpx) \
+   $(pkg-config --cflags --libs libsodium) \
  && ./send_message_test | grep 'tox clients connected'
+
+RUN \
+ other/make_single_file \
+   auto_tests/auto_test_support.c \
+   auto_tests/toxav_basic_test.c \
+   testing/misc_tools.c | \
+ tcc - \
+   -o toxav_basic_test \
+   -Wall -Werror \
+   -bench -g \
+   $(pkg-config --cflags --libs libsodium opus vpx) \
+ && ./toxav_basic_test | grep 'Test successful'

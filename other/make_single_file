@@ -6,8 +6,11 @@
 #
 # Example:
 #
-#   other/make_single_file testing/misc_tools.c auto_tests/send_message_test.c | \
-#     tcc -o send_message_test - $(pkg-config --cflags --libs libsodium opus vpx)
+#   other/make_single_file auto_tests/toxav_basic_test.c auto_tests/auto_test_support.c testing/misc_tools.c | \
+#     tcc -o toxav_basic_test - $(pkg-config --cflags --libs libsodium opus vpx)
+#
+#   other/make_single_file -core auto_tests/send_message_test.c auto_tests/auto_test_support.c testing/misc_tools.c | \
+#     tcc -o send_message_test - $(pkg-config --cflags --libs libsodium)
 
 use strict;
 use warnings;
@@ -44,7 +47,7 @@ sub emit {
 
 if (@ARGV and $ARGV[0] eq "-core") {
    shift @ARGV;
-   for my $fn (<toxcore/*.c>, <third_party/cmp/*.c>) {
+   for my $fn (<toxcore/*.c>, <toxcore/*/*.c>, <third_party/cmp/*.c>) {
       emit(abs_path $fn);
    }
 } else {
