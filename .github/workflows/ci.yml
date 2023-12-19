@@ -16,7 +16,7 @@ jobs:
   mypy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Set up Python 3.9
@@ -34,9 +34,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
       - name: Docker Build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           file: other/docker/doxygen/Dockerfile
 
@@ -44,9 +44,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
       - name: Docker Build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           file: other/docker/tokstyle/Dockerfile
 
@@ -54,9 +54,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
       - name: Docker Build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           file: other/docker/misra/Dockerfile
 
@@ -64,9 +64,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
       - name: Docker Build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           file: other/docker/autotools/Dockerfile
 
@@ -74,9 +74,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
       - name: Docker Build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           file: other/docker/tcc/Dockerfile
 
@@ -84,16 +84,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
       - name: Docker Build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           file: other/docker/compcert/Dockerfile
 
   cimplefmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Run cimplefmt
@@ -102,7 +102,7 @@ jobs:
   build-win32:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Cross compilation
@@ -111,7 +111,7 @@ jobs:
   build-win64:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Cross compilation
@@ -120,7 +120,7 @@ jobs:
   build-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Build and test
@@ -129,7 +129,7 @@ jobs:
   coverage-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Build, test, and upload coverage
@@ -138,7 +138,7 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - run: .github/scripts/cmake-android armeabi-v7a
