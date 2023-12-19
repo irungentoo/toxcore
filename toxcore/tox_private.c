@@ -11,6 +11,7 @@
 #include <assert.h>
 
 #include "ccompat.h"
+#include "group_chats.h"
 #include "mem.h"
 #include "network.h"
 #include "tox_struct.h"
@@ -166,3 +167,57 @@ uint16_t tox_dht_get_num_closelist_announce_capable(const Tox *tox){
     return num_cap;
 }
 
+#ifndef VANILLA_NACL
+size_t tox_group_peer_get_ip_address_size(const Tox *tox, uint32_t group_number, uint32_t peer_id,
+                                          Tox_Err_Group_Peer_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return -1;
+    }
+
+    const int ret = gc_get_peer_ip_address_size(chat, peer_id);
+    tox_unlock(tox);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
+        return -1;
+    } else {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_OK);
+        return ret;
+    }
+}
+
+bool tox_group_peer_get_ip_address(const Tox *tox, uint32_t group_number, uint32_t peer_id, uint8_t *ip_addr,
+                               Tox_Err_Group_Peer_Query *error)
+{
+    assert(tox != nullptr);
+
+    tox_lock(tox);
+    const GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+
+    if (chat == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
+        tox_unlock(tox);
+        return false;
+    }
+
+    const int ret = gc_get_peer_ip_address(chat, peer_id, ip_addr);
+    tox_unlock(tox);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_OK);
+    return true;
+}
+
+#endif  /* VANILLA_NACL */

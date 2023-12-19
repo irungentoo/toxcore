@@ -124,6 +124,10 @@ uint32_t tox_group_peer_public_key_size(void)
 {
     return TOX_GROUP_PEER_PUBLIC_KEY_SIZE;
 }
+uint32_t tox_group_peer_ip_string_max_length(void)
+{
+    return TOX_GROUP_PEER_IP_STRING_MAX_LENGTH;
+}
 uint32_t tox_dht_node_ip_string_size(void)
 {
     return TOX_DHT_NODE_IP_STRING_SIZE;

@@ -3517,6 +3517,63 @@ int gc_get_peer_public_key_by_peer_id(const GC_Chat *chat, uint32_t peer_id, uin
     return 0;
 }
 
+/** @brief Puts a string of the IP associated with `ip_port` in `ip_str` if the
+ * connection is direct, otherwise puts a placeholder in the buffer indicating that
+ * the IP cannot be displayed.
+ */
+non_null()
+static void get_gc_ip_ntoa(const IP_Port *ip_port, Ip_Ntoa *ip_str)
+{
+    net_ip_ntoa(&ip_port->ip, ip_str);
+
+    if (!ip_str->ip_is_valid) {
+        ip_str->buf[0] = '-';
+        ip_str->buf[1] = '\0';
+        ip_str->length = 1;
+    }
+}
+
+int gc_get_peer_ip_address_size(const GC_Chat *chat, uint32_t peer_id)
+{
+    const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
+    const GC_Connection *gconn = get_gc_connection(chat, peer_number);
+
+    if (gconn == nullptr) {
+        return -1;
+    }
+
+    const IP_Port *ip_port = peer_number == 0 ? &chat->self_ip_port : &gconn->addr.ip_port;
+
+    Ip_Ntoa ip_str;
+    get_gc_ip_ntoa(ip_port, &ip_str);
+
+    return ip_str.length;
+}
+
+int gc_get_peer_ip_address(const GC_Chat *chat, uint32_t peer_id, uint8_t *ip_addr)
+{
+    const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
+    const GC_Connection *gconn = get_gc_connection(chat, peer_number);
+
+    if (gconn == nullptr) {
+        return -1;
+    }
+
+    if (ip_addr == nullptr) {
+        return -2;
+    }
+
+    const IP_Port *ip_port = peer_number == 0 ? &chat->self_ip_port : &gconn->addr.ip_port;
+
+    Ip_Ntoa ip_str;
+    get_gc_ip_ntoa(ip_port, &ip_str);
+
+    assert(ip_str.length <= IP_NTOA_LEN);
+    memcpy(ip_addr, ip_str.buf, ip_str.length);
+
+    return 0;
+}
+
 unsigned int gc_get_peer_connection_status(const GC_Chat *chat, uint32_t peer_id)
 {
     const int peer_number = get_peer_number_of_peer_id(chat, peer_id);

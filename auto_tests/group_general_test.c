@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "auto_test_support.h"
+#include "../toxcore/tox_private.h"
 
 typedef struct State {
     size_t   peer_joined_count;
@@ -41,6 +42,22 @@ typedef struct State {
 #define EXIT_MESSAGE_LEN (sizeof(EXIT_MESSAGE) - 1)
 
 #define PEER_LIMIT 20
+
+static void print_ip(Tox *tox, uint32_t groupnumber, uint32_t peer_id)
+{
+    Tox_Err_Group_Peer_Query err;
+    size_t length = tox_group_peer_get_ip_address_size(tox, groupnumber, peer_id, &err);
+
+    ck_assert_msg(err == TOX_ERR_GROUP_PEER_QUERY_OK, "failed to get ip address size: error %d", err);
+
+    uint8_t ip_str[TOX_GROUP_PEER_IP_STRING_MAX_LENGTH];
+    tox_group_peer_get_ip_address(tox, groupnumber, peer_id, ip_str, &err);
+    ip_str[length] = '\0';
+
+    ck_assert_msg(err == TOX_ERR_GROUP_PEER_QUERY_OK, "failed to get ip address: error %d", err);
+
+    fprintf(stderr, "%s\n", ip_str);
+}
 
 static bool all_group_peers_connected(AutoTox *autotoxes, uint32_t tox_count, uint32_t groupnumber, size_t name_length)
 {
@@ -119,6 +136,9 @@ static void group_peer_join_handler(Tox *tox, uint32_t groupnumber, uint32_t pee
         }
     }
 
+    fprintf(stderr, "%s joined with IP: ", peer_name);
+    print_ip(tox, groupnumber, peer_id);
+
     state->peer_id = peer_id;
     ++state->peer_joined_count;
 }
@@ -177,6 +197,11 @@ static void group_peer_self_join_handler(Tox *tox, uint32_t groupnumber, void *u
     tox_group_get_topic(tox, groupnumber, topic, &query_err);
     ck_assert_msg(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK, "%d", query_err);
     ck_assert(memcmp(topic, TOPIC, TOPIC_LEN) == 0);
+
+    uint32_t peer_id = tox_group_self_get_peer_id(tox, groupnumber, nullptr);
+
+    fprintf(stderr, "self joined with IP: ");
+    print_ip(tox, groupnumber, peer_id);
 
     ++state->self_joined_count;
 }
@@ -341,6 +366,7 @@ static void group_announce_test(AutoTox *autotoxes)
     ck_assert(memcmp(tox0_pk_query, tox0_self_pk, TOX_GROUP_PEER_PUBLIC_KEY_SIZE) == 0);
 
     fprintf(stderr, "Peer 0 disconnecting...\n");
+
     // tox 0 disconnects then reconnects
     Tox_Err_Group_Disconnect d_err;
     tox_group_disconnect(tox0, groupnumber, &d_err);

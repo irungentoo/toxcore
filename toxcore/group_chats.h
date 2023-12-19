@@ -390,6 +390,29 @@ int gc_get_peer_nick_size(const GC_Chat *chat, uint32_t peer_id);
 non_null(1) nullable(3)
 int gc_get_peer_public_key_by_peer_id(const GC_Chat *chat, uint32_t peer_id, uint8_t *public_key);
 
+/** @brief Returns the length of the IP address for the peer designated by `peer_id`.
+ * Returns -1 if peer_id is invalid.
+ */
+non_null()
+int gc_get_peer_ip_address_size(const GC_Chat *chat, uint32_t peer_id);
+
+/** @brief Copies peer_id's IP address to `ip_addr`.
+ *
+ * If the peer is forcing TCP connections this will be a placeholder value indicating
+ * that their real IP address is unknown to us.
+ *
+ * If `peer_id` designates ourself, it will write either our own IP address or a
+ * placeholder value, depending on whether or not we're forcing TCP connections.
+ *
+ * `ip_addr` should have room for at least IP_NTOA_LEN bytes.
+ *
+ * Returns 0 on success.
+ * Returns -1 if peer_id is invalid or doesn't correspond to a valid peer connection.
+ * Returns -2 if `ip_addr` is null.
+ */
+non_null(1) nullable(3)
+int gc_get_peer_ip_address(const GC_Chat *chat, uint32_t peer_id, uint8_t *ip_addr);
+
 /** @brief Gets the connection status for peer associated with `peer_id`.
  *
  * If `peer_id` designates ourself, the return value indicates whether we're capable

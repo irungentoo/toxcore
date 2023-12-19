@@ -1514,30 +1514,29 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
     *target = *source;
 }
 
-/** @brief Converts IP into a string.
- *
- * Writes error message into the buffer on error.
- *
- * @param ip_str contains a buffer of the required size.
- *
- * @return Pointer to the buffer inside `ip_str` containing the IP string.
- */
 const char *net_ip_ntoa(const IP *ip, Ip_Ntoa *ip_str)
 {
     assert(ip_str != nullptr);
 
+    ip_str->ip_is_valid = false;
+
     if (ip == nullptr) {
         snprintf(ip_str->buf, sizeof(ip_str->buf), "(IP invalid: NULL)");
+        ip_str->length = (uint16_t)strlen(ip_str->buf);
         return ip_str->buf;
     }
 
     if (!ip_parse_addr(ip, ip_str->buf, sizeof(ip_str->buf))) {
         snprintf(ip_str->buf, sizeof(ip_str->buf), "(IP invalid, family %u)", ip->family.value);
+        ip_str->length = (uint16_t)strlen(ip_str->buf);
         return ip_str->buf;
     }
 
     /* brute force protection against lacking termination */
     ip_str->buf[sizeof(ip_str->buf) - 1] = '\0';
+    ip_str->length = (uint16_t)strlen(ip_str->buf);
+    ip_str->ip_is_valid = true;
+
     return ip_str->buf;
 }
 

@@ -156,6 +156,51 @@ uint16_t tox_dht_get_num_closelist(const Tox *tox);
  */
 uint16_t tox_dht_get_num_closelist_announce_capable(const Tox *tox);
 
+
+/*******************************************************************************
+ *
+ * :: DHT groupchat queries.
+ *
+ ******************************************************************************/
+
+/**
+ * Maximum size of a peer IP address string.
+ */
+#define TOX_GROUP_PEER_IP_STRING_MAX_LENGTH 96
+
+uint32_t tox_group_peer_ip_string_max_length(void);
+
+/**
+ * Return the length of the peer's IP address in string form. If the group number or ID
+ * is invalid, the return value is unspecified.
+ *
+ * @param group_number The group number of the group we wish to query.
+ * @param peer_id The ID of the peer whose IP address length we want to retrieve.
+ */
+size_t tox_group_peer_get_ip_address_size(const Tox *tox, uint32_t group_number, uint32_t peer_id,
+                                          Tox_Err_Group_Peer_Query *error);
+/**
+ * Write the IP address associated with the designated peer_id for the designated group number
+ * to ip_addr.
+ *
+ * If the peer is forcing TCP connections a placeholder value will be written instead,
+ * indicating that their real IP address is unknown to us.
+ *
+ * If `peer_id` designates ourself, it will write either our own IP address or a placeholder value,
+ * depending on whether or not we're forcing TCP connections.
+ *
+ * Call tox_group_peer_get_ip_address_size to determine the allocation size for the `ip_addr` parameter.
+ *
+ * @param group_number The group number of the group we wish to query.
+ * @param peer_id The ID of the peer whose public key we wish to retrieve.
+ * @param ip_addr A valid memory region large enough to store the IP address string.
+ *   If this parameter is NULL, this function call has no effect.
+ *
+ * @return true on success.
+ */
+bool tox_group_peer_get_ip_address(const Tox *tox, uint32_t group_number, uint32_t peer_id, uint8_t *ip_addr,
+                                   Tox_Err_Group_Peer_Query *error);
+
 #ifdef __cplusplus
 }
 #endif

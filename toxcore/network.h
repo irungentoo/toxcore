@@ -343,11 +343,14 @@ bool ipv6_ipv4_in_v6(const IP6 *a);
 /** this would be TOX_INET6_ADDRSTRLEN, but it might be too short for the error message */
 #define IP_NTOA_LEN 96 // TODO(irungentoo): magic number. Why not INET6_ADDRSTRLEN ?
 
+/** Contains a null terminated string of an IP address. */
 typedef struct Ip_Ntoa {
-    char buf[IP_NTOA_LEN];
+    char     buf[IP_NTOA_LEN];  // a string formatted IP address or an error message.
+    uint16_t length;  // the length of the string (not including the null byte).
+    bool     ip_is_valid;  // if this is false `buf` will contain an error message.
 } Ip_Ntoa;
 
-/** @brief Converts IP into a string.
+/** @brief Converts IP into a null terminated string.
  *
  * Writes error message into the buffer on error.
  *

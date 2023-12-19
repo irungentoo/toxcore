@@ -43,6 +43,8 @@ static_assert(FILE_ID_LENGTH == CRYPTO_SYMMETRIC_KEY_SIZE,
               "FILE_ID_LENGTH is assumed to be equal to CRYPTO_SYMMETRIC_KEY_SIZE");
 static_assert(TOX_DHT_NODE_IP_STRING_SIZE == IP_NTOA_LEN,
               "TOX_DHT_NODE_IP_STRING_SIZE is assumed to be equal to IP_NTOA_LEN");
+static_assert(TOX_GROUP_PEER_IP_STRING_MAX_LENGTH == IP_NTOA_LEN,
+              "TOX_GROUP_PEER_IP_STRING_MAX_LENGTH is assumed to be equal to IP_NTOA_LEN");
 static_assert(TOX_DHT_NODE_PUBLIC_KEY_SIZE == CRYPTO_PUBLIC_KEY_SIZE,
               "TOX_DHT_NODE_PUBLIC_KEY_SIZE is assumed to be equal to CRYPTO_PUBLIC_KEY_SIZE");
 static_assert(TOX_FILE_ID_LENGTH == CRYPTO_SYMMETRIC_KEY_SIZE,
