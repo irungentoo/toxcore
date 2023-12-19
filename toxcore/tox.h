@@ -373,6 +373,8 @@ typedef enum Tox_User_Status {
 
 } Tox_User_Status;
 
+const char *tox_user_status_to_string(Tox_User_Status value);
+
 
 /**
  * @brief Represents message types for tox_friend_send_message and conference
@@ -392,6 +394,8 @@ typedef enum Tox_Message_Type {
     TOX_MESSAGE_TYPE_ACTION,
 
 } Tox_Message_Type;
+
+const char *tox_message_type_to_string(Tox_Message_Type value);
 
 /** @} */
 
@@ -422,6 +426,8 @@ typedef enum Tox_Proxy_Type {
 
 } Tox_Proxy_Type;
 
+const char *tox_proxy_type_to_string(Tox_Proxy_Type value);
+
 
 /**
  * @brief Type of savedata to create the Tox instance from.
@@ -444,6 +450,8 @@ typedef enum Tox_Savedata_Type {
     TOX_SAVEDATA_TYPE_SECRET_KEY,
 
 } Tox_Savedata_Type;
+
+const char *tox_savedata_type_to_string(Tox_Savedata_Type value);
 
 
 /**
@@ -477,6 +485,8 @@ typedef enum Tox_Log_Level {
     TOX_LOG_LEVEL_ERROR,
 
 } Tox_Log_Level;
+
+const char *tox_log_level_to_string(Tox_Log_Level value);
 
 
 /**
@@ -791,6 +801,8 @@ typedef enum Tox_Err_Options_New {
 
 } Tox_Err_Options_New;
 
+const char *tox_err_options_new_to_string(Tox_Err_Options_New value);
+
 
 /**
  * @brief Allocates a new Tox_Options object and initialises it with the default
@@ -883,6 +895,8 @@ typedef enum Tox_Err_New {
 
 } Tox_Err_New;
 
+const char *tox_err_new_to_string(Tox_Err_New value);
+
 
 /**
  * @brief Creates and initialises a new Tox instance with the options passed.
@@ -962,6 +976,8 @@ typedef enum Tox_Err_Bootstrap {
 
 } Tox_Err_Bootstrap;
 
+const char *tox_err_bootstrap_to_string(Tox_Err_Bootstrap value);
+
 
 /**
  * @brief Sends a "get nodes" request to the given bootstrap node with IP, port,
@@ -1028,6 +1044,8 @@ typedef enum Tox_Connection {
     TOX_CONNECTION_UDP,
 
 } Tox_Connection;
+
+const char *tox_connection_to_string(Tox_Connection value);
 
 /**
  * @brief Return whether we are connected to the DHT.
@@ -1154,6 +1172,8 @@ typedef enum Tox_Err_Set_Info {
     TOX_ERR_SET_INFO_TOO_LONG,
 
 } Tox_Err_Set_Info;
+
+const char *tox_err_set_info_to_string(Tox_Err_Set_Info value);
 
 
 /**
@@ -1297,6 +1317,8 @@ typedef enum Tox_Err_Friend_Add {
 
 } Tox_Err_Friend_Add;
 
+const char *tox_err_friend_add_to_string(Tox_Err_Friend_Add value);
+
 
 /**
  * @brief Add a friend to the friend list and send a friend request.
@@ -1358,6 +1380,8 @@ typedef enum Tox_Err_Friend_Delete {
 
 } Tox_Err_Friend_Delete;
 
+const char *tox_err_friend_delete_to_string(Tox_Err_Friend_Delete value);
+
 
 /**
  * @brief Remove a friend from the friend list.
@@ -1397,6 +1421,8 @@ typedef enum Tox_Err_Friend_By_Public_Key {
     TOX_ERR_FRIEND_BY_PUBLIC_KEY_NOT_FOUND,
 
 } Tox_Err_Friend_By_Public_Key;
+
+const char *tox_err_friend_by_public_key_to_string(Tox_Err_Friend_By_Public_Key value);
 
 
 /**
@@ -1445,6 +1471,8 @@ typedef enum Tox_Err_Friend_Get_Public_Key {
 
 } Tox_Err_Friend_Get_Public_Key;
 
+const char *tox_err_friend_get_public_key_to_string(Tox_Err_Friend_Get_Public_Key value);
+
 
 /**
  * @brief Copies the Public Key associated with a given friend number to a byte array.
@@ -1471,6 +1499,8 @@ typedef enum Tox_Err_Friend_Get_Last_Online {
     TOX_ERR_FRIEND_GET_LAST_ONLINE_FRIEND_NOT_FOUND,
 
 } Tox_Err_Friend_Get_Last_Online;
+
+const char *tox_err_friend_get_last_online_to_string(Tox_Err_Friend_Get_Last_Online value);
 
 
 /**
@@ -1513,6 +1543,8 @@ typedef enum Tox_Err_Friend_Query {
     TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND,
 
 } Tox_Err_Friend_Query;
+
+const char *tox_err_friend_query_to_string(Tox_Err_Friend_Query value);
 
 
 /**
@@ -1726,6 +1758,8 @@ typedef enum Tox_Err_Set_Typing {
 
 } Tox_Err_Set_Typing;
 
+const char *tox_err_set_typing_to_string(Tox_Err_Set_Typing value);
+
 
 /**
  * @brief Set the client's typing status for a friend.
@@ -1777,6 +1811,8 @@ typedef enum Tox_Err_Friend_Send_Message {
     TOX_ERR_FRIEND_SEND_MESSAGE_EMPTY,
 
 } Tox_Err_Friend_Send_Message;
+
+const char *tox_err_friend_send_message_to_string(Tox_Err_Friend_Send_Message value);
 
 
 /**
@@ -1960,6 +1996,8 @@ typedef enum Tox_File_Control {
 
 } Tox_File_Control;
 
+const char *tox_file_control_to_string(Tox_File_Control value);
+
 
 typedef enum Tox_Err_File_Control {
 
@@ -2005,6 +2043,8 @@ typedef enum Tox_Err_File_Control {
     TOX_ERR_FILE_CONTROL_SENDQ,
 
 } Tox_Err_File_Control;
+
+const char *tox_err_file_control_to_string(Tox_Err_File_Control value);
 
 
 /**
@@ -2082,6 +2122,8 @@ typedef enum Tox_Err_File_Seek {
 
 } Tox_Err_File_Seek;
 
+const char *tox_err_file_seek_to_string(Tox_Err_File_Seek value);
+
 
 /**
  * @brief Sends a file seek control command to a friend for a given file transfer.
@@ -2119,6 +2161,8 @@ typedef enum Tox_Err_File_Get {
     TOX_ERR_FILE_GET_NOT_FOUND,
 
 } Tox_Err_File_Get;
+
+const char *tox_err_file_get_to_string(Tox_Err_File_Get value);
 
 
 /**
@@ -2176,6 +2220,8 @@ typedef enum Tox_Err_File_Send {
     TOX_ERR_FILE_SEND_TOO_MANY,
 
 } Tox_Err_File_Send;
+
+const char *tox_err_file_send_to_string(Tox_Err_File_Send value);
 
 
 /**
@@ -2290,6 +2336,8 @@ typedef enum Tox_Err_File_Send_Chunk {
     TOX_ERR_FILE_SEND_CHUNK_WRONG_POSITION,
 
 } Tox_Err_File_Send_Chunk;
+
+const char *tox_err_file_send_chunk_to_string(Tox_Err_File_Send_Chunk value);
 
 
 /**
@@ -2438,6 +2486,8 @@ typedef enum Tox_Conference_Type {
 
 } Tox_Conference_Type;
 
+const char *tox_conference_type_to_string(Tox_Conference_Type value);
+
 
 /**
  * The invitation will remain valid until the inviting friend goes offline
@@ -2571,6 +2621,8 @@ typedef enum Tox_Err_Conference_New {
 
 } Tox_Err_Conference_New;
 
+const char *tox_err_conference_new_to_string(Tox_Err_Conference_New value);
+
 
 /**
  * @brief Creates a new conference.
@@ -2596,6 +2648,8 @@ typedef enum Tox_Err_Conference_Delete {
     TOX_ERR_CONFERENCE_DELETE_CONFERENCE_NOT_FOUND,
 
 } Tox_Err_Conference_Delete;
+
+const char *tox_err_conference_delete_to_string(Tox_Err_Conference_Delete value);
 
 
 /**
@@ -2633,6 +2687,8 @@ typedef enum Tox_Err_Conference_Peer_Query {
     TOX_ERR_CONFERENCE_PEER_QUERY_NO_CONNECTION,
 
 } Tox_Err_Conference_Peer_Query;
+
+const char *tox_err_conference_peer_query_to_string(Tox_Err_Conference_Peer_Query value);
 
 
 /**
@@ -2742,6 +2798,8 @@ typedef enum Tox_Err_Conference_Set_Max_Offline {
 
 } Tox_Err_Conference_Set_Max_Offline;
 
+const char *tox_err_conference_set_max_offline_to_string(Tox_Err_Conference_Set_Max_Offline value);
+
 
 /**
  * @brief Set maximum number of offline peers to store, overriding the default.
@@ -2772,6 +2830,8 @@ typedef enum Tox_Err_Conference_Invite {
     TOX_ERR_CONFERENCE_INVITE_NO_CONNECTION,
 
 } Tox_Err_Conference_Invite;
+
+const char *tox_err_conference_invite_to_string(Tox_Err_Conference_Invite value);
 
 
 /**
@@ -2824,6 +2884,8 @@ typedef enum Tox_Err_Conference_Join {
 
 } Tox_Err_Conference_Join;
 
+const char *tox_err_conference_join_to_string(Tox_Err_Conference_Join value);
+
 
 /**
  * @brief Joins a conference that the client has been invited to.
@@ -2874,6 +2936,8 @@ typedef enum Tox_Err_Conference_Send_Message {
 
 } Tox_Err_Conference_Send_Message;
 
+const char *tox_err_conference_send_message_to_string(Tox_Err_Conference_Send_Message value);
+
 
 /**
  * @brief Send a text chat message to the conference.
@@ -2920,6 +2984,8 @@ typedef enum Tox_Err_Conference_Title {
     TOX_ERR_CONFERENCE_TITLE_FAIL_SEND,
 
 } Tox_Err_Conference_Title;
+
+const char *tox_err_conference_title_to_string(Tox_Err_Conference_Title value);
 
 
 /**
@@ -3000,6 +3066,8 @@ typedef enum Tox_Err_Conference_Get_Type {
 
 } Tox_Err_Conference_Get_Type;
 
+const char *tox_err_conference_get_type_to_string(Tox_Err_Conference_Get_Type value);
+
 
 /**
  * @brief Get the type (text or A/V) for the conference.
@@ -3036,6 +3104,8 @@ typedef enum Tox_Err_Conference_By_Id {
     TOX_ERR_CONFERENCE_BY_ID_NOT_FOUND,
 
 } Tox_Err_Conference_By_Id;
+
+const char *tox_err_conference_by_id_to_string(Tox_Err_Conference_By_Id value);
 
 
 /**
@@ -3077,6 +3147,8 @@ typedef enum Tox_Err_Conference_By_Uid {
     TOX_ERR_CONFERENCE_BY_UID_NOT_FOUND,
 
 } Tox_Err_Conference_By_Uid;
+
+const char *tox_err_conference_by_uid_to_string(Tox_Err_Conference_By_Uid value);
 
 
 /**
@@ -3140,6 +3212,8 @@ typedef enum Tox_Err_Friend_Custom_Packet {
     TOX_ERR_FRIEND_CUSTOM_PACKET_SENDQ,
 
 } Tox_Err_Friend_Custom_Packet;
+
+const char *tox_err_friend_custom_packet_to_string(Tox_Err_Friend_Custom_Packet value);
 
 
 /**
@@ -3236,6 +3310,8 @@ typedef enum Tox_Err_Get_Port {
     TOX_ERR_GET_PORT_NOT_BOUND,
 
 } Tox_Err_Get_Port;
+
+const char *tox_err_get_port_to_string(Tox_Err_Get_Port value);
 
 
 /**
@@ -3382,6 +3458,8 @@ typedef enum Tox_Group_Privacy_State {
 
 } Tox_Group_Privacy_State;
 
+const char *tox_group_privacy_state_to_string(Tox_Group_Privacy_State value);
+
 
 /**
  * Represents the state of the group topic lock.
@@ -3399,6 +3477,8 @@ typedef enum Tox_Group_Topic_Lock {
     TOX_GROUP_TOPIC_LOCK_DISABLED,
 
 } Tox_Group_Topic_Lock;
+
+const char *tox_group_topic_lock_to_string(Tox_Group_Topic_Lock value);
 
 /**
  * Represents the group voice state, which determines which Group Roles have permission to speak
@@ -3420,6 +3500,8 @@ typedef enum Tox_Group_Voice_State {
      */
     TOX_GROUP_VOICE_STATE_FOUNDER,
 } Tox_Group_Voice_State;
+
+const char *tox_group_voice_state_to_string(Tox_Group_Voice_State value);
 
 /**
  * Represents group roles.
@@ -3452,6 +3534,8 @@ typedef enum Tox_Group_Role {
     TOX_GROUP_ROLE_OBSERVER,
 
 } Tox_Group_Role;
+
+const char *tox_group_role_to_string(Tox_Group_Role value);
 
 
 
@@ -3497,6 +3581,8 @@ typedef enum Tox_Err_Group_New {
     TOX_ERR_GROUP_NEW_ANNOUNCE,
 
 } Tox_Err_Group_New;
+
+const char *tox_err_group_new_to_string(Tox_Err_Group_New value);
 
 
 /**
@@ -3564,6 +3650,8 @@ typedef enum Tox_Err_Group_Join {
 
 } Tox_Err_Group_Join;
 
+const char *tox_err_group_join_to_string(Tox_Err_Group_Join value);
+
 
 /**
  * Joins a group chat with specified Chat ID.
@@ -3599,6 +3687,8 @@ typedef enum Tox_Err_Group_Is_Connected {
 
 } Tox_Err_Group_Is_Connected;
 
+const char *tox_err_group_is_connected_to_string(Tox_Err_Group_Is_Connected value);
+
 
 /**
  * Returns true if the group chat is currently connected or attempting to connect to other peers
@@ -3625,6 +3715,8 @@ typedef enum Tox_Err_Group_Disconnect {
      */
     TOX_ERR_GROUP_DISCONNECT_ALREADY_DISCONNECTED,
 } Tox_Err_Group_Disconnect;
+
+const char *tox_err_group_disconnect_to_string(Tox_Err_Group_Disconnect value);
 
 
 /**
@@ -3654,6 +3746,8 @@ typedef enum Tox_Err_Group_Reconnect {
     TOX_ERR_GROUP_RECONNECT_CORE,
 
 } Tox_Err_Group_Reconnect;
+
+const char *tox_err_group_reconnect_to_string(Tox_Err_Group_Reconnect value);
 
 
 /**
@@ -3690,6 +3784,8 @@ typedef enum Tox_Err_Group_Leave {
      */
     TOX_ERR_GROUP_LEAVE_FAIL_SEND,
 } Tox_Err_Group_Leave;
+
+const char *tox_err_group_leave_to_string(Tox_Err_Group_Leave value);
 
 
 /**
@@ -3735,6 +3831,8 @@ typedef enum Tox_Err_Group_Self_Query {
 
 } Tox_Err_Group_Self_Query;
 
+const char *tox_err_group_self_query_to_string(Tox_Err_Group_Self_Query value);
+
 
 /**
  * Error codes for self name setting.
@@ -3767,6 +3865,8 @@ typedef enum Tox_Err_Group_Self_Name_Set {
     TOX_ERR_GROUP_SELF_NAME_SET_FAIL_SEND,
 
 } Tox_Err_Group_Self_Name_Set;
+
+const char *tox_err_group_self_name_set_to_string(Tox_Err_Group_Self_Name_Set value);
 
 
 /**
@@ -3830,6 +3930,8 @@ typedef enum Tox_Err_Group_Self_Status_Set {
     TOX_ERR_GROUP_SELF_STATUS_SET_FAIL_SEND,
 
 } Tox_Err_Group_Self_Status_Set;
+
+const char *tox_err_group_self_status_set_to_string(Tox_Err_Group_Self_Status_Set value);
 
 
 /**
@@ -3905,6 +4007,8 @@ typedef enum Tox_Err_Group_Peer_Query {
     TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND,
 
 } Tox_Err_Group_Peer_Query;
+
+const char *tox_err_group_peer_query_to_string(Tox_Err_Group_Peer_Query value);
 
 
 /**
@@ -4054,6 +4158,8 @@ typedef enum Tox_Err_Group_State_Queries {
 
 } Tox_Err_Group_State_Queries;
 
+const char *tox_err_group_state_queries_to_string(Tox_Err_Group_State_Queries value);
+
 
 /**
  * Error codes for group topic setting.
@@ -4096,6 +4202,8 @@ typedef enum Tox_Err_Group_Topic_Set {
     TOX_ERR_GROUP_TOPIC_SET_DISCONNECTED,
 
 } Tox_Err_Group_Topic_Set;
+
+const char *tox_err_group_topic_set_to_string(Tox_Err_Group_Topic_Set value);
 
 
 /**
@@ -4384,6 +4492,8 @@ typedef enum Tox_Err_Group_Send_Message {
 
 } Tox_Err_Group_Send_Message;
 
+const char *tox_err_group_send_message_to_string(Tox_Err_Group_Send_Message value);
+
 
 /**
  * Send a text chat message to the group.
@@ -4458,6 +4568,8 @@ typedef enum Tox_Err_Group_Send_Private_Message {
 
 } Tox_Err_Group_Send_Private_Message;
 
+const char *tox_err_group_send_private_message_to_string(Tox_Err_Group_Send_Private_Message value);
+
 
 /**
  * Send a text chat message to the specified peer in the specified group.
@@ -4515,6 +4627,8 @@ typedef enum Tox_Err_Group_Send_Custom_Packet {
     TOX_ERR_GROUP_SEND_CUSTOM_PACKET_DISCONNECTED,
 
 } Tox_Err_Group_Send_Custom_Packet;
+
+const char *tox_err_group_send_custom_packet_to_string(Tox_Err_Group_Send_Custom_Packet value);
 
 
 /**
@@ -4591,6 +4705,8 @@ typedef enum Tox_Err_Group_Send_Custom_Private_Packet {
     TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_DISCONNECTED,
 
 } Tox_Err_Group_Send_Custom_Private_Packet;
+
+const char *tox_err_group_send_custom_private_packet_to_string(Tox_Err_Group_Send_Custom_Private_Packet value);
 
 /**
  * Send a custom private packet to a designated peer in the group.
@@ -4743,6 +4859,8 @@ typedef enum Tox_Err_Group_Invite_Friend {
 
 } Tox_Err_Group_Invite_Friend;
 
+const char *tox_err_group_invite_friend_to_string(Tox_Err_Group_Invite_Friend value);
+
 
 /**
  * Invite a friend to a group.
@@ -4800,6 +4918,8 @@ typedef enum Tox_Err_Group_Invite_Accept {
     TOX_ERR_GROUP_INVITE_ACCEPT_FAIL_SEND,
 
 } Tox_Err_Group_Invite_Accept;
+
+const char *tox_err_group_invite_accept_to_string(Tox_Err_Group_Invite_Accept value);
 
 
 /**
@@ -4891,6 +5011,8 @@ typedef enum Tox_Group_Exit_Type {
 
 } Tox_Group_Exit_Type;
 
+const char *tox_group_exit_type_to_string(Tox_Group_Exit_Type value);
+
 
 /**
  * @param group_number The group number of the group in which a peer has left.
@@ -4950,6 +5072,8 @@ typedef enum Tox_Group_Join_Fail {
     TOX_GROUP_JOIN_FAIL_UNKNOWN,
 
 } Tox_Group_Join_Fail;
+
+const char *tox_group_join_fail_to_string(Tox_Group_Join_Fail value);
 
 
 /**
@@ -5014,6 +5138,8 @@ typedef enum Tox_Err_Group_Founder_Set_Password {
 
 } Tox_Err_Group_Founder_Set_Password;
 
+const char *tox_err_group_founder_set_password_to_string(Tox_Err_Group_Founder_Set_Password value);
+
 
 /**
  * Set or unset the group password.
@@ -5070,6 +5196,8 @@ typedef enum Tox_Err_Group_Founder_Set_Topic_Lock {
 
 } Tox_Err_Group_Founder_Set_Topic_Lock;
 
+const char *tox_err_group_founder_set_topic_lock_to_string(Tox_Err_Group_Founder_Set_Topic_Lock value);
+
 
 /**
  * Set the group topic lock state.
@@ -5123,6 +5251,8 @@ typedef enum Tox_Err_Group_Founder_Set_Voice_State {
 
 } Tox_Err_Group_Founder_Set_Voice_State;
 
+const char *tox_err_group_founder_set_voice_state_to_string(Tox_Err_Group_Founder_Set_Voice_State value);
+
 /**
  * Set the group voice state.
  *
@@ -5174,6 +5304,8 @@ typedef enum Tox_Err_Group_Founder_Set_Privacy_State {
     TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_DISCONNECTED,
 
 } Tox_Err_Group_Founder_Set_Privacy_State;
+
+const char *tox_err_group_founder_set_privacy_state_to_string(Tox_Err_Group_Founder_Set_Privacy_State value);
 
 /**
  * Set the group privacy state.
@@ -5227,6 +5359,8 @@ typedef enum Tox_Err_Group_Founder_Set_Peer_Limit {
 
 } Tox_Err_Group_Founder_Set_Peer_Limit;
 
+const char *tox_err_group_founder_set_peer_limit_to_string(Tox_Err_Group_Founder_Set_Peer_Limit value);
+
 
 /**
  * Set the group peer limit.
@@ -5274,6 +5408,8 @@ typedef enum Tox_Err_Group_Set_Ignore {
     TOX_ERR_GROUP_SET_IGNORE_SELF,
 
 } Tox_Err_Group_Set_Ignore;
+
+const char *tox_err_group_set_ignore_to_string(Tox_Err_Group_Set_Ignore value);
 
 
 /**
@@ -5328,6 +5464,8 @@ typedef enum Tox_Err_Group_Mod_Set_Role {
     TOX_ERR_GROUP_MOD_SET_ROLE_SELF,
 
 } Tox_Err_Group_Mod_Set_Role;
+
+const char *tox_err_group_mod_set_role_to_string(Tox_Err_Group_Mod_Set_Role value);
 
 
 /**
@@ -5385,6 +5523,8 @@ typedef enum Tox_Err_Group_Mod_Kick_Peer {
 
 } Tox_Err_Group_Mod_Kick_Peer;
 
+const char *tox_err_group_mod_kick_peer_to_string(Tox_Err_Group_Mod_Kick_Peer value);
+
 
 /**
  * Kick a peer.
@@ -5427,6 +5567,8 @@ typedef enum Tox_Group_Mod_Event {
     TOX_GROUP_MOD_EVENT_MODERATOR,
 
 } Tox_Group_Mod_Event;
+
+const char *tox_group_mod_event_to_string(Tox_Group_Mod_Event value);
 
 
 /**
