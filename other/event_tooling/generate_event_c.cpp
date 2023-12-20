@@ -109,7 +109,7 @@ std::string bin_unpack_name_from_type(const std::string& type) {
     }
 }
 
-void generate_event_impl(const std::string& event_name, std::vector<EventType> event_types) {
+void generate_event_impl(const std::string& event_name, const std::vector<EventType>& event_types) {
     const std::string event_name_l = str_tolower(event_name);
     std::string file_name = output_folder + "/" + event_name_l + ".c";
 
@@ -163,35 +163,6 @@ void generate_event_impl(const std::string& event_name, std::vector<EventType> e
         );
     }
     f << "};\n\n";
-
-    // gen contruct
-    f << "non_null()\n";
-    f << "static void tox_event_" << event_name_l << "_construct(Tox_Event_" << event_name << " *" << event_name_l << ")\n{\n";
-    // TODO: initialize all members properly
-    // TODO: check if _NONE is universal
-    // str_toupper(
-    f << "    *" << event_name_l << " = (Tox_Event_" << event_name << ") {\n        0\n    };\n}\n";
-
-    // gen destruct
-    f << "non_null()\n";
-    f << "static void tox_event_" << event_name_l << "_destruct(Tox_Event_" << event_name << " *" << event_name_l << ")\n{\n";
-    size_t data_count = 0;
-    for (const auto& t : event_types) {
-        std::visit(
-            overloaded{
-                [&](const EventTypeTrivial&) {},
-                [&](const EventTypeByteRange& t) {
-                    f << "    free(" << event_name_l << "->" << t.name_data << ");\n";
-                    data_count++;
-                }
-            },
-            t
-        );
-    }
-    if (data_count == 0) {
-        f << "    return;\n";
-    }
-    f << "}\n\n";
 
     // gen setters and getters
     for (const auto& t : event_types) {
@@ -272,15 +243,45 @@ void generate_event_impl(const std::string& event_name, std::vector<EventType> e
         );
     }
 
-    // pack
+
+    // gen contruct
     f << "non_null()\n";
-    f << "static bool tox_event_" << event_name_l << "_pack(\n";
+    f << "static void tox_event_" << event_name_l << "_construct(Tox_Event_" << event_name << " *" << event_name_l << ")\n{\n";
+    // TODO: initialize all members properly
+    // TODO: check if _NONE is universal
+    // str_toupper(
+    f << "    *" << event_name_l << " = (Tox_Event_" << event_name << ") {\n        0\n    };\n}\n";
+
+    // gen destruct
+    f << "non_null()\n";
+    f << "static void tox_event_" << event_name_l << "_destruct(Tox_Event_" << event_name << " *" << event_name_l << ", const Memory *mem)\n{\n";
+    size_t data_count = 0;
+    for (const auto& t : event_types) {
+        std::visit(
+            overloaded{
+                [&](const EventTypeTrivial&) {},
+                [&](const EventTypeByteRange& t) {
+                    f << "    free(" << event_name_l << "->" << t.name_data << ");\n";
+                    //f << "    mem->funcs->free(mem->obj, " << event_name_l << "->" << t.name_data << ");\n";
+                    data_count++;
+                }
+            },
+            t
+        );
+    }
+    if (data_count == 0) {
+        f << "    return;\n";
+    }
+    f << "}\n\n";
+
+    // pack
+    f << "bool tox_event_" << event_name_l << "_pack(\n";
     f << "    const Tox_Event_" << event_name << " *event, Bin_Pack *bp)\n{\n";
     f << "    assert(event != nullptr);\n";
     f << "    return bin_pack_array(bp, 2)\n";
-    f << "           && bin_pack_u32(bp, TOX_EVENT_" << str_toupper(event_name) << ")\n";
+    f << "           && bin_pack_u32(bp, TOX_EVENT_" << str_toupper(event_name) << ")";
     if (event_types.size() > 1) {
-        f << "           && bin_pack_array(bp, " << event_types.size() << ")";
+        f << "\n           && bin_pack_array(bp, " << event_types.size() << ")";
     }
 
     for (const auto& t : event_types) {
@@ -302,7 +303,7 @@ void generate_event_impl(const std::string& event_name, std::vector<EventType> e
 
     // unpack
     f << "non_null()\n";
-    f << "static bool tox_event_" << event_name_l << "_unpack(\n";
+    f << "static bool tox_event_" << event_name_l << "_unpack_into(\n";
     f << "    Tox_Event_" << event_name << " *event, Bin_Unpack *bu)\n{\n";
     f << "    assert(event != nullptr);\n";
     if (event_types.size() > 1) {
@@ -335,71 +336,82 @@ void generate_event_impl(const std::string& event_name, std::vector<EventType> e
     f << R"(
 /*****************************************************
  *
- * :: add/clear/get
+ * :: new/free/add/get/size/unpack
  *
  *****************************************************/
 
-
 )";
+
+    f << "const Tox_Event_" << event_name << " *tox_event_get_" << event_name_l << "(const Tox_Event *event)\n{\n";
+    f << "    return event->type == TOX_EVENT_" << str_toupper(event_name) << " ? event->data." << event_name_l << " : nullptr;\n}\n\n";
+
+    // new
+    f << "Tox_Event_" << event_name << " *tox_event_" << event_name_l << "_new(const Memory *mem)\n{\n";
+    f << "    Tox_Event_" << event_name << " *const " << event_name_l << " =\n";
+    f << "        (Tox_Event_" << event_name << " *)mem_alloc(mem, sizeof(Tox_Event_" << event_name << "));\n\n";
+    f << "    if (" << event_name_l << " == nullptr) {\n        return nullptr;\n    }\n\n";
+    f << "    tox_event_" << event_name_l << "_construct(" << event_name_l << ");\n";
+    f << "    return " << event_name_l << ";\n}\n\n";
+
+    // free
+    f << "void tox_event_" << event_name_l << "_free(Tox_Event_" << event_name << " *" << event_name_l << ", const Memory *mem)\n{\n";
+    f << "    if (" << event_name_l << " != nullptr) {\n";
+    f << "        tox_event_" << event_name_l << "_destruct(" << event_name_l << ", mem);\n    }\n";
+    f << "    mem_delete(mem, " << event_name_l << ");\n}\n\n";
 
     // add
     f << "non_null()\n";
-    f << "static Tox_Event_" << event_name << " *tox_events_add_" << event_name_l << "(Tox_Events *events)\n{\n";
-    f << "    if (events->" << event_name_l << "_size == UINT32_MAX) {\n";
+    f << "static Tox_Event_" << event_name << " *tox_events_add_" << event_name_l << "(Tox_Events *events, const Memory *mem)\n{\n";
+    f << "    Tox_Event_" << event_name << " *const " << event_name_l << " = tox_event_" << event_name_l << "_new(mem);\n\n";
+    f << "    if (" << event_name_l << " == nullptr) {\n";
     f << "        return nullptr;\n    }\n\n";
-    f << "    if (events->" << event_name_l << "_size == events->" << event_name_l << "_capacity) {\n";
-    f << "        const uint32_t new_" << event_name_l << "_capacity = events->" << event_name_l << "_capacity * 2 + 1;\n";
-
-    f << "        Tox_Event_" << event_name << " *new_" << event_name_l << " = (Tox_Event_" << event_name << " *)\n";
-    f << "                realloc(\n";
-
-    f << "                    events->" << event_name_l << ",\n";
-    f << "                    new_" << event_name_l << "_capacity * sizeof(Tox_Event_" << event_name << "));\n\n";
-    f << "        if (new_" << event_name_l << " == nullptr) {\n            return nullptr;\n        }\n\n";
-    f << "        events->" << event_name_l << " = new_" << event_name_l << ";\n";
-    f << "        events->" << event_name_l << "_capacity = new_" << event_name_l << "_capacity;\n";
-    f << "    }\n\n";
-    f << "    Tox_Event_" << event_name << " *const " << event_name_l << " =\n";
-    f << "        &events->" << event_name_l << "[events->" << event_name_l << "_size];\n";
-    f << "    tox_event_" << event_name_l << "_construct(" << event_name_l << ");\n";
-    f << "    ++events->" << event_name_l << "_size;\n";
+    f << "    Tox_Event event;\n";
+    f << "    event.type = TOX_EVENT_" << str_toupper(event_name) << ";\n";
+    f << "    event.data." << event_name_l << " = " << event_name_l << ";\n\n";
+    f << "    tox_events_add(events, &event);\n";
     f << "    return " << event_name_l << ";\n}\n\n";
-
-    // clear
-    f << "void tox_events_clear_" << event_name_l << "(Tox_Events *events)\n{\n";
-    f << "    if (events == nullptr) {\n        return;\n    }\n\n";
-    f << "    for (uint32_t i = 0; i < events->" << event_name_l << "_size; ++i) {\n";
-    f << "        tox_event_" << event_name_l << "_destruct(&events->" << event_name_l << "[i]);\n    }\n\n";
-    f << "    free(events->" << event_name_l << ");\n";
-    f << "    events->" << event_name_l << " = nullptr;\n";
-    f << "    events->" << event_name_l << "_size = 0;\n";
-    f << "    events->" << event_name_l << "_capacity = 0;\n";
-    f << "}\n\n";
-
-    // get size
-    f << "uint32_t tox_events_get_" << event_name_l << "_size(const Tox_Events *events)\n{\n";
-    f << "    if (events == nullptr) {\n        return 0;\n    }\n\n";
-    f << "    return events->" << event_name_l << "_size;\n}\n\n";
 
     // get
     f << "const Tox_Event_" << event_name << " *tox_events_get_" << event_name_l << "(const Tox_Events *events, uint32_t index)\n{\n";
-    f << "    assert(index < events->" << event_name_l << "_size);\n";
-    f << "    assert(events->" << event_name_l << " != nullptr);\n";
-    f << "    return &events->" << event_name_l << "[index];\n}\n\n";
-
-    // aux pack
-    f << "bool tox_events_pack_" << event_name_l << "(const Tox_Events *events, Bin_Pack *bp)\n{\n";
-    f << "    const uint32_t size = tox_events_get_" << event_name_l << "_size(events);\n\n";
+    f << "    uint32_t " << event_name_l << "_index = 0;\n";
+    f << "    const uint32_t size = tox_events_get_size(events);\n\n";
     f << "    for (uint32_t i = 0; i < size; ++i) {\n";
-    f << "        if (!tox_event_" << event_name_l << "_pack(tox_events_get_" << event_name_l << "(events, i), bp)) {\n";
-    f << "            return false;\n        }\n    }\n";
-    f << "    return true;\n}\n\n";
+    f << "        if (" << event_name_l << "_index > index) {\n";
+    f << "            return nullptr;\n        }\n\n";
+    f << "        if (events->events[i].type == TOX_EVENT_" << str_toupper(event_name) << ") {\n";
+    f << "            const Tox_Event_" << event_name << " *" << event_name_l << " = events->events[i].data." << event_name_l << ";\n";
+    f << "            if (" << event_name_l << "_index == index) {\n";
+    f << "                return " << event_name_l << ";\n            }\n";
+    f << "            ++" << event_name_l << "_index;\n        }\n    }\n\n    return nullptr;\n}\n\n";
 
-    // aux unpack
-    f << "bool tox_events_unpack_" << event_name_l << "(Tox_Events *events, Bin_Unpack *bu)\n{\n";
-    f << "    Tox_Event_" << event_name << " *event = tox_events_add_" << event_name_l << "(events);\n\n";
-    f << "    if (event == nullptr) {\n        return false;\n    }\n\n";
-    f << "    return tox_event_" << event_name_l << "_unpack(event, bu);\n}\n\n";
+    // get size
+    f << "uint32_t tox_events_get_" << event_name_l << "_size(const Tox_Events *events)\n{\n";
+    f << "    uint32_t " << event_name_l << "_size = 0;\n";
+    f << "    const uint32_t size = tox_events_get_size(events);\n\n";
+    f << "    for (uint32_t i = 0; i < size; ++i) {\n";
+    f << "        if (events->events[i].type == TOX_EVENT_" << str_toupper(event_name) << ") {\n";
+    f << "            ++" << event_name_l << "_size;\n        }\n    }\n\n";
+    f << "    return " << event_name_l << "_size;\n}\n\n";
+
+    // unpack
+    f << "bool tox_event_" << event_name_l << "_unpack(\n";
+    f << "    Tox_Event_" << event_name << " **event, Bin_Unpack *bu, const Memory *mem)\n{\n";
+    f << "    assert(event != nullptr);\n";
+    f << "    *event = tox_event_" << event_name_l << "_new(mem);\n\n";
+    f << "    if (*event == nullptr) {\n        return false;\n    }\n\n";
+    f << "    return tox_event_" << event_name_l << "_unpack_into(*event, bu);\n}\n\n";
+
+    // alloc
+    f << "non_null()\n";
+    f << "static Tox_Event_" << event_name << " *tox_event_" << event_name_l << "_alloc(void *user_data)\n{\n";
+    f << "    Tox_Events_State *state = tox_events_alloc(user_data);\n";
+    f << "    assert(state != nullptr);\n\n";
+    f << "    if (state->events == nullptr) {\n        return nullptr;\n    }\n\n";
+    f << "    Tox_Event_" << event_name << " *" << event_name_l << " = tox_events_add_" << event_name_l << "(state->events, state->mem);\n\n";
+    f << "    if (" << event_name_l << " == nullptr) {\n";
+    f << "        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;\n        return nullptr;\n    }\n\n";
+    f << "    return " << event_name_l << ";\n}\n\n";
+
 
     f << R"(
 /*****************************************************
@@ -427,12 +439,8 @@ void generate_event_impl(const std::string& event_name, std::vector<EventType> e
     }
 
     f << ",\n        void *user_data)\n{\n";
-    f << "    Tox_Events_State *state = tox_events_alloc(user_data);\n";
-    f << "    assert(state != nullptr);\n\n";
-    f << "    if (state->events == nullptr) {\n        return;\n    }\n\n";
-    f << "    Tox_Event_" << event_name << " *" << event_name_l << " = tox_events_add_" << event_name_l << "(state->events);\n\n";
-    f << "    if (" << event_name_l << " == nullptr) {\n";
-    f << "        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;\n        return;\n    }\n\n";
+    f << "    Tox_Event_" << event_name << " *" << event_name_l << " = tox_event_" << event_name_l << "_alloc(user_data);\n\n";
+    f << "    if (" << event_name_l << " == nullptr) {\n        return;\n    }\n\n";
 
     for (const auto& t : event_types) {
         std::visit(
@@ -465,7 +473,7 @@ int main(int argc, char** argv) {
             {
                 EventTypeTrivial{"uint32_t", "friend_number"},
                 EventTypeTrivial{"Tox_Conference_Type", "type"},
-                EventTypeByteRange{"cookie", "cookie_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"cookie", "cookie_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -474,7 +482,7 @@ int main(int argc, char** argv) {
                 EventTypeTrivial{"uint32_t", "conference_number"},
                 EventTypeTrivial{"uint32_t", "peer_number"},
                 EventTypeTrivial{"Tox_Message_Type", "type"},
-                EventTypeByteRange{"message", "message_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"message", "message_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -488,7 +496,7 @@ int main(int argc, char** argv) {
             {
                 EventTypeTrivial{"uint32_t", "conference_number"},
                 EventTypeTrivial{"uint32_t", "peer_number"},
-                EventTypeByteRange{"name", "name_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"name", "name_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -496,7 +504,7 @@ int main(int argc, char** argv) {
             {
                 EventTypeTrivial{"uint32_t", "conference_number"},
                 EventTypeTrivial{"uint32_t", "peer_number"},
-                EventTypeByteRange{"title", "title_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"title", "title_length", "length"}, // the latter two are ideally the same
             }
         },
 
@@ -516,7 +524,7 @@ int main(int argc, char** argv) {
                 EventTypeTrivial{"uint32_t", "file_number"},
                 EventTypeTrivial{"uint32_t", "kind"},
                 EventTypeTrivial{"uint64_t", "file_size"},
-                EventTypeByteRange{"filename", "filename_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"filename", "filename_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -525,7 +533,7 @@ int main(int argc, char** argv) {
                 EventTypeTrivial{"uint32_t", "friend_number"},
                 EventTypeTrivial{"uint32_t", "file_number"},
                 EventTypeTrivial{"uint64_t", "position"},
-                EventTypeByteRange{"data", "data_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"data", "data_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -548,14 +556,14 @@ int main(int argc, char** argv) {
             "Friend_Lossless_Packet",
             {
                 EventTypeTrivial{"uint32_t", "friend_number"},
-                EventTypeByteRange{"data", "data_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"data", "data_length", "length"}, // the latter two are ideally the same
             }
         },
         {
             "Friend_Lossy_Packet",
             {
                 EventTypeTrivial{"uint32_t", "friend_number"},
-                EventTypeByteRange{"data", "data_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"data", "data_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -563,14 +571,14 @@ int main(int argc, char** argv) {
             {
                 EventTypeTrivial{"uint32_t", "friend_number"},
                 EventTypeTrivial{"Tox_Message_Type", "type"},
-                EventTypeByteRange{"message", "message_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"message", "message_length", "length"}, // the latter two are ideally the same
             }
         },
         {
             "Friend_Name",
             {
                 EventTypeTrivial{"uint32_t", "friend_number"},
-                EventTypeByteRange{"name", "name_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"name", "name_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -585,7 +593,7 @@ int main(int argc, char** argv) {
             "Friend_Request",
             {
                 //EventTypeTrivial{"uint32_t", "friend_number"}, // public_key ByteArray
-                EventTypeByteRange{"message", "message_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"message", "message_length", "length"}, // the latter two are ideally the same
             }
         },
 #endif
@@ -600,7 +608,7 @@ int main(int argc, char** argv) {
             "Friend_Status_Message",
             {
                 EventTypeTrivial{"uint32_t", "friend_number"},
-                EventTypeByteRange{"message", "message_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"message", "message_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -624,7 +632,7 @@ int main(int argc, char** argv) {
             {
                 EventTypeTrivial{"uint32_t", "group_number"},
                 EventTypeTrivial{"uint32_t", "peer_id"},
-                EventTypeByteRange{"name", "name_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"name", "name_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -640,7 +648,7 @@ int main(int argc, char** argv) {
             {
                 EventTypeTrivial{"uint32_t", "group_number"},
                 EventTypeTrivial{"uint32_t", "peer_id"},
-                EventTypeByteRange{"topic", "topic_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"topic", "topic_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -675,7 +683,7 @@ int main(int argc, char** argv) {
             "Group_Password",
             {
                 EventTypeTrivial{"uint32_t", "group_number"},
-                EventTypeByteRange{"password", "password_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"password", "password_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -684,7 +692,7 @@ int main(int argc, char** argv) {
                 EventTypeTrivial{"uint32_t", "group_number"},
                 EventTypeTrivial{"uint32_t", "peer_id"},
                 EventTypeTrivial{"Tox_Message_Type", "type"},
-                EventTypeByteRange{"message", "message_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"message", "message_length", "length"}, // the latter two are ideally the same
                 EventTypeTrivial{"uint32_t", "message_id"},
             }
         },
@@ -694,7 +702,7 @@ int main(int argc, char** argv) {
                 EventTypeTrivial{"uint32_t", "group_number"},
                 EventTypeTrivial{"uint32_t", "peer_id"},
                 EventTypeTrivial{"Tox_Message_Type", "type"},
-                EventTypeByteRange{"message", "message_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"message", "message_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -702,7 +710,7 @@ int main(int argc, char** argv) {
             {
                 EventTypeTrivial{"uint32_t", "group_number"},
                 EventTypeTrivial{"uint32_t", "peer_id"},
-                EventTypeByteRange{"data", "data_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"data", "data_length", "length"}, // the latter two are ideally the same
             }
         },
         {
@@ -710,14 +718,14 @@ int main(int argc, char** argv) {
             {
                 EventTypeTrivial{"uint32_t", "group_number"},
                 EventTypeTrivial{"uint32_t", "peer_id"},
-                EventTypeByteRange{"data", "data_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"data", "data_length", "length"}, // the latter two are ideally the same
             }
         },
         {
             "Group_Invite",
             {
                 EventTypeTrivial{"uint32_t", "friend_number"},
-                EventTypeByteRange{"invite_data", "invite_data_length", "length"}, // the later two are idealy the same
+                EventTypeByteRange{"invite_data", "invite_data_length", "length"}, // the latter two are ideally the same
                 EventTypeByteRange{"group_name", "group_name_length", "group_name_length"}, // they are :)
             }
         },
