@@ -637,6 +637,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
         switch (err) {
             case TOX_ERR_OPTIONS_NEW_OK: {
+                assert(default_options != nullptr);
                 break;
             }
 
@@ -660,6 +661,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     if (sys->rng == nullptr || sys->ns == nullptr || sys->mem == nullptr) {
         // TODO(iphydf): Not quite right, but similar.
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+        tox_options_free(default_options);
         return nullptr;
     }
 
@@ -717,6 +719,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
     if (tox == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+        tox_options_free(default_options);
         return nullptr;
     }
 
@@ -743,8 +746,8 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
         default: {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_TYPE);
-            tox_options_free(default_options);
             mem_delete(sys->mem, tox);
+            tox_options_free(default_options);
             return nullptr;
         }
     }
@@ -754,8 +757,8 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     if (m_options.proxy_info.proxy_type != TCP_PROXY_NONE) {
         if (tox_options_get_proxy_port(opts) == 0) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_PORT);
-            tox_options_free(default_options);
             mem_delete(sys->mem, tox);
+            tox_options_free(default_options);
             return nullptr;
         }
 
@@ -771,8 +774,8 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
                 || !addr_resolve_or_parse_ip(tox->sys.ns, proxy_host, &m_options.proxy_info.ip_port.ip, nullptr)) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
             // TODO(irungentoo): TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
-            tox_options_free(default_options);
             mem_delete(sys->mem, tox);
+            tox_options_free(default_options);
             return nullptr;
         }
 
@@ -783,8 +786,8 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
     if (tox->mono_time == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
-        tox_options_free(default_options);
         mem_delete(sys->mem, tox);
+        tox_options_free(default_options);
         return nullptr;
     }
 
@@ -793,8 +796,8 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
         if (tox->mutex == nullptr) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
-            tox_options_free(default_options);
             mem_delete(sys->mem, tox);
+            tox_options_free(default_options);
             return nullptr;
         }
 
@@ -828,7 +831,6 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         }
 
         mono_time_free(tox->sys.mem, tox->mono_time);
-        tox_options_free(default_options);
         tox_unlock(tox);
 
         if (tox->mutex != nullptr) {
@@ -837,6 +839,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
         mem_delete(sys->mem, tox->mutex);
         mem_delete(sys->mem, tox);
+        tox_options_free(default_options);
         return nullptr;
     }
 
@@ -844,7 +847,6 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         kill_messenger(tox->m);
 
         mono_time_free(tox->sys.mem, tox->mono_time);
-        tox_options_free(default_options);
         tox_unlock(tox);
 
         if (tox->mutex != nullptr) {
@@ -855,6 +857,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         mem_delete(sys->mem, tox);
 
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+        tox_options_free(default_options);
         return nullptr;
     }
 
@@ -864,7 +867,6 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         kill_messenger(tox->m);
 
         mono_time_free(tox->sys.mem, tox->mono_time);
-        tox_options_free(default_options);
         tox_unlock(tox);
 
         if (tox->mutex != nullptr) {
@@ -875,6 +877,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         mem_delete(sys->mem, tox);
 
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
+        tox_options_free(default_options);
         return nullptr;
     }
 
@@ -926,12 +929,11 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     gc_callback_voice_state(tox->m, tox_group_voice_state_handler);
 #endif
 
-    tox_options_free(default_options);
-
     tox_unlock(tox);
 
     SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
 
+    tox_options_free(default_options);
     return tox;
 }
 

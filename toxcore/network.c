@@ -1340,8 +1340,8 @@ Networking_Core *new_networking_ex(
     Ip_Ntoa ip_str;
     int neterror = net_error();
     char *strerror = net_new_strerror(neterror);
-    LOGGER_ERROR(log, "failed to bind socket: %d, %s IP: %s port_from: %u port_to: %u", neterror, strerror,
-                 net_ip_ntoa(ip, &ip_str), port_from, port_to);
+    LOGGER_ERROR(log, "failed to bind socket: %d, %s IP: %s port_from: %u port_to: %u",
+                 neterror, strerror, net_ip_ntoa(ip, &ip_str), port_from, port_to);
     net_kill_strerror(strerror);
     kill_networking(temp);
 
@@ -1769,6 +1769,8 @@ bool net_connect(const Memory *mem, const Logger *log, Socket sock, const IP_Por
 
 int32_t net_getipport(const Memory *mem, const char *node, IP_Port **res, int tox_type)
 {
+    assert(node != nullptr);
+
     // Try parsing as IP address first.
     IP_Port parsed = {{{0}}};
     // Initialise to nullptr. In error paths, at least we initialise the out
@@ -2031,7 +2033,7 @@ char *net_new_strerror(int error)
     return str;
 }
 #else
-#ifdef _GNU_SOURCE
+#if defined(_GNU_SOURCE) && defined(__GLIBC__)
 non_null()
 static const char *net_strerror_r(int error, char *tmp, size_t tmp_size)
 {

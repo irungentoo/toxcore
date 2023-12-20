@@ -11,7 +11,7 @@ target_link_modules(misc_tools toxcore)
 #
 ################################################################################
 
-if (BUILD_MISC_TESTS)
+if(BUILD_MISC_TESTS)
   add_executable(Messenger_test Messenger_test.c)
   target_link_modules(Messenger_test toxcore misc_tools)
 endif()

@@ -1,7 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 set -eux
 
+read -a ci_env <<<"$(bash <(curl -s https://codecov.io/env))"
+
 docker build -t toxchat/c-toxcore:sources -f other/docker/sources/Dockerfile .
 docker build -t toxchat/c-toxcore:coverage other/docker/coverage
-docker run --name toxcore-coverage --rm -it -p "28192:80" toxchat/c-toxcore:coverage
+docker run "${ci_env[@]}" -e CI=true --name toxcore-coverage --rm -t toxchat/c-toxcore:coverage /usr/local/bin/codecov -x "llvm-cov gcov"

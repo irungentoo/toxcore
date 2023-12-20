@@ -3595,14 +3595,14 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
 
     if (m->net == nullptr) {
         friendreq_kill(m->fr);
-        logger_kill(m->log);
-        mem_delete(mem, m);
 
         if (error != nullptr && net_err == 1) {
             LOGGER_WARNING(m->log, "network initialisation failed (no ports available)");
             *error = MESSENGER_ERROR_PORT;
         }
 
+        logger_kill(m->log);
+        mem_delete(mem, m);
         return nullptr;
     }
 
@@ -3648,7 +3648,11 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
 
     if (options->dht_announcements_enabled) {
         m->forwarding = new_forwarding(m->log, m->rng, m->mono_time, m->dht);
-        m->announce = new_announcements(m->log, m->mem, m->rng, m->mono_time, m->forwarding);
+        if (m->forwarding != nullptr) {
+            m->announce = new_announcements(m->log, m->mem, m->rng, m->mono_time, m->forwarding);
+        } else {
+            m->announce = nullptr;
+        }
     } else {
         m->forwarding = nullptr;
         m->announce = nullptr;
@@ -3796,11 +3800,11 @@ void kill_messenger(Messenger *m)
         clear_receipts(m, i);
     }
 
-    logger_kill(m->log);
     mem_delete(m->mem, m->friendlist);
     friendreq_kill(m->fr);
 
     mem_delete(m->mem, m->options.state_plugins);
+    logger_kill(m->log);
     mem_delete(m->mem, m);
 }
 

@@ -133,7 +133,7 @@ jobs:
         with:
           submodules: recursive
       - name: Build, test, and upload coverage
-        run: .github/scripts/coverage-linux
+        run: other/docker/coverage/run
 
   build-android:
     runs-on: ubuntu-latest

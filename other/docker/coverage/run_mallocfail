@@ -39,8 +39,8 @@ _ENV = {
 }
 
 
-def run_mallocfail(tmpdir: str, timeout: float, exe: str,
-                   iteration: int) -> bool:
+def run_mallocfail(tmpdir: str, timeout: float, exe: str, iteration: int,
+                   keep_going: bool) -> bool:
     """Run a program with mallocfail."""
     print(f"\x1b[1;33mmallocfail '{exe}' run #{iteration}\x1b[0m")
     hashes = os.path.join(tmpdir, _HASHES)
@@ -73,7 +73,8 @@ def run_mallocfail(tmpdir: str, timeout: float, exe: str,
         print(
             f"\x1b[1;32mProgram '{exe}' failed to handle OOM situation cleanly\x1b[0m"
         )
-        raise Exception("Aborting test")
+        if not keep_going:
+            raise Exception("Aborting test")
 
     return True
 
@@ -95,7 +96,8 @@ def find_prog(name: str) -> Tuple[Optional[str], ...]:
             return path
         return None
 
-    return (attempt(f"./unit_{name}_test"), attempt(f"./auto_{name}_test"))
+    return (attempt(f"./unit_{name}_test"),
+            attempt(f"auto_tests/auto_{name}_test"))
 
 
 def parse_flags(args: List[str]) -> Tuple[Dict[str, str], List[str]]:
@@ -110,15 +112,19 @@ def parse_flags(args: List[str]) -> Tuple[Dict[str, str], List[str]]:
     return flags, exes
 
 
-def loop_mallocfail(tmpdir: str, timeout: float, exe: str) -> None:
+def loop_mallocfail(tmpdir: str,
+                    timeout: float,
+                    exe: str,
+                    keep_going: bool = False) -> None:
     i = 1
-    while run_mallocfail(tmpdir, timeout, exe, i):
+    while run_mallocfail(tmpdir, timeout, exe, i, keep_going):
         i += 1
 
 
 def isolated_mallocfail(timeout: int, exe: str) -> None:
     with tempfile.TemporaryDirectory(prefix="mallocfail") as tmpdir:
         print(f"\x1b[1;33mRunning for {exe} in isolated path {tmpdir}\x1b[0m")
+        os.mkdir(os.path.join(tmpdir, "auto_tests"))
         shutil.copy(exe, os.path.join(tmpdir, exe))
         shutil.copy(_HASHES, os.path.join(tmpdir, _HASHES))
         loop_mallocfail(tmpdir, timeout, exe)
@@ -149,7 +155,7 @@ def main(args: List[str]) -> None:
     # such as llvm_gcov_init fail.
     if os.path.exists(_PRIMER):
         print(f"\x1b[1;33mPriming hashes with unit_util_test\x1b[0m")
-        loop_mallocfail(".", timeout, _PRIMER)
+        loop_mallocfail(".", timeout, _PRIMER, keep_going=True)
 
     print(f"\x1b[1;33m--------------------------------\x1b[0m")
     print(f"\x1b[1;33mStarting mallocfail for {len(exes)} programs:\x1b[0m")

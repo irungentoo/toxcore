@@ -7,15 +7,8 @@
 #include "auto_test_support.h"
 #include "check_compat.h"
 
-static uint8_t const key[] = {
-    0x15, 0xE9, 0xC3, 0x09, 0xCF, 0xCB, 0x79, 0xFD,
-    0xDF, 0x0E, 0xBA, 0x05, 0x7D, 0xAB, 0xB4, 0x9F,
-    0xE1, 0x5F, 0x38, 0x03, 0xB1, 0xBF, 0xF0, 0x65,
-    0x36, 0xAE, 0x2E, 0x5B, 0xA5, 0xE4, 0x69, 0x0E,
-};
-
-// Try to bootstrap for 30 seconds.
-#define NUM_ITERATIONS (unsigned)(30.0 / (ITERATION_INTERVAL / 1000.0))
+// Try to bootstrap for 20 seconds.
+#define NUM_ITERATIONS (unsigned)(20.0 / (ITERATION_INTERVAL / 1000.0))
 
 int main(void)
 {
@@ -24,13 +17,12 @@ int main(void)
     struct Tox_Options *opts = tox_options_new(nullptr);
     tox_options_set_udp_enabled(opts, false);
     tox_options_set_proxy_type(opts, TOX_PROXY_TYPE_SOCKS5);
-    tox_options_set_proxy_host(opts, "localhost");
+    tox_options_set_proxy_host(opts, "127.0.0.1");
     tox_options_set_proxy_port(opts, 51724);
     Tox *tox = tox_new_log(opts, nullptr, nullptr);
     tox_options_free(opts);
 
-    tox_add_tcp_relay(tox, "tox.ngc.zone", 33445, key, nullptr);
-    tox_bootstrap(tox, "tox.ngc.zone", 33445, key, nullptr);
+    bootstrap_tox_live_network(tox, true);
 
     printf("Waiting for connection...\n");
 

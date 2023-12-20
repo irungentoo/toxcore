@@ -65,6 +65,8 @@ add_cxx_flag -Wno-c++98-compat-pedantic
 add_cxx_flag -Wno-c99-extensions
 # We're C-compatible, so use C style casts.
 add_cxx_flag -Wno-old-style-cast
+# GTest does this.
+add_cxx_flag -Wno-global-constructors
 
 # Downgrade to warning so we still see it.
 add_flag -Wno-error=unreachable-code

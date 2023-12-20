@@ -14,7 +14,7 @@ add_flag --coverage
 add_c_flag -fno-inline -fno-omit-frame-pointer
 
 # Show useful stack traces on crash.
-add_flag -fsanitize=undefined -fno-sanitize-recover=all
+add_flag -fsanitize=undefined -fno-sanitize-recover=all -D_DEBUG
 
 # In test code (_test.cc and libgtest), throw away all debug information.
 # We only care about stack frames inside toxcore (which is C). Without this,

@@ -1,0 +1,5 @@
+# vim:ft=dockerfile
+FROM toxchat/c-toxcore:coverage AS build
+FROM nginx:alpine
+COPY --from=build /work/_build/html/coverage_details.html /usr/share/nginx/html/index.html
+COPY --from=build /work/_build/html/ /usr/share/nginx/html/

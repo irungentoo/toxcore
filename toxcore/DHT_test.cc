@@ -192,8 +192,11 @@ TEST(AnnounceNodes, SetAndTest)
     const Memory *mem = system_memory();
 
     Logger *log = logger_new();
+    ASSERT_NE(log, nullptr);
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
+    ASSERT_NE(mono_time, nullptr);
     Networking_Core *net = new_networking_no_udp(log, mem, ns);
+    ASSERT_NE(net, nullptr);
     DHT *dht = new_dht(log, mem, rng, ns, mono_time, net, true, true);
     ASSERT_NE(dht, nullptr);
 

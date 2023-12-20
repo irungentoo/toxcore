@@ -82,6 +82,13 @@ TEST(Tox, OneTest)
     struct Tox_Options *options = tox_options_new(nullptr);
     ASSERT_NE(options, nullptr);
 
+    tox_options_set_log_callback(options,
+        [](Tox *tox, Tox_Log_Level level, const char *file, uint32_t line, const char *func,
+            const char *message, void *user_data) {
+            fprintf(stderr, "[%c] %s:%d(%s): %s\n", tox_log_level_to_string(level)[0], file, line,
+                func, message);
+        });
+
     // Higher start/end point here to avoid conflict with the LAN discovery test.
     tox_options_set_start_port(options, 33545);
     tox_options_set_end_port(options, 33545 + 2000);

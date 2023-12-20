@@ -7434,6 +7434,9 @@ static int create_new_group(GC_Session *c, const uint8_t *nick, size_t nick_leng
         return -1;
     }
 
+    init_gc_shared_state(chat, privacy_state);
+    init_gc_moderation(chat);
+
     if (!init_gc_tcp_connection(c, chat)) {
         group_delete(c, chat);
         return -1;
@@ -7453,9 +7456,6 @@ static int create_new_group(GC_Session *c, const uint8_t *nick, size_t nick_leng
     self_gc_set_role(chat, founder ? GR_FOUNDER : GR_USER);
     self_gc_set_confirmed(chat, true);
     self_gc_set_ext_public_key(chat, chat->self_public_key);
-
-    init_gc_shared_state(chat, privacy_state);
-    init_gc_moderation(chat);
 
     return group_number;
 }

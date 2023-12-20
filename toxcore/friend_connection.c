@@ -911,24 +911,26 @@ Friend_Connections *new_friend_connections(
         return nullptr;
     }
 
-    temp->mono_time = mono_time;
-    temp->logger = logger;
-    temp->dht = onion_get_dht(onion_c);
-    temp->net_crypto = onion_get_net_crypto(onion_c);
-    temp->onion_c = onion_c;
     temp->local_discovery_enabled = local_discovery_enabled;
-    // Don't include default port in port range
-    temp->next_lan_port = TOX_PORTRANGE_FROM + 1;
-
-    new_connection_handler(temp->net_crypto, &handle_new_connections, temp);
 
     if (temp->local_discovery_enabled) {
         temp->broadcast = lan_discovery_init(ns);
 
         if (temp->broadcast == nullptr) {
             LOGGER_ERROR(logger, "could not initialise LAN discovery");
+            temp->local_discovery_enabled = false;
         }
     }
+
+    temp->mono_time = mono_time;
+    temp->logger = logger;
+    temp->dht = onion_get_dht(onion_c);
+    temp->net_crypto = onion_get_net_crypto(onion_c);
+    temp->onion_c = onion_c;
+    // Don't include default port in port range
+    temp->next_lan_port = TOX_PORTRANGE_FROM + 1;
+
+    new_connection_handler(temp->net_crypto, &handle_new_connections, temp);
 
     return temp;
 }

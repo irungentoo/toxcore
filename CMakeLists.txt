@@ -14,8 +14,8 @@
 #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.5)
-cmake_policy(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
+cmake_policy(VERSION 3.16)
 project(toxcore)
 
 list(APPEND CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
@@ -76,6 +76,7 @@ if(APPLE)
 endif()
 
 enable_testing()
+find_package(GTest)
 
 set(CMAKE_MACOSX_RPATH ON)
 
@@ -419,23 +420,32 @@ install_module(toxcore DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tox)
 #
 ################################################################################
 
-include(CompileGTest)
+function(unit_test subdir target)
+  add_executable(unit_${target}_test ${subdir}/${target}_test.cc)
+  target_link_modules(unit_${target}_test toxcore)
+  target_link_libraries(unit_${target}_test GTest::GTest GTest::Main)
+  set_target_properties(unit_${target}_test PROPERTIES COMPILE_FLAGS "${TEST_CXX_FLAGS}")
+  add_test(NAME ${target} COMMAND ${CROSSCOMPILING_EMULATOR} unit_${target}_test)
+  set_property(TEST ${target} PROPERTY ENVIRONMENT "LLVM_PROFILE_FILE=${target}.profraw")
+endfunction()
 
 # The actual unit tests follow.
 #
-unit_test(toxav ring_buffer)
-unit_test(toxav rtp)
-unit_test(toxcore DHT)
-unit_test(toxcore bin_pack)
-unit_test(toxcore crypto_core)
-unit_test(toxcore group_announce)
-unit_test(toxcore group_moderation)
-unit_test(toxcore list)
-unit_test(toxcore mem)
-unit_test(toxcore mono_time)
-unit_test(toxcore ping_array)
-unit_test(toxcore tox)
-unit_test(toxcore util)
+if(GTEST_FOUND)
+  unit_test(toxav ring_buffer)
+  unit_test(toxav rtp)
+  unit_test(toxcore DHT)
+  unit_test(toxcore bin_pack)
+  unit_test(toxcore crypto_core)
+  unit_test(toxcore group_announce)
+  unit_test(toxcore group_moderation)
+  unit_test(toxcore list)
+  unit_test(toxcore mem)
+  unit_test(toxcore mono_time)
+  unit_test(toxcore ping_array)
+  unit_test(toxcore tox)
+  unit_test(toxcore util)
+endif()
 
 add_subdirectory(testing)
 

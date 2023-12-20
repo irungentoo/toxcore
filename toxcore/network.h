@@ -540,7 +540,7 @@ char *net_new_strerror(int error);
  * It's valid to pass NULL as the argument, the function does nothing in this
  * case.
  */
-non_null()
+nullable(1)
 void net_kill_strerror(char *strerror);
 
 /** @brief Initialize networking.

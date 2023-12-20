@@ -42,6 +42,7 @@ static void send_message_test(AutoTox *autotoxes)
 
     const size_t msgs_len = tox_max_message_length() + 1;
     uint8_t *msgs = (uint8_t *)malloc(msgs_len);
+    ck_assert(msgs != nullptr);
     memset(msgs, MESSAGE_FILLER, msgs_len);
 
     Tox_Err_Friend_Send_Message errm;
