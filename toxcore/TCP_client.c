@@ -185,14 +185,16 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
     return -1;
 }
 
-#define TCP_SOCKS5_PROXY_HS_VERSION_SOCKS5 0x05
-#define TCP_SOCKS5_PROXY_HS_COMM_ESTABLISH_REQUEST 0x01
-#define TCP_SOCKS5_PROXY_HS_COMM_REQUEST_GRANTED 0x00
-#define TCP_SOCKS5_PROXY_HS_AUTH_METHODS_SUPPORTED 0x01
-#define TCP_SOCKS5_PROXY_HS_NO_AUTH 0x00
-#define TCP_SOCKS5_PROXY_HS_RESERVED 0x00
-#define TCP_SOCKS5_PROXY_HS_ADDR_TYPE_IPV4 0x01
-#define TCP_SOCKS5_PROXY_HS_ADDR_TYPE_IPV6 0x04
+enum Tcp_Socks5_Proxy_Hs {
+    TCP_SOCKS5_PROXY_HS_VERSION_SOCKS5          = 0x05,
+    TCP_SOCKS5_PROXY_HS_COMM_ESTABLISH_REQUEST  = 0x01,
+    TCP_SOCKS5_PROXY_HS_COMM_REQUEST_GRANTED    = 0x00,
+    TCP_SOCKS5_PROXY_HS_AUTH_METHODS_SUPPORTED  = 0x01,
+    TCP_SOCKS5_PROXY_HS_NO_AUTH                 = 0x00,
+    TCP_SOCKS5_PROXY_HS_RESERVED                = 0x00,
+    TCP_SOCKS5_PROXY_HS_ADDR_TYPE_IPV4          = 0x01,
+    TCP_SOCKS5_PROXY_HS_ADDR_TYPE_IPV6          = 0x04,
+};
 
 non_null()
 static void proxy_socks5_generate_greetings(TCP_Client_Connection *tcp_conn)

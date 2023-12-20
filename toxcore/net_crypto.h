@@ -43,29 +43,31 @@
 
 /*** Messages. */
 
-#define PACKET_ID_PADDING 0 // Denotes padding
-#define PACKET_ID_REQUEST 1 // Used to request unreceived packets
-#define PACKET_ID_KILL    2 // Used to kill connection
+typedef enum Packet_Id {
+    PACKET_ID_PADDING            = 0, // Denotes padding
+    PACKET_ID_REQUEST            = 1, // Used to request unreceived packets
+    PACKET_ID_KILL               = 2, // Used to kill connection
 
-#define PACKET_ID_ONLINE 24
-#define PACKET_ID_OFFLINE 25
-#define PACKET_ID_NICKNAME 48
-#define PACKET_ID_STATUSMESSAGE 49
-#define PACKET_ID_USERSTATUS 50
-#define PACKET_ID_TYPING 51
-#define PACKET_ID_MESSAGE 64
-#define PACKET_ID_ACTION 65 // PACKET_ID_MESSAGE + MESSAGE_ACTION
-#define PACKET_ID_MSI 69    // Used by AV to setup calls and etc
-#define PACKET_ID_FILE_SENDREQUEST 80
-#define PACKET_ID_FILE_CONTROL 81
-#define PACKET_ID_FILE_DATA 82
-#define PACKET_ID_INVITE_GROUPCHAT 95
-#define PACKET_ID_INVITE_CONFERENCE 96
-#define PACKET_ID_ONLINE_PACKET 97
-#define PACKET_ID_DIRECT_CONFERENCE 98
-#define PACKET_ID_MESSAGE_CONFERENCE 99
-#define PACKET_ID_REJOIN_CONFERENCE 100
-#define PACKET_ID_LOSSY_CONFERENCE 199
+    PACKET_ID_ONLINE             = 24,
+    PACKET_ID_OFFLINE            = 25,
+    PACKET_ID_NICKNAME           = 48,
+    PACKET_ID_STATUSMESSAGE      = 49,
+    PACKET_ID_USERSTATUS         = 50,
+    PACKET_ID_TYPING             = 51,
+    PACKET_ID_MESSAGE            = 64,
+    PACKET_ID_ACTION             = 65, // PACKET_ID_MESSAGE + MESSAGE_ACTION
+    PACKET_ID_MSI                = 69, // Used by AV to setup calls and etc
+    PACKET_ID_FILE_SENDREQUEST   = 80,
+    PACKET_ID_FILE_CONTROL       = 81,
+    PACKET_ID_FILE_DATA          = 82,
+    PACKET_ID_INVITE_GROUPCHAT   = 95,
+    PACKET_ID_INVITE_CONFERENCE  = 96,
+    PACKET_ID_ONLINE_PACKET      = 97,
+    PACKET_ID_DIRECT_CONFERENCE  = 98,
+    PACKET_ID_MESSAGE_CONFERENCE = 99,
+    PACKET_ID_REJOIN_CONFERENCE  = 100,
+    PACKET_ID_LOSSY_CONFERENCE   = 199,
+} Packet_Id;
 
 /** Maximum size of receiving and sending packet buffers. */
 #define CRYPTO_PACKET_BUFFER_SIZE 32768 // Must be a power of 2
