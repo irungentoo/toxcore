@@ -19,7 +19,10 @@ sh_test(
         "-RTS",
     ],
     data = CIMPLE_FILES,
-    tags = ["haskell"],
+    tags = [
+        "haskell",
+        "no-cross",
+    ],
 )
 
 sh_test(
@@ -44,7 +47,10 @@ sh_test(
         "@libvpx//:headers",
         "@opus//:headers",
     ],
-    tags = ["haskell"],
+    tags = [
+        "haskell",
+        "no-cross",
+    ],
     toolchains = ["@rules_cc//cc:current_cc_toolchain"],
 )
 
@@ -54,7 +60,10 @@ sh_test(
     srcs = ["//hs-cimple/tools:cimplefmt"],
     args = ["--reparse"] + ["$(locations %s)" % f for f in CIMPLE_FILES],
     data = CIMPLE_FILES,
-    tags = ["haskell"],
+    tags = [
+        "haskell",
+        "no-cross",
+    ],
 )
 
 cc_library(
