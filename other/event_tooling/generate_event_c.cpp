@@ -80,27 +80,27 @@ std::string bin_unpack_name_from_type(const std::string& type) {
     } else if (type == "bool") {
         return "bin_unpack_bool";
     } else if (type == "Tox_User_Status") {
-        return "tox_unpack_user_status";
+        return "tox_user_status_unpack";
     } else if (type == "Tox_Conference_Type") {
-        return "tox_unpack_conference_type";
+        return "tox_conference_type_unpack";
     } else if (type == "Tox_Message_Type") {
-        return "tox_unpack_message_type";
+        return "tox_message_type_unpack";
     } else if (type == "Tox_File_Control") {
-        return "tox_unpack_file_control";
+        return "tox_file_control_unpack";
     } else if (type == "Tox_Connection") {
-        return "tox_unpack_connection";
+        return "tox_connection_unpack";
     } else if (type == "Tox_Group_Privacy_State") {
-        return "tox_unpack_group_privacy_state";
+        return "tox_group_privacy_state_unpack";
     } else if (type == "Tox_Group_Voice_State") {
-        return "tox_unpack_group_voice_state";
+        return "tox_group_voice_state_unpack";
     } else if (type == "Tox_Group_Topic_Lock") {
-        return "tox_unpack_group_topic_lock";
+        return "tox_group_topic_lock_unpack";
     } else if (type == "Tox_Group_Join_Fail") {
-        return "tox_unpack_group_join_fail";
+        return "tox_group_join_fail_unpack";
     } else if (type == "Tox_Group_Mod_Event") {
-        return "tox_unpack_group_mod_event";
+        return "tox_group_mod_event_unpack";
     } else if (type == "Tox_Group_Exit_Type") {
-        return "tox_unpack_group_exit_type";
+        return "tox_group_exit_type_unpack";
     } else {
         std::cerr << "unknown type " << type << "\n";
         exit(1);
