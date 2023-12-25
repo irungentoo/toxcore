@@ -19,16 +19,12 @@ noinst_PROGRAMS +=      Messenger_test
 Messenger_test_SOURCES = \
                         ../testing/Messenger_test.c
 
-Messenger_test_CFLAGS = $(LIBSODIUM_CFLAGS) \
-                        $(NACL_CFLAGS)
+Messenger_test_CFLAGS = $(LIBSODIUM_CFLAGS)
 
 Messenger_test_LDADD =  $(LIBSODIUM_LDFLAGS) \
-                        $(NACL_LDFLAGS) \
                         libmisc_tools.la \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
-                        $(NACL_OBJECTS) \
-                        $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
 
 endif

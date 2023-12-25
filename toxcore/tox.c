@@ -362,7 +362,6 @@ static void tox_friend_lossless_packet_handler(Messenger *m, uint32_t friend_num
     }
 }
 
-#ifndef VANILLA_NACL
 non_null(1, 4) nullable(6)
 static void tox_group_peer_name_handler(const Messenger *m, uint32_t group_number, uint32_t peer_id,
                                         const uint8_t *name, size_t length, void *user_data)
@@ -573,7 +572,6 @@ static void tox_group_moderation_handler(const Messenger *m, uint32_t group_numb
                 tox_data->user_data);
     }
 }
-#endif
 
 bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
 {
@@ -908,7 +906,6 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     custom_lossy_packet_registerhandler(tox->m, tox_friend_lossy_packet_handler);
     custom_lossless_packet_registerhandler(tox->m, tox_friend_lossless_packet_handler);
 
-#ifndef VANILLA_NACL
     m_callback_group_invite(tox->m, tox_group_invite_handler);
     gc_callback_message(tox->m, tox_group_message_handler);
     gc_callback_private_message(tox->m, tox_group_private_message_handler);
@@ -927,7 +924,6 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     gc_callback_self_join(tox->m, tox_group_self_join_handler);
     gc_callback_rejected(tox->m, tox_group_join_fail_handler);
     gc_callback_voice_state(tox->m, tox_group_voice_state_handler);
-#endif
 
     tox_unlock(tox);
 
@@ -2845,7 +2841,6 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, Tox_Err_Get_Port *error)
 
 /* GROUPCHAT FUNCTIONS */
 
-#ifndef VANILLA_NACL
 void tox_callback_group_invite(Tox *tox, tox_group_invite_cb *callback)
 {
     assert(tox != nullptr);
@@ -4596,8 +4591,6 @@ bool tox_group_mod_kick_peer(const Tox *tox, uint32_t group_number, uint32_t pee
 
     return false;
 }
-
-#endif /* VANILLA_NACL */
 
 const Tox_System *tox_get_system(Tox *tox)
 {

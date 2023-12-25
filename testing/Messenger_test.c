@@ -12,7 +12,7 @@
  * If it receives a message from a friend it replies back.
  *
  *
- * This is how I compile it: gcc -O2 -Wall -D VANILLA_NACL -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c ../nacl/build/${HOSTNAME%.*}/lib/amd64/{cpucycles.o,libnacl.a,randombytes.o} Messenger_test.c
+ * This is how I compile it: gcc -O2 -Wall -o test ../core/Lossless_UDP.c ../core/network.c ../core/net_crypto.c ../core/Messenger.c ../core/DHT.c Messenger_test.c -lsodium
  *
  *
  * Command line arguments are the ip, port and public_key of a node (for bootstrapping).

@@ -102,7 +102,6 @@ static void group_peer_join_handler(Tox *tox, uint32_t group_number, uint32_t pe
 
 static void group_invite_test(AutoTox *autotoxes)
 {
-#ifndef VANILLA_NACL
     ck_assert_msg(NUM_GROUP_TOXES > 7, "NUM_GROUP_TOXES is too small: %d", NUM_GROUP_TOXES);
 
     for (size_t i = 0; i < NUM_GROUP_TOXES; ++i) {
@@ -260,8 +259,6 @@ static void group_invite_test(AutoTox *autotoxes)
     }
 
     printf("All tests passed!\n");
-
-#endif // VANILLA_NACL
 }
 
 int main(void)

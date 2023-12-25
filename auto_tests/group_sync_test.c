@@ -330,7 +330,6 @@ static void topic_spam(const Random *rng, AutoTox *autotoxes, uint32_t num_peers
 
 static void group_sync_test(AutoTox *autotoxes)
 {
-#ifndef VANILLA_NACL
     ck_assert(NUM_GROUP_TOXES >= 5);
     const Random *rng = system_random();
     ck_assert(rng != nullptr);
@@ -443,8 +442,6 @@ static void group_sync_test(AutoTox *autotoxes)
     }
 
     fprintf(stderr, "All tests passed!\n");
-
-#endif  // VANILLA_NACL
 }
 
 int main(void)

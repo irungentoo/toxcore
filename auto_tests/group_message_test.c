@@ -350,7 +350,6 @@ static void group_message_handler_wraparound_test(Tox *tox, uint32_t groupnumber
 
 static void group_message_test(AutoTox *autotoxes)
 {
-#ifndef VANILLA_NACL
     ck_assert_msg(NUM_GROUP_TOXES >= 2, "NUM_GROUP_TOXES is too small: %d", NUM_GROUP_TOXES);
 
     const Random *rng = system_random();
@@ -544,7 +543,6 @@ static void group_message_test(AutoTox *autotoxes)
     }
 
     fprintf(stderr, "All tests passed!\n");
-#endif  // VANILLA_NACL
 }
 
 int main(void)

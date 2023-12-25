@@ -11,10 +11,7 @@ add_ld_flag -Wl,-z,defs
 # Make compilation error on a warning
 add_flag -Werror
 
-add_config_flag --with-nacl-libs="$CACHEDIR/lib/amd64"
-add_config_flag --with-nacl-headers="$CACHEDIR/include/amd64"
 add_config_flag --disable-ipv6
-add_config_flag --enable-nacl
 add_config_flag --enable-daemon
 add_config_flag --with-log-level=TRACE
 

@@ -60,7 +60,7 @@ jobs:
         with:
           file: other/docker/misra/Dockerfile
 
-  build-nacl:
+  build-autotools:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx

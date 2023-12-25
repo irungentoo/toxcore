@@ -22,8 +22,6 @@
 #include "mono_time.h"
 #include "util.h"
 
-#ifndef VANILLA_NACL
-
 /** Seconds since last direct UDP packet was received before the connection is considered dead */
 #define GCC_UDP_DIRECT_TIMEOUT (GC_PING_TIMEOUT + 4)
 
@@ -704,5 +702,3 @@ void gcc_cleanup(const GC_Chat *chat)
         gcc_peer_cleanup(gconn);
     }
 }
-
-#endif // VANILLA_NACL

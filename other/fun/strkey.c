@@ -2,7 +2,7 @@
  *
  * Generates Tox's key pairs, checking if a certain string is in the public key.
  *
- * Requires sodium or nacl library.
+ * Requires sodium library.
  *
  * There seem to be some problems with the code working on Windows -- it works
  * when built in debug mode with MinGW 4.8, but it doesn't work correctly when

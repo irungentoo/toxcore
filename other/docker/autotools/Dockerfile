@@ -1,6 +1,27 @@
 ################################################
 # autotools-linux
-FROM toxchat/nacl:latest
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+ autoconf \
+ automake \
+ ca-certificates \
+ curl \
+ libconfig-dev \
+ libopus-dev \
+ libsodium-dev \
+ libtool \
+ libvpx-dev \
+ make \
+ pkg-config \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -r -g 1000 builder \
+ && useradd -m --no-log-init -r -g builder -u 1000 builder
+USER builder
+
+WORKDIR /home/builder
 
 # Copy the sources and run the build.
 COPY --chown=builder:builder . /home/builder/c-toxcore/

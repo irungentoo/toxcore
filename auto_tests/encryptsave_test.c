@@ -3,7 +3,6 @@
 #include <string.h>
 #include <sys/types.h>
 
-#ifndef VANILLA_NACL
 #include <sodium.h>
 
 #include "../testing/misc_tools.h"
@@ -232,9 +231,3 @@ int main(void)
 
     return 0;
 }
-#else  // VANILLA_NACL
-int main(void)
-{
-    return 0;
-}
-#endif

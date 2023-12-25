@@ -66,8 +66,6 @@ void gca_onion_init(GC_Announces_List *group_announce, Onion_Announce *onion_a)
                                        group_announce);
 }
 
-#ifndef VANILLA_NACL
-
 int create_gca_announce_request(
     const Random *rng, uint8_t *packet, uint16_t max_packet_length, const uint8_t *dest_client_id,
     const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *ping_id,
@@ -112,4 +110,3 @@ int create_gca_announce_request(
 
     return full_length;
 }
-#endif  // VANILLA_NACL

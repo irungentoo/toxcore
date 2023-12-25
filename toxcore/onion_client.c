@@ -671,7 +671,6 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, con
                       onion_friend->temp_secret_key, ping_id, onion_friend->real_public_key,
                       zero_ping_id, sendback);
         } else { // contact is a gc
-#ifndef VANILLA_NACL
             onion_friend->is_groupchat = true;
 
             len = create_gca_announce_request(
@@ -679,9 +678,6 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, con
                       onion_friend->temp_secret_key, ping_id, onion_friend->real_public_key,
                       zero_ping_id, sendback, onion_friend->gc_data,
                       onion_friend->gc_data_length);
-#else
-            return -1;
-#endif  // VANILLA_NACL
         }
     }
 

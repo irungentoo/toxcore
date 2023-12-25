@@ -148,7 +148,6 @@ static int has_correct_self_state(const Tox *tox, uint32_t group_number, const u
 
 static void group_save_test(AutoTox *autotoxes)
 {
-#ifndef VANILLA_NACL
     ck_assert_msg(NUM_GROUP_TOXES > 1, "NUM_GROUP_TOXES is too small: %d", NUM_GROUP_TOXES);
 
     for (size_t i = 0; i < NUM_GROUP_TOXES; ++i) {
@@ -270,8 +269,6 @@ static void group_save_test(AutoTox *autotoxes)
     tox_kill(new_tox);
 
     printf("All tests passed!\n");
-
-#endif  // VANILLA_NACL
 }
 
 int main(void)

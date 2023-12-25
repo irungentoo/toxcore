@@ -5,7 +5,7 @@ libauto_test_support_la_SOURCES = ../auto_tests/auto_test_support.c ../auto_test
 libauto_test_support_la_LIBADD = libmisc_tools.la libtoxcore.la
 
 TESTS = \
-        announce_test \
+    announce_test \
 	conference_double_invite_test \
 	conference_invite_merge_test \
 	conference_peer_nick_test \
@@ -13,6 +13,8 @@ TESTS = \
 	conference_test \
 	conference_two_test \
 	crypto_test \
+	encryptsave_test \
+	file_saving_test \
 	file_transfer_test \
 	forwarding_test \
 	friend_connection_test \
@@ -34,34 +36,24 @@ TESTS = \
 	set_name_test \
 	set_status_message_test \
 	TCP_test \
-	tox_events_test \
 	tox_dispatch_test \
+	tox_events_test \
 	tox_many_tcp_test \
 	tox_many_test \
 	tox_strncasecmp_test \
 	typing_test \
 	version_test
 
-if !WITH_NACL
-TESTS += \
-	encryptsave_test \
-	file_saving_test
-endif
-
 AUTOTEST_CFLAGS = \
-	$(LIBSODIUM_CFLAGS) \
-	$(NACL_CFLAGS)
+	$(LIBSODIUM_CFLAGS)
 
 AUTOTEST_LDADD = \
 	$(LIBSODIUM_LDFLAGS) \
-	$(NACL_LDFLAGS) \
 	libmisc_tools.la \
 	libauto_test_support.la \
 	libtoxcore.la \
 	libtoxencryptsave.la \
-	$(LIBSODIUM_LIBS) \
-	$(NACL_OBJECTS) \
-	$(NACL_LIBS)
+	$(LIBSODIUM_LIBS)
 
 
 if BUILD_AV

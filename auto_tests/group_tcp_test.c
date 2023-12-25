@@ -127,7 +127,6 @@ static bool all_peers_got_code(AutoTox *autotoxes)
 
 static void group_tcp_test(AutoTox *autotoxes)
 {
-#ifndef VANILLA_NACL
     ck_assert(NUM_GROUP_TOXES >= 2);
 
     State *state0 = (State *)autotoxes[0].state;
@@ -220,8 +219,6 @@ static void group_tcp_test(AutoTox *autotoxes)
     }
 
     printf("Test passed!\n");
-
-#endif // VANILLA_NACL
 }
 
 int main(int argc, char **argv)

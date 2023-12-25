@@ -87,11 +87,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef VANILLA_NACL
-// Used for sodium_init()
-#include <sodium.h>
-#endif
-
 #include "ccompat.h"
 #include "logger.h"
 #include "mono_time.h"

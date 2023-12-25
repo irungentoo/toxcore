@@ -238,7 +238,6 @@ static void set_group_state(Tox *tox, uint32_t groupnumber, uint32_t peer_limit,
 
 static void group_state_test(AutoTox *autotoxes)
 {
-#ifndef VANILLA_NACL
     ck_assert_msg(NUM_GROUP_TOXES >= 3, "NUM_GROUP_TOXES is too small: %d", NUM_GROUP_TOXES);
 
     for (size_t i = 0; i < NUM_GROUP_TOXES; ++i) {
@@ -318,8 +317,6 @@ static void group_state_test(AutoTox *autotoxes)
     }
 
     fprintf(stderr, "All tests passed!\n");
-
-#endif /* VANILLA_NACL */
 }
 
 int main(void)

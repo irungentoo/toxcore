@@ -24,17 +24,13 @@ tox_bootstrapd_SOURCES = \
 tox_bootstrapd_CFLAGS = \
                         -I$(top_srcdir)/other/bootstrap_daemon \
                         $(LIBSODIUM_CFLAGS) \
-                        $(NACL_CFLAGS) \
                         $(LIBCONFIG_CFLAGS)
 
 tox_bootstrapd_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
-                        $(NACL_LDFLAGS) \
                         libtoxcore.la \
                         $(LIBCONFIG_LIBS) \
-                        $(LIBSODIUM_LIBS) \
-                        $(NACL_OBJECTS) \
-                        $(NACL_LIBS)
+                        $(LIBSODIUM_LIBS)
 
 bashcompdir = $(datarootdir)/bash-completion/completions
 dist_bashcomp_DATA = $(top_builddir)/other/bootstrap_daemon/bash-completion/completions/tox-bootstrapd

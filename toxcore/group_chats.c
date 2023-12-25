@@ -11,9 +11,7 @@
 
 #include <assert.h>
 
-#ifndef VANILLA_NACL
 #include <sodium.h>
-#endif
 
 #include <string.h>
 
@@ -29,8 +27,6 @@
 #include "mono_time.h"
 #include "network.h"
 #include "util.h"
-
-#ifndef VANILLA_NACL
 
 /* The minimum size of a plaintext group handshake packet */
 #define GC_MIN_HS_PACKET_PAYLOAD_SIZE (1 + ENC_PUBLIC_KEY_SIZE + SIG_PUBLIC_KEY_SIZE + 1 + 1)
@@ -8496,4 +8492,3 @@ int gc_add_peers_from_announces(GC_Chat *chat, const GC_Announce *announces, uin
 
     return added_peers;
 }
-#endif  // VANILLA_NACL

@@ -235,8 +235,7 @@ uint64_t random_u64(const Random *rng);
 /**
  * @brief Return a random 32 bit integer between 0 and upper_bound (excluded).
  *
- * On libsodium builds this function guarantees a uniform distribution of possible outputs.
- * On vanilla NACL builds this function is equivalent to `random() % upper_bound`.
+ * This function guarantees a uniform distribution of possible outputs.
  */
 non_null()
 uint32_t random_range_u32(const Random *rng, uint32_t upper_bound);

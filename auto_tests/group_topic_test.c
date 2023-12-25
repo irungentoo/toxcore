@@ -203,7 +203,6 @@ static uint32_t set_topic_all_peers(const Random *rng, AutoTox *autotoxes, size_
 
 static void group_topic_test(AutoTox *autotoxes)
 {
-#ifndef VANILLA_NACL
     ck_assert_msg(NUM_GROUP_TOXES >= 3, "NUM_GROUP_TOXES is too small: %d", NUM_GROUP_TOXES);
 
     const Random *rng = system_random();
@@ -318,8 +317,6 @@ static void group_topic_test(AutoTox *autotoxes)
     }
 
     fprintf(stderr, "All tests passed!\n");
-
-#endif /* VANILLA_NACL */
 }
 
 int main(void)

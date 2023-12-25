@@ -22,8 +22,6 @@ BUILD_AV="yes"
 BUILD_TESTING="yes"
 
 LIBCONFIG_FOUND="no"
-WANT_NACL="no"
-ADD_NACL_OBJECTS_TO_PKGCONFIG="yes"
 SET_SO_VERSION="yes"
 
 AC_ARG_ENABLE([soname-versions],
@@ -38,26 +36,11 @@ AC_ARG_ENABLE([soname-versions],
 )
 AM_CONDITIONAL(SET_SO_VERSION, test "x$SET_SO_VERSION" = "xyes")
 
-AC_ARG_ENABLE([nacl],
-    [AC_HELP_STRING([--enable-nacl], [use nacl instead of libsodium (default: disabled)]) ],
-    [
-        if test "x$enableval" = "xno"; then
-            WANT_NACL="no"
-        elif test "x$enableval" = "xyes"; then
-            WANT_NACL="yes"
-        fi
-    ]
-)
-
 AC_ARG_ENABLE([randombytes-stir],
     [AC_HELP_STRING([--enable-randombytes-stir], [use randombytes_stir() instead of sodium_init() for faster startup on android (default: disabled)]) ],
     [
         if test "x$enableval" = "xyes"; then
-            if test "x$WANT_NACL" = "xyes"; then
-                AC_MSG_WARN([randombytes_stir() is not available with NaCl library])
-            else
-                AC_DEFINE([USE_RANDOMBYTES_STIR], [1], [randombytes_stir() instead of sodium_init()])
-            fi
+            AC_DEFINE([USE_RANDOMBYTES_STIR], [1], [randombytes_stir() instead of sodium_init()])
         fi
     ]
 )
@@ -187,8 +170,6 @@ fi
 DEPSEARCH=
 LIBSODIUM_SEARCH_HEADERS=
 LIBSODIUM_SEARCH_LIBS=
-NACL_SEARCH_HEADERS=
-NACL_SEARCH_LIBS=
 
 AC_ARG_WITH(dependency-search,
     AC_HELP_STRING([--with-dependency-search=DIR],
@@ -205,24 +186,6 @@ if test -n "$DEPSEARCH"; then
     LDFLAGS="$LDFLAGS -L$DEPSEARCH/lib"
     export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$DEPSEARCH/lib/pkgconfig
 fi
-
-AC_ARG_WITH(nacl-headers,
-        AC_HELP_STRING([--with-nacl-headers=DIR],
-                       [search for nacl<F2> header files in DIR]),
-        [
-            NACL_SEARCH_HEADERS="$withval"
-            AC_MSG_NOTICE([will search for nacl header files in $withval])
-        ]
-)
-
-AC_ARG_WITH(nacl-libs,
-        AC_HELP_STRING([--with-nacl-libs=DIR],
-                       [search for nacl libraries in DIR]),
-        [
-            NACL_SEARCH_LIBS="$withval"
-            AC_MSG_NOTICE([will search for nacl libraries in $withval])
-        ]
-)
 
 AC_ARG_WITH(libsodium-headers,
         AC_HELP_STRING([--with-libsodium-headers=DIR],
@@ -241,11 +204,6 @@ AC_ARG_WITH(libsodium-libs,
             AC_MSG_NOTICE([will search for libsodium libraries in $withval])
         ]
 )
-
-if test "x$WANT_NACL" = "xyes"; then
-    enable_shared=no
-    enable_static=yes
-fi
 
 # Checks for programs.
 AC_PROG_CC_C99
@@ -277,7 +235,6 @@ case $host_os in
         LDFLAGS="$LDFLAGS -L/usr/local/lib"
         CFLAGS="$CFLAGS -I/usr/local/include"
         CPPFLAGS="$CPPFLAGS -I/usr/local/include"
-        ADD_NACL_OBJECTS_TO_PKGCONFIG="no"
     ;;
     darwin*)
         MACH=yes
@@ -302,50 +259,7 @@ PKG_CHECK_MODULES([LIBSODIUM], [libsodium],
         LIBSODIUM_FOUND="no"
     ])
 
-if test "x$WANT_NACL" = "xyes"; then
-    NACL_LIBS=
-    NACL_LDFLAGS=
-    NACL_OBJECTS=
-    NACL_OBJECTS_PKGCONFIG=
-    LDFLAGS_SAVE="$LDFLAGS"
-    if test -n "$NACL_SEARCH_LIBS"; then
-        LDFLAGS="-L$NACL_SEARCH_LIBS $LDFLAGS"
-        AC_CHECK_LIB(nacl, random,
-            [
-                NACL_LDFLAGS="-L$NACL_SEARCH_LIBS"
-                NACL_LIBS="-lnacl"
-            ],
-            [
-                AC_MSG_ERROR([library nacl was not found in requested location $NACL_SEARCH_LIBS])
-            ]
-        )
-    else
-        AC_CHECK_LIB(nacl, random,
-            [],
-            [
-                AC_MSG_ERROR([you enabled nacl support, but library nacl was not found on your system])
-            ]
-        )
-    fi
-
-    if (test -f "$NACL_SEARCH_LIBS/cpucycles.o") &&
-       (test -f "$NACL_SEARCH_LIBS/randombytes.o"); then
-        NACL_OBJECTS="$NACL_SEARCH_LIBS/cpucycles.o $NACL_SEARCH_LIBS/randombytes.o"
-        AC_MSG_NOTICE([found extra NaCl objects: $NACL_OBJECTS])
-        if test "x$ADD_NACL_OBJECTS_TO_PKGCONFIG" = "xyes"; then
-            AC_MSG_NOTICE([adding extra NaCl objects to pkg-config file])
-            NACL_OBJECTS_PKGCONFIG="$NACL_OBJECTS"
-        fi
-    else
-        AC_MSG_ERROR([required NaCl object files cpucycles.o randombytes.o not found, please specify their location using the --with-nacl-libs parameter])
-    fi
-
-    LDFLAGS="$LDFLAGS_SAVE"
-    AC_SUBST(NACL_LIBS)
-    AC_SUBST(NACL_LDFLAGS)
-    AC_SUBST(NACL_OBJECTS)
-    AC_SUBST(NACL_OBJECTS_PKGCONFIG)
-elif test "x$LIBSODIUM_FOUND" = "xno"; then
+if test "x$LIBSODIUM_FOUND" = "xno"; then
     LIBSODIUM_LIBS=
     LIBSODIUM_LDFLAGS=
     LDFLAGS_SAVE="$LDFLAGS"
@@ -378,34 +292,7 @@ fi
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])
 
 
-if test "x$WANT_NACL" = "xyes"; then
-    NACL_CFLAGS=
-    CFLAGS_SAVE="$CFLAGS"
-    CPPFLAGS_SAVE="$CPPFLAGS"
-    if test -n "$NACL_SEARCH_HEADERS"; then
-        CFLAGS="-I$NACL_SEARCH_HEADERS $CFLAGS"
-        CPPFLAGS="-I$NACL_SEARCH_HEADERS $CPPFLAGS"
-        AC_CHECK_HEADER(crypto_box.h,
-            [
-                NACL_CFLAGS="-I$NACL_SEARCH_HEADERS"
-            ],
-            [
-                AC_MSG_ERROR([header files for library nacl were not found in requested location $NACL_SEARCH_HEADERS])
-            ]
-        )
-    else
-        AC_CHECK_HEADER(crypto_box.h,
-            [],
-            [
-                AC_MSG_ERROR([you enabled nacl support, but nacl header files were not found on your system])
-            ]
-        )
-    fi
-    CFLAGS="$CFLAGS_SAVE"
-    CPPFLAGS="$CPPFLAGS_SAVE"
-    AC_SUBST(NACL_CFLAGS)
-    AC_DEFINE([VANILLA_NACL], [1], [use nacl instead of libsodium])
-elif test "x$LIBSODIUM_FOUND" = "xno"; then
+if test "x$LIBSODIUM_FOUND" = "xno"; then
     LIBSODIUM_CFLAGS=
     CFLAGS_SAVE="$CFLAGS"
     CPPFLAGS_SAVE="$CPPFLAGS"
@@ -545,7 +432,6 @@ AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP, test "x$BUILD_DHT_BOOTSTRAP" = "xyes")
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
 AM_CONDITIONAL(BUILD_AV, test "x$BUILD_AV" = "xyes")
 AM_CONDITIONAL(BUILD_TESTING, test "x$BUILD_TESTING" = "xyes")
-AM_CONDITIONAL(WITH_NACL, test "x$WANT_NACL" = "xyes")
 AM_CONDITIONAL(WIN32, test "x$WIN32" = "xyes")
 
 AC_CONFIG_FILES([Makefile

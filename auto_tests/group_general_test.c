@@ -259,7 +259,6 @@ static void group_peer_status_handler(Tox *tox, uint32_t groupnumber, uint32_t p
 
 static void group_announce_test(AutoTox *autotoxes)
 {
-#ifndef VANILLA_NACL
     ck_assert_msg(NUM_GROUP_TOXES == 2, "NUM_GROUP_TOXES needs to be 2");
 
     Tox *tox0 = autotoxes[0].tox;
@@ -436,7 +435,6 @@ static void group_announce_test(AutoTox *autotoxes)
     ck_assert(num_groups1 == num_groups2 && num_groups2 == 0);
 
     printf("All tests passed!\n");
-#endif  // VANILLA_NACL
 }
 
 int main(void)

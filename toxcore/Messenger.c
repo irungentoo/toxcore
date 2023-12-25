@@ -2359,8 +2359,6 @@ static int m_handle_packet_msi(Messenger *m, const int i, const uint8_t *data, c
 non_null(1, 3) nullable(5)
 static int m_handle_packet_invite_groupchat(Messenger *m, const int i, const uint8_t *data, const uint16_t data_length, void *userdata)
 {
-#ifndef VANILLA_NACL
-
     // first two bytes are messenger packet type and group invite type
     if (data_length < 2 + GC_JOIN_DATA_LENGTH) {
         return 0;
@@ -2380,8 +2378,6 @@ static int m_handle_packet_invite_groupchat(Messenger *m, const int i, const uin
     } else if (invite_type == GROUP_INVITE_CONFIRMATION) {
         handle_gc_invite_confirmed_packet(m->group_handler, i, join_data, join_data_len);
     }
-
-#endif // VANILLA_NACL
 
     return 0;
 }
@@ -2563,7 +2559,6 @@ uint32_t messenger_run_interval(const Messenger *m)
  *
  * @retval true if success.
  */
-#ifndef VANILLA_NACL
 non_null()
 static bool self_announce_group(const Messenger *m, GC_Chat *chat, Onion_Friend *onion_friend)
 {
@@ -2639,7 +2634,6 @@ static void do_gc_onion_friends(const Messenger *m)
         }
     }
 }
-#endif  // VANILLA_NACL
 
 /** @brief The main loop that needs to be run at least 20 times per second. */
 void do_messenger(Messenger *m, void *userdata)
@@ -2677,11 +2671,9 @@ void do_messenger(Messenger *m, void *userdata)
     do_onion_client(m->onion_c);
     do_friend_connections(m->fr_c, userdata);
     do_friends(m, userdata);
-#ifndef VANILLA_NACL
     do_gc(m->group_handler, userdata);
     do_gca(m->mono_time, m->group_announce);
     do_gc_onion_friends(m);
-#endif
     m_connection_status_callback(m, userdata);
 
     if (mono_time_get(m->mono_time) > m->lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
@@ -3164,7 +3156,6 @@ static State_Load_Status friends_list_load(Messenger *m, const uint8_t *data, ui
     return STATE_LOAD_STATUS_CONTINUE;
 }
 
-#ifndef VANILLA_NACL
 non_null()
 static void pack_groupchats(const GC_Session *c, Bin_Pack *bp)
 {
@@ -3261,7 +3252,6 @@ static State_Load_Status groups_load(Messenger *m, const uint8_t *data, uint32_t
 
     return STATE_LOAD_STATUS_CONTINUE;
 }
-#endif /* VANILLA_NACL */
 
 // name state plugin
 non_null()
@@ -3449,9 +3439,7 @@ static void m_register_default_plugins(Messenger *m)
     m_register_state_plugin(m, STATE_TYPE_STATUSMESSAGE, status_message_size, load_status_message,
                             save_status_message);
     m_register_state_plugin(m, STATE_TYPE_STATUS, status_size, load_status, save_status);
-#ifndef VANILLA_NACL
     m_register_state_plugin(m, STATE_TYPE_GROUPS, saved_groups_size, groups_load, groups_save);
-#endif
     m_register_state_plugin(m, STATE_TYPE_TCP_RELAY, tcp_relay_size, load_tcp_relays, save_tcp_relays);
     m_register_state_plugin(m, STATE_TYPE_PATH_NODE, path_node_size, load_path_nodes, save_path_nodes);
 }
@@ -3629,7 +3617,6 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
         return nullptr;
     }
 
-#ifndef VANILLA_NACL
     m->group_announce = new_gca_list();
 
     if (m->group_announce == nullptr) {
@@ -3643,8 +3630,6 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
         mem_delete(mem, m);
         return nullptr;
     }
-
-#endif /* VANILLA_NACL */
 
     if (options->dht_announcements_enabled) {
         m->forwarding = new_forwarding(m->log, m->rng, m->mono_time, m->dht);
@@ -3672,9 +3657,7 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
-#ifndef VANILLA_NACL
         kill_gca(m->group_announce);
-#endif /* VANILLA_NACL */
         kill_friend_connections(m->fr_c);
         kill_announcements(m->announce);
         kill_forwarding(m->forwarding);
@@ -3687,7 +3670,6 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
         return nullptr;
     }
 
-#ifndef VANILLA_NACL
     gca_onion_init(m->group_announce, m->onion_a);
 
     m->group_handler = new_dht_groupchats(m);
@@ -3711,8 +3693,6 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
         return nullptr;
     }
 
-#endif /* VANILLA_NACL */
-
     if (options->tcp_server_port != 0) {
         m->tcp_server = new_tcp_server(m->log, m->mem, m->rng, m->ns, options->ipv6enabled, 1,
                                        &options->tcp_server_port, dht_get_self_secret_key(m->dht),
@@ -3723,14 +3703,10 @@ Messenger *new_messenger(Mono_Time *mono_time, const Memory *mem, const Random *
 
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
-#ifndef VANILLA_NACL
             kill_dht_groupchats(m->group_handler);
-#endif
             kill_friend_connections(m->fr_c);
             kill_onion_client(m->onion_c);
-#ifndef VANILLA_NACL
             kill_gca(m->group_announce);
-#endif
             kill_announcements(m->announce);
             kill_forwarding(m->forwarding);
             kill_net_crypto(m->net_crypto);
@@ -3782,14 +3758,10 @@ void kill_messenger(Messenger *m)
 
     kill_onion(m->onion);
     kill_onion_announce(m->onion_a);
-#ifndef VANILLA_NACL
     kill_dht_groupchats(m->group_handler);
-#endif
     kill_friend_connections(m->fr_c);
     kill_onion_client(m->onion_c);
-#ifndef VANILLA_NACL
     kill_gca(m->group_announce);
-#endif
     kill_announcements(m->announce);
     kill_forwarding(m->forwarding);
     kill_net_crypto(m->net_crypto);

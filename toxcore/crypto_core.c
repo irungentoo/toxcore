@@ -14,19 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef VANILLA_NACL
-// We use libsodium by default.
 #include <sodium.h>
-#else
-#include <crypto_auth.h>
-#include <crypto_box.h>
-#include <crypto_hash_sha256.h>
-#include <crypto_hash_sha512.h>
-#include <crypto_scalarmult_curve25519.h>
-#include <crypto_verify_16.h>
-#include <crypto_verify_32.h>
-#include <randombytes.h>
-#endif
 
 #include "ccompat.h"
 
@@ -34,11 +22,9 @@
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #endif
 
-#ifndef VANILLA_NACL
 // Need dht because of ENC_SECRET_KEY_SIZE and ENC_PUBLIC_KEY_SIZE
 #define ENC_PUBLIC_KEY_SIZE CRYPTO_PUBLIC_KEY_SIZE
 #define ENC_SECRET_KEY_SIZE CRYPTO_SECRET_KEY_SIZE
-#endif
 
 static_assert(CRYPTO_PUBLIC_KEY_SIZE == crypto_box_PUBLICKEYBYTES,
               "CRYPTO_PUBLIC_KEY_SIZE should be equal to crypto_box_PUBLICKEYBYTES");
@@ -63,20 +49,15 @@ static_assert(CRYPTO_SHA512_SIZE == crypto_hash_sha512_BYTES,
 static_assert(CRYPTO_PUBLIC_KEY_SIZE == 32,
               "CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for pk_equal to work");
 
-#ifndef VANILLA_NACL
 static_assert(CRYPTO_SIGNATURE_SIZE == crypto_sign_BYTES,
               "CRYPTO_SIGNATURE_SIZE should be equal to crypto_sign_BYTES");
 static_assert(CRYPTO_SIGN_PUBLIC_KEY_SIZE == crypto_sign_PUBLICKEYBYTES,
               "CRYPTO_SIGN_PUBLIC_KEY_SIZE should be equal to crypto_sign_PUBLICKEYBYTES");
 static_assert(CRYPTO_SIGN_SECRET_KEY_SIZE == crypto_sign_SECRETKEYBYTES,
               "CRYPTO_SIGN_SECRET_KEY_SIZE should be equal to crypto_sign_SECRETKEYBYTES");
-#endif /* VANILLA_NACL */
 
 bool create_extended_keypair(uint8_t *pk, uint8_t *sk)
 {
-#ifdef VANILLA_NACL
-    return false;
-#else
     /* create signature key pair */
     crypto_sign_keypair(pk + ENC_PUBLIC_KEY_SIZE, sk + ENC_SECRET_KEY_SIZE);
 
@@ -87,7 +68,6 @@ bool create_extended_keypair(uint8_t *pk, uint8_t *sk)
     const int res2 = crypto_sign_ed25519_sk_to_curve25519(sk, sk + ENC_SECRET_KEY_SIZE);
 
     return res1 == 0 && res2 == 0;
-#endif
 }
 
 const uint8_t *get_enc_key(const uint8_t *key)
@@ -141,7 +121,7 @@ static void crypto_free(uint8_t *ptr, size_t bytes)
 
 void crypto_memzero(void *data, size_t length)
 {
-#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) || defined(VANILLA_NACL)
+#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     memset(data, 0, length);
 #else
     sodium_memzero(data, length);
@@ -150,7 +130,7 @@ void crypto_memzero(void *data, size_t length)
 
 bool crypto_memlock(void *data, size_t length)
 {
-#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) || defined(VANILLA_NACL)
+#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     return false;
 #else
 
@@ -164,7 +144,7 @@ bool crypto_memlock(void *data, size_t length)
 
 bool crypto_memunlock(void *data, size_t length)
 {
-#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) || defined(VANILLA_NACL)
+#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     return false;
 #else
 
@@ -196,10 +176,6 @@ bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2)
 #if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     // Hope that this is better for the fuzzer
     return memcmp(cksum1, cksum2, CRYPTO_SHA512_SIZE) == 0;
-#elif defined(VANILLA_NACL)
-    const int lo = crypto_verify_32(cksum1, cksum2) == 0 ? 1 : 0;
-    const int hi = crypto_verify_32(cksum1 + 8, cksum2 + 8) == 0 ? 1 : 0;
-    return (lo & hi) == 1;
 #else
     return crypto_verify_64(cksum1, cksum2) == 0;
 #endif
@@ -251,21 +227,13 @@ uint32_t random_range_u32(const Random *rng, uint32_t upper_bound)
 bool crypto_signature_create(uint8_t *signature, const uint8_t *message, uint64_t message_length,
                              const uint8_t *secret_key)
 {
-#ifdef VANILLA_NACL
-    return false;
-#else
     return crypto_sign_detached(signature, nullptr, message, message_length, secret_key) == 0;
-#endif // VANILLA_NACL
 }
 
 bool crypto_signature_verify(const uint8_t *signature, const uint8_t *message, uint64_t message_length,
                              const uint8_t *public_key)
 {
-#ifdef VANILLA_NACL
-    return false;
-#else
     return crypto_sign_verify_detached(signature, message, message_length, public_key) == 0;
-#endif
 }
 
 bool public_key_valid(const uint8_t *public_key)
@@ -539,17 +507,7 @@ static void sys_random_bytes(void *obj, uint8_t *bytes, size_t length)
 non_null()
 static uint32_t sys_random_uniform(void *obj, uint32_t upper_bound)
 {
-#ifdef VANILLA_NACL
-    if (upper_bound == 0) {
-        return 0;
-    }
-
-    uint32_t randnum;
-    sys_random_bytes(obj, (uint8_t *)&randnum, sizeof(randnum));
-    return randnum % upper_bound;
-#else
     return randombytes_uniform(upper_bound);
-#endif
 }
 
 static const Random_Funcs system_random_funcs = {
@@ -566,13 +524,11 @@ const Random *system_random(void)
         return nullptr;
     }
 #endif
-#ifndef VANILLA_NACL
     // It is safe to call this function more than once and from different
     // threads -- subsequent calls won't have any effects.
     if (sodium_init() == -1) {
         return nullptr;
     }
-#endif
     return &system_random_obj;
 }
 

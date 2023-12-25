@@ -20,9 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef VANILLA_NACL
 #include <sodium.h>
-#endif
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <windows.h>
@@ -141,7 +139,6 @@ int cmdline_parsefor_ipv46(int argc, char **argv, bool *ipv6enabled)
 }
 
 
-#ifndef VANILLA_NACL
 static const char *test_rng_name(void)
 {
     return "test_rng";
@@ -198,11 +195,3 @@ int use_test_rng(uint32_t seed)
 
     return randombytes_set_implementation(&test_rng);
 }
-
-#else
-
-int use_test_rng(uint32_t seed)
-{
-    assert(!"libsodium required for use_test_rng");
-}
-#endif

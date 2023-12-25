@@ -8,7 +8,8 @@
 
 Tox is a peer to peer (serverless) instant messenger aimed at making security
 and privacy easy to obtain for regular users. It uses
-[NaCl](https://nacl.cr.yp.to/) for its encryption and authentication.
+[libsodium](https://doc.libsodium.org/) (based on
+[NaCl](https://nacl.cr.yp.to/)) for its encryption and authentication.
 
 ## IMPORTANT!
 
@@ -18,12 +19,12 @@ This is an **experimental** cryptographic network library. It has not been
 formally audited by an independent third party that specializes in
 cryptography or cryptanalysis. **Use this library at your own risk.**
 
-The underlying crypto library [NaCl](https://nacl.cr.yp.to/install.html)
-provides reliable encryption, but the security model has not yet been fully
-specified. See [issue 210](https://github.com/TokTok/c-toxcore/issues/210) for
-a discussion on developing a threat model. See other issues for known
-weaknesses (e.g. [issue 426](https://github.com/TokTok/c-toxcore/issues/426)
-describes what can happen if your secret key is stolen).
+The underlying crypto library [libsodium](https://doc.libsodium.org/) provides
+reliable encryption, but the security model has not yet been fully specified.
+See [issue 210](https://github.com/TokTok/c-toxcore/issues/210) for a
+discussion on developing a threat model. See other issues for known weaknesses
+(e.g. [issue 426](https://github.com/TokTok/c-toxcore/issues/426) describes
+what can happen if your secret key is stolen).
 
 ## Toxcore Development Roadmap
 
