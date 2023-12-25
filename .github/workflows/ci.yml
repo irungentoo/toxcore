@@ -44,6 +44,53 @@ jobs:
       - name: Run cimplefmt
         run: other/docker/cimplefmt/run -u $(find tox* -name "*.[ch]")
 
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: .github/scripts/cmake-android armeabi-v7a
+      - run: .github/scripts/cmake-android arm64-v8a
+      - run: .github/scripts/cmake-android x86
+      - run: .github/scripts/cmake-android x86_64
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build and test
+        run: .github/scripts/cmake-osx
+
+  build-msvc:
+    strategy:
+      matrix:
+        version: [2019, 2022]
+    runs-on: windows-${{ matrix.version }}
+    env:
+      VCPKG_ROOT: "C:/vcpkg"
+      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+      - name: Configure CMake
+        run: cmake --preset windows-default
+      - name: Build
+        run: cmake --build _build
+      - name: Test
+        run: |
+          cd _build
+          ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6 --build-config Debug
+
   build-windows:
     strategy:
       matrix:
@@ -55,26 +102,6 @@ jobs:
           submodules: recursive
       - name: Cross compilation
         run: .github/scripts/cmake-win${{ matrix.bits }} script
-
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Build and test
-        run: .github/scripts/cmake-osx
-
-  build-android:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - run: .github/scripts/cmake-android armeabi-v7a
-      - run: .github/scripts/cmake-android arm64-v8a
-      - run: .github/scripts/cmake-android x86
-      - run: .github/scripts/cmake-android x86_64
 
   mypy:
     runs-on: ubuntu-latest

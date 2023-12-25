@@ -340,12 +340,20 @@ static void fill_addr6(const IP6 *ip, struct in6_addr *addr)
 #endif
 
 static const IP empty_ip = {{0}};
-const IP_Port empty_ip_port = {{{0}}};
 
-const IP4 ip4_broadcast = { INADDR_BROADCAST };
-const IP6 ip6_broadcast = {
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
-};
+IP4 get_ip4_broadcast(void)
+{
+    const IP4 ip4_broadcast = { INADDR_BROADCAST };
+    return ip4_broadcast;
+}
+
+IP6 get_ip6_broadcast(void)
+{
+    const IP6 ip6_broadcast = {
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
+    };
+    return ip6_broadcast;
+}
 
 IP4 get_ip4_loopback(void)
 {
@@ -357,7 +365,7 @@ IP4 get_ip4_loopback(void)
 IP6 get_ip6_loopback(void)
 {
     /* in6addr_loopback isn't available everywhere, so we do it ourselves. */
-    IP6 loopback = empty_ip_port.ip.ip.v6;
+    IP6 loopback = empty_ip.ip.v6;
     loopback.uint8[15] = 1;
     return loopback;
 }
@@ -1452,6 +1460,7 @@ void ipport_reset(IP_Port *ipport)
         return;
     }
 
+    const IP_Port empty_ip_port = {{{0}}};
     *ipport = empty_ip_port;
 }
 

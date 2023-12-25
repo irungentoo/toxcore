@@ -183,7 +183,7 @@ typedef union IP4 {
 } IP4;
 
 IP4 get_ip4_loopback(void);
-extern const IP4 ip4_broadcast;
+IP4 get_ip4_broadcast(void);
 
 typedef union IP6 {
     uint8_t uint8[16];
@@ -193,7 +193,7 @@ typedef union IP6 {
 } IP6;
 
 IP6 get_ip6_loopback(void);
-extern const IP6 ip6_broadcast;
+IP6 get_ip6_broadcast(void);
 
 typedef union IP_Union {
     IP4 v4;
@@ -209,8 +209,6 @@ typedef struct IP_Port {
     IP ip;
     uint16_t port;
 } IP_Port;
-
-extern const IP_Port empty_ip_port;
 
 typedef struct Socket {
     int sock;

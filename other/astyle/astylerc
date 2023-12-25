@@ -16,7 +16,6 @@
 --align-reference=name
 
 # Formatting Options
---add-brackets
 --convert-tabs
 --max-code-length=120
 

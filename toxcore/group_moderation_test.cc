@@ -79,7 +79,7 @@ TEST(ModList, UnpackingFromEmptyBufferFails)
     std::vector<uint8_t> packed(1);
 
     Moderation mods{system_memory()};
-    EXPECT_EQ(mod_list_unpack(&mods, packed.end().base(), 0, 1), -1);
+    EXPECT_EQ(mod_list_unpack(&mods, packed.data(), 0, 1), -1);
 }
 
 TEST(ModList, HashOfEmptyModListZeroesOutBuffer)

@@ -19,18 +19,16 @@ if(FULLY_STATIC)
   set(ENABLE_STATIC ON)
 endif()
 
-find_package(PkgConfig)
-
 function(add_module lib)
-  set(${lib}_SOURCES ${ARGN} PARENT_SCOPE)
-
   if(ENABLE_SHARED)
     add_library(${lib}_shared SHARED ${ARGN})
     set_target_properties(${lib}_shared PROPERTIES OUTPUT_NAME ${lib})
   endif()
   if(ENABLE_STATIC)
     add_library(${lib}_static STATIC ${ARGN})
-    set_target_properties(${lib}_static PROPERTIES OUTPUT_NAME ${lib})
+    if(NOT MSVC)
+      set_target_properties(${lib}_static PROPERTIES OUTPUT_NAME ${lib})
+    endif()
   endif()
 endfunction()
 

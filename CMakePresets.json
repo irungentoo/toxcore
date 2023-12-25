@@ -1,0 +1,21 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "windows-default",
+            "binaryDir": "${sourceDir}/_build",
+            "cacheVariables": {
+                "ENABLE_SHARED": true,
+                "ENABLE_STATIC": true,
+                "AUTOTEST": true,
+                "BUILD_MISC_TESTS": true,
+                "BOOTSTRAP_DAEMON": false,
+                "MUST_BUILD_TOXAV": true,
+                "TEST_TIMEOUT_SECONDS": "60",
+                "CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS": true,
+                "CMAKE_COMPILE_WARNING_AS_ERROR": true,
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+            }
+        }
+    ]
+}

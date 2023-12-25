@@ -243,11 +243,11 @@ static IP broadcast_ip(Family family_socket, Family family_broadcast)
             ip.ip.v6.uint8[15] = 0x01;
         } else if (net_family_is_ipv4(family_broadcast)) {
             ip.family = net_family_ipv6();
-            ip.ip.v6 = ip6_broadcast;
+            ip.ip.v6 = get_ip6_broadcast();
         }
     } else if (net_family_is_ipv4(family_socket) && net_family_is_ipv4(family_broadcast)) {
         ip.family = net_family_ipv4();
-        ip.ip.v4 = ip4_broadcast;
+        ip.ip.v4 = get_ip4_broadcast();
     }
 
     return ip;

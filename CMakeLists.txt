@@ -81,7 +81,7 @@ find_package(GTest)
 set(CMAKE_MACOSX_RPATH ON)
 
 # Set standard version for compiler.
-if(MSVC)
+if(MSVC AND MSVC_TOOLSET_VERSION LESS 143)
   # https://developercommunity.visualstudio.com/t/older-winsdk-headers-are-incompatible-with-zcprepr/1593479
   set(CMAKE_C_STANDARD 99)
 else()
@@ -93,6 +93,35 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 message(STATUS "Supported C compiler features = ${CMAKE_C_COMPILE_FEATURES}")
 message(STATUS "Supported C++ compiler features = ${CMAKE_CXX_COMPILE_FEATURES}")
+
+# Enable some warnings if we know the compiler.
+if(MSVC)
+  add_compile_options(/W4 /analyze)
+  add_compile_options(/wd4100)  # unreferenced formal parameter
+  add_compile_options(/wd4267)  # narrowing conversion
+  add_compile_options(/wd4244)  # narrowing conversion
+  add_compile_options(/wd4127)  # conditional expression is constant
+  add_compile_options(/wd4995)  # #pragma deprecated
+  add_compile_options(/wd4018)  # signed/unsigned compare
+  add_compile_options(/wd4310)  # cast truncates constant value
+  add_compile_options(/wd4389)  # signed/unsigned compare
+  add_compile_options(/wd4245)  # signed/unsigned assign/return/function call
+  add_compile_options(/wd4200)  # nonstandard extension used: zero-sized array in struct/union
+  add_compile_options(/wd4702)  # unreachable code
+  add_compile_options(/wd6340)  # unsigned int passed to signed parameter
+  add_compile_options(/wd6326)  # potential comparison of a constant with another constant
+
+  # TODO(iphydf): Look into these
+  add_compile_options(/wd4996)  # use WSAAddressToStringW() instead of WSAAddressToStringA()
+  add_compile_options(/wd6255)  # don't use alloca
+  add_compile_options(/wd6385)  # reading invalid data
+  add_compile_options(/wd6001)  # using uninitialized memory
+  add_compile_options(/wd6101)  # returning uninitialized memory
+  add_compile_options(/wd6386)  # buffer overrun
+  add_compile_options(/wd6011)  # NULL dereference
+  add_compile_options(/wd6031)  # sscanf return value ignored
+  add_compile_options(/wd6387)  # passing NULL to fwrite
+endif()
 
 set(MIN_LOGGER_LEVEL "" CACHE STRING "Logging level to use (TRACE, DEBUG, INFO, WARNING, ERROR)")
 if(MIN_LOGGER_LEVEL)
@@ -307,10 +336,14 @@ set(toxcore_SOURCES
   toxcore/tox_unpack.h
   toxcore/util.c
   toxcore/util.h)
-set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ${LIBSODIUM_LIBRARIES})
-set(toxcore_LINK_DIRECTORIES ${toxcore_LINK_DIRECTORIES} ${LIBSODIUM_LIBRARY_DIRS})
-set(toxcore_INCLUDE_DIRECTORIES ${toxcore_INCLUDE_DIRECTORIES} ${LIBSODIUM_INCLUDE_DIRS})
-set(toxcore_COMPILE_OPTIONS ${toxcore_COMPILE_OPTIONS} ${LIBSODIUM_CFLAGS_OTHER})
+if(TARGET unofficial-sodium::sodium)
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} unofficial-sodium::sodium)
+else()
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ${LIBSODIUM_LIBRARIES})
+  set(toxcore_LINK_DIRECTORIES ${toxcore_LINK_DIRECTORIES} ${LIBSODIUM_LIBRARY_DIRS})
+  set(toxcore_INCLUDE_DIRECTORIES ${toxcore_INCLUDE_DIRECTORIES} ${LIBSODIUM_INCLUDE_DIRS})
+  set(toxcore_COMPILE_OPTIONS ${toxcore_COMPILE_OPTIONS} ${LIBSODIUM_CFLAGS_OTHER})
+endif()
 set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} libsodium)
 set(toxcore_API_HEADERS
   ${toxcore_SOURCE_DIR}/toxcore/tox.h^tox
@@ -346,10 +379,14 @@ if(BUILD_TOXAV)
   set(toxcore_API_HEADERS ${toxcore_API_HEADERS}
     ${toxcore_SOURCE_DIR}/toxav/toxav.h^toxav)
 
-  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
-  set(toxcore_LINK_DIRECTORIES ${toxcore_LINK_DIRECTORIES} ${OPUS_LIBRARY_DIRS} ${VPX_LIBRARY_DIRS})
-  set(toxcore_INCLUDE_DIRECTORIES ${toxcore_INCLUDE_DIRECTORIES} ${OPUS_INCLUDE_DIRS} ${VPX_INCLUDE_DIRS})
-  set(toxcore_COMPILE_OPTIONS ${toxcore_COMPILE_OPTIONS} ${OPUS_CFLAGS_OTHER} ${VPX_CFLAGS_OTHER})
+  if(MSVC)
+    set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} PkgConfig::OPUS PkgConfig::VPX)
+  else()
+    set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
+    set(toxcore_LINK_DIRECTORIES ${toxcore_LINK_DIRECTORIES} ${OPUS_LIBRARY_DIRS} ${VPX_LIBRARY_DIRS})
+    set(toxcore_INCLUDE_DIRECTORIES ${toxcore_INCLUDE_DIRECTORIES} ${OPUS_INCLUDE_DIRS} ${VPX_INCLUDE_DIRS})
+    set(toxcore_COMPILE_OPTIONS ${toxcore_COMPILE_OPTIONS} ${OPUS_CFLAGS_OTHER} ${VPX_CFLAGS_OTHER})
+  endif()
   set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} opus vpx)
 endif()
 
@@ -380,7 +417,6 @@ if(CMAKE_THREAD_LIBS_INIT)
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
-
 if(NSL_LIBRARIES)
   set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ${NSL_LIBRARIES})
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lnsl)
@@ -396,9 +432,13 @@ if(SOCKET_LIBRARIES)
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lsocket)
 endif()
 
+if(TARGET PThreads4W::PThreads4W)
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} PThreads4W::PThreads4W)
+elseif(TARGET Threads::Threads)
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} Threads::Threads)
+endif()
 if(WIN32)
-  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ws2_32 iphlpapi)
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lws2_32 -liphlpapi)
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} iphlpapi wsock32 ws2_32)
 endif()
 
 ################################################################################
@@ -496,6 +536,14 @@ if(DHT_BOOTSTRAP)
     target_link_libraries(DHT_bootstrap PRIVATE toxcore_shared)
   endif()
   target_link_libraries(DHT_bootstrap PRIVATE misc_tools)
+  if(TARGET unofficial-sodium::sodium)
+    target_link_libraries(DHT_bootstrap PRIVATE unofficial-sodium::sodium)
+  endif()
+  if(TARGET PThreads4W::PThreads4W)
+    target_link_libraries(DHT_bootstrap PRIVATE PThreads4W::PThreads4W)
+  elseif(TARGET Threads::Threads)
+    target_link_libraries(DHT_bootstrap PRIVATE Threads::Threads)
+  endif()
   install(TARGETS DHT_bootstrap RUNTIME DESTINATION bin)
 endif()
 

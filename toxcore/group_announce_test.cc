@@ -141,7 +141,7 @@ protected:
         ann2.ip_port_is_set = 1;
         ann2.tcp_relays_count = 1;
         ann2.tcp_relays[0].ip_port.ip.family = net_family_ipv4();
-        ann2.tcp_relays[0].ip_port.ip.ip.v4 = ip4_broadcast;
+        ann2.tcp_relays[0].ip_port.ip.ip.v4 = get_ip4_broadcast();
         ann2.tcp_relays[0].public_key[0] = 0xea;
     }
 
