@@ -19,6 +19,11 @@ add_executable(tox-bootstrapd
   src/tox-bootstrapd.c
   ../bootstrap_node_packets.c
   ../bootstrap_node_packets.h)
-target_link_modules(tox-bootstrapd toxcore ${LIBCONFIG_LIBRARIES})
+target_link_libraries(tox-bootstrapd PRIVATE ${LIBCONFIG_LIBRARIES})
+if(TARGET toxcore_static)
+  target_link_libraries(tox-bootstrapd PRIVATE toxcore_static)
+else()
+  target_link_libraries(tox-bootstrapd PRIVATE toxcore_shared)
+endif()
 install(TARGETS tox-bootstrapd RUNTIME DESTINATION bin)
 install(FILES bash-completion/completions/tox-bootstrapd DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/bash-completion/completions")
