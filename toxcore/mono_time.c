@@ -26,12 +26,14 @@
 #include <sys/time.h>
 #endif
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 #include <assert.h>
+#endif
 #include <pthread.h>
-#include <stdlib.h>
 #include <time.h>
 
 #include "ccompat.h"
+#include "mem.h"
 #include "util.h"
 
 /** don't call into system billions of times for no reason */

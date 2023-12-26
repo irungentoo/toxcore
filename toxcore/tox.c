@@ -13,18 +13,24 @@
 #include "tox.h"
 
 #include <assert.h>
-#include <stdlib.h>
 #include <string.h>
 
+#include "DHT.h"
 #include "Messenger.h"
+#include "TCP_client.h"
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "friend_requests.h"
 #include "group.h"
 #include "group_chats.h"
-#include "group_moderation.h"
+#include "group_common.h"
 #include "logger.h"
 #include "mem.h"
 #include "mono_time.h"
+#include "net_crypto.h"
 #include "network.h"
+#include "onion_client.h"
+#include "state.h"
 #include "tox_private.h"
 #include "tox_struct.h"
 

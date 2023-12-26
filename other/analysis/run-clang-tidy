@@ -8,37 +8,46 @@ ERRORS="*"
 
 # TODO(iphydf): Fix these.
 ERRORS="$ERRORS,-cert-err34-c"
-ERRORS="$ERRORS,-cert-str34-c"
 ERRORS="$ERRORS,-readability-suspicious-call-argument"
+
+# TODO(iphydf): Fix once cimple 0.0.19 is released.
+CHECKS="$CHECKS,-google-readability-casting"
 
 # TODO(iphydf): Fix these.
 CHECKS="$CHECKS,-bugprone-switch-missing-default-case"
-CHECKS="$CHECKS,-misc-include-cleaner"
 
 # TODO(iphydf): We might want some of these. For the ones we don't want, add a
 # comment explaining why not.
 CHECKS="$CHECKS,-clang-analyzer-optin.performance.Padding"
 CHECKS="$CHECKS,-hicpp-signed-bitwise"
-CHECKS="$CHECKS,-readability-function-cognitive-complexity"
 
 # TODO(iphydf): Maybe fix these?
-CHECKS="$CHECKS,-bugprone-easily-swappable-parameters"
 CHECKS="$CHECKS,-bugprone-implicit-widening-of-multiplication-result"
 CHECKS="$CHECKS,-bugprone-integer-division"
-CHECKS="$CHECKS,-clang-analyzer-core.NullDereference"
-CHECKS="$CHECKS,-clang-analyzer-valist.Uninitialized"
-CHECKS="$CHECKS,-cppcoreguidelines-avoid-non-const-global-variables"
 CHECKS="$CHECKS,-misc-no-recursion"
+
+# TODO(iphydf): Only happens in bootstrap_daemon. Fix it.
+CHECKS="$CHECKS,-cppcoreguidelines-avoid-non-const-global-variables"
 
 # TODO(iphydf): Probably fix these.
 CHECKS="$CHECKS,-cert-err33-c"
 CHECKS="$CHECKS,-cppcoreguidelines-avoid-magic-numbers"
-CHECKS="$CHECKS,-google-readability-casting"
-CHECKS="$CHECKS,-modernize-macro-to-enum"
 CHECKS="$CHECKS,-readability-magic-numbers"
+
+# TODO(iphydf): We're using a lot of macros for constants. Should we convert
+# all of them to enum?
+CHECKS="$CHECKS,-modernize-macro-to-enum"
 
 # Documented disabled checks. We don't want these for sure.
 # =========================================================
+
+# https://stackoverflow.com/questions/58672959/why-does-clang-tidy-say-vsnprintf-has-an-uninitialized-va-list-argument
+CHECKS="$CHECKS,-clang-analyzer-valist.Uninitialized"
+
+# We pass a lot of ints around, so many function parameters are some kind of
+# int type that can be converted from another int type. We won't be getting
+# away from that anytime soon.
+CHECKS="$CHECKS,-bugprone-easily-swappable-parameters"
 
 # Callback handlers often don't use all their parameters. There's
 # IgnoreVirtual, but that doesn't work for C-style callbacks.
@@ -132,27 +141,46 @@ CHECKS="$CHECKS,-misc-static-assert"
 
 set -eux
 
+# TODO(iphydf): Add toxav.
+DIRS=(
+  other/bootstrap_daemon/src
+  other
+  toxcore
+  toxcore/events
+  toxencryptsave
+)
+
+copy_files() {
+  find "${DIRS[@]}" \
+    -maxdepth 1 -type d -exec mkdir -p "$1/{}" \;
+  find "${DIRS[@]}" \
+    -maxdepth 1 -name "*.c" -exec cp "{}" "$1/{}" \;
+}
+
 run() {
   echo "Running clang-tidy in variant '$*'"
   EXTRA_ARGS=("$@")
   for i in "${!EXTRA_ARGS[@]}"; do
     EXTRA_ARGS[$i]="--extra-arg=${EXTRA_ARGS[$i]}"
   done
-  find \
-    other/bootstrap_daemon/src \
-    other \
-    toxav \
-    toxcore \
-    toxcore/events \
-    toxencryptsave \
+  ls .clang-tidy
+  copy_files a
+  if ! find "${DIRS[@]}" \
     -maxdepth 1 -name "*.c" -print0 \
     | xargs -0 -n15 -P"$(nproc)" clang-tidy \
       -p=_build \
       --extra-arg=-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE \
       "${EXTRA_ARGS[@]}" \
+      --fix \
       --checks="$CHECKS" \
       --warnings-as-errors="$ERRORS" \
-      --use-color
+      --use-color; then
+    copy_files b
+    colordiff -ru a b
+    rm -rf a b
+    false
+  fi
+  rm -rf a
 }
 
 cmake . -B_build -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON

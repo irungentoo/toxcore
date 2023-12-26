@@ -8,7 +8,6 @@
  */
 #include "TCP_server.h"
 
-#include <stdlib.h>
 #include <string.h>
 #if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
 #include <sys/ioctl.h>
@@ -19,11 +18,17 @@
 #include <unistd.h>
 #endif
 
+#include "DHT.h"
 #include "TCP_common.h"
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "forwarding.h"
 #include "list.h"
+#include "logger.h"
+#include "mem.h"
 #include "mono_time.h"
-#include "util.h"
+#include "network.h"
+#include "onion.h"
 
 #ifdef TCP_SERVER_USE_EPOLL
 #define TCP_SOCKET_LISTENING 0
@@ -909,7 +914,7 @@ static Socket new_listening_tcp_socket(const Logger *logger, const Network *ns, 
 
     if (!sock_valid(sock)) {
         LOGGER_ERROR(logger, "TCP socket creation failed (family = %d)", family.value);
-        return net_invalid_socket;
+        return net_invalid_socket();
     }
 
     bool ok = set_socket_nonblock(ns, sock);
@@ -930,7 +935,7 @@ static Socket new_listening_tcp_socket(const Logger *logger, const Network *ns, 
                        port, family.value, error != nullptr ? error : "(null)");
         net_kill_strerror(error);
         kill_sock(ns, sock);
-        return net_invalid_socket;
+        return net_invalid_socket();
     }
 
     LOGGER_DEBUG(logger, "successfully bound to TCP port %d", port);

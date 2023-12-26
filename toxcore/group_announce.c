@@ -8,10 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "LAN_discovery.h"
+#include "DHT.h"
 #include "ccompat.h"
+#include "logger.h"
 #include "mono_time.h"
-#include "util.h"
+#include "network.h"
 
 /**
  * Removes `announces` from `gc_announces_list`.

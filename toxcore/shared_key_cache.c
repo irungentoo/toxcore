@@ -4,12 +4,13 @@
 
 #include "shared_key_cache.h"
 
-#include <assert.h>
 #include <stdint.h>
 #include <string.h>     // memcpy(...)
 
 #include "ccompat.h"
 #include "crypto_core.h"
+#include "logger.h"
+#include "mem.h"
 #include "mono_time.h"
 
 typedef struct Shared_Key {

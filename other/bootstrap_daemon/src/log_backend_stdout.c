@@ -9,7 +9,10 @@
  */
 #include "log_backend_stdout.h"
 
+#include <stdarg.h>
 #include <stdio.h>
+
+#include "log.h"
 
 static FILE *log_backend_stdout_level(LOG_LEVEL level)
 {

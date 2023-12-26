@@ -5,6 +5,7 @@ RUN ["apk", "add", "--no-cache", \
  "clang", \
  "clang-extra-tools", \
  "cmake", \
+ "colordiff", \
  "libconfig-dev", \
  "libsodium-dev", \
  "libvpx-dev", \

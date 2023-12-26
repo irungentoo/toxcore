@@ -12,8 +12,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "DHT.h"
+#include "Messenger.h"
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "friend_connection.h"
+#include "group_common.h"
+#include "logger.h"
 #include "mono_time.h"
+#include "net_crypto.h"
+#include "network.h"
 #include "state.h"
 #include "util.h"
 

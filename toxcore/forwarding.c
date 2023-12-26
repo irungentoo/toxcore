@@ -10,6 +10,10 @@
 
 #include "DHT.h"
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "logger.h"
+#include "mono_time.h"
+#include "network.h"
 #include "timed_auth.h"
 
 struct Forwarding {

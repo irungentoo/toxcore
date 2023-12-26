@@ -10,10 +10,12 @@
 #include "log_backend_syslog.h"
 
 #include "global.h"
+#include "log.h"
 
 #include "../../../toxcore/ccompat.h"
 
 #include <assert.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>

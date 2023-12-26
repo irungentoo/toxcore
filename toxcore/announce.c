@@ -12,8 +12,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "DHT.h"
 #include "LAN_discovery.h"
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "forwarding.h"
+#include "logger.h"
+#include "mem.h"
+#include "mono_time.h"
+#include "network.h"
 #include "shared_key_cache.h"
 #include "timed_auth.h"
 #include "util.h"
@@ -427,7 +434,7 @@ static int create_reply_plain_store_announce_request(Announcements *announce,
         const uint8_t *to_auth, uint16_t to_auth_length)
 {
     const int plain_len = (int)length - (CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE);
-    const int announcement_len = (int)plain_len - (TIMED_AUTH_SIZE + sizeof(uint32_t) + 1);
+    const int announcement_len = plain_len - (TIMED_AUTH_SIZE + sizeof(uint32_t) + 1);
 
     const uint8_t *const data_public_key = data;
 

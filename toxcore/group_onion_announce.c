@@ -9,6 +9,12 @@
 #include <string.h>
 
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "group_announce.h"
+#include "logger.h"
+#include "mono_time.h"
+#include "network.h"
+#include "onion_announce.h"
 
 static_assert(GCA_ANNOUNCE_MAX_SIZE <= ONION_MAX_EXTRA_DATA_SIZE,
               "GC_Announce does not fit into the onion packet extra data");

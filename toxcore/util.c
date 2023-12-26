@@ -13,11 +13,10 @@
 
 #include "util.h"
 
-#include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "ccompat.h"
+#include "mem.h"
 
 bool is_power_of_2(uint64_t x)
 {

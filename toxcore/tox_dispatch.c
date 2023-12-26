@@ -7,6 +7,8 @@
 #include <stdlib.h>
 
 #include "ccompat.h"
+#include "tox.h"
+#include "tox_events.h"
 
 struct Tox_Dispatch {
     tox_events_conference_connected_cb *conference_connected_callback;

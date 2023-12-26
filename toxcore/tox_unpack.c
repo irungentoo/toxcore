@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 #include "bin_unpack.h"
-#include "ccompat.h"
+#include "tox.h"
 
 non_null()
 static bool tox_conference_type_from_int(uint32_t value, Tox_Conference_Type *out)

@@ -32,7 +32,7 @@
 #endif
 
 #ifdef __linux__
-#include <linux/netdevice.h>
+#include <linux/if.h>
 #endif
 
 #if defined(__FreeBSD__) || defined(__DragonFly__)
@@ -41,7 +41,7 @@
 
 #include "ccompat.h"
 #include "crypto_core.h"
-#include "util.h"
+#include "network.h"
 
 #define MAX_INTERFACES 16
 

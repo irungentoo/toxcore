@@ -9,12 +9,17 @@
 #include "TCP_connection.h"
 
 #include <assert.h>
-#include <stdlib.h>
 #include <string.h>
 
+#include "DHT.h"
 #include "TCP_client.h"
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "forwarding.h"
+#include "logger.h"
+#include "mem.h"
 #include "mono_time.h"
+#include "network.h"
 #include "util.h"
 
 struct TCP_Connections {

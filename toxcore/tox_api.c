@@ -4,7 +4,6 @@
 #include "tox.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 #include "ccompat.h"
 #include "tox_private.h"

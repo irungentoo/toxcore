@@ -5,16 +5,16 @@
 #include "tox_events.h"
 
 #include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
+#include "bin_pack.h"
 #include "bin_unpack.h"
 #include "ccompat.h"
 #include "events/events_alloc.h"
+#include "logger.h"
 #include "mem.h"
 #include "tox.h"
-#include "tox_private.h"
+#include "tox_struct.h"
 
 
 /*****************************************************

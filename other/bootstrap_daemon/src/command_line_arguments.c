@@ -10,12 +10,12 @@
 #include "command_line_arguments.h"
 
 #include "global.h"
+#include "log.h"
 
 #include "../../../toxcore/ccompat.h"
 
 #include <getopt.h>
 
-#include <stdlib.h>
 #include <string.h>
 
 

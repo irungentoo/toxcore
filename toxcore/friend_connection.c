@@ -11,9 +11,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "DHT.h"
+#include "LAN_discovery.h"
+#include "TCP_connection.h"
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "logger.h"
 #include "mono_time.h"
-#include "util.h"
+#include "net_crypto.h"
+#include "network.h"
+#include "onion_client.h"
 
 #define PORTS_PER_DISCOVERY 10
 

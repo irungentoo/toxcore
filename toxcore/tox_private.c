@@ -10,10 +10,15 @@
 
 #include <assert.h>
 
+#include "DHT.h"
 #include "ccompat.h"
+#include "crypto_core.h"
 #include "group_chats.h"
+#include "group_common.h"
 #include "mem.h"
+#include "net_crypto.h"
 #include "network.h"
+#include "tox.h"
 #include "tox_struct.h"
 
 #define SET_ERROR_PARAMETER(param, x) \

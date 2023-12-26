@@ -8,13 +8,12 @@
  */
 #include "ping_array.h"
 
-#include <stdlib.h>
 #include <string.h>
 
 #include "ccompat.h"
 #include "crypto_core.h"
+#include "mem.h"
 #include "mono_time.h"
-#include "util.h"
 
 typedef struct Ping_Array_Entry {
     uint8_t *data;

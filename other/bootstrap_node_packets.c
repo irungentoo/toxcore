@@ -12,6 +12,8 @@
 
 #include <string.h>
 
+#include "../toxcore/network.h"
+
 #define INFO_REQUEST_PACKET_LENGTH 78
 
 static uint32_t bootstrap_version;

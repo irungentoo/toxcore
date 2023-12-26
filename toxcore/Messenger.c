@@ -10,17 +10,33 @@
 
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 #include "DHT.h"
+#include "TCP_client.h"
+#include "TCP_connection.h"
+#include "TCP_server.h"
+#include "announce.h"
+#include "bin_pack.h"
+#include "bin_unpack.h"
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "forwarding.h"
+#include "friend_connection.h"
+#include "friend_requests.h"
+#include "group_announce.h"
 #include "group_chats.h"
+#include "group_common.h"
 #include "group_onion_announce.h"
 #include "logger.h"
+#include "mem.h"
 #include "mono_time.h"
+#include "net_crypto.h"
 #include "network.h"
+#include "onion.h"
+#include "onion_announce.h"
+#include "onion_client.h"
 #include "state.h"
 #include "util.h"
 

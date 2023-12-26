@@ -21,13 +21,11 @@ cc_binary(
         "//c-toxcore/toxcore:Messenger",
         "//c-toxcore/toxcore:TCP_server",
         "//c-toxcore/toxcore:ccompat",
-        "//c-toxcore/toxcore:friend_requests",
         "//c-toxcore/toxcore:group_onion_announce",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
         "//c-toxcore/toxcore:network",
         "//c-toxcore/toxcore:onion_announce",
         "//c-toxcore/toxcore:tox",
-        "//c-toxcore/toxcore:util",
     ],
 )

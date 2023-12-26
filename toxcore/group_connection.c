@@ -15,11 +15,14 @@
 #include <string.h>
 
 #include "DHT.h"
+#include "TCP_connection.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "group_chats.h"
 #include "group_common.h"
+#include "logger.h"
 #include "mono_time.h"
+#include "network.h"
 #include "util.h"
 
 /** Seconds since last direct UDP packet was received before the connection is considered dead */

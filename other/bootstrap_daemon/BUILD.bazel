@@ -18,7 +18,6 @@ cc_binary(
         "//c-toxcore/toxcore:mono_time",
         "//c-toxcore/toxcore:onion_announce",
         "//c-toxcore/toxcore:tox",
-        "//c-toxcore/toxcore:util",
         "@libconfig",
     ],
 )

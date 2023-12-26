@@ -5,10 +5,13 @@
 
 #include "TCP_common.h"
 
-#include <stdlib.h>
 #include <string.h>
 
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "logger.h"
+#include "mem.h"
+#include "network.h"
 
 void wipe_priority_list(const Memory *mem, TCP_Priority_List *p)
 {

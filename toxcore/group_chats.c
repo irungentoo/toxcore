@@ -9,23 +9,31 @@
 
 #include "group_chats.h"
 
-#include <assert.h>
-
 #include <sodium.h>
 
+#include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "DHT.h"
-#include "LAN_discovery.h"
 #include "Messenger.h"
 #include "TCP_connection.h"
+#include "bin_pack.h"
+#include "bin_unpack.h"
 #include "ccompat.h"
+#include "crypto_core.h"
 #include "friend_connection.h"
+#include "group_announce.h"
 #include "group_common.h"
+#include "group_connection.h"
 #include "group_moderation.h"
 #include "group_pack.h"
+#include "logger.h"
 #include "mono_time.h"
+#include "net_crypto.h"
 #include "network.h"
+#include "onion_announce.h"
+#include "onion_client.h"
 #include "util.h"
 
 /* The minimum size of a plaintext group handshake packet */
@@ -1374,7 +1382,7 @@ static int make_gc_shared_state_packet(const GC_Chat *chat, uint8_t *data, uint1
         return -1;
     }
 
-    return (int)(header_len + packed_len);
+    return header_len + packed_len;
 }
 
 /** @brief Creates a signature for the group's shared state in packed form.
@@ -3241,7 +3249,7 @@ static int make_gc_sanctions_list_packet(const GC_Chat *chat, uint8_t *data, uin
         return -1;
     }
 
-    return (int)(length + packed_len);
+    return length + packed_len;
 }
 
 /** @brief Sends the sanctions list to peer.

@@ -6,7 +6,6 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "../bin_pack.h"
 #include "../bin_unpack.h"

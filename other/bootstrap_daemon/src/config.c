@@ -10,6 +10,7 @@
 #include "config.h"
 
 #include "config_defaults.h"
+#include "global.h"
 #include "log.h"
 
 #include <stdio.h>
@@ -18,6 +19,10 @@
 
 #include <libconfig.h>
 
+#include "../../../toxcore/DHT.h"
+#include "../../../toxcore/ccompat.h"
+#include "../../../toxcore/crypto_core.h"
+#include "../../../toxcore/network.h"
 #include "../../bootstrap_node_packets.h"
 
 /**

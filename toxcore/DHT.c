@@ -16,13 +16,15 @@
 #include "LAN_discovery.h"
 #include "bin_pack.h"
 #include "ccompat.h"
+#include "crypto_core.h"
 #include "logger.h"
+#include "mem.h"
 #include "mono_time.h"
 #include "network.h"
 #include "ping.h"
+#include "ping_array.h"
 #include "shared_key_cache.h"
 #include "state.h"
-#include "util.h"
 
 /** The timeout after which a node is discarded completely. */
 #define KILL_NODE_TIMEOUT (BAD_NODE_TIMEOUT + PING_INTERVAL)

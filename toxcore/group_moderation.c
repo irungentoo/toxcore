@@ -15,9 +15,10 @@
 #include <string.h>
 #include <time.h>
 
+#include "DHT.h"
 #include "ccompat.h"
 #include "crypto_core.h"
-#include "mono_time.h"
+#include "logger.h"
 #include "network.h"
 #include "util.h"
 
@@ -305,7 +306,7 @@ int sanctions_list_pack(uint8_t *data, uint16_t length, const Mod_Sanction *sanc
         return -1;
     }
 
-    return (int)(packed_len + cred_len);
+    return packed_len + cred_len;
 }
 
 uint16_t sanctions_creds_unpack(Mod_Sanction_Creds *creds, const uint8_t *data)
@@ -457,7 +458,7 @@ static bool sanctions_list_validate_entry(const Moderation *moderation, const Mo
     uint8_t packed_data[MOD_SANCTION_PACKED_SIZE];
     const int packed_len = sanctions_list_pack(packed_data, sizeof(packed_data), sanction, 1, nullptr);
 
-    if (packed_len <= (int) SIGNATURE_SIZE) {
+    if (packed_len <= SIGNATURE_SIZE) {
         return false;
     }
 
@@ -785,7 +786,7 @@ static bool sanctions_list_sign_entry(const Moderation *moderation, Mod_Sanction
     uint8_t packed_data[MOD_SANCTION_PACKED_SIZE];
     const int packed_len = sanctions_list_pack(packed_data, sizeof(packed_data), sanction, 1, nullptr);
 
-    if (packed_len <= (int) SIGNATURE_SIZE) {
+    if (packed_len <= SIGNATURE_SIZE) {
         LOGGER_ERROR(moderation->log, "Failed to pack sanctions list: %d", packed_len);
         return false;
     }

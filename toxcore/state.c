@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "ccompat.h"
+#include "logger.h"
 
 /** state load/save */
 int state_load(const Logger *log, state_load_cb *state_load_callback, void *outer,

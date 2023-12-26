@@ -13,9 +13,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "DHT.h"
 #include "bin_pack.h"
 #include "bin_unpack.h"
 #include "ccompat.h"
+#include "group_common.h"
+#include "group_moderation.h"
+#include "logger.h"
 #include "util.h"
 
 bool group_privacy_state_from_int(uint8_t value, Group_Privacy_State *out)
@@ -428,7 +432,7 @@ static void save_pack_self_info(const GC_Chat *chat, Bin_Pack *bp)
 
     bin_pack_u16(bp, self->nick_length); // 1
     bin_pack_u08(bp, (uint8_t)self->role); // 2
-    bin_pack_u08(bp, (uint8_t)self->status); // 3
+    bin_pack_u08(bp, self->status); // 3
     bin_pack_bin(bp, self->nick, self->nick_length); // 4
 }
 

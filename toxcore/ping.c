@@ -9,15 +9,15 @@
  */
 #include "ping.h"
 
-#include <stdlib.h>
 #include <string.h>
 
 #include "DHT.h"
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "mem.h"
 #include "mono_time.h"
 #include "network.h"
 #include "ping_array.h"
-#include "util.h"
 
 #define PING_NUM_MAX 512
 

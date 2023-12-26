@@ -226,7 +226,7 @@ Socket net_socket(const Network *ns, Family domain, int type, int protocol);
  */
 bool sock_valid(Socket sock);
 
-extern const Socket net_invalid_socket;
+Socket net_invalid_socket(void);
 
 /**
  * Calls send(sockfd, buf, len, MSG_NOSIGNAL).

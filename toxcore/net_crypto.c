@@ -10,13 +10,19 @@
  */
 #include "net_crypto.h"
 
-#include <math.h>
-#include <stdlib.h>
 #include <string.h>
 
+#include "DHT.h"
+#include "LAN_discovery.h"
+#include "TCP_client.h"
+#include "TCP_connection.h"
 #include "ccompat.h"
+#include "crypto_core.h"
 #include "list.h"
+#include "logger.h"
+#include "mem.h"
 #include "mono_time.h"
+#include "network.h"
 #include "util.h"
 
 typedef struct Packet_Data {

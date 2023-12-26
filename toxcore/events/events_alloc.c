@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "../ccompat.h"
+#include "../tox_events.h"
 
 Tox_Events_State *tox_events_alloc(void *user_data)
 {

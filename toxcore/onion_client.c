@@ -13,10 +13,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "DHT.h"
 #include "LAN_discovery.h"
+#include "TCP_connection.h"
 #include "ccompat.h"
+#include "crypto_core.h"
 #include "group_onion_announce.h"
+#include "logger.h"
+#include "mem.h"
 #include "mono_time.h"
+#include "net_crypto.h"
+#include "network.h"
+#include "onion.h"
+#include "onion_announce.h"
+#include "ping_array.h"
 #include "util.h"
 
 /** @brief defines for the array size and timeout for onion announce packets. */

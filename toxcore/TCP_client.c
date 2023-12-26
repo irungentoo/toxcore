@@ -10,12 +10,17 @@
 
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
+#include "DHT.h"
 #include "TCP_common.h"
 #include "ccompat.h"
+#include "crypto_core.h"
+#include "forwarding.h"
+#include "logger.h"
+#include "mem.h"
 #include "mono_time.h"
+#include "network.h"
 #include "util.h"
 
 typedef struct TCP_Client_Conn {

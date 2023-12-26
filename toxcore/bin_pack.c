@@ -10,6 +10,7 @@
 
 #include "../third_party/cmp/cmp.h"
 #include "ccompat.h"
+#include "logger.h"
 
 struct Bin_Pack {
     uint8_t *bytes;

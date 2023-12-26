@@ -23,17 +23,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 // toxcore
-#include "../../../toxcore/tox.h"
+#include "../../../toxcore/DHT.h"
 #include "../../../toxcore/LAN_discovery.h"
 #include "../../../toxcore/TCP_server.h"
 #include "../../../toxcore/announce.h"
+#include "../../../toxcore/ccompat.h"
+#include "../../../toxcore/crypto_core.h"
+#include "../../../toxcore/forwarding.h"
+#include "../../../toxcore/group_announce.h"
 #include "../../../toxcore/group_onion_announce.h"
 #include "../../../toxcore/logger.h"
+#include "../../../toxcore/mem.h"
 #include "../../../toxcore/mono_time.h"
+#include "../../../toxcore/network.h"
+#include "../../../toxcore/onion.h"
 #include "../../../toxcore/onion_announce.h"
-#include "../../../toxcore/util.h"
 
 // misc
 #include "../../bootstrap_node_packets.h"

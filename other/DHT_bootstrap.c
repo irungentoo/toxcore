@@ -16,12 +16,17 @@
 #include "../toxcore/DHT.h"
 #include "../toxcore/LAN_discovery.h"
 #include "../toxcore/ccompat.h"
-#include "../toxcore/friend_requests.h"
+#include "../toxcore/crypto_core.h"
+#include "../toxcore/forwarding.h"
+#include "../toxcore/group_announce.h"
 #include "../toxcore/group_onion_announce.h"
 #include "../toxcore/logger.h"
+#include "../toxcore/mem.h"
 #include "../toxcore/mono_time.h"
+#include "../toxcore/network.h"
+#include "../toxcore/onion.h"
+#include "../toxcore/onion_announce.h"
 #include "../toxcore/tox.h"
-#include "../toxcore/util.h"
 
 #define TCP_RELAY_ENABLED
 

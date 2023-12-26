@@ -3,6 +3,8 @@
  * Copyright © 2015-2016 Tox project.
  */
 
+#include <stdarg.h>
+
 /*
  * Tox DHT bootstrap daemon.
  * Logging utility with support of multiple logging backends.

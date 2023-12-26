@@ -89,7 +89,7 @@
 
 #include "ccompat.h"
 #include "logger.h"
-#include "mono_time.h"
+#include "mem.h"
 #include "util.h"
 
 // Disable MSG_NOSIGNAL on systems not supporting it, e.g. Windows, FreeBSD
@@ -366,7 +366,11 @@ IP6 get_ip6_loopback(void)
 #define INVALID_SOCKET (-1)
 #endif
 
-const Socket net_invalid_socket = { (int)INVALID_SOCKET };
+Socket net_invalid_socket(void)
+{
+    const Socket invalid_socket = { (int)INVALID_SOCKET };
+    return invalid_socket;
+}
 
 Family net_family_unspec(void)
 {
@@ -460,7 +464,8 @@ bool net_family_is_tox_tcp_ipv6(Family family)
 
 bool sock_valid(Socket sock)
 {
-    return sock.sock != net_invalid_socket.sock;
+    const Socket invalid_socket = net_invalid_socket();
+    return sock.sock != invalid_socket.sock;
 }
 
 struct Network_Addr {
