@@ -40,7 +40,7 @@ int join_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t fr
  * @retval 0 on success.
  * @retval -1 on failure.
  */
-int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
+int group_send_audio(const Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                      uint32_t sample_rate);
 
 /** @brief Enable A/V in a groupchat.

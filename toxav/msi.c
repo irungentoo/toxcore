@@ -62,8 +62,8 @@ static void msg_init(MSIMessage *dest, MSIRequest request);
 static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t length);
 static uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *value, uint8_t value_len,
                                      uint16_t *length);
-static int send_message(Messenger *m, uint32_t friend_number, const MSIMessage *msg);
-static int send_error(Messenger *m, uint32_t friend_number, MSIError error);
+static int send_message(const Messenger *m, uint32_t friend_number, const MSIMessage *msg);
+static int send_error(const Messenger *m, uint32_t friend_number, MSIError error);
 static bool invoke_callback(MSICall *call, MSICallbackID cb);
 static MSICall *get_call(MSISession *session, uint32_t friend_number);
 static MSICall *new_call(MSISession *session, uint32_t friend_number);
@@ -444,7 +444,7 @@ static uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *
 
     return dest + value_len; /* Set to next position ready to be written */
 }
-static int send_message(Messenger *m, uint32_t friend_number, const MSIMessage *msg)
+static int send_message(const Messenger *m, uint32_t friend_number, const MSIMessage *msg)
 {
     /* Parse and send message */
     assert(m != nullptr);
@@ -489,7 +489,7 @@ static int send_message(Messenger *m, uint32_t friend_number, const MSIMessage *
 
     return -1;
 }
-static int send_error(Messenger *m, uint32_t friend_number, MSIError error)
+static int send_error(const Messenger *m, uint32_t friend_number, MSIError error)
 {
     /* Send error message */
     assert(m != nullptr);

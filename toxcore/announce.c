@@ -302,7 +302,7 @@ static int create_reply_plain_data_search_request(Announcements *announce,
         const IP_Port *source,
         const uint8_t *data, uint16_t length,
         uint8_t *reply, uint16_t reply_max_length,
-        uint8_t *to_auth, uint16_t to_auth_length)
+        const uint8_t *to_auth, uint16_t to_auth_length)
 {
     if (length != CRYPTO_PUBLIC_KEY_SIZE &&
             length != CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SHA256_SIZE) {
@@ -377,11 +377,12 @@ static int create_reply_plain_data_search_request(Announcements *announce,
 }
 
 non_null()
-static int create_reply_plain_data_retrieve_request(Announcements *announce,
+static int create_reply_plain_data_retrieve_request(
+        const Announcements *announce,
         const IP_Port *source,
         const uint8_t *data, uint16_t length,
         uint8_t *reply, uint16_t reply_max_length,
-        uint8_t *to_auth, uint16_t to_auth_length)
+        const uint8_t *to_auth, uint16_t to_auth_length)
 {
     if (length != CRYPTO_PUBLIC_KEY_SIZE + 1 + TIMED_AUTH_SIZE) {
         return -1;
@@ -423,7 +424,7 @@ static int create_reply_plain_store_announce_request(Announcements *announce,
         const IP_Port *source,
         const uint8_t *data, uint16_t length,
         uint8_t *reply, uint16_t reply_max_length,
-        uint8_t *to_auth, uint16_t to_auth_length)
+        const uint8_t *to_auth, uint16_t to_auth_length)
 {
     const int plain_len = (int)length - (CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE);
     const int announcement_len = (int)plain_len - (TIMED_AUTH_SIZE + sizeof(uint32_t) + 1);

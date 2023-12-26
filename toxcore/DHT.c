@@ -1930,14 +1930,11 @@ static void do_close(DHT *dht)
     for (size_t i = 0; i < LCLIENT_LIST; ++i) {
         Client_data *const client = &dht->close_clientlist[i];
 
-        IPPTsPng *const assocs[] = { &client->assoc6, &client->assoc4, nullptr };
-
-        for (IPPTsPng * const *it = assocs; *it != nullptr; ++it) {
-            IPPTsPng *const assoc = *it;
-
-            if (assoc->timestamp != 0) {
-                assoc->timestamp = badonly;
-            }
+        if (client->assoc4.timestamp != 0) {
+            client->assoc4.timestamp = badonly;
+        }
+        if (client->assoc6.timestamp != 0) {
+            client->assoc6.timestamp = badonly;
         }
     }
 }

@@ -434,7 +434,7 @@ static int handle_group_audio_packet(void *object, uint32_t groupnumber, uint32_
     }
 
     while (decode_audio_packet((Group_AV *)object, peer_av, groupnumber, friendgroupnumber) == 0) {
-        continue;
+        /* Continue. */
     }
 
     return 0;
@@ -612,7 +612,7 @@ static int send_audio_packet(const Group_Chats *g_c, uint32_t groupnumber, const
  * @retval 0 on success.
  * @retval -1 on failure.
  */
-int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
+int group_send_audio(const Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                      uint32_t sample_rate)
 {
     Group_AV *group_av = (Group_AV *)group_get_object(g_c, groupnumber);

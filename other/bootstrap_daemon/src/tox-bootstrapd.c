@@ -57,7 +57,7 @@ static void sleep_milliseconds(uint32_t ms)
 // returns 1 on success
 //         0 on failure - no keys were read or stored
 
-static int manage_keys(DHT *dht, char *keys_file_path)
+static int manage_keys(DHT *dht, const char *keys_file_path)
 {
     enum { KEYS_SIZE = CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE };
     uint8_t keys[KEYS_SIZE];

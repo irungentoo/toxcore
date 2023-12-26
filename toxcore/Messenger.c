@@ -3183,7 +3183,7 @@ static bool pack_groupchats_handler(Bin_Pack *bp, const Logger *log, const void 
 non_null()
 static uint32_t saved_groups_size(const Messenger *m)
 {
-    GC_Session *c = m->group_handler;
+    const GC_Session *c = m->group_handler;
     return bin_pack_obj_size(pack_groupchats_handler, m->log, c);
 }
 

@@ -8,9 +8,12 @@ set -e
 
 CPPCHECK=("--enable=all")
 CPPCHECK+=("--inconclusive")
+CPPCHECK+=("--check-level=exhaustive")
+CPPCHECK+=("--inline-suppr")
+CPPCHECK+=("--library=other/docker/cppcheck/toxcore.cfg")
 CPPCHECK+=("--error-exitcode=1")
-# Used for VLA.
-CPPCHECK+=("--suppress=allocaCalled")
+# We don't cast function pointers, which cppcheck suggests here.
+CPPCHECK+=("--suppress=constParameterCallback")
 # False positives in switch statements.
 CPPCHECK+=("--suppress=knownConditionTrueFalse")
 # Cppcheck does not need standard library headers to get proper results.
@@ -19,27 +22,22 @@ CPPCHECK+=("--suppress=missingIncludeSystem")
 CPPCHECK+=("--suppress=signConversion")
 # TODO(iphydf): Fixed in the toxav refactor PR.
 CPPCHECK+=("--suppress=redundantAssignment")
-# We have some redundant nullptr checks in assertions
-CPPCHECK+=("--suppress=nullPointerRedundantCheck")
-# Triggers a false warning in group.c
-CPPCHECK+=("--suppress=AssignmentAddressToInteger")
-# TODO(sudden6): This triggers a false positive, check again later to enable it
-CPPCHECK+=("--suppress=arrayIndexOutOfBoundsCond")
 
-# We're a library. This only works on whole programs.
-CPPCHECK_C=("--suppress=unusedFunction")
-
+# We use this for VLAs.
+CPPCHECK_CXX+=("--suppress=allocaCalled")
 # False positive in auto_tests.
-CPPCHECK_CXX+=("--suppress=shadowArgument")
 CPPCHECK_CXX+=("--suppress=shadowFunction")
-# False positive for callback functions
-CPPCHECK_CXX+=("--suppress=constParameter")
+# False positive in group.c.
+# Using cppcheck-suppress claims the suppression is unused.
+CPPCHECK_CXX+=("--suppress=AssignmentAddressToInteger")
+# We use C style casts because we write C code.
+CPPCHECK_CXX+=("--suppress=cstyleCast")
 # Used in Messenger.c for a static_assert(...)
 CPPCHECK_CXX+=("--suppress=sizeofFunctionCall")
 
 run() {
   echo "Running cppcheck in variant '$*'"
-  cppcheck "${CPPCHECK[@]}" "${CPPCHECK_C[@]}" tox*/*.[ch] tox*/*/*.[ch] "${CPPFLAGS[@]}" "$@"
+  cppcheck -j8 "${CPPCHECK[@]}" "${CPPCHECK_C[@]}" tox*/*.[ch] tox*/*/*.[ch] "${CPPFLAGS[@]}" "$@"
   cppcheck "${CPPCHECK[@]}" "${CPPCHECK_CXX[@]}" amalgamation.cc "${CPPFLAGS[@]}" "$@"
 }
 

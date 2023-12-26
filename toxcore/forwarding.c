@@ -31,14 +31,14 @@ struct Forwarding {
     void *forwarded_response_callback_object;
 };
 
-DHT *forwarding_get_dht(Forwarding *forwarding)
+DHT *forwarding_get_dht(const Forwarding *forwarding)
 {
     return forwarding->dht;
 }
 
 #define SENDBACK_TIMEOUT 3600
 
-bool send_forward_request(Networking_Core *net, const IP_Port *forwarder,
+bool send_forward_request(const Networking_Core *net, const IP_Port *forwarder,
                           const uint8_t *chain_keys, uint16_t chain_length,
                           const uint8_t *data, uint16_t data_length)
 {
@@ -316,7 +316,7 @@ static int handle_forwarding(void *object, const IP_Port *source, const uint8_t 
     }
 }
 
-bool forward_reply(Networking_Core *net, const IP_Port *forwarder,
+bool forward_reply(const Networking_Core *net, const IP_Port *forwarder,
                    const uint8_t *sendback, uint16_t sendback_length,
                    const uint8_t *data, uint16_t length)
 {

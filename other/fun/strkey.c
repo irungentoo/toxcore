@@ -45,7 +45,7 @@
 
 #define PRINT_TRIES_COUNT
 
-static void print_key(unsigned char *key)
+static void print_key(const unsigned char *key)
 {
     for (size_t i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
         if (key[i] < 16) {
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
             }
         } while (!found);
     } else {
-        unsigned char *p = public_key + offset;
+        const unsigned char *p = public_key + offset;
 
         do {
 #ifdef PRINT_TRIES_COUNT

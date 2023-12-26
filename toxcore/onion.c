@@ -735,6 +735,7 @@ Onion *new_onion(const Logger *log, const Memory *mem, const Mono_Time *mono_tim
     if (onion->shared_keys_1 == nullptr ||
         onion->shared_keys_2 == nullptr ||
         onion->shared_keys_3 == nullptr) {
+        // cppcheck-suppress mismatchAllocDealloc
         kill_onion(onion);
         return nullptr;
     }

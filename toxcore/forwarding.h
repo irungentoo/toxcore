@@ -26,7 +26,7 @@ extern "C" {
 typedef struct Forwarding Forwarding;
 
 non_null()
-DHT *forwarding_get_dht(Forwarding *forwarding);
+DHT *forwarding_get_dht(const Forwarding *forwarding);
 
 /**
  * @brief Send data to forwarder for forwarding via chain of dht nodes.
@@ -41,7 +41,7 @@ DHT *forwarding_get_dht(Forwarding *forwarding);
  * @return true on success, false otherwise.
  */
 non_null()
-bool send_forward_request(Networking_Core *net, const IP_Port *forwarder,
+bool send_forward_request(const Networking_Core *net, const IP_Port *forwarder,
                           const uint8_t *chain_keys, uint16_t chain_length,
                           const uint8_t *data, uint16_t data_length);
 
@@ -75,7 +75,7 @@ bool create_forward_chain_packet(const uint8_t *chain_keys, uint16_t chain_lengt
  * @return true on success, false otherwise.
  */
 non_null()
-bool forward_reply(Networking_Core *net, const IP_Port *forwarder,
+bool forward_reply(const Networking_Core *net, const IP_Port *forwarder,
                    const uint8_t *sendback, uint16_t sendback_length,
                    const uint8_t *data, uint16_t length);
 

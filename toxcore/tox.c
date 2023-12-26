@@ -841,7 +841,9 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         return nullptr;
     }
 
-    if (new_groupchats(tox->mono_time, tox->m) == nullptr) {
+    tox->m->conferences_object = new_groupchats(tox->mono_time, tox->m);
+
+    if (tox->m->conferences_object == nullptr) {
         kill_messenger(tox->m);
 
         mono_time_free(tox->sys.mem, tox->mono_time);
@@ -2723,6 +2725,7 @@ static void set_custom_packet_error(int ret, Tox_Err_Friend_Custom_Packet *error
     }
 }
 
+// cppcheck-suppress constParameterPointer
 bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
                                   Tox_Err_Friend_Custom_Packet *error)
 {
@@ -2762,6 +2765,7 @@ void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *call
     }
 }
 
+// cppcheck-suppress constParameterPointer
 bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
                                      Tox_Err_Friend_Custom_Packet *error)
 {

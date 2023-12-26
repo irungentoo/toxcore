@@ -212,13 +212,13 @@ static bool group_id_eq(const uint8_t *a, const uint8_t *b)
 }
 
 non_null()
-static bool g_title_eq(Group_c *g, const uint8_t *title, uint8_t title_len)
+static bool g_title_eq(const Group_c *g, const uint8_t *title, uint8_t title_len)
 {
     return memeq(g->title, g->title_len, title, title_len);
 }
 
 non_null()
-static bool g_peer_nick_eq(Group_Peer *peer, const uint8_t *nick, uint8_t nick_len)
+static bool g_peer_nick_eq(const Group_Peer *peer, const uint8_t *nick, uint8_t nick_len)
 {
     return memeq(peer->nick, peer->nick_len, nick, nick_len);
 }
@@ -3767,7 +3767,6 @@ Group_Chats *new_groupchats(const Mono_Time *mono_time, Messenger *m)
     temp->mono_time = mono_time;
     temp->m = m;
     temp->fr_c = m->fr_c;
-    m->conferences_object = temp;
     m_callback_conference_invite(m, &handle_friend_invite_packet);
 
     set_global_status_callback(m->fr_c, &g_handle_any_status, temp);

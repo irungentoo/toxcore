@@ -41,7 +41,7 @@ static bool create_tox(const unsigned char *const secret_key, Tox **const tox)
     return true;
 }
 
-static bool print_savedata(Tox *const tox)
+static bool print_savedata(const Tox *const tox)
 {
     const size_t savedata_size = tox_get_savedata_size(tox);
     uint8_t *const savedata = (uint8_t *)malloc(savedata_size);

@@ -61,7 +61,7 @@ static void tox_connection_callback(Tox *tox, Tox_Connection connection, void *u
     }
 }
 
-static void print_information(Tox *tox)
+static void print_information(const Tox *tox)
 {
     uint8_t tox_id[TOX_ADDRESS_SIZE];
     char tox_id_str[TOX_ADDRESS_SIZE * 2];

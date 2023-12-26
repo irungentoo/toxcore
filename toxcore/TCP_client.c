@@ -118,9 +118,9 @@ static bool connect_sock_to(const Logger *logger, const Memory *mem, Socket sock
 non_null()
 static int proxy_http_generate_connection_request(TCP_Client_Connection *tcp_conn)
 {
-    char one[] = "CONNECT ";
-    char two[] = " HTTP/1.1\nHost: ";
-    char three[] = "\r\n\r\n";
+    const char one[] = "CONNECT ";
+    const char two[] = " HTTP/1.1\nHost: ";
+    const char three[] = "\r\n\r\n";
 
     char ip[TOX_INET6_ADDRSTRLEN];
 
@@ -149,7 +149,7 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *tcp_con
 non_null()
 static int proxy_http_read_connection_response(const Logger *logger, const TCP_Client_Connection *tcp_conn)
 {
-    char success[] = "200";
+    const char success[] = "200";
     uint8_t data[16]; // draining works the best if the length is a power of 2
 
     const TCP_Connection *con0 = &tcp_conn->con;
@@ -912,8 +912,7 @@ static int do_confirmed_tcp(const Logger *logger, TCP_Client_Connection *conn, c
     }
 
     while (tcp_process_packet(logger, conn, userdata)) {
-        // Keep reading until error or out of data.
-        continue;
+        /* Keep reading until error or out of data. */
     }
 
     return 0;

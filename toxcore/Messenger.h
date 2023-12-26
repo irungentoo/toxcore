@@ -297,7 +297,7 @@ struct Messenger {
     m_friend_connectionstatuschange_internal_cb *friend_connectionstatuschange_internal;
     void *friend_connectionstatuschange_internal_userdata;
 
-    struct Group_Chats *conferences_object; /* Set by new_groupchats()*/
+    struct Group_Chats *conferences_object;
     m_conference_invite_cb *conference_invite;
 
     m_group_invite_cb *group_invite;

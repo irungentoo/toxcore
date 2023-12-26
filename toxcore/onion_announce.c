@@ -669,6 +669,7 @@ Onion_Announce *new_onion_announce(const Logger *log, const Memory *mem, const R
 
     onion_a->shared_keys_recv = shared_key_cache_new(log, mono_time, mem, dht_get_self_secret_key(dht), KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
     if (onion_a->shared_keys_recv == nullptr) {
+        // cppcheck-suppress mismatchAllocDealloc
         kill_onion_announce(onion_a);
         return nullptr;
     }

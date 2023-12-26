@@ -156,7 +156,7 @@ non_null() static bool self_gc_is_founder(const GC_Chat *chat);
 non_null() static bool group_number_valid(const GC_Session *c, int group_number);
 non_null() static int peer_update(const GC_Chat *chat, const GC_Peer *peer, uint32_t peer_number);
 non_null() static void group_delete(GC_Session *c, GC_Chat *chat);
-non_null() static void group_cleanup(GC_Session *c, GC_Chat *chat);
+non_null() static void group_cleanup(const GC_Session *c, GC_Chat *chat);
 non_null() static bool group_exists(const GC_Session *c, const uint8_t *chat_id);
 non_null() static void add_tcp_relays_to_chat(const GC_Session *c, GC_Chat *chat);
 non_null(1, 2) nullable(4)
@@ -8178,7 +8178,7 @@ GC_Session *new_dht_groupchats(Messenger *m)
     return c;
 }
 
-static void group_cleanup(GC_Session *c, GC_Chat *chat)
+static void group_cleanup(const GC_Session *c, GC_Chat *chat)
 {
     kill_group_friend_connection(c, chat);
 

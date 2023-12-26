@@ -134,7 +134,6 @@ jobs:
       - run:
           apt-get install -y --no-install-recommends
             ca-certificates
-            cppcheck
             g++
             llvm-dev
       - checkout
@@ -142,7 +141,6 @@ jobs:
       - run: other/analysis/check_includes
       - run: other/analysis/check_logger_levels
       - run: other/analysis/run-clang
-      - run: other/analysis/run-cppcheck
       - run: other/analysis/run-gcc
 
   clang-analyze:

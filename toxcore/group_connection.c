@@ -209,7 +209,7 @@ bool gcc_send_lossless_packet_fragments(const GC_Chat *chat, GC_Connection *gcon
     const uint16_t end_idx = gcc_get_array_index(gconn->send_message_id);
 
     for (uint16_t i = start_idx; i != end_idx; i = (i + 1) % GCC_BUFFER_SIZE) {
-        GC_Message_Array_Entry *entry = &gconn->send_array[i];
+        const GC_Message_Array_Entry *entry = &gconn->send_array[i];
 
         if (array_entry_is_empty(entry)) {
             LOGGER_FATAL(chat->log, "array entry for packet chunk is empty");

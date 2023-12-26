@@ -21,7 +21,7 @@
 #include "../../testing/misc_tools.h" // hex_string_to_bin
 #include "../../toxcore/ccompat.h"
 
-static int load_file(char *filename, unsigned char **result)
+static int load_file(const char *filename, unsigned char **result)
 {
     int size = 0;
     FILE *f = fopen(filename, "rb");
