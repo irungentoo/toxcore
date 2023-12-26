@@ -1,6 +1,55 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 CHECKS="*"
+ERRORS="*"
+
+# Need to investigate or disable and document these.
+# =========================================================
+
+# TODO(iphydf): Fix these.
+ERRORS="$ERRORS,-cert-err34-c"
+ERRORS="$ERRORS,-cert-str34-c"
+ERRORS="$ERRORS,-readability-suspicious-call-argument"
+
+# TODO(iphydf): Fix these.
+CHECKS="$CHECKS,-bugprone-switch-missing-default-case"
+CHECKS="$CHECKS,-misc-include-cleaner"
+
+# TODO(iphydf): We might want some of these. For the ones we don't want, add a
+# comment explaining why not.
+CHECKS="$CHECKS,-clang-analyzer-optin.performance.Padding"
+CHECKS="$CHECKS,-hicpp-signed-bitwise"
+CHECKS="$CHECKS,-readability-function-cognitive-complexity"
+
+# TODO(iphydf): Maybe fix these?
+CHECKS="$CHECKS,-bugprone-easily-swappable-parameters"
+CHECKS="$CHECKS,-bugprone-implicit-widening-of-multiplication-result"
+CHECKS="$CHECKS,-bugprone-integer-division"
+CHECKS="$CHECKS,-clang-analyzer-core.NullDereference"
+CHECKS="$CHECKS,-clang-analyzer-valist.Uninitialized"
+CHECKS="$CHECKS,-cppcoreguidelines-avoid-non-const-global-variables"
+CHECKS="$CHECKS,-misc-no-recursion"
+
+# TODO(iphydf): Probably fix these.
+CHECKS="$CHECKS,-cert-err33-c"
+CHECKS="$CHECKS,-cppcoreguidelines-avoid-magic-numbers"
+CHECKS="$CHECKS,-google-readability-casting"
+CHECKS="$CHECKS,-modernize-macro-to-enum"
+CHECKS="$CHECKS,-readability-magic-numbers"
+
+# Documented disabled checks. We don't want these for sure.
+# =========================================================
+
+# Callback handlers often don't use all their parameters. There's
+# IgnoreVirtual, but that doesn't work for C-style callbacks.
+CHECKS="$CHECKS,-misc-unused-parameters"
+
+# We sometimes use #if 0.
+CHECKS="$CHECKS,-readability-avoid-unconditional-preprocessor-if"
+
+# We have better macro hygiene checks with tokstyle. We can never pass macro
+# arguments that require parentheses inside the macro.
+CHECKS="$CHECKS,-bugprone-macro-parentheses"
 
 # We don't use memcpy_s.
 CHECKS="$CHECKS,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling"
@@ -81,42 +130,6 @@ CHECKS="$CHECKS,-cert-dcl03-c"
 CHECKS="$CHECKS,-hicpp-static-assert"
 CHECKS="$CHECKS,-misc-static-assert"
 
-# TODO(iphydf): We might want some of these. For the ones we don't want, add a
-# comment explaining why not.
-CHECKS="$CHECKS,-clang-analyzer-optin.performance.Padding"
-CHECKS="$CHECKS,-hicpp-signed-bitwise"
-CHECKS="$CHECKS,-misc-unused-parameters"
-CHECKS="$CHECKS,-readability-function-cognitive-complexity"
-
-# TODO(iphydf): Maybe fix these?
-CHECKS="$CHECKS,-bugprone-easily-swappable-parameters"
-CHECKS="$CHECKS,-bugprone-implicit-widening-of-multiplication-result"
-CHECKS="$CHECKS,-bugprone-integer-division"
-CHECKS="$CHECKS,-clang-analyzer-core.NullDereference"
-CHECKS="$CHECKS,-clang-analyzer-valist.Uninitialized"
-CHECKS="$CHECKS,-concurrency-mt-unsafe"
-CHECKS="$CHECKS,-cppcoreguidelines-avoid-non-const-global-variables"
-CHECKS="$CHECKS,-misc-no-recursion"
-
-# TODO(iphydf): Probably fix these.
-CHECKS="$CHECKS,-cert-err33-c"
-CHECKS="$CHECKS,-cppcoreguidelines-avoid-magic-numbers"
-CHECKS="$CHECKS,-google-readability-casting"
-CHECKS="$CHECKS,-modernize-macro-to-enum"
-CHECKS="$CHECKS,-readability-magic-numbers"
-
-# TODO(iphydf): These two trip on list.c. Investigate why.
-CHECKS="$CHECKS,-clang-analyzer-core.NonNullParamChecker"
-CHECKS="$CHECKS,-clang-analyzer-unix.Malloc"
-
-ERRORS="*"
-
-# TODO(iphydf): Fix these.
-ERRORS="$ERRORS,-bugprone-macro-parentheses"
-ERRORS="$ERRORS,-cert-err34-c"
-ERRORS="$ERRORS,-cert-str34-c"
-ERRORS="$ERRORS,-readability-suspicious-call-argument"
-
 set -eux
 
 run() {
@@ -125,18 +138,21 @@ run() {
   for i in "${!EXTRA_ARGS[@]}"; do
     EXTRA_ARGS[$i]="--extra-arg=${EXTRA_ARGS[$i]}"
   done
-  clang-tidy-14 \
-    -p=_build \
-    --extra-arg=-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE \
-    "${EXTRA_ARGS[@]}" \
-    --checks="$CHECKS" \
-    --warnings-as-errors="$ERRORS" \
-    --use-color \
-    other/bootstrap_daemon/src/*.c \
-    other/*.c \
-    toxav/*.c \
-    toxcore/*.c \
-    toxencryptsave/*.c
+  find \
+    other/bootstrap_daemon/src \
+    other \
+    toxav \
+    toxcore \
+    toxcore/events \
+    toxencryptsave \
+    -maxdepth 1 -name "*.c" -print0 \
+    | xargs -0 -n15 -P"$(nproc)" clang-tidy \
+      -p=_build \
+      --extra-arg=-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE \
+      "${EXTRA_ARGS[@]}" \
+      --checks="$CHECKS" \
+      --warnings-as-errors="$ERRORS" \
+      --use-color
 }
 
 cmake . -B_build -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON

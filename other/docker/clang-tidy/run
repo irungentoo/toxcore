@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -eux
+BUILD=clang-tidy
+docker build -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/Dockerfile" .

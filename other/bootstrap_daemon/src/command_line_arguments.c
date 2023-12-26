@@ -47,13 +47,14 @@ static void print_help(void)
               "  --version              Print version information.\n");
 }
 
-void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path, LOG_BACKEND *log_backend,
-                                   bool *run_in_foreground)
+Cli_Status handle_command_line_arguments(
+        int argc, char *argv[], char **cfg_file_path, LOG_BACKEND *log_backend,
+        bool *run_in_foreground)
 {
     if (argc < 2) {
         log_write(LOG_LEVEL_ERROR, "Error: No arguments provided.\n\n");
         print_help();
-        exit(1);
+        return CLI_STATUS_ERROR;
     }
 
     opterr = 0;
@@ -89,7 +90,7 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
 
             case 'h':
                 print_help();
-                exit(0);
+                return CLI_STATUS_DONE;
 
             case 'l':
                 if (strcmp(optarg, "syslog") == 0) {
@@ -101,24 +102,24 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
                 } else {
                     log_write(LOG_LEVEL_ERROR, "Error: Invalid BACKEND value for --log-backend option passed: %s\n\n", optarg);
                     print_help();
-                    exit(1);
+                    return CLI_STATUS_ERROR;
                 }
 
                 break;
 
             case 'v':
                 log_write(LOG_LEVEL_INFO, "Version: %lu\n", DAEMON_VERSION_NUMBER);
-                exit(0);
+                return CLI_STATUS_DONE;
 
             case '?':
                 log_write(LOG_LEVEL_ERROR, "Error: Unrecognized option %s\n\n", argv[optind - 1]);
                 print_help();
-                exit(1);
+                return CLI_STATUS_ERROR;
 
             case ':':
                 log_write(LOG_LEVEL_ERROR, "Error: No argument provided for option %s\n\n", argv[optind - 1]);
                 print_help();
-                exit(1);
+                return CLI_STATUS_ERROR;
         }
     }
 
@@ -129,6 +130,8 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
     if (!cfg_file_path_set) {
         log_write(LOG_LEVEL_ERROR, "Error: The required --config option wasn't specified\n\n");
         print_help();
-        exit(1);
+        return CLI_STATUS_ERROR;
     }
+
+    return CLI_STATUS_OK;
 }

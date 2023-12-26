@@ -40,6 +40,16 @@ jobs:
           (find . -name "*.py" -and -not -name "conanfile.py"; grep -lR '^#!.*python') \
               | xargs -n1 -P8 mypy --strict
 
+  clang-tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker Build
+        uses: docker/build-push-action@v4
+        with:
+          file: other/docker/clang-tidy/Dockerfile
+
   doxygen:
     runs-on: ubuntu-latest
     steps:

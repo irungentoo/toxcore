@@ -1,7 +1,8 @@
 FROM toxchat/haskell:hs-tokstyle AS tokstyle
 FROM ubuntu:22.04
 
-RUN apt-get update && apt-get install --no-install-recommends -y \
+RUN apt-get update && \
+ DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
  ca-certificates \
  clang \
  git \

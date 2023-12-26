@@ -12,6 +12,15 @@
 
 #include "log.h"
 
+typedef enum Cli_Status {
+    /** Continue the program. Command line processing completed. */
+    CLI_STATUS_OK,
+    /** Stop the program with success status. */
+    CLI_STATUS_DONE,
+    /** Stop the program with error status. */
+    CLI_STATUS_ERROR,
+} Cli_Status;
+
 /**
  * Handles command line arguments, setting cfg_file_path and log_backend.
  * Terminates the application if incorrect arguments are specified.
@@ -22,7 +31,8 @@
  * @param log_backend Sets to the provided by the user log backend option.
  * @param run_in_foreground Sets to the provided by the user foreground option.
  */
-void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path, LOG_BACKEND *log_backend,
-                                   bool *run_in_foreground);
+Cli_Status handle_command_line_arguments(
+        int argc, char *argv[], char **cfg_file_path, LOG_BACKEND *log_backend,
+        bool *run_in_foreground);
 
 #endif // C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_COMMAND_LINE_ARGUMENTS_H
