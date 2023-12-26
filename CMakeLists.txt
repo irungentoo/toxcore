@@ -116,7 +116,7 @@ option(BUILD_MISC_TESTS "Build additional tests and utilities" OFF)
 option(BUILD_FUN_UTILS "Build additional just for fun utilities" OFF)
 
 option(AUTOTEST "Enable autotests (mainly for CI)" OFF)
-if (AUTOTEST)
+if(AUTOTEST)
   option(NON_HERMETIC_TESTS "Whether to build and run tests that depend on an internet connection" OFF)
   option(PROXY_TEST "Enable proxy test (needs HTTP/SOCKS5 proxy on port 8080/8081)" OFF)
 endif()
@@ -307,7 +307,10 @@ set(toxcore_SOURCES
   toxcore/tox_unpack.h
   toxcore/util.c
   toxcore/util.h)
-set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${LIBSODIUM_LIBRARIES})
+set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ${LIBSODIUM_LIBRARIES})
+set(toxcore_LINK_DIRECTORIES ${toxcore_LINK_DIRECTORIES} ${LIBSODIUM_LIBRARY_DIRS})
+set(toxcore_INCLUDE_DIRECTORIES ${toxcore_INCLUDE_DIRECTORIES} ${LIBSODIUM_INCLUDE_DIRS})
+set(toxcore_COMPILE_OPTIONS ${toxcore_COMPILE_OPTIONS} ${LIBSODIUM_CFLAGS_OTHER})
 set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} libsodium)
 set(toxcore_API_HEADERS
   ${toxcore_SOURCE_DIR}/toxcore/tox.h^tox
@@ -343,7 +346,10 @@ if(BUILD_TOXAV)
   set(toxcore_API_HEADERS ${toxcore_API_HEADERS}
     ${toxcore_SOURCE_DIR}/toxav/toxav.h^toxav)
 
-  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
+  set(toxcore_LINK_DIRECTORIES ${toxcore_LINK_DIRECTORIES} ${OPUS_LIBRARY_DIRS} ${VPX_LIBRARY_DIRS})
+  set(toxcore_INCLUDE_DIRECTORIES ${toxcore_INCLUDE_DIRECTORIES} ${OPUS_INCLUDE_DIRS} ${VPX_INCLUDE_DIRS})
+  set(toxcore_COMPILE_OPTIONS ${toxcore_COMPILE_OPTIONS} ${OPUS_CFLAGS_OTHER} ${VPX_CFLAGS_OTHER})
   set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} opus vpx)
 endif()
 
@@ -370,28 +376,28 @@ set(toxcore_API_HEADERS ${toxcore_API_HEADERS}
 # any potential libvpx linking.
 message("CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
 if(CMAKE_THREAD_LIBS_INIT)
-  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${CMAKE_THREAD_LIBS_INIT})
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 
 if(NSL_LIBRARIES)
-  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${NSL_LIBRARIES})
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ${NSL_LIBRARIES})
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lnsl)
 endif()
 
 if(RT_LIBRARIES)
-  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${RT_LIBRARIES})
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ${RT_LIBRARIES})
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lrt)
 endif()
 
 if(SOCKET_LIBRARIES)
-  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${SOCKET_LIBRARIES})
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ${SOCKET_LIBRARIES})
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lsocket)
 endif()
 
 if(WIN32)
-  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ws2_32 iphlpapi)
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} ws2_32 iphlpapi)
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lws2_32 -liphlpapi)
 endif()
 
@@ -406,10 +412,16 @@ add_module(toxcore ${toxcore_SOURCES})
 
 # Link it to all dependencies.
 if(TARGET toxcore_static)
-  target_link_libraries(toxcore_static PRIVATE ${toxcore_LINK_MODULES})
+  target_link_libraries(toxcore_static PRIVATE ${toxcore_LINK_LIBRARIES})
+  target_link_directories(toxcore_static PUBLIC ${toxcore_LINK_DIRECTORIES})
+  target_include_directories(toxcore_static SYSTEM PRIVATE ${toxcore_INCLUDE_DIRECTORIES})
+  target_compile_options(toxcore_static PRIVATE ${toxcore_COMPILE_OPTIONS})
 endif()
 if(TARGET toxcore_shared)
-  target_link_libraries(toxcore_shared PRIVATE ${toxcore_LINK_MODULES})
+  target_link_libraries(toxcore_shared PRIVATE ${toxcore_LINK_LIBRARIES})
+  target_link_directories(toxcore_shared PUBLIC ${toxcore_LINK_DIRECTORIES})
+  target_include_directories(toxcore_shared SYSTEM PRIVATE ${toxcore_INCLUDE_DIRECTORIES})
+  target_compile_options(toxcore_shared PRIVATE ${toxcore_COMPILE_OPTIONS})
 endif()
 
 # Make version script (on systems that support it) to limit symbol visibility.

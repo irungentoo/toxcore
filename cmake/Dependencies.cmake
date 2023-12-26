@@ -8,19 +8,25 @@ include(ModulePackage)
 
 find_package(Threads REQUIRED)
 
-find_library(NSL_LIBRARIES          nsl          )
-find_library(RT_LIBRARIES           rt           )
-find_library(SOCKET_LIBRARIES       socket       )
+find_library(NSL_LIBRARIES    nsl   )
+find_library(RT_LIBRARIES     rt    )
+find_library(SOCKET_LIBRARIES socket)
 
 # For toxcore.
-pkg_use_module(LIBSODIUM            libsodium    )
+pkg_search_module(LIBSODIUM   libsodium IMPORTED_TARGET)
 
 # For toxav.
-pkg_use_module(OPUS                 "opus;Opus"  )
-pkg_use_module(VPX                  "vpx;libvpx" )
+pkg_search_module(OPUS        opus      IMPORTED_TARGET)
+if(NOT OPUS_FOUND)
+  pkg_search_module(OPUS      Opus      IMPORTED_TARGET)
+endif()
+pkg_search_module(VPX         vpx       IMPORTED_TARGET)
+if(NOT VPX_FOUND)
+  pkg_search_module(VPX       libvpx    IMPORTED_TARGET)
+endif()
 
 # For tox-bootstrapd.
-pkg_use_module(LIBCONFIG            libconfig    )
+pkg_search_module(LIBCONFIG   libconfig IMPORTED_TARGET)
 
 ###############################################################################
 #

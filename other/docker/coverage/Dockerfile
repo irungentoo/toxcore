@@ -64,12 +64,12 @@ RUN /work/other/proxy/proxy_server \
 
 WORKDIR /work/mallocfail
 RUN ["git", "clone", "--depth=1", "https://github.com/ralight/mallocfail", "/work/mallocfail"]
-COPY syscall_funcs.c src/
+COPY other/docker/coverage/syscall_funcs.c src/
 RUN gcc -fPIC -shared -O2 -g3 -Wall -Ideps/uthash -Ideps/sha3 deps/*/*.c src/*.c -o mallocfail.so -ldl -lbacktrace \
  && install mallocfail.so /usr/local/lib/mallocfail.so
 
 WORKDIR /work/_build
-COPY run_mallocfail /usr/local/bin/
+COPY other/docker/coverage/run_mallocfail /usr/local/bin/
 RUN ["run_mallocfail", "--ctest=2", "--jobs=8"]
 RUN ["gcovr", \
  "--sort-percentage", \

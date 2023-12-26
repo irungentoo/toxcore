@@ -8,6 +8,10 @@ if(TARGET toxcore_static)
 else()
   target_link_libraries(misc_tools PRIVATE toxcore_shared)
 endif()
+target_link_libraries(misc_tools PRIVATE ${LIBSODIUM_LIBRARIES})
+target_link_directories(misc_tools PUBLIC ${LIBSODIUM_LIBRARY_DIRS})
+target_include_directories(misc_tools SYSTEM PRIVATE ${LIBSODIUM_INCLUDE_DIRS})
+target_compile_options(misc_tools PRIVATE ${LIBSODIUM_CFLAGS_OTHER})
 
 ################################################################################
 #

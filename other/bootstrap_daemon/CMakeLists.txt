@@ -20,6 +20,9 @@ add_executable(tox-bootstrapd
   ../bootstrap_node_packets.c
   ../bootstrap_node_packets.h)
 target_link_libraries(tox-bootstrapd PRIVATE ${LIBCONFIG_LIBRARIES})
+target_link_directories(tox-bootstrapd PRIVATE ${LIBCONFIG_LIBRARY_DIRS})
+target_include_directories(tox-bootstrapd SYSTEM PRIVATE ${LIBCONFIG_INCLUDE_DIRS})
+target_compile_options(tox-bootstrapd PRIVATE ${LIBCONFIG_CFLAGS_OTHER})
 if(TARGET toxcore_static)
   target_link_libraries(tox-bootstrapd PRIVATE toxcore_static)
 else()
