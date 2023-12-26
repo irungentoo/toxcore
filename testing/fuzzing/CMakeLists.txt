@@ -13,14 +13,14 @@ endif()
 
 # Fuzzes the toxsave API
 add_executable(toxsave_fuzzer toxsave_harness.cc)
-target_link_libraries(toxsave_fuzzer toxcore_static fuzz_support ${LIBFUZZER_LINKER_FLAGS})
+target_link_libraries(toxsave_fuzzer PRIVATE toxcore_static fuzz_support ${LIBFUZZER_LINKER_FLAGS})
 
 # Fuzzes the bootstrap process
 add_executable(bootstrap_fuzzer bootstrap_harness.cc)
-target_link_libraries(bootstrap_fuzzer toxcore_static fuzz_support ${LIBFUZZER_LINKER_FLAGS})
+target_link_libraries(bootstrap_fuzzer PRIVATE toxcore_static fuzz_support ${LIBFUZZER_LINKER_FLAGS})
 
 add_executable(DHT_fuzz_test ../../toxcore/DHT_fuzz_test.cc)
-target_link_libraries(DHT_fuzz_test toxcore_static fuzz_support ${LIBFUZZER_LINKER_FLAGS})
+target_link_libraries(DHT_fuzz_test PRIVATE toxcore_static fuzz_support ${LIBFUZZER_LINKER_FLAGS})
 
 add_executable(tox_events_fuzz_test ../../toxcore/tox_events_fuzz_test.cc)
-target_link_libraries(tox_events_fuzz_test toxcore_static fuzz_support ${LIBFUZZER_LINKER_FLAGS})
+target_link_libraries(tox_events_fuzz_test PRIVATE toxcore_static fuzz_support ${LIBFUZZER_LINKER_FLAGS})
