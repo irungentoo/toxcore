@@ -168,7 +168,7 @@ run() {
   if ! find "${DIRS[@]}" \
     -maxdepth 1 -name "*.c" -print0 \
     | xargs -0 -n15 -P"$(nproc)" clang-tidy \
-      -p=_build \
+      -p="$PWD/_build" \
       --extra-arg=-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE \
       "${EXTRA_ARGS[@]}" \
       --fix \

@@ -16,6 +16,6 @@ RUN ["apk", "add", "--no-cache", \
 
 ENV CC=clang CXX=clang++
 
-COPY . /src/workspace/c-toxcore/
-WORKDIR /src/workspace/c-toxcore
+COPY . /c-toxcore/
+WORKDIR /c-toxcore
 RUN other/analysis/run-clang-tidy

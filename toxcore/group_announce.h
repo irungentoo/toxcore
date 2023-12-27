@@ -6,8 +6,8 @@
 /**
  * Similar to ping.h, but designed for group chat purposes
  */
-#ifndef GROUP_ANNOUNCE_H
-#define GROUP_ANNOUNCE_H
+#ifndef C_TOXCORE_TOXCORE_GROUP_ANNOUNCE_H
+#define C_TOXCORE_TOXCORE_GROUP_ANNOUNCE_H
 
 #include <stdbool.h>
 
@@ -215,4 +215,4 @@ bool gca_is_valid_announce(const GC_Announce *announce);
 }  // extern "C"
 #endif
 
-#endif // GROUP_ANNOUNCE_H
+#endif // C_TOXCORE_TOXCORE_GROUP_ANNOUNCE_H

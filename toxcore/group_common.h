@@ -6,8 +6,8 @@
  * Common groupchat data structures.
  */
 
-#ifndef GROUP_COMMON_H
-#define GROUP_COMMON_H
+#ifndef C_TOXCORE_TOXCORE_GROUP_COMMON_H
+#define C_TOXCORE_TOXCORE_GROUP_COMMON_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -410,4 +410,4 @@ int unpack_gc_saved_peers(GC_Chat *chat, const uint8_t *data, uint16_t length);
 non_null(1, 2) nullable(4)
 int pack_gc_saved_peers(const GC_Chat *chat, uint8_t *data, uint16_t length, uint16_t *processed);
 
-#endif  // GROUP_COMMON_H
+#endif  // C_TOXCORE_TOXCORE_GROUP_COMMON_H

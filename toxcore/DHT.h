@@ -232,7 +232,7 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool 
 non_null()
 int dht_create_packet(const Memory *mem, const Random *rng,
                       const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
-                      const uint8_t *shared_key, const uint8_t type,
+                      const uint8_t *shared_key, uint8_t type,
                       const uint8_t *plain, size_t plain_length,
                       uint8_t *packet, size_t length);
 

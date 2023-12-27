@@ -2,8 +2,8 @@
  * Copyright © 2022 The TokTok team.
  */
 
-#ifndef C_TOXCORE_TOXCORE_TOX_EVENTS_INTERNAL_H
-#define C_TOXCORE_TOXCORE_TOX_EVENTS_INTERNAL_H
+#ifndef C_TOXCORE_TOXCORE_EVENTS_EVENTS_ALLOC_H
+#define C_TOXCORE_TOXCORE_EVENTS_EVENTS_ALLOC_H
 
 #include "../attributes.h"
 #include "../bin_pack.h"
@@ -213,4 +213,4 @@ Tox_Events_State *tox_events_alloc(void *user_data);
 }
 #endif
 
-#endif // C_TOXCORE_TOXCORE_TOX_EVENTS_INTERNAL_H
+#endif // C_TOXCORE_TOXCORE_EVENTS_EVENTS_ALLOC_H

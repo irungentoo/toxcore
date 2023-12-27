@@ -228,13 +228,13 @@ Onion_Connection_Status onion_connection_status(const Onion_Client *onion_c);
 
 typedef struct Onion_Friend Onion_Friend;
 
-non_null() uint16_t onion_get_friend_count(const Onion_Client *const onion_c);
-non_null() Onion_Friend *onion_get_friend(const Onion_Client *const onion_c, uint16_t friend_num);
-non_null() const uint8_t *onion_friend_get_gc_public_key(const Onion_Friend *const onion_friend);
-non_null() const uint8_t *onion_friend_get_gc_public_key_num(const Onion_Client *const onion_c, uint32_t num);
-non_null() void onion_friend_set_gc_public_key(Onion_Friend *const onion_friend, const uint8_t *public_key);
+non_null() uint16_t onion_get_friend_count(const Onion_Client *onion_c);
+non_null() Onion_Friend *onion_get_friend(const Onion_Client *onion_c, uint16_t friend_num);
+non_null() const uint8_t *onion_friend_get_gc_public_key(const Onion_Friend *onion_friend);
+non_null() const uint8_t *onion_friend_get_gc_public_key_num(const Onion_Client *onion_c, uint32_t num);
+non_null() void onion_friend_set_gc_public_key(Onion_Friend *onion_friend, const uint8_t *public_key);
 non_null(1) nullable(2)
-void onion_friend_set_gc_data(Onion_Friend *const onion_friend, const uint8_t *gc_data, uint16_t gc_data_length);
-non_null() bool onion_friend_is_groupchat(const Onion_Friend *const onion_friend);
+void onion_friend_set_gc_data(Onion_Friend *onion_friend, const uint8_t *gc_data, uint16_t gc_data_length);
+non_null() bool onion_friend_is_groupchat(const Onion_Friend *onion_friend);
 
 #endif
