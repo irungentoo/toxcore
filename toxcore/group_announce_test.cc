@@ -9,7 +9,7 @@ namespace {
 struct Announces : ::testing::Test {
 protected:
     const Memory *mem_ = system_memory();
-    uint64_t clock_ = 0;
+    uint64_t clock_ = 1000;
     Mono_Time *mono_time_ = nullptr;
     GC_Announces_List *gca_ = nullptr;
     GC_Announce _ann1;

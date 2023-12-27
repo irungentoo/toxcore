@@ -53,11 +53,14 @@ TEST(MonoTime, IsTimeoutReal)
     uint64_t const start = mono_time_get(mono_time);
     EXPECT_FALSE(mono_time_is_timeout(mono_time, start, 5));
 
+    const uint64_t before_sleep = mono_time_get(mono_time);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     mono_time_update(mono_time);
+    const uint64_t after_sleep = mono_time_get(mono_time);
 
     // should still not have timed out (5sec) after sleeping ~100ms
-    EXPECT_FALSE(mono_time_is_timeout(mono_time, start, 5));
+    EXPECT_FALSE(mono_time_is_timeout(mono_time, start, 5))
+        << "before sleep: " << before_sleep << ", after sleep: " << after_sleep;
 
     mono_time_free(mem, mono_time);
 }
