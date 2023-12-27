@@ -3,4 +3,4 @@
  */
 #include "ccompat.h"
 
-static_assert(sizeof(int) >= 4, "toxcore does not support 16-bit platform");
+static_assert(sizeof(int) >= 4, "toxcore does not support 16-bit platforms");

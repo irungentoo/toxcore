@@ -1753,8 +1753,8 @@ bool net_connect(const Memory *mem, const Logger *log, Socket sock, const IP_Por
         // Non-blocking socket: "Operation in progress" means it's connecting.
         if (!should_ignore_connect_error(error)) {
             char *net_strerror = net_new_strerror(error);
-            LOGGER_ERROR(log, "failed to connect to %s:%d: %d (%s)",
-                         net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port), error, net_strerror);
+            LOGGER_WARNING(log, "failed to connect to %s:%d: %d (%s)",
+                           net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port), error, net_strerror);
             net_kill_strerror(net_strerror);
             return false;
         }
