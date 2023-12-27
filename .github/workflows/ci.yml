@@ -13,7 +13,10 @@ jobs:
   common:
     uses: TokTok/ci-tools/.github/workflows/common-ci.yml@master
 
-  cppcheck:
+  analysis:
+    strategy:
+      matrix:
+        tool: [autotools, clang-tidy, compcert, cppcheck, doxygen, misra, tcc, tokstyle]
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
@@ -21,94 +24,16 @@ jobs:
       - name: Docker Build
         uses: docker/build-push-action@v4
         with:
-          file: other/docker/cppcheck/Dockerfile
+          file: other/docker/${{ matrix.tool }}/Dockerfile
 
-  mypy:
+  coverage-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.9
-      - name: Install mypy
-        run: pip install mypy
-      - name: Run mypy
-        run: |
-          (find . -name "*.py" -and -not -name "conanfile.py"; grep -lR '^#!.*python') \
-              | xargs -n1 -P8 mypy --strict
-
-  clang-tidy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Docker Build
-        uses: docker/build-push-action@v4
-        with:
-          file: other/docker/clang-tidy/Dockerfile
-
-  doxygen:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Docker Build
-        uses: docker/build-push-action@v4
-        with:
-          file: other/docker/doxygen/Dockerfile
-
-  tokstyle:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Docker Build
-        uses: docker/build-push-action@v4
-        with:
-          file: other/docker/tokstyle/Dockerfile
-
-  misra:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Docker Build
-        uses: docker/build-push-action@v4
-        with:
-          file: other/docker/misra/Dockerfile
-
-  build-autotools:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Docker Build
-        uses: docker/build-push-action@v4
-        with:
-          file: other/docker/autotools/Dockerfile
-
-  build-tcc:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Docker Build
-        uses: docker/build-push-action@v4
-        with:
-          file: other/docker/tcc/Dockerfile
-
-  build-compcert:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Docker Build
-        uses: docker/build-push-action@v4
-        with:
-          file: other/docker/compcert/Dockerfile
+      - name: Build, test, and upload coverage
+        run: other/docker/coverage/run
 
   cimplefmt:
     runs-on: ubuntu-latest
@@ -119,23 +44,17 @@ jobs:
       - name: Run cimplefmt
         run: other/docker/cimplefmt/run -u $(find tox* -name "*.[ch]")
 
-  build-win32:
+  build-windows:
+    strategy:
+      matrix:
+        bits: [32, 64]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Cross compilation
-        run: .github/scripts/cmake-win32 script
-
-  build-win64:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Cross compilation
-        run: .github/scripts/cmake-win64 script
+        run: .github/scripts/cmake-win${{ matrix.bits }} script
 
   build-macos:
     runs-on: macos-latest
@@ -145,15 +64,6 @@ jobs:
           submodules: recursive
       - name: Build and test
         run: .github/scripts/cmake-osx
-
-  coverage-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Build, test, and upload coverage
-        run: other/docker/coverage/run
 
   build-android:
     runs-on: ubuntu-latest
@@ -165,3 +75,20 @@ jobs:
       - run: .github/scripts/cmake-android arm64-v8a
       - run: .github/scripts/cmake-android x86
       - run: .github/scripts/cmake-android x86_64
+
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9
+      - name: Install mypy
+        run: pip install mypy
+      - name: Run mypy
+        run: |
+          (find . -name "*.py" -and -not -name "conanfile.py"; grep -lR '^#!.*python') \
+              | xargs -n1 -P8 mypy --strict
