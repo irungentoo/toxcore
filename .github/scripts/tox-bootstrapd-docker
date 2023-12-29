@@ -1,12 +1,15 @@
 #!/bin/bash
 
-set -exu
+set -exu -o pipefail
 
 LOCAL="${1:-}"
 
 readarray -t FILES <<<"$(git ls-files)"
 
-tar c "${FILES[@]}" | docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node -
+if ! tar c "${FILES[@]}" | docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node - 2>&1 | tee docker-build.log; then
+  grep -o "::error.*::[a-f0-9]*  /usr/local/bin/tox-bootstrapd" docker-build.log
+  false
+fi
 docker tag toxchat/bootstrap-node:latest toxchat/bootstrap-node:"$(other/print-version)"
 
 sudo useradd \

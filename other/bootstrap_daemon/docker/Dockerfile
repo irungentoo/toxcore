@@ -12,8 +12,7 @@ RUN ["apk", "--no-cache", "add",\
  "libsodium-static",\
  "musl-dev",\
  "ninja",\
- "python3"\
-]
+ "python3"]
 
 WORKDIR /src/c-toxcore
 
@@ -49,8 +48,10 @@ RUN CC=clang cmake -B_build -H. \
 # Verify checksum from dev-built binary, so we can be sure Docker Hub doesn't
 # mess with your binaries.
 COPY other/bootstrap_daemon/docker/tox-bootstrapd.sha256 other/bootstrap_daemon/docker/
-RUN sha256sum /usr/local/bin/tox-bootstrapd && \
-    sha256sum -c other/bootstrap_daemon/docker/tox-bootstrapd.sha256
+RUN SHA256="$(sha256sum /usr/local/bin/tox-bootstrapd)" && \
+    (sha256sum -c other/bootstrap_daemon/docker/tox-bootstrapd.sha256 || \
+    (echo "::error file=other/bootstrap_daemon/docker/tox-bootstrapd.sha256,line=1::$SHA256" && \
+     false))
 
 # Remove all the example bootstrap nodes from the config file.
 COPY other/bootstrap_daemon/tox-bootstrapd.conf other/bootstrap_daemon/
