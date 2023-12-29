@@ -1138,11 +1138,12 @@ non_null(1, 4) nullable(6)
 static int tcp_conn_data_callback(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data,
                                   uint16_t length, void *userdata)
 {
+    const TCP_Client_Connection *tcp_client_con = (TCP_Client_Connection *)object;
+
     if (length == 0) {
         return -1;
     }
 
-    const TCP_Client_Connection *tcp_client_con = (TCP_Client_Connection *)object;
     TCP_Connections *tcp_c = (TCP_Connections *)tcp_con_custom_object(tcp_client_con);
 
     const unsigned int tcp_connections_number = tcp_con_custom_uint(tcp_client_con);
@@ -1169,11 +1170,12 @@ non_null()
 static int tcp_conn_oob_callback(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length,
                                  void *userdata)
 {
+    const TCP_Client_Connection *tcp_client_con = (const TCP_Client_Connection *)object;
+
     if (length == 0) {
         return -1;
     }
 
-    const TCP_Client_Connection *tcp_client_con = (const TCP_Client_Connection *)object;
     TCP_Connections *tcp_c = (TCP_Connections *)tcp_con_custom_object(tcp_client_con);
 
     const unsigned int tcp_connections_number = tcp_con_custom_uint(tcp_client_con);

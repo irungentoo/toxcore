@@ -221,7 +221,8 @@ bool tox_events_unpack(Tox_Events *events, Bin_Unpack *bu)
 non_null(1) nullable(2, 3)
 static bool tox_events_bin_pack_handler(Bin_Pack *bp, const Logger *logger, const void *obj)
 {
-    return tox_events_pack((const Tox_Events *)obj, bp);
+    const Tox_Events *events = (const Tox_Events *)obj;
+    return tox_events_pack(events, bp);
 }
 
 uint32_t tox_events_bytes_size(const Tox_Events *events)

@@ -19,11 +19,14 @@ RUN apt-get update && \
  make \
  ninja-build \
  pkg-config \
+ python3-lxml \
  python3-pip \
  python3-pygments \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* \
  && pip3 install --no-cache-dir gcovr
+# strip gtest so it doesn't end up in stack traces. This speeds up the
+# mallocfail run below by a lot.
 RUN ["strip", "-g",\
  "/usr/lib/x86_64-linux-gnu/libgtest.a",\
  "/usr/lib/x86_64-linux-gnu/libgtest_main.a"]

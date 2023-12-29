@@ -208,6 +208,8 @@ static int bwc_send_custom_lossy_packet(Tox *tox, int32_t friendnumber, const ui
 
 static int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object)
 {
+    BWController *bwc = (BWController *)object;
+
     if (length - 1 != sizeof(struct BWCMessage)) {
         return -1;
     }
@@ -218,5 +220,5 @@ static int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *d
     offset += net_unpack_u32(data + offset, &msg.recv);
     assert(offset == length);
 
-    return on_update((BWController *)object, &msg);
+    return on_update(bwc, &msg);
 }

@@ -474,11 +474,12 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
 non_null()
 static int handle_packet(void *object, int number, const uint8_t *data, uint16_t length, void *userdata)
 {
+    Friend_Connections *const fr_c = (Friend_Connections *)object;
+
     if (length == 0) {
         return -1;
     }
 
-    Friend_Connections *const fr_c = (Friend_Connections *)object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
     if (friend_con == nullptr) {
@@ -533,11 +534,12 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
 non_null()
 static int handle_lossy_packet(void *object, int number, const uint8_t *data, uint16_t length, void *userdata)
 {
+    const Friend_Connections *const fr_c = (const Friend_Connections *)object;
+
     if (length == 0) {
         return -1;
     }
 
-    const Friend_Connections *const fr_c = (const Friend_Connections *)object;
     const Friend_Conn *friend_con = get_conn(fr_c, number);
 
     if (friend_con == nullptr) {

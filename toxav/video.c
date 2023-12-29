@@ -345,17 +345,18 @@ void vc_iterate(VCSession *vc)
 
 int vc_queue_message(Mono_Time *mono_time, void *vcp, struct RTPMessage *msg)
 {
+    VCSession *vc = (VCSession *)vcp;
+
     /* This function is called with complete messages
      * they have already been assembled.
      * this function gets called from handle_rtp_packet() and handle_rtp_packet_v3()
      */
-    if (vcp == nullptr || msg == nullptr) {
+    if (vc == nullptr || msg == nullptr) {
         free(msg);
 
         return -1;
     }
 
-    VCSession *vc = (VCSession *)vcp;
     const struct RTPHeader *const header = &msg->header;
 
     if (msg->header.pt == (RTP_TYPE_VIDEO + 2) % 128) {

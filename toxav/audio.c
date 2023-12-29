@@ -196,12 +196,12 @@ void ac_iterate(ACSession *ac)
 
 int ac_queue_message(Mono_Time *mono_time, void *acp, struct RTPMessage *msg)
 {
-    if (acp == nullptr || msg == nullptr) {
+    ACSession *ac = (ACSession *)acp;
+
+    if (ac == nullptr || msg == nullptr) {
         free(msg);
         return -1;
     }
-
-    ACSession *ac = (ACSession *)acp;
 
     if ((msg->header.pt & 0x7f) == (RTP_TYPE_AUDIO + 2) % 128) {
         LOGGER_WARNING(ac->log, "Got dummy!");

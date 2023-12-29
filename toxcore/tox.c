@@ -341,10 +341,10 @@ non_null(1, 4) nullable(6)
 static void tox_friend_lossy_packet_handler(Messenger *m, uint32_t friend_number, uint8_t packet_id,
         const uint8_t *data, size_t length, void *user_data)
 {
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
     assert(data != nullptr);
     assert(length > 0);
-
-    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
 
     if (tox_data->tox->friend_lossy_packet_callback_per_pktid[packet_id] != nullptr) {
         tox_data->tox->friend_lossy_packet_callback_per_pktid[packet_id](tox_data->tox, friend_number, data, length,
@@ -357,10 +357,10 @@ non_null(1, 4) nullable(6)
 static void tox_friend_lossless_packet_handler(Messenger *m, uint32_t friend_number, uint8_t packet_id,
         const uint8_t *data, size_t length, void *user_data)
 {
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
     assert(data != nullptr);
     assert(length > 0);
-
-    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
 
     if (tox_data->tox->friend_lossless_packet_callback_per_pktid[packet_id] != nullptr) {
         tox_data->tox->friend_lossless_packet_callback_per_pktid[packet_id](tox_data->tox, friend_number, data, length,

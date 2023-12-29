@@ -2401,11 +2401,12 @@ static int m_handle_packet_invite_groupchat(Messenger *m, const int i, const uin
 non_null(1, 3) nullable(5)
 static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t len, void *userdata)
 {
+    Messenger *m = (Messenger *)object;
+
     if (len == 0) {
         return -1;
     }
 
-    Messenger *m = (Messenger *)object;
     const uint8_t packet_id = temp[0];
     const uint8_t *data = temp + 1;
     const uint16_t data_length = len - 1;
@@ -3192,7 +3193,8 @@ static void pack_groupchats(const GC_Session *c, Bin_Pack *bp)
 non_null()
 static bool pack_groupchats_handler(Bin_Pack *bp, const Logger *log, const void *obj)
 {
-    pack_groupchats((const GC_Session *)obj, bp);
+    const GC_Session *session = (const GC_Session *)obj;
+    pack_groupchats(session, bp);
     return true;  // TODO(iphydf): Return bool from pack functions.
 }
 

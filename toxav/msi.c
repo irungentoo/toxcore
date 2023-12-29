@@ -60,7 +60,7 @@ typedef struct MSIMessage {
 
 static void msg_init(MSIMessage *dest, MSIRequest request);
 static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t length);
-static uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *value, uint8_t value_len,
+static uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const uint8_t *value, uint8_t value_len,
                                      uint16_t *length);
 static int send_message(const Messenger *m, uint32_t friend_number, const MSIMessage *msg);
 static int send_error(const Messenger *m, uint32_t friend_number, MSIError error);
@@ -425,7 +425,7 @@ static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data
 
     return 0;
 }
-static uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *value, uint8_t value_len,
+static uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const uint8_t *value, uint8_t value_len,
                                      uint16_t *length)
 {
     /* Parse a single header for sending */
@@ -657,12 +657,13 @@ CLEAR_CONTAINER:
 }
 static void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t status, void *data)
 {
+    MSISession *session = (MSISession *)data;
+
     if (status != 0) {
         // Friend is online.
         return;
     }
 
-    MSISession *session = (MSISession *)data;
     LOGGER_DEBUG(m->log, "Friend %d is now offline", friend_number);
 
     pthread_mutex_lock(session->mutex);
@@ -851,9 +852,10 @@ static void handle_pop(MSICall *call, const MSIMessage *msg)
 }
 static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object)
 {
+    MSISession *session = (MSISession *)object;
+
     LOGGER_DEBUG(m->log, "Got msi message");
 
-    MSISession *session = (MSISession *)object;
     MSIMessage msg;
 
     if (msg_parse_in(m->log, &msg, data, length) == -1) {

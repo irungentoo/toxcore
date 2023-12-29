@@ -422,7 +422,8 @@ static bool bin_pack_ip_port(Bin_Pack *bp, const Logger *logger, const IP_Port *
 non_null()
 static bool bin_pack_ip_port_handler(Bin_Pack *bp, const Logger *logger, const void *obj)
 {
-    return bin_pack_ip_port(bp, logger, (const IP_Port *)obj);
+    const IP_Port *ip_port = (const IP_Port *)obj;
+    return bin_pack_ip_port(bp, logger, ip_port);
 }
 
 int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_Port *ip_port)
@@ -1479,11 +1480,11 @@ static int sendnodes_ipv6(const DHT *dht, const IP_Port *ip_port, const uint8_t 
 non_null()
 static int handle_getnodes(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
+    DHT *const dht = (DHT *)object;
+
     if (length != (CRYPTO_SIZE + CRYPTO_MAC_SIZE + sizeof(uint64_t))) {
         return 1;
     }
-
-    DHT *const dht = (DHT *)object;
 
     /* Check if packet is from ourself. */
     if (pk_equal(packet + 1, dht->self_public_key)) {
@@ -2265,11 +2266,12 @@ non_null()
 static int handle_nat_ping(void *object, const IP_Port *source, const uint8_t *source_pubkey, const uint8_t *packet,
                            uint16_t length, void *userdata)
 {
+    DHT *const dht = (DHT *)object;
+
     if (length != sizeof(uint64_t) + 1) {
         return 1;
     }
 
-    DHT *const dht = (DHT *)object;
     uint64_t ping_id;
     memcpy(&ping_id, packet + 1, sizeof(uint64_t));
 
