@@ -1,7 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//tools/project:build_defs.bzl", "project")
 
-project()
+project(license = "gpl3-https")
 
 genrule(
     name = "public_headers",
