@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2016-2018 The TokTok team.
+ * Copyright © 2016-2024 The TokTok team.
  * Copyright © 2015-2016 Tox project.
  */
 
@@ -24,7 +24,7 @@
  */
 static void print_help(void)
 {
-    // 2 space ident
+    // 2 space indent
     // make sure all lines fit into 80 columns
     // make sure options are listed in alphabetical order
     log_write(LOG_LEVEL_INFO,
@@ -39,7 +39,7 @@ static void print_help(void)
               "                         (detach from the terminal) and won't use the PID file.\n"
               "  --help                 Print this help message.\n"
               "  --log-backend=BACKEND  Specify which logging backend to use.\n"
-              "                         Valid BACKEND values (case sensetive):\n"
+              "                         Valid BACKEND values (case sensitive):\n"
               "                           syslog Writes log messages to syslog.\n"
               "                                  Default option when no --log-backend is\n"
               "                                  specified.\n"

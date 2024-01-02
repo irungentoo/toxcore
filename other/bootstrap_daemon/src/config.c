@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2016-2023 The TokTok team.
+ * Copyright © 2016-2024 The TokTok team.
  * Copyright © 2014-2016 Tox project.
  */
 
@@ -412,7 +412,7 @@ int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
         log_write(LOG_LEVEL_INFO, "Successfully added bootstrap node #%d: %s:%d %s\n", i, bs_address, bs_port, bs_public_key);
 
 next:
-        // config_setting_lookup_string() allocates string inside and doesn't allow us to free it direcly
+        // config_setting_lookup_string() allocates string inside and doesn't allow us to free it directly
         // though it's freed when the element is removed, so we free it right away in order to keep memory
         // consumption minimal
         config_setting_remove_elem(node_list, 0);

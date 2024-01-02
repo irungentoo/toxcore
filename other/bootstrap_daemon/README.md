@@ -259,7 +259,7 @@ docker run -d --name tox-bootstrapd --restart always \
   toxchat/bootstrap-node
 ```
 
-We create a new user and protect its home directory in order to mount it in the Docker image, so that the kyepair the daemon uses would be stored on the host system, which makes it less likely that you would loose the keypair while playing with or updating the Docker container.
+We create a new user and protect its home directory in order to mount it in the Docker image, so that the keypair the daemon uses would be stored on the host system, which makes it less likely that you would loose the keypair while playing with or updating the Docker container.
 
 You can check logs for your public key or any errors:
 ```sh

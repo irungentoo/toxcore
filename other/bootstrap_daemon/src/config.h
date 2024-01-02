@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2016-2018 The TokTok team.
+ * Copyright © 2016-2024 The TokTok team.
  * Copyright © 2014-2016 Tox project.
  */
 
@@ -30,7 +30,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
  * Bootstraps off nodes listed in the config file.
  *
  * @return 1 on success, some or no bootstrap nodes were added
- *         0 on failure, a error accured while parsing config file.
+ *         0 on failure, an error occurred while parsing the config file.
  */
 int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6);
 
