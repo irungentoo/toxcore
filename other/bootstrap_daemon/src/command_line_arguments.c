@@ -25,8 +25,8 @@
 static void print_help(void)
 {
     // 2 space indent
-    // make sure all lines fit into 80 columns
-    // make sure options are listed in alphabetical order
+    // Make sure all lines fit into 80 columns
+    // Make sure options are listed in alphabetical order
     log_write(LOG_LEVEL_INFO,
               "Usage: tox-bootstrapd [OPTION]... --config=FILE_PATH\n"
               "\n"

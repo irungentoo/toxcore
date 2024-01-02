@@ -56,7 +56,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
             log_write(LOG_LEVEL_INFO, "Port #%zu: %u\n", i, default_ports[i]);
         }
 
-        // similar procedure to the one of reading config file below
+        // Similar procedure to the one of reading config file below
         *tcp_relay_ports = (uint16_t *)malloc(default_ports_count * sizeof(uint16_t));
 
         for (size_t i = 0; i < default_ports_count; ++i) {
@@ -73,7 +73,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
             ++*tcp_relay_port_count;
         }
 
-        // the loop above skips invalid ports, so we adjust the allocated memory size
+        // The loop above skips invalid ports, so we adjust the allocated memory size
         if ((*tcp_relay_port_count) > 0) {
             *tcp_relay_ports = (uint16_t *)realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
         } else {
@@ -103,7 +103,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
         config_setting_t *elem = config_setting_get_elem(ports_array, i);
 
         if (elem == nullptr) {
-            // it's NULL if `ports_array` is not an array (we have that check earlier) or if `i` is out of range, which should not be
+            // It's NULL if `ports_array` is not an array (we have that check earlier) or if `i` is out of range, which should not be
             log_write(LOG_LEVEL_WARNING, "Port #%d: Something went wrong while parsing the port. Stopping reading ports.\n", i);
             break;
         }
@@ -125,7 +125,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
         ++*tcp_relay_port_count;
     }
 
-    // the loop above skips invalid ports, so we adjust the allocated memory size
+    // The loop above skips invalid ports, so we adjust the allocated memory size
     if ((*tcp_relay_port_count) > 0) {
         *tcp_relay_ports = (uint16_t *)realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
     } else {
@@ -265,7 +265,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
 
     log_write(LOG_LEVEL_INFO, "'%s': %s\n", NAME_ENABLE_TCP_RELAY,     *enable_tcp_relay     ? "true" : "false");
 
-    // show info about tcp ports only if tcp relay is enabled
+    // Show info about tcp ports only if tcp relay is enabled
     if (*enable_tcp_relay) {
         if (*tcp_relay_port_count == 0) {
             log_write(LOG_LEVEL_ERROR, "No TCP ports could be read.\n");

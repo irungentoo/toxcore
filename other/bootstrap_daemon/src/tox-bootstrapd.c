@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
     char *cfg_file_path = nullptr;
     bool run_in_foreground = false;
 
-    // choose backend for printing command line argument parsing output based on whether the daemon is being run from a terminal
+    // Choose backend for printing command line argument parsing output based on whether the daemon is being run from a terminal
     LOG_BACKEND log_backend = isatty(STDOUT_FILENO) ? LOG_BACKEND_STDOUT : LOG_BACKEND_SYSLOG;
 
     log_open(log_backend);
