@@ -31,6 +31,8 @@ Tox_System tox_default_system(void);
 void tox_lock(const Tox *tox);
 void tox_unlock(const Tox *tox);
 
+const Tox_System *tox_get_system(Tox *tox);
+
 /**
  * Set the callback for the `friend_lossy_packet` event for a specific packet ID.
  * Pass NULL to unset.

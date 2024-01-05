@@ -922,8 +922,6 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error);
  */
 void tox_kill(Tox *tox);
 
-const Tox_System *tox_get_system(Tox *tox);
-
 /**
  * @brief Calculates the number of bytes required to store the tox instance with
  *   tox_get_savedata.
