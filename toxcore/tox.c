@@ -2387,12 +2387,12 @@ uint64_t tox_conference_offline_peer_get_last_active(const Tox *tox, uint32_t co
 }
 
 bool tox_conference_set_max_offline(Tox *tox, uint32_t conference_number,
-                                    uint32_t max_offline_peers,
+                                    uint32_t max_offline,
                                     Tox_Err_Conference_Set_Max_Offline *error)
 {
     assert(tox != nullptr);
     tox_lock(tox);
-    const int ret = group_set_max_frozen(tox->m->conferences_object, conference_number, max_offline_peers);
+    const int ret = group_set_max_frozen(tox->m->conferences_object, conference_number, max_offline);
     tox_unlock(tox);
 
     if (ret == -1) {
@@ -3193,7 +3193,7 @@ bool tox_group_leave(Tox *tox, uint32_t group_number, const uint8_t *part_messag
     return false;
 }
 
-bool tox_group_self_set_name(const Tox *tox, uint32_t group_number, const uint8_t *name, size_t length,
+bool tox_group_self_set_name(Tox *tox, uint32_t group_number, const uint8_t *name, size_t length,
                              Tox_Err_Group_Self_Name_Set *error)
 {
     assert(tox != nullptr);
@@ -3277,7 +3277,7 @@ bool tox_group_self_get_name(const Tox *tox, uint32_t group_number, uint8_t *nam
     return true;
 }
 
-bool tox_group_self_set_status(const Tox *tox, uint32_t group_number, Tox_User_Status status,
+bool tox_group_self_set_status(Tox *tox, uint32_t group_number, Tox_User_Status status,
                                Tox_Err_Group_Self_Status_Set *error)
 {
     assert(tox != nullptr);
@@ -3550,7 +3550,7 @@ Tox_Connection tox_group_peer_get_connection_status(const Tox *tox, uint32_t gro
     return (Tox_Connection)ret;
 }
 
-bool tox_group_set_topic(const Tox *tox, uint32_t group_number, const uint8_t *topic, size_t length,
+bool tox_group_set_topic(Tox *tox, uint32_t group_number, const uint8_t *topic, size_t length,
                          Tox_Err_Group_Topic_Set *error)
 {
     assert(tox != nullptr);
@@ -3668,7 +3668,7 @@ size_t tox_group_get_name_size(const Tox *tox, uint32_t group_number, Tox_Err_Gr
     return ret;
 }
 
-bool tox_group_get_name(const Tox *tox, uint32_t group_number, uint8_t *group_name, Tox_Err_Group_State_Queries *error)
+bool tox_group_get_name(const Tox *tox, uint32_t group_number, uint8_t *name, Tox_Err_Group_State_Queries *error)
 {
     assert(tox != nullptr);
 
@@ -3681,7 +3681,7 @@ bool tox_group_get_name(const Tox *tox, uint32_t group_number, uint8_t *group_na
         return false;
     }
 
-    gc_get_group_name(chat, group_name);
+    gc_get_group_name(chat, name);
     tox_unlock(tox);
 
     SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_QUERIES_OK);
@@ -4205,7 +4205,7 @@ uint32_t tox_group_invite_accept(Tox *tox, uint32_t friend_number, const uint8_t
     return UINT32_MAX;
 }
 
-bool tox_group_founder_set_password(const Tox *tox, uint32_t group_number, const uint8_t *password, size_t length,
+bool tox_group_founder_set_password(Tox *tox, uint32_t group_number, const uint8_t *password, size_t length,
                                     Tox_Err_Group_Founder_Set_Password *error)
 {
     assert(tox != nullptr);
@@ -4261,7 +4261,7 @@ bool tox_group_founder_set_password(const Tox *tox, uint32_t group_number, const
     return false;
 }
 
-bool tox_group_founder_set_privacy_state(const Tox *tox, uint32_t group_number, Tox_Group_Privacy_State privacy_state,
+bool tox_group_founder_set_privacy_state(Tox *tox, uint32_t group_number, Tox_Group_Privacy_State privacy_state,
         Tox_Err_Group_Founder_Set_Privacy_State *error)
 {
     assert(tox != nullptr);
@@ -4308,7 +4308,7 @@ bool tox_group_founder_set_privacy_state(const Tox *tox, uint32_t group_number, 
     return false;
 }
 
-bool tox_group_founder_set_topic_lock(const Tox *tox, uint32_t group_number, Tox_Group_Topic_Lock topic_lock,
+bool tox_group_founder_set_topic_lock(Tox *tox, uint32_t group_number, Tox_Group_Topic_Lock topic_lock,
                                       Tox_Err_Group_Founder_Set_Topic_Lock *error)
 {
     assert(tox != nullptr);
@@ -4360,7 +4360,7 @@ bool tox_group_founder_set_topic_lock(const Tox *tox, uint32_t group_number, Tox
     return false;
 }
 
-bool tox_group_founder_set_voice_state(const Tox *tox, uint32_t group_number, Tox_Group_Voice_State voice_state,
+bool tox_group_founder_set_voice_state(Tox *tox, uint32_t group_number, Tox_Group_Voice_State voice_state,
                                        Tox_Err_Group_Founder_Set_Voice_State *error)
 {
     assert(tox != nullptr);
@@ -4407,7 +4407,7 @@ bool tox_group_founder_set_voice_state(const Tox *tox, uint32_t group_number, To
     return false;
 }
 
-bool tox_group_founder_set_peer_limit(const Tox *tox, uint32_t group_number, uint16_t max_peers,
+bool tox_group_founder_set_peer_limit(Tox *tox, uint32_t group_number, uint16_t peer_limit,
                                       Tox_Err_Group_Founder_Set_Peer_Limit *error)
 {
     assert(tox != nullptr);
@@ -4427,7 +4427,7 @@ bool tox_group_founder_set_peer_limit(const Tox *tox, uint32_t group_number, uin
         return false;
     }
 
-    const int ret = gc_founder_set_max_peers(chat, max_peers);
+    const int ret = gc_founder_set_max_peers(chat, peer_limit);
     tox_unlock(tox);
 
     switch (ret) {
@@ -4458,7 +4458,7 @@ bool tox_group_founder_set_peer_limit(const Tox *tox, uint32_t group_number, uin
     return false;
 }
 
-bool tox_group_set_ignore(const Tox *tox, uint32_t group_number, uint32_t peer_id, bool ignore,
+bool tox_group_set_ignore(Tox *tox, uint32_t group_number, uint32_t peer_id, bool ignore,
                           Tox_Err_Group_Set_Ignore *error)
 {
     assert(tox != nullptr);
@@ -4498,7 +4498,7 @@ bool tox_group_set_ignore(const Tox *tox, uint32_t group_number, uint32_t peer_i
     return false;
 }
 
-bool tox_group_mod_set_role(const Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Group_Role role,
+bool tox_group_mod_set_role(Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Group_Role role,
                             Tox_Err_Group_Mod_Set_Role *error)
 {
     assert(tox != nullptr);

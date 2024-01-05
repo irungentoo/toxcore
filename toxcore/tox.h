@@ -720,15 +720,15 @@ void tox_options_set_dht_announcements_enabled(struct Tox_Options *options, bool
 
 Tox_Proxy_Type tox_options_get_proxy_type(const struct Tox_Options *options);
 
-void tox_options_set_proxy_type(struct Tox_Options *options, Tox_Proxy_Type type);
+void tox_options_set_proxy_type(struct Tox_Options *options, Tox_Proxy_Type proxy_type);
 
 const char *tox_options_get_proxy_host(const struct Tox_Options *options);
 
-void tox_options_set_proxy_host(struct Tox_Options *options, const char *host);
+void tox_options_set_proxy_host(struct Tox_Options *options, const char *proxy_host);
 
 uint16_t tox_options_get_proxy_port(const struct Tox_Options *options);
 
-void tox_options_set_proxy_port(struct Tox_Options *options, uint16_t port);
+void tox_options_set_proxy_port(struct Tox_Options *options, uint16_t proxy_port);
 
 uint16_t tox_options_get_start_port(const struct Tox_Options *options);
 
@@ -748,23 +748,23 @@ void tox_options_set_hole_punching_enabled(struct Tox_Options *options, bool hol
 
 Tox_Savedata_Type tox_options_get_savedata_type(const struct Tox_Options *options);
 
-void tox_options_set_savedata_type(struct Tox_Options *options, Tox_Savedata_Type type);
+void tox_options_set_savedata_type(struct Tox_Options *options, Tox_Savedata_Type savedata_type);
 
 const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options);
 
-void tox_options_set_savedata_data(struct Tox_Options *options, const uint8_t data[], size_t length);
+void tox_options_set_savedata_data(struct Tox_Options *options, const uint8_t savedata_data[], size_t length);
 
 size_t tox_options_get_savedata_length(const struct Tox_Options *options);
 
-void tox_options_set_savedata_length(struct Tox_Options *options, size_t length);
+void tox_options_set_savedata_length(struct Tox_Options *options, size_t savedata_length);
 
 tox_log_cb *tox_options_get_log_callback(const struct Tox_Options *options);
 
-void tox_options_set_log_callback(struct Tox_Options *options, tox_log_cb *callback);
+void tox_options_set_log_callback(struct Tox_Options *options, tox_log_cb *log_callback);
 
 void *tox_options_get_log_user_data(const struct Tox_Options *options);
 
-void tox_options_set_log_user_data(struct Tox_Options *options, void *user_data);
+void tox_options_set_log_user_data(struct Tox_Options *options, void *log_user_data);
 
 bool tox_options_get_experimental_thread_safety(const struct Tox_Options *options);
 
@@ -2862,7 +2862,7 @@ const char *tox_err_conference_set_max_offline_to_string(Tox_Err_Conference_Set_
  * @brief Set maximum number of offline peers to store, overriding the default.
  */
 bool tox_conference_set_max_offline(
-        Tox *tox, Tox_Conference_Number conference_number, uint32_t max_offline_peers,
+        Tox *tox, Tox_Conference_Number conference_number, uint32_t max_offline,
         Tox_Err_Conference_Set_Max_Offline *error);
 
 typedef enum Tox_Err_Conference_Invite {
@@ -3970,7 +3970,7 @@ const char *tox_err_group_self_name_set_to_string(Tox_Err_Group_Self_Name_Set va
  * @return true on success.
  */
 bool tox_group_self_set_name(
-        const Tox *tox, Tox_Group_Number group_number,
+        Tox *tox, Tox_Group_Number group_number,
         const uint8_t name[], size_t length,
         Tox_Err_Group_Self_Name_Set *error);
 
@@ -4032,7 +4032,7 @@ const char *tox_err_group_self_status_set_to_string(Tox_Err_Group_Self_Status_Se
  *
  * @return true on success.
  */
-bool tox_group_self_set_status(const Tox *tox, Tox_Group_Number group_number, Tox_User_Status status,
+bool tox_group_self_set_status(Tox *tox, Tox_Group_Number group_number, Tox_User_Status status,
                                Tox_Err_Group_Self_Status_Set *error);
 
 /**
@@ -4311,7 +4311,7 @@ const char *tox_err_group_topic_set_to_string(Tox_Err_Group_Topic_Set value);
  * @return true on success.
  */
 bool tox_group_set_topic(
-        const Tox *tox, Tox_Group_Number group_number,
+        Tox *tox, Tox_Group_Number group_number,
         const uint8_t topic[], size_t length,
         Tox_Err_Group_Topic_Set *error);
 
@@ -4372,14 +4372,14 @@ size_t tox_group_get_name_size(const Tox *tox, Tox_Group_Number group_number, To
  *
  * Call tox_group_get_name_size to determine the allocation size for the `name` parameter.
  *
- * @param group_name A valid memory region large enough to store the group name.
+ * @param name A valid memory region large enough to store the group name.
  *   If this parameter is NULL, this function call has no effect.
  *
  * @return true on success.
  */
 bool tox_group_get_name(
         const Tox *tox, Tox_Group_Number group_number,
-        uint8_t group_name[], Tox_Err_Group_State_Queries *error);
+        uint8_t name[], Tox_Err_Group_State_Queries *error);
 
 /**
  * Write the Chat ID designated by the given group number to a byte array.
@@ -5281,7 +5281,7 @@ const char *tox_err_group_founder_set_password_to_string(Tox_Err_Group_Founder_S
  * @return true on success.
  */
 bool tox_group_founder_set_password(
-        const Tox *tox, Tox_Group_Number group_number,
+        Tox *tox, Tox_Group_Number group_number,
         const uint8_t password[], size_t length,
         Tox_Err_Group_Founder_Set_Password *error);
 
@@ -5342,7 +5342,7 @@ const char *tox_err_group_founder_set_topic_lock_to_string(Tox_Err_Group_Founder
  *
  * @return true on success.
  */
-bool tox_group_founder_set_topic_lock(const Tox *tox, Tox_Group_Number group_number, Tox_Group_Topic_Lock topic_lock,
+bool tox_group_founder_set_topic_lock(Tox *tox, Tox_Group_Number group_number, Tox_Group_Topic_Lock topic_lock,
                                       Tox_Err_Group_Founder_Set_Topic_Lock *error);
 
 typedef enum Tox_Err_Group_Founder_Set_Voice_State {
@@ -5396,7 +5396,7 @@ const char *tox_err_group_founder_set_voice_state_to_string(Tox_Err_Group_Founde
  *
  * @return true on success.
  */
-bool tox_group_founder_set_voice_state(const Tox *tox, Tox_Group_Number group_number, Tox_Group_Voice_State voice_state,
+bool tox_group_founder_set_voice_state(Tox *tox, Tox_Group_Number group_number, Tox_Group_Voice_State voice_state,
                                        Tox_Err_Group_Founder_Set_Voice_State *error);
 
 typedef enum Tox_Err_Group_Founder_Set_Privacy_State {
@@ -5450,7 +5450,7 @@ const char *tox_err_group_founder_set_privacy_state_to_string(Tox_Err_Group_Foun
  *
  * @return true on success.
  */
-bool tox_group_founder_set_privacy_state(const Tox *tox, Tox_Group_Number group_number, Tox_Group_Privacy_State privacy_state,
+bool tox_group_founder_set_privacy_state(Tox *tox, Tox_Group_Number group_number, Tox_Group_Privacy_State privacy_state,
         Tox_Err_Group_Founder_Set_Privacy_State *error);
 
 typedef enum Tox_Err_Group_Founder_Set_Peer_Limit {
@@ -5498,11 +5498,11 @@ const char *tox_err_group_founder_set_peer_limit_to_string(Tox_Err_Group_Founder
  * group shared state including the change, and distributes it to the rest of the group.
  *
  * @param group_number The group number of the group for which we wish to set the peer limit.
- * @param max_peers The maximum number of peers to allow in the group.
+ * @param peer_limit The maximum number of peers to allow in the group.
  *
  * @return true on success.
  */
-bool tox_group_founder_set_peer_limit(const Tox *tox, Tox_Group_Number group_number, uint16_t max_peers,
+bool tox_group_founder_set_peer_limit(Tox *tox, Tox_Group_Number group_number, uint16_t peer_limit,
                                       Tox_Err_Group_Founder_Set_Peer_Limit *error);
 
 
@@ -5550,7 +5550,7 @@ const char *tox_err_group_set_ignore_to_string(Tox_Err_Group_Set_Ignore value);
  *
  * @return true on success.
  */
-bool tox_group_set_ignore(const Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, bool ignore,
+bool tox_group_set_ignore(Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, bool ignore,
                           Tox_Err_Group_Set_Ignore *error);
 
 typedef enum Tox_Err_Group_Mod_Set_Role {
@@ -5610,7 +5610,7 @@ const char *tox_err_group_mod_set_role_to_string(Tox_Err_Group_Mod_Set_Role valu
  *
  * @return true on success.
  */
-bool tox_group_mod_set_role(const Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Group_Role role,
+bool tox_group_mod_set_role(Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Group_Role role,
                             Tox_Err_Group_Mod_Set_Role *error);
 
 typedef enum Tox_Err_Group_Mod_Kick_Peer {

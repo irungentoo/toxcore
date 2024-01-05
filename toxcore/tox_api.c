@@ -138,33 +138,33 @@ uint32_t tox_dht_node_public_key_size(void)
 
 //!TOKSTYLE-
 
-#define ACCESSORS(type, ns, name) \
-type tox_options_get_##ns##name(const struct Tox_Options *options) \
+#define ACCESSORS(type, name) \
+type tox_options_get_##name(const struct Tox_Options *options) \
 { \
-    return options->ns##name; \
+    return options->name; \
 } \
-void tox_options_set_##ns##name(struct Tox_Options *options, type name) \
+void tox_options_set_##name(struct Tox_Options *options, type name) \
 { \
-    options->ns##name = name; \
+    options->name = name; \
 }
 
-ACCESSORS(bool,, ipv6_enabled)
-ACCESSORS(bool,, udp_enabled)
-ACCESSORS(Tox_Proxy_Type, proxy_, type)
-ACCESSORS(const char *, proxy_, host)
-ACCESSORS(uint16_t, proxy_, port)
-ACCESSORS(uint16_t,, start_port)
-ACCESSORS(uint16_t,, end_port)
-ACCESSORS(uint16_t,, tcp_port)
-ACCESSORS(bool,, hole_punching_enabled)
-ACCESSORS(Tox_Savedata_Type, savedata_, type)
-ACCESSORS(size_t, savedata_, length)
-ACCESSORS(tox_log_cb *, log_, callback)
-ACCESSORS(void *, log_, user_data)
-ACCESSORS(bool,, local_discovery_enabled)
-ACCESSORS(bool,, dht_announcements_enabled)
-ACCESSORS(bool,, experimental_thread_safety)
-ACCESSORS(const Tox_System *,, operating_system)
+ACCESSORS(bool, ipv6_enabled)
+ACCESSORS(bool, udp_enabled)
+ACCESSORS(Tox_Proxy_Type, proxy_type)
+ACCESSORS(const char *, proxy_host)
+ACCESSORS(uint16_t, proxy_port)
+ACCESSORS(uint16_t, start_port)
+ACCESSORS(uint16_t, end_port)
+ACCESSORS(uint16_t, tcp_port)
+ACCESSORS(bool, hole_punching_enabled)
+ACCESSORS(Tox_Savedata_Type, savedata_type)
+ACCESSORS(size_t, savedata_length)
+ACCESSORS(tox_log_cb *, log_callback)
+ACCESSORS(void *, log_user_data)
+ACCESSORS(bool, local_discovery_enabled)
+ACCESSORS(bool, dht_announcements_enabled)
+ACCESSORS(bool, experimental_thread_safety)
+ACCESSORS(const Tox_System *, operating_system)
 
 //!TOKSTYLE+
 
@@ -173,9 +173,9 @@ const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options)
     return options->savedata_data;
 }
 
-void tox_options_set_savedata_data(struct Tox_Options *options, const uint8_t *data, size_t length)
+void tox_options_set_savedata_data(struct Tox_Options *options, const uint8_t *savedata_data, size_t length)
 {
-    options->savedata_data = data;
+    options->savedata_data = savedata_data;
     options->savedata_length = length;
 }
 
