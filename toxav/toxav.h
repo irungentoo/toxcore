@@ -65,15 +65,17 @@ extern "C" {
 /**
  * External Tox type.
  */
+#ifndef APIGEN_IGNORE
 #ifndef TOX_DEFINED
 #define TOX_DEFINED
 typedef struct Tox Tox;
-#endif /* TOX_DEFINED */
+#endif /* !TOX_DEFINED */
+#endif /* !APIGEN_IGNORE */
 
 /**
  * @brief The ToxAV instance type.
  *
- * Each ToxAV instance can be bound to only one Tox  instance, and Tox instance
+ * Each ToxAV instance can be bound to only one Tox instance, and Tox instance
  * can have only one ToxAV instance. One must make sure to close ToxAV instance
  * prior closing Tox instance otherwise undefined behaviour occurs. Upon
  * closing of ToxAV instance, all active calls will be forcibly terminated
@@ -605,7 +607,7 @@ typedef enum Toxav_Err_Send_Frame {
  * @param sampling_rate Audio sampling rate used in this frame. Valid sampling
  * rates are 8000, 12000, 16000, 24000, or 48000.
  */
-bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pcm, size_t sample_count,
+bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t pcm[], size_t sample_count,
                             uint8_t channels, uint32_t sampling_rate, Toxav_Err_Send_Frame *error);
 
 /**
@@ -652,8 +654,8 @@ void toxav_callback_audio_bit_rate(ToxAV *av, toxav_audio_bit_rate_cb *callback,
  * @param u U (Chroma) plane data.
  * @param v V (Chroma) plane data.
  */
-bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, uint16_t height, const uint8_t *y,
-                            const uint8_t *u, const uint8_t *v, Toxav_Err_Send_Frame *error);
+bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, uint16_t height, const uint8_t y[],
+                            const uint8_t u[], const uint8_t v[], Toxav_Err_Send_Frame *error);
 
 /**
  * Set the bit rate to be used in subsequent video frames.
@@ -703,7 +705,7 @@ void toxav_callback_video_bit_rate(ToxAV *av, toxav_video_bit_rate_cb *callback,
  * @param sampling_rate Sampling rate used in this frame.
  *
  */
-typedef void toxav_audio_receive_frame_cb(ToxAV *av, uint32_t friend_number, const int16_t *pcm, size_t sample_count,
+typedef void toxav_audio_receive_frame_cb(ToxAV *av, uint32_t friend_number, const int16_t pcm[], size_t sample_count,
         uint8_t channels, uint32_t sampling_rate, void *user_data);
 
 
@@ -736,7 +738,7 @@ void toxav_callback_audio_receive_frame(ToxAV *av, toxav_audio_receive_frame_cb 
  * @param vstride V chroma plane stride.
  */
 typedef void toxav_video_receive_frame_cb(ToxAV *av, uint32_t friend_number, uint16_t width, uint16_t height,
-        const uint8_t *y, const uint8_t *u, const uint8_t *v, int32_t ystride, int32_t ustride, int32_t vstride,
+        const uint8_t y[], const uint8_t u[], const uint8_t v[], int32_t ystride, int32_t ustride, int32_t vstride,
         void *user_data);
 
 
@@ -745,6 +747,8 @@ typedef void toxav_video_receive_frame_cb(ToxAV *av, uint32_t friend_number, uin
  *
  */
 void toxav_callback_video_receive_frame(ToxAV *av, toxav_video_receive_frame_cb *callback, void *user_data);
+
+#ifndef APIGEN_IGNORE
 
 /***
  * NOTE Compatibility with old toxav group calls. TODO(iphydf): remove
@@ -755,10 +759,10 @@ void toxav_callback_video_receive_frame(ToxAV *av, toxav_video_receive_frame_cb 
  */
 
 // TODO(iphydf): Use this better typed one instead of the void-pointer one below.
-typedef void toxav_group_audio_cb(Tox *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm,
+typedef void toxav_group_audio_cb(Tox *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t pcm[],
                                   uint32_t samples, uint8_t channels, uint32_t sample_rate, void *user_data);
 
-typedef void toxav_audio_data_cb(void *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm,
+typedef void toxav_audio_data_cb(void *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t pcm[],
                                  uint32_t samples, uint8_t channels, uint32_t sample_rate, void *userdata);
 
 /** @brief Create a new toxav group.
@@ -768,7 +772,7 @@ typedef void toxav_audio_data_cb(void *tox, uint32_t groupnumber, uint32_t peern
  *
  * Note that total size of pcm in bytes is equal to `samples * channels * sizeof(int16_t)`.
  */
-int toxav_add_av_groupchat(Tox *tox, toxav_audio_data_cb *audio_callback, void *userdata);
+int32_t toxav_add_av_groupchat(Tox *tox, toxav_audio_data_cb *audio_callback, void *userdata);
 
 /** @brief Join a AV group (you need to have been invited first).
  *
@@ -777,8 +781,9 @@ int toxav_add_av_groupchat(Tox *tox, toxav_audio_data_cb *audio_callback, void *
  *
  * Note that total size of pcm in bytes is equal to `samples * channels * sizeof(int16_t)`.
  */
-int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data, uint16_t length,
-                            toxav_audio_data_cb *audio_callback, void *userdata);
+int32_t toxav_join_av_groupchat(
+        Tox *tox, uint32_t friendnumber, const uint8_t data[], uint16_t length,
+        toxav_audio_data_cb *audio_callback, void *userdata);
 
 /** @brief Send audio to the group chat.
  *
@@ -794,8 +799,9 @@ int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data
  *
  * Recommended values are: samples = 960, channels = 1, sample_rate = 48000
  */
-int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
-                           uint32_t sample_rate);
+int32_t toxav_group_send_audio(
+        Tox *tox, uint32_t groupnumber, const int16_t pcm[], uint32_t samples, uint8_t channels,
+        uint32_t sample_rate);
 
 /** @brief Enable A/V in a groupchat.
  *
@@ -812,18 +818,21 @@ int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, u
  *
  * Note that total size of pcm in bytes is equal to `samples * channels * sizeof(int16_t)`.
  */
-int toxav_groupchat_enable_av(Tox *tox, uint32_t groupnumber,
-                              toxav_audio_data_cb *audio_callback, void *userdata);
+int32_t toxav_groupchat_enable_av(
+        Tox *tox, uint32_t groupnumber,
+        toxav_audio_data_cb *audio_callback, void *userdata);
 
 /** @brief Disable A/V in a groupchat.
  *
  * @retval 0 on success.
  * @retval -1 on failure.
  */
-int toxav_groupchat_disable_av(Tox *tox, uint32_t groupnumber);
+int32_t toxav_groupchat_disable_av(Tox *tox, uint32_t groupnumber);
 
 /** @brief Return whether A/V is enabled in the groupchat. */
 bool toxav_groupchat_av_enabled(Tox *tox, uint32_t groupnumber);
+
+#endif /* !APIGEN_IGNORE */
 
 /** @} */
 
