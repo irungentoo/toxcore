@@ -334,21 +334,21 @@ static void voice_state_message_test(AutoTox *autotox, Tox_Group_Voice_State voi
     ck_assert(sq_err == TOX_ERR_GROUP_SELF_QUERY_OK);
 
     Tox_Err_Group_Send_Message msg_err;
-    bool send_ret = tox_group_send_message(autotox->tox, state->group_number, TOX_MESSAGE_TYPE_NORMAL,
-                                           (const uint8_t *)"test", 4, nullptr, &msg_err);
+    tox_group_send_message(autotox->tox, state->group_number, TOX_MESSAGE_TYPE_NORMAL,
+                           (const uint8_t *)"test", 4, &msg_err);
 
     switch (self_role) {
         case TOX_GROUP_ROLE_OBSERVER: {
-            ck_assert(!send_ret && msg_err == TOX_ERR_GROUP_SEND_MESSAGE_PERMISSIONS);
+            ck_assert(msg_err == TOX_ERR_GROUP_SEND_MESSAGE_PERMISSIONS);
             break;
         }
 
         case TOX_GROUP_ROLE_USER: {
             if (voice_state != TOX_GROUP_VOICE_STATE_ALL) {
-                ck_assert_msg(!send_ret && msg_err == TOX_ERR_GROUP_SEND_MESSAGE_PERMISSIONS,
-                              "%d, %d", send_ret, msg_err);
+                ck_assert_msg(msg_err == TOX_ERR_GROUP_SEND_MESSAGE_PERMISSIONS,
+                              "%d", msg_err);
             } else {
-                ck_assert(send_ret && msg_err == TOX_ERR_GROUP_SEND_MESSAGE_OK);
+                ck_assert(msg_err == TOX_ERR_GROUP_SEND_MESSAGE_OK);
             }
 
             break;
@@ -356,16 +356,16 @@ static void voice_state_message_test(AutoTox *autotox, Tox_Group_Voice_State voi
 
         case TOX_GROUP_ROLE_MODERATOR: {
             if (voice_state != TOX_GROUP_VOICE_STATE_FOUNDER) {
-                ck_assert(send_ret && msg_err == TOX_ERR_GROUP_SEND_MESSAGE_OK);
+                ck_assert(msg_err == TOX_ERR_GROUP_SEND_MESSAGE_OK);
             } else {
-                ck_assert(!send_ret && msg_err == TOX_ERR_GROUP_SEND_MESSAGE_PERMISSIONS);
+                ck_assert(msg_err == TOX_ERR_GROUP_SEND_MESSAGE_PERMISSIONS);
             }
 
             break;
         }
 
         case TOX_GROUP_ROLE_FOUNDER: {
-            ck_assert(send_ret && msg_err == TOX_ERR_GROUP_SEND_MESSAGE_OK);
+            ck_assert(msg_err == TOX_ERR_GROUP_SEND_MESSAGE_OK);
             break;
         }
     }

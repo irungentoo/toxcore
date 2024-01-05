@@ -4619,15 +4619,13 @@ const char *tox_err_group_send_message_to_string(Tox_Err_Group_Send_Message valu
  * @param message A non-NULL pointer to the first element of a byte array
  *   containing the message text.
  * @param length Length of the message to be sent.
- * @param message_id A pointer to a Tox_Group_Message_Id. The message_id of this message will be returned
- *   unless the parameter is NULL, in which case the returned parameter value will be undefined.
- *   If this function returns false the returned parameter `message_id` value will also be undefined.
  *
- * @return true on success.
+ * @return The message_id of this message. If this function has an error, the
+ *   returned message ID value will be undefined.
  */
-bool tox_group_send_message(
+Tox_Group_Message_Id tox_group_send_message(
         const Tox *tox, Tox_Group_Number group_number, Tox_Message_Type type,
-        const uint8_t message[], size_t length, Tox_Group_Message_Id *message_id,
+        const uint8_t message[], size_t length,
         Tox_Err_Group_Send_Message *error);
 
 typedef enum Tox_Err_Group_Send_Private_Message {

@@ -395,8 +395,9 @@ static void group_message_test(AutoTox *autotoxes)
         iterate_all_wait(autotoxes, NUM_GROUP_TOXES, ITERATION_INTERVAL);
 
         if (state1->peer_joined && !state1->message_sent) {
-            tox_group_send_message(tox1, group_number, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)TEST_MESSAGE,
-                                   TEST_MESSAGE_LEN, &state1->pseudo_msg_id, &err_send);
+            state1->pseudo_msg_id = tox_group_send_message(
+                    tox1, group_number, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)TEST_MESSAGE,
+                    TEST_MESSAGE_LEN, &err_send);
             ck_assert(err_send == TOX_ERR_GROUP_SEND_MESSAGE_OK);
             state1->message_sent = true;
         }
@@ -419,7 +420,7 @@ static void group_message_test(AutoTox *autotoxes)
 
     // tox1 sends group a message which should not be seen by tox0's message handler
     tox_group_send_message(tox1, group_number, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)IGNORE_MESSAGE,
-                           IGNORE_MESSAGE_LEN, nullptr, &err_send);
+                           IGNORE_MESSAGE_LEN, &err_send);
 
     iterate_all_wait(autotoxes, NUM_GROUP_TOXES, ITERATION_INTERVAL);
 
@@ -506,7 +507,7 @@ static void group_message_test(AutoTox *autotoxes)
 
         memcpy(m + 2, &checksum, sizeof(uint16_t));
 
-        tox_group_send_message(tox0, group_number, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)m, message_size, nullptr, &err_send);
+        tox_group_send_message(tox0, group_number, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)m, message_size, &err_send);
 
         ck_assert(err_send == TOX_ERR_GROUP_SEND_MESSAGE_OK);
     }
@@ -528,7 +529,7 @@ static void group_message_test(AutoTox *autotoxes)
 
         memcpy(m, &i, sizeof(uint16_t));
 
-        tox_group_send_message(tox0, group_number, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)m, 2, nullptr, &err_send);
+        tox_group_send_message(tox0, group_number, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)m, 2, &err_send);
         ck_assert(err_send == TOX_ERR_GROUP_SEND_MESSAGE_OK);
     }
 
