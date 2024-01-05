@@ -654,8 +654,12 @@ void toxav_callback_audio_bit_rate(ToxAV *av, toxav_audio_bit_rate_cb *callback,
  * @param u U (Chroma) plane data.
  * @param v V (Chroma) plane data.
  */
-bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, uint16_t height, const uint8_t y[],
-                            const uint8_t u[], const uint8_t v[], Toxav_Err_Send_Frame *error);
+bool toxav_video_send_frame(
+        ToxAV *av, uint32_t friend_number, uint16_t width, uint16_t height,
+        const uint8_t y[/*! height * width */],
+        const uint8_t u[/*! height/2 * width/2 */],
+        const uint8_t v[/*! height/2 * width/2 */],
+        Toxav_Err_Send_Frame *error);
 
 /**
  * Set the bit rate to be used in subsequent video frames.
@@ -737,8 +741,13 @@ void toxav_callback_audio_receive_frame(ToxAV *av, toxav_audio_receive_frame_cb 
  * @param ustride U chroma plane stride.
  * @param vstride V chroma plane stride.
  */
-typedef void toxav_video_receive_frame_cb(ToxAV *av, uint32_t friend_number, uint16_t width, uint16_t height,
-        const uint8_t y[], const uint8_t u[], const uint8_t v[], int32_t ystride, int32_t ustride, int32_t vstride,
+typedef void toxav_video_receive_frame_cb(
+        ToxAV *av, uint32_t friend_number,
+        uint16_t width, uint16_t height,
+        const uint8_t y[/*! max(width, abs(ystride)) * height */],
+        const uint8_t u[/*! max(width/2, abs(ustride)) * (height/2) */],
+        const uint8_t v[/*! max(width/2, abs(vstride)) * (height/2) */],
+        int32_t ystride, int32_t ustride, int32_t vstride,
         void *user_data);
 
 
