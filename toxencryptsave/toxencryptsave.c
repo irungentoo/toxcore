@@ -79,7 +79,9 @@ void tox_pass_key_free(Tox_Pass_Key *key)
  *
  * @return true on success.
  */
-bool tox_get_salt(const uint8_t *ciphertext, uint8_t *salt, Tox_Err_Get_Salt *error)
+bool tox_get_salt(
+        const uint8_t ciphertext[TOX_PASS_ENCRYPTION_EXTRA_LENGTH],
+        uint8_t salt[TOX_PASS_SALT_LENGTH], Tox_Err_Get_Salt *error)
 {
     if (ciphertext == nullptr || salt == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_SALT_NULL);
@@ -112,8 +114,9 @@ bool tox_get_salt(const uint8_t *ciphertext, uint8_t *salt, Tox_Err_Get_Salt *er
  *
  * @return new symmetric key on success, NULL on failure.
  */
-Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t passphrase_len,
-                                  Tox_Err_Key_Derivation *error)
+Tox_Pass_Key *tox_pass_key_derive(
+        const uint8_t passphrase[], size_t passphrase_len,
+        Tox_Err_Key_Derivation *error)
 {
     const Random *rng = system_random();
 
@@ -136,8 +139,9 @@ Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t passphrase_l
  *
  * @return new symmetric key on success, NULL on failure.
  */
-Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t passphrase_len,
-        const uint8_t *salt, Tox_Err_Key_Derivation *error)
+Tox_Pass_Key *tox_pass_key_derive_with_salt(
+        const uint8_t passphrase[], size_t passphrase_len,
+        const uint8_t salt[TOX_PASS_SALT_LENGTH], Tox_Err_Key_Derivation *error)
 {
     if (salt == nullptr || (passphrase == nullptr && passphrase_len != 0)) {
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_NULL);
@@ -189,8 +193,8 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pa
  *
  * @return true on success.
  */
-bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *plaintext, size_t plaintext_len,
-                          uint8_t *ciphertext, Tox_Err_Encryption *error)
+bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t plaintext[], size_t plaintext_len,
+                          uint8_t ciphertext[], Tox_Err_Encryption *error)
 {
     const Random *rng = system_random();
 
@@ -250,8 +254,8 @@ bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *plaintext, siz
  *
  * @return true on success.
  */
-bool tox_pass_encrypt(const uint8_t *plaintext, size_t plaintext_len, const uint8_t *passphrase, size_t passphrase_len,
-                      uint8_t *ciphertext, Tox_Err_Encryption *error)
+bool tox_pass_encrypt(const uint8_t plaintext[], size_t plaintext_len, const uint8_t passphrase[], size_t passphrase_len,
+                      uint8_t ciphertext[], Tox_Err_Encryption *error)
 {
     Tox_Err_Key_Derivation err;
     Tox_Pass_Key *key = tox_pass_key_derive(passphrase, passphrase_len, &err);
@@ -281,8 +285,8 @@ bool tox_pass_encrypt(const uint8_t *plaintext, size_t plaintext_len, const uint
  *
  * @return true on success.
  */
-bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *ciphertext, size_t ciphertext_len,
-                          uint8_t *plaintext, Tox_Err_Decryption *error)
+bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t ciphertext[], size_t ciphertext_len,
+                          uint8_t plaintext[], Tox_Err_Decryption *error)
 {
     if (ciphertext_len <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_INVALID_LENGTH);
@@ -333,8 +337,8 @@ bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *ciphertext, si
  *
  * @return true on success.
  */
-bool tox_pass_decrypt(const uint8_t *ciphertext, size_t ciphertext_len, const uint8_t *passphrase,
-                      size_t passphrase_len, uint8_t *plaintext, Tox_Err_Decryption *error)
+bool tox_pass_decrypt(const uint8_t ciphertext[], size_t ciphertext_len, const uint8_t passphrase[],
+                      size_t passphrase_len, uint8_t plaintext[], Tox_Err_Decryption *error)
 {
     if (ciphertext_len <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_INVALID_LENGTH);
@@ -382,7 +386,7 @@ bool tox_pass_decrypt(const uint8_t *ciphertext, size_t ciphertext_len, const ui
  *
  * @return true if the data is encrypted by this module.
  */
-bool tox_is_data_encrypted(const uint8_t *data)
+bool tox_is_data_encrypted(const uint8_t data[TOX_PASS_ENCRYPTION_EXTRA_LENGTH])
 {
     return memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0;
 }
