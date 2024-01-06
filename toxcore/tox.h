@@ -536,6 +536,7 @@ typedef struct Tox_System Tox_System;
  *   members. The struct will become opaque (i.e. the definition will become
  *   private) in v0.3.0.
  */
+typedef struct Tox_Options Tox_Options;
 struct Tox_Options {
 
     /**
@@ -702,77 +703,77 @@ struct Tox_Options {
 };
 
 
-bool tox_options_get_ipv6_enabled(const struct Tox_Options *options);
+bool tox_options_get_ipv6_enabled(const Tox_Options *options);
 
-void tox_options_set_ipv6_enabled(struct Tox_Options *options, bool ipv6_enabled);
+void tox_options_set_ipv6_enabled(Tox_Options *options, bool ipv6_enabled);
 
-bool tox_options_get_udp_enabled(const struct Tox_Options *options);
+bool tox_options_get_udp_enabled(const Tox_Options *options);
 
-void tox_options_set_udp_enabled(struct Tox_Options *options, bool udp_enabled);
+void tox_options_set_udp_enabled(Tox_Options *options, bool udp_enabled);
 
-bool tox_options_get_local_discovery_enabled(const struct Tox_Options *options);
+bool tox_options_get_local_discovery_enabled(const Tox_Options *options);
 
-void tox_options_set_local_discovery_enabled(struct Tox_Options *options, bool local_discovery_enabled);
+void tox_options_set_local_discovery_enabled(Tox_Options *options, bool local_discovery_enabled);
 
-bool tox_options_get_dht_announcements_enabled(const struct Tox_Options *options);
+bool tox_options_get_dht_announcements_enabled(const Tox_Options *options);
 
-void tox_options_set_dht_announcements_enabled(struct Tox_Options *options, bool dht_announcements_enabled);
+void tox_options_set_dht_announcements_enabled(Tox_Options *options, bool dht_announcements_enabled);
 
-Tox_Proxy_Type tox_options_get_proxy_type(const struct Tox_Options *options);
+Tox_Proxy_Type tox_options_get_proxy_type(const Tox_Options *options);
 
-void tox_options_set_proxy_type(struct Tox_Options *options, Tox_Proxy_Type proxy_type);
+void tox_options_set_proxy_type(Tox_Options *options, Tox_Proxy_Type proxy_type);
 
-const char *tox_options_get_proxy_host(const struct Tox_Options *options);
+const char *tox_options_get_proxy_host(const Tox_Options *options);
 
-void tox_options_set_proxy_host(struct Tox_Options *options, const char *proxy_host);
+void tox_options_set_proxy_host(Tox_Options *options, const char *proxy_host);
 
-uint16_t tox_options_get_proxy_port(const struct Tox_Options *options);
+uint16_t tox_options_get_proxy_port(const Tox_Options *options);
 
-void tox_options_set_proxy_port(struct Tox_Options *options, uint16_t proxy_port);
+void tox_options_set_proxy_port(Tox_Options *options, uint16_t proxy_port);
 
-uint16_t tox_options_get_start_port(const struct Tox_Options *options);
+uint16_t tox_options_get_start_port(const Tox_Options *options);
 
-void tox_options_set_start_port(struct Tox_Options *options, uint16_t start_port);
+void tox_options_set_start_port(Tox_Options *options, uint16_t start_port);
 
-uint16_t tox_options_get_end_port(const struct Tox_Options *options);
+uint16_t tox_options_get_end_port(const Tox_Options *options);
 
-void tox_options_set_end_port(struct Tox_Options *options, uint16_t end_port);
+void tox_options_set_end_port(Tox_Options *options, uint16_t end_port);
 
-uint16_t tox_options_get_tcp_port(const struct Tox_Options *options);
+uint16_t tox_options_get_tcp_port(const Tox_Options *options);
 
-void tox_options_set_tcp_port(struct Tox_Options *options, uint16_t tcp_port);
+void tox_options_set_tcp_port(Tox_Options *options, uint16_t tcp_port);
 
-bool tox_options_get_hole_punching_enabled(const struct Tox_Options *options);
+bool tox_options_get_hole_punching_enabled(const Tox_Options *options);
 
-void tox_options_set_hole_punching_enabled(struct Tox_Options *options, bool hole_punching_enabled);
+void tox_options_set_hole_punching_enabled(Tox_Options *options, bool hole_punching_enabled);
 
-Tox_Savedata_Type tox_options_get_savedata_type(const struct Tox_Options *options);
+Tox_Savedata_Type tox_options_get_savedata_type(const Tox_Options *options);
 
-void tox_options_set_savedata_type(struct Tox_Options *options, Tox_Savedata_Type savedata_type);
+void tox_options_set_savedata_type(Tox_Options *options, Tox_Savedata_Type savedata_type);
 
-const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options);
+const uint8_t *tox_options_get_savedata_data(const Tox_Options *options);
 
-void tox_options_set_savedata_data(struct Tox_Options *options, const uint8_t savedata_data[], size_t length);
+void tox_options_set_savedata_data(Tox_Options *options, const uint8_t savedata_data[], size_t length);
 
-size_t tox_options_get_savedata_length(const struct Tox_Options *options);
+size_t tox_options_get_savedata_length(const Tox_Options *options);
 
-void tox_options_set_savedata_length(struct Tox_Options *options, size_t savedata_length);
+void tox_options_set_savedata_length(Tox_Options *options, size_t savedata_length);
 
-tox_log_cb *tox_options_get_log_callback(const struct Tox_Options *options);
+tox_log_cb *tox_options_get_log_callback(const Tox_Options *options);
 
-void tox_options_set_log_callback(struct Tox_Options *options, tox_log_cb *log_callback);
+void tox_options_set_log_callback(Tox_Options *options, tox_log_cb *log_callback);
 
-void *tox_options_get_log_user_data(const struct Tox_Options *options);
+void *tox_options_get_log_user_data(const Tox_Options *options);
 
-void tox_options_set_log_user_data(struct Tox_Options *options, void *log_user_data);
+void tox_options_set_log_user_data(Tox_Options *options, void *log_user_data);
 
-bool tox_options_get_experimental_thread_safety(const struct Tox_Options *options);
+bool tox_options_get_experimental_thread_safety(const Tox_Options *options);
 
-void tox_options_set_experimental_thread_safety(struct Tox_Options *options, bool experimental_thread_safety);
+void tox_options_set_experimental_thread_safety(Tox_Options *options, bool experimental_thread_safety);
 
-const Tox_System *tox_options_get_operating_system(const struct Tox_Options *options);
+const Tox_System *tox_options_get_operating_system(const Tox_Options *options);
 
-void tox_options_set_operating_system(struct Tox_Options *options, const Tox_System *operating_system);
+void tox_options_set_operating_system(Tox_Options *options, const Tox_System *operating_system);
 
 /**
  * @brief Initialises a Tox_Options object with the default options.
@@ -785,7 +786,7 @@ void tox_options_set_operating_system(struct Tox_Options *options, const Tox_Sys
  *
  * @param options An options object to be filled with default options.
  */
-void tox_options_default(struct Tox_Options *options);
+void tox_options_default(Tox_Options *options);
 
 typedef enum Tox_Err_Options_New {
 
@@ -816,7 +817,7 @@ const char *tox_err_options_new_to_string(Tox_Err_Options_New value);
  *
  * @return A new Tox_Options object with default options or NULL on failure.
  */
-struct Tox_Options *tox_options_new(Tox_Err_Options_New *error);
+Tox_Options *tox_options_new(Tox_Err_Options_New *error);
 
 /**
  * @brief Releases all resources associated with an options objects.
@@ -824,7 +825,7 @@ struct Tox_Options *tox_options_new(Tox_Err_Options_New *error);
  * Passing a pointer that was not returned by tox_options_new results in
  * undefined behaviour.
  */
-void tox_options_free(struct Tox_Options *options);
+void tox_options_free(Tox_Options *options);
 
 /** @} */
 
@@ -911,7 +912,7 @@ const char *tox_err_new_to_string(Tox_Err_New value);
  *
  * @return A new Tox instance pointer on success or NULL on failure.
  */
-Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error);
+Tox *tox_new(const Tox_Options *options, Tox_Err_New *error);
 
 /**
  * @brief Releases all resources associated with the Tox instance and
