@@ -843,6 +843,7 @@ bool toxav_groupchat_av_enabled(Tox *tox, uint32_t groupnumber);
 //!TOKSTYLE-
 #ifndef DOXYGEN_IGNORE
 
+typedef ToxAV Toxav;
 typedef Toxav_Err_Call TOXAV_ERR_CALL;
 typedef Toxav_Err_New TOXAV_ERR_NEW;
 typedef Toxav_Err_Answer TOXAV_ERR_ANSWER;
