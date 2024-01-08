@@ -81,13 +81,14 @@ static bool tox_event_conference_invite_set_cookie(Tox_Event_Conference_Invite *
         conference_invite->cookie_length = 0;
     }
 
-    conference_invite->cookie = (uint8_t *)malloc(cookie_length);
+    uint8_t *cookie_copy = (uint8_t *)malloc(cookie_length);
 
-    if (conference_invite->cookie == nullptr) {
+    if (cookie_copy == nullptr) {
         return false;
     }
 
-    memcpy(conference_invite->cookie, cookie, cookie_length);
+    memcpy(cookie_copy, cookie, cookie_length);
+    conference_invite->cookie = cookie_copy;
     conference_invite->cookie_length = cookie_length;
     return true;
 }

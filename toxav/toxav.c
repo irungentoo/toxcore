@@ -1284,7 +1284,7 @@ static ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, Toxav_Err_Call *er
         av->calls_tail = friend_number;
         av->calls_head = friend_number;
     } else if (av->calls_tail < friend_number) { /* Appending */
-        ToxAVCall **tmp = (ToxAVCall **)realloc(av->calls, sizeof(ToxAVCall *) * (friend_number + 1));
+        ToxAVCall **tmp = (ToxAVCall **)realloc(av->calls, (friend_number + 1) * sizeof(ToxAVCall *));
 
         if (tmp == nullptr) {
             pthread_mutex_destroy(call->toxav_call_mutex);

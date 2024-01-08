@@ -62,35 +62,38 @@ static Broadcast_Info *fetch_broadcast_info(const Network *ns)
         return nullptr;
     }
 
-    IP_ADAPTER_INFO *pAdapterInfo = (IP_ADAPTER_INFO *)malloc(sizeof(IP_ADAPTER_INFO));
-    unsigned long ulOutBufLen = sizeof(IP_ADAPTER_INFO);
+    IP_ADAPTER_INFO *adapter_info = (IP_ADAPTER_INFO *)malloc(sizeof(IP_ADAPTER_INFO));
 
-    if (pAdapterInfo == nullptr) {
+    if (adapter_info == nullptr) {
         free(broadcast);
         return nullptr;
     }
 
-    if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
-        free(pAdapterInfo);
-        pAdapterInfo = (IP_ADAPTER_INFO *)malloc(ulOutBufLen);
+    unsigned long out_buf_len = sizeof(IP_ADAPTER_INFO);
 
-        if (pAdapterInfo == nullptr) {
+    if (GetAdaptersInfo(adapter_info, &out_buf_len) == ERROR_BUFFER_OVERFLOW) {
+        free(adapter_info);
+        IP_ADAPTER_INFO *new_adapter_info = (IP_ADAPTER_INFO *)malloc(out_buf_len);
+
+        if (new_adapter_info == nullptr) {
             free(broadcast);
             return nullptr;
         }
+
+        adapter_info = new_adapter_info;
     }
 
-    const int ret = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
+    const int ret = GetAdaptersInfo(adapter_info, &out_buf_len);
 
     if (ret == NO_ERROR) {
-        IP_ADAPTER_INFO *pAdapter = pAdapterInfo;
+        IP_ADAPTER_INFO *adapter = adapter_info;
 
-        while (pAdapter != nullptr) {
+        while (adapter != nullptr) {
             IP gateway = {0};
             IP subnet_mask = {0};
 
-            if (addr_parse_ip(pAdapter->IpAddressList.IpMask.String, &subnet_mask)
-                    && addr_parse_ip(pAdapter->GatewayList.IpAddress.String, &gateway)) {
+            if (addr_parse_ip(adapter->IpAddressList.IpMask.String, &subnet_mask)
+                    && addr_parse_ip(adapter->GatewayList.IpAddress.String, &gateway)) {
                 if (net_family_is_ipv4(gateway.family) && net_family_is_ipv4(subnet_mask.family)) {
                     IP *ip = &broadcast->ips[broadcast->count];
                     ip->family = net_family_ipv4();
@@ -106,12 +109,12 @@ static Broadcast_Info *fetch_broadcast_info(const Network *ns)
                 }
             }
 
-            pAdapter = pAdapter->Next;
+            adapter = adapter->Next;
         }
     }
 
-    if (pAdapterInfo != nullptr) {
-        free(pAdapterInfo);
+    if (adapter_info != nullptr) {
+        free(adapter_info);
     }
 
     return broadcast;

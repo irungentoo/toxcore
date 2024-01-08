@@ -49,14 +49,15 @@ Ping_Array *ping_array_new(const Memory *mem, uint32_t size, uint32_t timeout)
         return nullptr;
     }
 
-    empty_array->mem = mem;
-    empty_array->entries = (Ping_Array_Entry *)mem_valloc(mem, size, sizeof(Ping_Array_Entry));
+    Ping_Array_Entry *entries = (Ping_Array_Entry *)mem_valloc(mem, size, sizeof(Ping_Array_Entry));
 
-    if (empty_array->entries == nullptr) {
+    if (entries == nullptr) {
         mem_delete(mem, empty_array);
         return nullptr;
     }
 
+    empty_array->mem = mem;
+    empty_array->entries = entries;
     empty_array->last_deleted = 0;
     empty_array->last_added = 0;
     empty_array->total_size = size;
@@ -115,13 +116,16 @@ uint64_t ping_array_add(Ping_Array *array, const Mono_Time *mono_time, const Ran
         clear_entry(array, index);
     }
 
-    array->entries[index].data = (uint8_t *)mem_balloc(array->mem, length);
+    uint8_t *entry_data = (uint8_t *)mem_balloc(array->mem, length);
 
-    if (array->entries[index].data == nullptr) {
+    if (entry_data == nullptr) {
+        array->entries[index].data = nullptr;
         return 0;
     }
 
-    memcpy(array->entries[index].data, data, length);
+    memcpy(entry_data, data, length);
+
+    array->entries[index].data = entry_data;
     array->entries[index].length = length;
     array->entries[index].ping_time = mono_time_get(mono_time);
     ++array->last_added;

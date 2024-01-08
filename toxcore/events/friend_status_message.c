@@ -66,13 +66,14 @@ static bool tox_event_friend_status_message_set_message(Tox_Event_Friend_Status_
         friend_status_message->message_length = 0;
     }
 
-    friend_status_message->message = (uint8_t *)malloc(message_length);
+    uint8_t *message_copy = (uint8_t *)malloc(message_length);
 
-    if (friend_status_message->message == nullptr) {
+    if (message_copy == nullptr) {
         return false;
     }
 
-    memcpy(friend_status_message->message, message, message_length);
+    memcpy(message_copy, message, message_length);
+    friend_status_message->message = message_copy;
     friend_status_message->message_length = message_length;
     return true;
 }

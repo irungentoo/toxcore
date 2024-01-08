@@ -80,13 +80,14 @@ static bool tox_event_conference_title_set_title(Tox_Event_Conference_Title *con
         conference_title->title_length = 0;
     }
 
-    conference_title->title = (uint8_t *)malloc(title_length);
+    uint8_t *title_copy = (uint8_t *)malloc(title_length);
 
-    if (conference_title->title == nullptr) {
+    if (title_copy == nullptr) {
         return false;
     }
 
-    memcpy(conference_title->title, title, title_length);
+    memcpy(title_copy, title, title_length);
+    conference_title->title = title_copy;
     conference_title->title_length = title_length;
     return true;
 }

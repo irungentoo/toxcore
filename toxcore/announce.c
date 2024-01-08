@@ -243,13 +243,15 @@ bool announce_store_data(Announcements *announce, const uint8_t *data_public_key
             free(entry->data);
         }
 
-        entry->data = (uint8_t *)malloc(length);
+        uint8_t *entry_data = (uint8_t *)malloc(length);
 
-        if (entry->data == nullptr) {
+        if (entry_data == nullptr) {
+            entry->data = nullptr;  // TODO(iphydf): Is this necessary?
             return false;
         }
 
-        memcpy(entry->data, data, length);
+        memcpy(entry_data, data, length);
+        entry->data = entry_data;
     }
 
     entry->length = length;

@@ -67,13 +67,14 @@ static bool tox_event_friend_request_set_message(Tox_Event_Friend_Request *frien
         friend_request->message_length = 0;
     }
 
-    friend_request->message = (uint8_t *)malloc(message_length);
+    uint8_t *message_copy = (uint8_t *)malloc(message_length);
 
-    if (friend_request->message == nullptr) {
+    if (message_copy == nullptr) {
         return false;
     }
 
-    memcpy(friend_request->message, message, message_length);
+    memcpy(message_copy, message, message_length);
+    friend_request->message = message_copy;
     friend_request->message_length = message_length;
     return true;
 }

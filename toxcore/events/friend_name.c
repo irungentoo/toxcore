@@ -66,13 +66,14 @@ static bool tox_event_friend_name_set_name(Tox_Event_Friend_Name *friend_name, c
         friend_name->name_length = 0;
     }
 
-    friend_name->name = (uint8_t *)malloc(name_length);
+    uint8_t *name_copy = (uint8_t *)malloc(name_length);
 
-    if (friend_name->name == nullptr) {
+    if (name_copy == nullptr) {
         return false;
     }
 
-    memcpy(friend_name->name, name, name_length);
+    memcpy(name_copy, name, name_length);
+    friend_name->name = name_copy;
     friend_name->name_length = name_length;
     return true;
 }

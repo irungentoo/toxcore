@@ -68,16 +68,19 @@ Shared_Key_Cache *shared_key_cache_new(const Logger *log, const Mono_Time *mono_
     res->mem = mem;
     res->log = log;
     res->keys_per_slot = keys_per_slot;
+
     // We take one byte from the public key for each bucket and store keys_per_slot elements there
     const size_t cache_size = 256 * keys_per_slot;
-    res->keys = (Shared_Key *)mem_valloc(mem, cache_size, sizeof(Shared_Key));
+    Shared_Key *keys = (Shared_Key *)mem_valloc(mem, cache_size, sizeof(Shared_Key));
 
-    if (res->keys == nullptr) {
+    if (keys == nullptr) {
         mem_delete(mem, res);
         return nullptr;
     }
 
-    crypto_memlock(res->keys, cache_size * sizeof(Shared_Key));
+    crypto_memlock(keys, cache_size * sizeof(Shared_Key));
+
+    res->keys = keys;
 
     return res;
 }

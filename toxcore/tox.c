@@ -796,21 +796,21 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     }
 
     if (tox_options_get_experimental_thread_safety(opts)) {
-        tox->mutex = (pthread_mutex_t *)mem_alloc(sys->mem, sizeof(pthread_mutex_t));
+        pthread_mutex_t *mutex = (pthread_mutex_t *)mem_alloc(sys->mem, sizeof(pthread_mutex_t));
 
-        if (tox->mutex == nullptr) {
+        if (mutex == nullptr) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
             mem_delete(sys->mem, tox);
             tox_options_free(default_options);
             return nullptr;
         }
 
-
         pthread_mutexattr_t attr;
-
         pthread_mutexattr_init(&attr);
         pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-        pthread_mutex_init(tox->mutex, &attr);
+        pthread_mutex_init(mutex, &attr);
+
+        tox->mutex = mutex;
     } else {
         tox->mutex = nullptr;
     }

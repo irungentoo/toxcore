@@ -105,17 +105,19 @@ static bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t si
         return false;
     }
 
-    new_list->next = nullptr;
-    new_list->size = size;
-    new_list->sent = sent;
-    new_list->data = (uint8_t *)mem_balloc(con->mem, size);
+    uint8_t *data = (uint8_t *)mem_balloc(con->mem, size);
 
-    if (new_list->data == nullptr) {
+    if (data == nullptr) {
         mem_delete(con->mem, new_list);
         return false;
     }
 
-    memcpy(new_list->data, packet, size);
+    memcpy(data, packet, size);
+    new_list->data = data;
+    new_list->size = size;
+
+    new_list->next = nullptr;
+    new_list->sent = sent;
 
     if (p != nullptr) {
         p->next = new_list;

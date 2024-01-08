@@ -81,13 +81,14 @@ static bool tox_event_conference_peer_name_set_name(Tox_Event_Conference_Peer_Na
         conference_peer_name->name_length = 0;
     }
 
-    conference_peer_name->name = (uint8_t *)malloc(name_length);
+    uint8_t *name_copy = (uint8_t *)malloc(name_length);
 
-    if (conference_peer_name->name == nullptr) {
+    if (name_copy == nullptr) {
         return false;
     }
 
-    memcpy(conference_peer_name->name, name, name_length);
+    memcpy(name_copy, name, name_length);
+    conference_peer_name->name = name_copy;
     conference_peer_name->name_length = name_length;
     return true;
 }

@@ -95,13 +95,14 @@ static bool tox_event_conference_message_set_message(Tox_Event_Conference_Messag
         conference_message->message_length = 0;
     }
 
-    conference_message->message = (uint8_t *)malloc(message_length);
+    uint8_t *message_copy = (uint8_t *)malloc(message_length);
 
-    if (conference_message->message == nullptr) {
+    if (message_copy == nullptr) {
         return false;
     }
 
-    memcpy(conference_message->message, message, message_length);
+    memcpy(message_copy, message, message_length);
+    conference_message->message = message_copy;
     conference_message->message_length = message_length;
     return true;
 }

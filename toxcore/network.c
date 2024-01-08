@@ -1796,12 +1796,14 @@ int32_t net_getipport(const Memory *mem, const char *node, IP_Port **res, int to
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     if ((true)) {
-        *res = (IP_Port *)mem_alloc(mem, sizeof(IP_Port));
-        assert(*res != nullptr);
-        IP_Port *ip_port = *res;
+        IP_Port *ip_port = (IP_Port *)mem_alloc(mem, sizeof(IP_Port));
+        if (ip_port == nullptr) {
+            abort();
+        }
         ip_port->ip.ip.v4.uint32 = net_htonl(0x7F000003); // 127.0.0.3
         ip_port->ip.family = *make_tox_family(AF_INET);
 
+        *res = ip_port;
         return 1;
     }
 #endif
@@ -1838,14 +1840,15 @@ int32_t net_getipport(const Memory *mem, const char *node, IP_Port **res, int to
         return 0;
     }
 
-    *res = (IP_Port *)mem_valloc(mem, count, sizeof(IP_Port));
+    IP_Port *ip_port = (IP_Port *)mem_valloc(mem, count, sizeof(IP_Port));
 
-    if (*res == nullptr) {
+    if (ip_port == nullptr) {
         freeaddrinfo(infos);
+        *res = nullptr;
         return -1;
     }
 
-    IP_Port *ip_port = *res;
+    *res = ip_port;
 
     for (struct addrinfo *cur = infos; cur != nullptr; cur = cur->ai_next) {
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {

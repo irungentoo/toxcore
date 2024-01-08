@@ -108,13 +108,14 @@ static bool tox_event_file_recv_set_filename(Tox_Event_File_Recv *file_recv, con
         file_recv->filename_length = 0;
     }
 
-    file_recv->filename = (uint8_t *)malloc(filename_length);
+    uint8_t *filename_copy = (uint8_t *)malloc(filename_length);
 
-    if (file_recv->filename == nullptr) {
+    if (filename_copy == nullptr) {
         return false;
     }
 
-    memcpy(file_recv->filename, filename, filename_length);
+    memcpy(filename_copy, filename, filename_length);
+    file_recv->filename = filename_copy;
     file_recv->filename_length = filename_length;
     return true;
 }

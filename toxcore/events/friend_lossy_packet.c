@@ -66,13 +66,14 @@ static bool tox_event_friend_lossy_packet_set_data(Tox_Event_Friend_Lossy_Packet
         friend_lossy_packet->data_length = 0;
     }
 
-    friend_lossy_packet->data = (uint8_t *)malloc(data_length);
+    uint8_t *data_copy = (uint8_t *)malloc(data_length);
 
-    if (friend_lossy_packet->data == nullptr) {
+    if (data_copy == nullptr) {
         return false;
     }
 
-    memcpy(friend_lossy_packet->data, data, data_length);
+    memcpy(data_copy, data, data_length);
+    friend_lossy_packet->data = data_copy;
     friend_lossy_packet->data_length = data_length;
     return true;
 }

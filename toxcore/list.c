@@ -123,7 +123,7 @@ static bool resize(BS_List *list, uint32_t new_size)
 
     list->data = data;
 
-    int *ids = (int *)realloc(list->ids, sizeof(int) * new_size);
+    int *ids = (int *)realloc(list->ids, new_size * sizeof(int));
 
     if (ids == nullptr) {
         return false;

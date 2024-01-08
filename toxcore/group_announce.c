@@ -339,6 +339,31 @@ int gca_unpack_announces_list(const Logger *log, const uint8_t *data, uint16_t l
     return announces_count;
 }
 
+non_null()
+static GC_Announces *gca_new_announces(
+        GC_Announces_List *gc_announces_list,
+        const GC_Public_Announce *public_announce)
+{
+    GC_Announces *announces = (GC_Announces *)calloc(1, sizeof(GC_Announces));
+
+    if (announces == nullptr) {
+        return nullptr;
+    }
+
+    announces->index = 0;
+    announces->prev_announce = nullptr;
+
+    if (gc_announces_list->root_announces != nullptr) {
+        gc_announces_list->root_announces->prev_announce = announces;
+    }
+
+    announces->next_announce = gc_announces_list->root_announces;
+    gc_announces_list->root_announces = announces;
+    memcpy(announces->chat_id, public_announce->chat_public_key, CHAT_ID_SIZE);
+
+    return announces;
+}
+
 GC_Peer_Announce *gca_add_announce(const Mono_Time *mono_time, GC_Announces_List *gc_announces_list,
                                    const GC_Public_Announce *public_announce)
 {
@@ -350,22 +375,11 @@ GC_Peer_Announce *gca_add_announce(const Mono_Time *mono_time, GC_Announces_List
 
     // No entry for this chat_id exists so we create one
     if (announces == nullptr) {
-        announces = (GC_Announces *)calloc(1, sizeof(GC_Announces));
+        announces = gca_new_announces(gc_announces_list, public_announce);
 
         if (announces == nullptr) {
             return nullptr;
         }
-
-        announces->index = 0;
-        announces->prev_announce = nullptr;
-
-        if (gc_announces_list->root_announces != nullptr) {
-            gc_announces_list->root_announces->prev_announce = announces;
-        }
-
-        announces->next_announce = gc_announces_list->root_announces;
-        gc_announces_list->root_announces = announces;
-        memcpy(announces->chat_id, public_announce->chat_public_key, CHAT_ID_SIZE);
     }
 
     const uint64_t cur_time = mono_time_get(mono_time);
@@ -396,8 +410,7 @@ bool gca_is_valid_announce(const GC_Announce *announce)
 
 GC_Announces_List *new_gca_list(void)
 {
-    GC_Announces_List *announces_list = (GC_Announces_List *)calloc(1, sizeof(GC_Announces_List));
-    return announces_list;
+    return (GC_Announces_List *)calloc(1, sizeof(GC_Announces_List));
 }
 
 void kill_gca(GC_Announces_List *announces_list)
