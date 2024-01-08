@@ -6211,6 +6211,39 @@ static bool handle_gc_lossless_packet(const GC_Session *c, GC_Chat *chat, const 
     return true;
 }
 
+non_null(1, 2, 3, 4, 6) nullable(8)
+static int handle_gc_lossy_packet_decoded(
+    const GC_Session *c, GC_Chat *chat, GC_Connection *gconn, const GC_Peer *peer,
+    uint8_t packet_type, const uint8_t *data, uint16_t payload_len, void *userdata)
+{
+    switch (packet_type) {
+        case GP_MESSAGE_ACK: {
+            return handle_gc_message_ack(chat, gconn, data, payload_len);
+        }
+
+        case GP_PING: {
+            return handle_gc_ping(chat, gconn, data, payload_len);
+        }
+
+        case GP_INVITE_RESPONSE_REJECT: {
+            return handle_gc_invite_response_reject(c, chat, data, payload_len, userdata);
+        }
+
+        case GP_CUSTOM_PACKET: {
+            return handle_gc_custom_packet(c, chat, peer, data, payload_len, false, userdata);
+        }
+
+        case GP_CUSTOM_PRIVATE_PACKET: {
+            return handle_gc_custom_private_packet(c, chat, peer, data, payload_len, false, userdata);
+        }
+
+        default: {
+            LOGGER_WARNING(chat->log, "Warning: handling invalid lossy group packet type 0x%02x", packet_type);
+            return -1;
+        }
+    }
+}
+
 /** @brief Handles lossy groupchat message packets.
  *
  * This function assumes the length has already been validated.
@@ -6259,41 +6292,7 @@ static bool handle_gc_lossy_packet(const GC_Session *c, GC_Chat *chat, const uin
         return false;
     }
 
-    int ret = -1;
-    const uint16_t payload_len = (uint16_t)len;
-
-    switch (packet_type) {
-        case GP_MESSAGE_ACK: {
-            ret = handle_gc_message_ack(chat, gconn, data, payload_len);
-            break;
-        }
-
-        case GP_PING: {
-            ret = handle_gc_ping(chat, gconn, data, payload_len);
-            break;
-        }
-
-        case GP_INVITE_RESPONSE_REJECT: {
-            ret = handle_gc_invite_response_reject(c, chat, data, payload_len, userdata);
-            break;
-        }
-
-        case GP_CUSTOM_PACKET: {
-            ret = handle_gc_custom_packet(c, chat, peer, data, payload_len, false, userdata);
-            break;
-        }
-
-        case GP_CUSTOM_PRIVATE_PACKET: {
-            ret = handle_gc_custom_private_packet(c, chat, peer, data, payload_len, false, userdata);
-            break;
-        }
-
-        default: {
-            LOGGER_WARNING(chat->log, "Warning: handling invalid lossy group packet type 0x%02x", packet_type);
-            free(data);
-            return false;
-        }
-    }
+    const int ret = handle_gc_lossy_packet_decoded(c, chat, gconn, peer, packet_type, data, (uint16_t)len, userdata);
 
     free(data);
 

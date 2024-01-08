@@ -290,8 +290,9 @@ static TCP_con *get_tcp_connection(const TCP_Connections *tcp_c, int tcp_connect
 uint32_t tcp_connected_relays_count(const TCP_Connections *tcp_c)
 {
     uint32_t count = 0;
+    const uint32_t size = tcp_connections_count(tcp_c);
 
-    for (uint32_t i = 0; i < tcp_connections_count(tcp_c); ++i) {
+    for (uint32_t i = 0; i < size; ++i) {
         const TCP_con *tcp_con = get_tcp_connection(tcp_c, i);
 
         if (tcp_con == nullptr) {

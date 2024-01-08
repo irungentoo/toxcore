@@ -93,4 +93,5 @@ cscope.files
 # rpm
 tox.spec
 
+/infer
 .idea/

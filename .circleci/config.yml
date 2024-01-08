@@ -16,7 +16,6 @@ workflows:
       # Static analysis
       - clang-analyze
       - cpplint
-      - infer
       - static-analysis
 
 jobs:
@@ -101,27 +100,6 @@ jobs:
       - checkout
       - run: git submodule update --init --recursive
       - run: CC=clang .circleci/cmake-ubsan
-
-  infer:
-    working_directory: ~/work
-    docker:
-      - image: toxchat/infer
-
-    steps:
-      - run: *apt_install
-      - checkout
-      - run: git submodule update --init --recursive
-      - run: infer --no-progress-bar -- cc
-          auto_tests/auto_test_support.c
-          auto_tests/lossless_packet_test.c
-          testing/misc_tools.c
-          toxav/*.c
-          toxcore/*.c
-          toxcore/*/*.c
-          toxencryptsave/*.c
-          third_party/cmp/*.c
-          -lpthread
-          $(pkg-config --cflags --libs libsodium opus vpx)
 
   static-analysis:
     working_directory: ~/work
