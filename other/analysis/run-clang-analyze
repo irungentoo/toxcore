@@ -9,7 +9,7 @@ run() {
   clang++ --analyze amalgamation.cc \
     "${CPPFLAGS[@]}" \
     "$@" \
-    -std=c++11
+    -std=c++20
 }
 
 . other/analysis/variants.sh

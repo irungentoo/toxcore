@@ -34,6 +34,8 @@ CPPCHECK_CXX+=("--suppress=AssignmentAddressToInteger")
 CPPCHECK_CXX+=("--suppress=cstyleCast")
 # Used in Messenger.c for a static_assert(...)
 CPPCHECK_CXX+=("--suppress=sizeofFunctionCall")
+# This is outdated. Range-for is a good choice.
+CPPCHECK_CXX+=("--suppress=useStlAlgorithm")
 
 run() {
   echo "Running cppcheck in variant '$*'"

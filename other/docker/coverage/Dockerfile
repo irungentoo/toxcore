@@ -11,6 +11,7 @@ RUN apt-get update && \
  git \
  golang-1.18 \
  libconfig-dev \
+ libgmock-dev \
  libgtest-dev \
  libopus-dev \
  libsodium-dev \
@@ -25,9 +26,11 @@ RUN apt-get update && \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* \
  && pip3 install --no-cache-dir gcovr
-# strip gtest so it doesn't end up in stack traces. This speeds up the
+# strip gtest/gmock so it doesn't end up in stack traces. This speeds up the
 # mallocfail run below by a lot.
 RUN ["strip", "-g",\
+ "/usr/lib/x86_64-linux-gnu/libgmock.a",\
+ "/usr/lib/x86_64-linux-gnu/libgmock_main.a",\
  "/usr/lib/x86_64-linux-gnu/libgtest.a",\
  "/usr/lib/x86_64-linux-gnu/libgtest_main.a"]
 RUN ["curl", "-s", "https://codecov.io/bash", "-o", "/usr/local/bin/codecov"]

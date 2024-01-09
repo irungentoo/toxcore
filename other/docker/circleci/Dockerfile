@@ -7,6 +7,7 @@ RUN apt-get update && \
  clang \
  cmake \
  libconfig-dev \
+ libgmock-dev \
  libgtest-dev \
  libopus-dev \
  libsodium-dev \

@@ -68,6 +68,7 @@ jobs:
             cmake
             git
             libconfig-dev
+            libgmock-dev
             libgtest-dev
             libopus-dev
             libsodium-dev

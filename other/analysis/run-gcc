@@ -11,7 +11,7 @@ run() {
     "${CPPFLAGS[@]}" \
     "${LDFLAGS[@]}" \
     "$@" \
-    -std=c++11 \
+    -std=c++17 \
     -fdiagnostics-color=always \
     -Wall \
     -Wextra \
