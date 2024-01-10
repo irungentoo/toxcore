@@ -3,6 +3,24 @@
 #include <cstring>
 #include <iomanip>
 
+Random_Funcs const Random_Class::vtable = {
+    Method<crypto_random_bytes_cb, Random_Class>::invoke<&Random_Class::random_bytes>,
+    Method<crypto_random_uniform_cb, Random_Class>::invoke<&Random_Class::random_uniform>,
+};
+
+Random_Class::~Random_Class() = default;
+
+void Test_Random::random_bytes(void *obj, uint8_t *bytes, size_t length)
+{
+    std::generate(bytes, &bytes[length], std::ref(lcg));
+}
+
+uint32_t Test_Random::random_uniform(void *obj, uint32_t upper_bound)
+{
+    std::uniform_int_distribution<uint32_t> distrib(0, upper_bound);
+    return distrib(lcg);
+}
+
 PublicKey random_pk(const Random *rng)
 {
     PublicKey pk;
@@ -19,28 +37,3 @@ std::ostream &operator<<(std::ostream &out, PublicKey const &pk)
     out << '"';
     return out;
 }
-
-static void test_random_bytes(void *obj, uint8_t *bytes, size_t length)
-{
-    Test_Random *self = static_cast<Test_Random *>(obj);
-    std::generate(bytes, &bytes[length], std::ref(self->lcg));
-}
-
-static uint32_t test_random_uniform(void *obj, uint32_t upper_bound)
-{
-    Test_Random *self = static_cast<Test_Random *>(obj);
-    std::uniform_int_distribution<uint32_t> distrib(0, upper_bound);
-    return distrib(self->lcg);
-}
-
-Random_Funcs const Test_Random::vtable = {
-    test_random_bytes,
-    test_random_uniform,
-};
-
-Test_Random::Test_Random()
-    : self{&vtable, this}
-{
-}
-
-Test_Random::operator Random const *() const { return &self; }

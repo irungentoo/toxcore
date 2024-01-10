@@ -9,21 +9,34 @@
 #include "crypto_core.h"
 #include "test_util.hh"
 
+struct Random_Class {
+    static Random_Funcs const vtable;
+    Random const self;
+
+    operator Random const *() const { return &self; }
+
+    Random_Class(Random_Class const &) = default;
+    Random_Class()
+        : self{&vtable, this}
+    {
+    }
+
+    virtual ~Random_Class();
+    virtual crypto_random_bytes_cb random_bytes = 0;
+    virtual crypto_random_uniform_cb random_uniform = 0;
+};
+
 /**
  * A very simple, fast, and deterministic PRNG just for testing.
  *
  * We generally don't want to use system_random(), since it's a
  * cryptographically secure PRNG and we don't need that in unit tests.
  */
-class Test_Random {
-    static Random_Funcs const vtable;
-    Random const self;
-
-public:
-    Test_Random();
-    operator Random const *() const;
-
+class Test_Random : public Random_Class {
     std::minstd_rand lcg;
+
+    void random_bytes(void *obj, uint8_t *bytes, size_t length) override;
+    uint32_t random_uniform(void *obj, uint32_t upper_bound) override;
 };
 
 struct PublicKey : private std::array<uint8_t, CRYPTO_PUBLIC_KEY_SIZE> {

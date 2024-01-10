@@ -11,11 +11,24 @@ struct Function_Deleter {
     void operator()(T *ptr) const { Delete(ptr); }
 };
 
+// No default deleter, because we want to catch when we forget to specialise this one.
 template <typename T>
 struct Deleter;
 
 template <typename T>
 using Ptr = std::unique_ptr<T, Deleter<T>>;
+
+template <typename Func, typename Class>
+struct Method;
+
+template <typename R, typename Class, typename... Args>
+struct Method<R(void *, Args...), Class> {
+    template <R (Class::*M)(void *, Args...)>
+    static R invoke(void *self, Args... args)
+    {
+        return (static_cast<Class *>(self)->*M)(self, args...);
+    }
+};
 
 template <typename T, std::size_t N>
 std::array<T, N> to_array(T const (&arr)[N])
