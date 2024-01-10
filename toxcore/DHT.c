@@ -781,10 +781,11 @@ bool add_to_list(
  * helper for `get_close_nodes()`. argument list is a monster :D
  */
 non_null()
-static void get_close_nodes_inner(uint64_t cur_time, const uint8_t *public_key, Node_format *nodes_list,
-                                  Family sa_family, const Client_data *client_list, uint32_t client_list_length,
-                                  uint32_t *num_nodes_ptr, bool is_lan,
-                                  bool want_announce)
+static void get_close_nodes_inner(
+        uint64_t cur_time, const uint8_t *public_key,
+        Node_format *nodes_list, uint32_t *num_nodes_ptr,
+        Family sa_family, const Client_data *client_list, uint32_t client_list_length,
+        bool is_lan, bool want_announce)
 {
     if (!net_family_is_ipv4(sa_family) && !net_family_is_ipv6(sa_family) && !net_family_is_unspec(sa_family)) {
         return;
@@ -851,28 +852,44 @@ static void get_close_nodes_inner(uint64_t cur_time, const uint8_t *public_key, 
  * want_announce: return only nodes which implement the dht announcements protocol.
  */
 non_null()
-static int get_somewhat_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list,
-                                    Family sa_family, bool is_lan, bool want_announce)
+static int get_somewhat_close_nodes(
+        uint64_t cur_time, const uint8_t *public_key, Node_format *nodes_list,
+        Family sa_family, const Client_data *close_clientlist,
+        const DHT_Friend *friends_list, uint16_t friends_list_size,
+        bool is_lan, bool want_announce)
 {
-    uint32_t num_nodes = 0;
-    get_close_nodes_inner(dht->cur_time, public_key, nodes_list, sa_family,
-                          dht->close_clientlist, LCLIENT_LIST, &num_nodes, is_lan, want_announce);
+    memset(nodes_list, 0, MAX_SENT_NODES * sizeof(Node_format));
 
-    for (uint32_t i = 0; i < dht->num_friends; ++i) {
-        get_close_nodes_inner(dht->cur_time, public_key, nodes_list, sa_family,
-                              dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                              &num_nodes, is_lan, want_announce);
+    uint32_t num_nodes = 0;
+    get_close_nodes_inner(
+            cur_time, public_key,
+            nodes_list, &num_nodes,
+            sa_family, close_clientlist, LCLIENT_LIST,
+            is_lan, want_announce);
+
+    for (uint16_t i = 0; i < friends_list_size; ++i) {
+        const DHT_Friend *dht_friend = &friends_list[i];
+
+        get_close_nodes_inner(
+                cur_time, public_key,
+                nodes_list, &num_nodes,
+                sa_family, dht_friend->client_list, MAX_FRIEND_CLIENTS,
+                is_lan, want_announce);
     }
 
     return num_nodes;
 }
 
-int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, Family sa_family,
-                    bool is_lan, bool want_announce)
+int get_close_nodes(
+        const DHT *dht, const uint8_t *public_key,
+        Node_format *nodes_list, Family sa_family,
+        bool is_lan, bool want_announce)
 {
-    memset(nodes_list, 0, MAX_SENT_NODES * sizeof(Node_format));
-    return get_somewhat_close_nodes(dht, public_key, nodes_list, sa_family,
-                                    is_lan, want_announce);
+    return get_somewhat_close_nodes(
+            dht->cur_time, public_key, nodes_list,
+            sa_family, dht->close_clientlist,
+            dht->friends_list, dht->num_friends,
+            is_lan, want_announce);
 }
 
 typedef struct DHT_Cmp_Data {

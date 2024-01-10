@@ -384,18 +384,20 @@ void set_announce_node(DHT *dht, const uint8_t *public_key);
 #endif
 
 /**
- * Get the (maximum MAX_SENT_NODES) closest nodes to public_key we know
+ * @brief Get the (maximum MAX_SENT_NODES) closest nodes to public_key we know
  * and put them in nodes_list (must be MAX_SENT_NODES big).
  *
- * sa_family = family (IPv4 or IPv6) (0 if we don't care)?
- * is_LAN = return some LAN ips (true or false)
- * want_announce: return only nodes which implement the dht announcements protocol.
+ * @param sa_family family (IPv4 or IPv6) (0 if we don't care)?
+ * @param is_lan return some LAN ips (true or false).
+ * @param want_announce return only nodes which implement the dht announcements protocol.
  *
  * @return the number of nodes returned.
  */
 non_null()
-int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, Family sa_family,
-                    bool is_lan, bool want_announce);
+int get_close_nodes(
+        const DHT *dht, const uint8_t *public_key,
+        Node_format *nodes_list, Family sa_family,
+        bool is_lan, bool want_announce);
 
 
 /** @brief Put up to max_num nodes in nodes from the random friends.

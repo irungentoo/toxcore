@@ -92,6 +92,9 @@ struct TCP_Server {
     BS_List accepted_key_list;
 };
 
+static_assert(sizeof(TCP_Server) < 7 * 1024 * 1024,
+              "TCP_Server struct should not grow more; it's already 6MB");
+
 const uint8_t *tcp_server_public_key(const TCP_Server *tcp_server)
 {
     return tcp_server->public_key;
