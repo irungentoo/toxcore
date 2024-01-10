@@ -41,6 +41,13 @@ non_null() int create_recursive_mutex(pthread_mutex_t *mutex);
  */
 non_null() bool memeq(const uint8_t *a, size_t a_size, const uint8_t *b, size_t b_size);
 
+/**
+ * @brief Copies a byte array of a given size into a newly allocated one.
+ *
+ * @return nullptr on allocation failure or if the input data was nullptr or data_size was 0.
+ */
+nullable(1) uint8_t *memdup(const uint8_t *data, size_t data_size);
+
 // Safe min/max functions with specific types. This forces the conversion to the
 // desired type before the comparison expression, giving the choice of
 // conversion to the caller. Use these instead of inline comparisons or MIN/MAX
