@@ -8,6 +8,7 @@
 #include <fstream>
 #include <vector>
 
+#include "../../toxcore/crypto_core.h"
 #include "../../toxcore/tox.h"
 #include "../../toxcore/tox_dispatch.h"
 #include "../../toxcore/tox_events.h"

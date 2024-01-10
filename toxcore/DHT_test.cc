@@ -333,13 +333,13 @@ TEST(AnnounceNodes, SetAndTest)
     ASSERT_NE(log, nullptr);
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
     ASSERT_NE(mono_time, nullptr);
-    Networking_Core *net = new_networking_no_udp(log, mem, ns);
+    Ptr<Networking_Core> net(new_networking_no_udp(log, mem, ns));
     ASSERT_NE(net, nullptr);
-    DHT *dht = new_dht(log, mem, rng, ns, mono_time, net, true, true);
+    Ptr<DHT> dht(new_dht(log, mem, rng, ns, mono_time, net.get(), true, true));
     ASSERT_NE(dht, nullptr);
 
     uint8_t pk_data[CRYPTO_PUBLIC_KEY_SIZE];
-    memcpy(pk_data, dht_get_self_public_key(dht), sizeof(pk_data));
+    memcpy(pk_data, dht_get_self_public_key(dht.get()), sizeof(pk_data));
     PublicKey self_pk(to_array(pk_data));
 
     PublicKey pk1 = random_pk(rng);
@@ -353,20 +353,20 @@ TEST(AnnounceNodes, SetAndTest)
     IP_Port ip_port = {0};
     ip_port.ip.family = net_family_ipv4();
 
-    set_announce_node(dht, pk1.data());
-    set_announce_node(dht, pk2.data());
+    set_announce_node(dht.get(), pk1.data());
+    set_announce_node(dht.get(), pk2.data());
 
-    EXPECT_TRUE(addto_lists(dht, &ip_port, pk1.data()));
-    EXPECT_TRUE(addto_lists(dht, &ip_port, pk2.data()));
+    EXPECT_TRUE(addto_lists(dht.get(), &ip_port, pk1.data()));
+    EXPECT_TRUE(addto_lists(dht.get(), &ip_port, pk2.data()));
 
     Node_format nodes[MAX_SENT_NODES];
-    EXPECT_EQ(0, get_close_nodes(dht, self_pk.data(), nodes, net_family_unspec(), true, true));
-    set_announce_node(dht, pk1.data());
-    set_announce_node(dht, pk2.data());
-    EXPECT_EQ(2, get_close_nodes(dht, self_pk.data(), nodes, net_family_unspec(), true, true));
+    EXPECT_EQ(
+        0, get_close_nodes(dht.get(), self_pk.data(), nodes, net_family_unspec(), true, true));
+    set_announce_node(dht.get(), pk1.data());
+    set_announce_node(dht.get(), pk2.data());
+    EXPECT_EQ(
+        2, get_close_nodes(dht.get(), self_pk.data(), nodes, net_family_unspec(), true, true));
 
-    kill_dht(dht);
-    kill_networking(net);
     mono_time_free(mem, mono_time);
     logger_kill(log);
 }

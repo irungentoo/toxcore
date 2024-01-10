@@ -3,7 +3,19 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
 #include <vector>
+
+template <typename T, void (*Delete)(T *)>
+struct Function_Deleter {
+    void operator()(T *ptr) const { Delete(ptr); }
+};
+
+template <typename T>
+struct Deleter;
+
+template <typename T>
+using Ptr = std::unique_ptr<T, Deleter<T>>;
 
 template <typename T, std::size_t N>
 std::array<T, N> to_array(T const (&arr)[N])
