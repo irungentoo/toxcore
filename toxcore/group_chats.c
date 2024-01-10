@@ -2107,16 +2107,17 @@ static int handle_gc_tcp_relays(GC_Chat *chat, GC_Connection *gconn, const uint8
 non_null()
 static bool send_gc_invite_request(const GC_Chat *chat, GC_Connection *gconn)
 {
-    uint16_t length = 0;
+    if (!chat_is_password_protected(chat)) {
+        return send_lossless_group_packet(chat, gconn, nullptr, 0, GP_INVITE_REQUEST);
+    }
+
     uint8_t data[sizeof(uint16_t) + MAX_GC_PASSWORD_SIZE];
 
-    if (chat_is_password_protected(chat)) {
-        net_pack_u16(data, chat->shared_state.password_length);
-        length += sizeof(uint16_t);
+    net_pack_u16(data, chat->shared_state.password_length);
+    uint16_t length = sizeof(uint16_t);
 
-        memcpy(data + length, chat->shared_state.password, MAX_GC_PASSWORD_SIZE);
-        length += MAX_GC_PASSWORD_SIZE;
-    }
+    memcpy(data + length, chat->shared_state.password, MAX_GC_PASSWORD_SIZE);
+    length += MAX_GC_PASSWORD_SIZE;
 
     return send_lossless_group_packet(chat, gconn, data, length, GP_INVITE_REQUEST);
 }
