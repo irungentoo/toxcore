@@ -143,11 +143,11 @@ bool gcc_send_packet(const GC_Chat *chat, const GC_Connection *gconn, const uint
 /** @brief Sends a lossless packet to `gconn` comprised of `data` of size `length`.
  *
  * This function will add the packet to the lossless send array, encrypt/wrap it using the
- * shared key associated with `gconn`, and send it over the wire.
+ * shared key associated with `gconn`, and try to send it over the wire.
  *
- * Return 0 on success.
+ * Return 0 if the packet was successfully encrypted and added to the send array.
  * Return -1 if the packet couldn't be added to the send array.
- * Return -2 if the packet failed to be encrypted or failed to send.
+ * Return -2 if the packet failed to be wrapped or encrypted.
  */
 non_null(1, 2) nullable(3)
 int gcc_send_lossless_packet(const GC_Chat *chat, GC_Connection *gconn, const uint8_t *data, uint16_t length,
@@ -172,11 +172,13 @@ bool gcc_send_lossless_packet_fragments(const GC_Chat *chat, GC_Connection *gcon
  *
  * This function does not add the packet to the send array.
  *
- * Return true on success.
+ * Return 0 on success.
+ * Return -1 if packet wrapping and encryption fails.
+ * Return -2 if the packet fails to send.
  */
 non_null(1, 2) nullable(3)
-bool gcc_encrypt_and_send_lossless_packet(const GC_Chat *chat, const GC_Connection *gconn, const uint8_t *data,
-        uint16_t length, uint64_t message_id, uint8_t packet_type);
+int gcc_encrypt_and_send_lossless_packet(const GC_Chat *chat, const GC_Connection *gconn, const uint8_t *data,
+       uint16_t length, uint64_t message_id, uint8_t packet_type);
 
 /** @brief Called when a peer leaves the group. */
 non_null()

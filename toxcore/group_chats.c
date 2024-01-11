@@ -2264,12 +2264,14 @@ FAILED_INVITE:
 
 /** @brief Sends a lossless packet of type and length to all confirmed peers.
  *
- * Return true if packet is successfully sent to at least one peer.
+ * Return true if packet is successfully sent to at least one peer or the
+ * group is empty.
  */
 non_null()
 static bool send_gc_lossless_packet_all_peers(const GC_Chat *chat, const uint8_t *data, uint16_t length, uint8_t type)
 {
     uint32_t sent = 0;
+    uint32_t confirmed_peers = 0;
 
     for (uint32_t i = 1; i < chat->numpeers; ++i) {
         GC_Connection *gconn = get_gc_connection(chat, i);
@@ -2280,22 +2282,26 @@ static bool send_gc_lossless_packet_all_peers(const GC_Chat *chat, const uint8_t
             continue;
         }
 
+        ++confirmed_peers;
+
         if (send_lossless_group_packet(chat, gconn, data, length, type)) {
             ++sent;
         }
     }
 
-    return sent > 0 || chat->numpeers <= 1;
+    return sent > 0 || confirmed_peers == 0;
 }
 
 /** @brief Sends a lossy packet of type and length to all confirmed peers.
  *
- * Return true if packet is successfully sent to at least one peer.
+ * Return true if packet is successfully sent to at least one peer or the
+ * group is empty.
  */
 non_null()
 static bool send_gc_lossy_packet_all_peers(const GC_Chat *chat, const uint8_t *data, uint16_t length, uint8_t type)
 {
     uint32_t sent = 0;
+    uint32_t confirmed_peers = 0;
 
     for (uint32_t i = 1; i < chat->numpeers; ++i) {
         const GC_Connection *gconn = get_gc_connection(chat, i);
@@ -2306,12 +2312,14 @@ static bool send_gc_lossy_packet_all_peers(const GC_Chat *chat, const uint8_t *d
             continue;
         }
 
+        ++confirmed_peers;
+
         if (send_lossy_group_packet(chat, gconn, data, length, type)) {
             ++sent;
         }
     }
 
-    return sent > 0 || chat->numpeers <= 1;
+    return sent > 0 || confirmed_peers == 0;
 }
 
 /** @brief Creates packet with broadcast header info followed by data of length.
@@ -5318,7 +5326,7 @@ static int handle_gc_message_ack(const GC_Chat *chat, GC_Connection *gconn, cons
         if (gcc_encrypt_and_send_lossless_packet(chat, gconn, gconn->send_array[idx].data,
                 gconn->send_array[idx].data_length,
                 gconn->send_array[idx].message_id,
-                gconn->send_array[idx].packet_type)) {
+                gconn->send_array[idx].packet_type) == 0) {
             gconn->send_array[idx].last_send_try = tm;
             LOGGER_DEBUG(chat->log, "Re-sent requested packet %llu", (unsigned long long)message_id);
         } else {

@@ -137,7 +137,7 @@ static bool create_array_entry(const Logger *log, const Mono_Time *mono_time, GC
 
 /** @brief Adds data of length to gconn's send_array.
  *
- * Returns true on success and increments gconn's send_message_id.
+ * Returns true and increments gconn's send_message_id on success.
  */
 non_null(1, 2, 3) nullable(4)
 static bool add_to_send_array(const Logger *log, const Mono_Time *mono_time, GC_Connection *gconn, const uint8_t *data,
@@ -171,8 +171,15 @@ int gcc_send_lossless_packet(const GC_Chat *chat, GC_Connection *gconn, const ui
         return -1;
     }
 
-    if (!gcc_encrypt_and_send_lossless_packet(chat, gconn, data, length, message_id, packet_type)) {
-        LOGGER_DEBUG(chat->log, "Failed to send payload: (type: 0x%02x, length: %d)", packet_type, length);
+    // If the packet fails to wrap/encrypt, we remove it from the send array, since trying to-resend
+    // the same bad packet probably won't help much. Otherwise we don't care if it doesn't successfully
+    // send through the wire as it will keep retrying until the connection times out.
+    if (gcc_encrypt_and_send_lossless_packet(chat, gconn, data, length, message_id, packet_type) == -1) {
+        const uint16_t idx = gcc_get_array_index(message_id);
+        GC_Message_Array_Entry *array_entry = &gconn->send_array[idx];
+        clear_array_entry(array_entry);
+        gconn->send_message_id = message_id;
+        LOGGER_ERROR(chat->log, "Failed to encrypt payload: (type: 0x%02x, length: %d)", packet_type, length);
         return -2;
     }
 
@@ -616,7 +623,7 @@ bool gcc_send_packet(const GC_Chat *chat, const GC_Connection *gconn, const uint
     return ret == 0 || direct_send_attempt;
 }
 
-bool gcc_encrypt_and_send_lossless_packet(const GC_Chat *chat, const GC_Connection *gconn, const uint8_t *data,
+int gcc_encrypt_and_send_lossless_packet(const GC_Chat *chat, const GC_Connection *gconn, const uint8_t *data,
         uint16_t length, uint64_t message_id, uint8_t packet_type)
 {
     const uint16_t packet_size = gc_get_wrapped_packet_size(length, NET_PACKET_GC_LOSSLESS);
@@ -624,7 +631,7 @@ bool gcc_encrypt_and_send_lossless_packet(const GC_Chat *chat, const GC_Connecti
 
     if (packet == nullptr) {
         LOGGER_ERROR(chat->log, "Failed to allocate memory for packet buffer");
-        return false;
+        return -1;
     }
 
     const int enc_len = group_packet_wrap(
@@ -634,18 +641,18 @@ bool gcc_encrypt_and_send_lossless_packet(const GC_Chat *chat, const GC_Connecti
     if (enc_len < 0) {
         LOGGER_ERROR(chat->log, "Failed to wrap packet (type: 0x%02x, error: %d)", packet_type, enc_len);
         free(packet);
-        return false;
+        return -1;
     }
 
     if (!gcc_send_packet(chat, gconn, packet, (uint16_t)enc_len)) {
         LOGGER_DEBUG(chat->log, "Failed to send packet (type: 0x%02x, enc_len: %d)", packet_type, enc_len);
         free(packet);
-        return false;
+        return -2;
     }
 
     free(packet);
 
-    return true;
+    return 0;
 }
 
 void gcc_make_session_shared_key(GC_Connection *gconn, const uint8_t *sender_pk)
