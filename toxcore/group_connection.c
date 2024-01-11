@@ -86,17 +86,31 @@ void gcc_set_recv_message_id(GC_Connection *gconn, uint64_t id)
 
 /** @brief Puts packet data in array_entry.
  *
+ * Requires an empty array entry to be passed, and must not modify the passed
+ * array entry on error.
+ *
  * Return true on success.
  */
-non_null(1, 2) nullable(3)
-static bool create_array_entry(const Mono_Time *mono_time, GC_Message_Array_Entry *array_entry, const uint8_t *data,
-                               uint16_t length, uint8_t packet_type, uint64_t message_id)
+non_null(1, 2, 3) nullable(4)
+static bool create_array_entry(const Logger *log, const Mono_Time *mono_time, GC_Message_Array_Entry *array_entry,
+        const uint8_t *data, uint16_t length, uint8_t packet_type, uint64_t message_id)
 {
+    if (!array_entry_is_empty(array_entry)) {
+        LOGGER_WARNING(log, "Failed to create array entry; entry is not empty.");
+        return false;
+    }
+
     if (length == 0) {
+        if (data != nullptr) {
+            LOGGER_FATAL(log, "Got non-null data with zero length (type %d)", packet_type); // should never happen
+            return false;
+        }
+
         array_entry->data = nullptr;
         array_entry->data_length = 0;
     } else {
         if (data == nullptr) {
+            LOGGER_FATAL(log, "Got null data with non-zero length (type %u)", packet_type); // should never happen
             return false;
         }
 
@@ -138,13 +152,7 @@ static bool add_to_send_array(const Logger *log, const Mono_Time *mono_time, GC_
     const uint16_t idx = gcc_get_array_index(gconn->send_message_id);
     GC_Message_Array_Entry *array_entry = &gconn->send_array[idx];
 
-    if (!array_entry_is_empty(array_entry)) {
-        LOGGER_DEBUG(log, "Send array entry isn't empty");
-        return false;
-    }
-
-    if (!create_array_entry(mono_time, array_entry, data, length, packet_type, gconn->send_message_id)) {
-        LOGGER_WARNING(log, "Failed to create array entry");
+    if (!create_array_entry(log, mono_time, array_entry, data, length, packet_type, gconn->send_message_id)) {
         return false;
     }
 
@@ -335,17 +343,7 @@ static bool store_in_recv_array(const Logger *log, const Mono_Time *mono_time, G
     const uint16_t idx = gcc_get_array_index(message_id);
     GC_Message_Array_Entry *ary_entry = &gconn->recv_array[idx];
 
-    if (!array_entry_is_empty(ary_entry)) {
-        LOGGER_DEBUG(log, "Recv array is not empty");
-        return false;
-    }
-
-    if (!create_array_entry(mono_time, ary_entry, data, length, packet_type, message_id)) {
-        LOGGER_WARNING(log, "Failed to create array entry");
-        return false;
-    }
-
-    return true;
+    return create_array_entry(log, mono_time, ary_entry, data, length, packet_type, message_id);
 }
 
 /**
