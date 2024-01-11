@@ -26,6 +26,13 @@ public:
     IP_Port operator()();
 };
 
+bool operator==(Family const &a, Family const &b);
+
+bool operator==(IP4 const &a, IP4 const &b);
+bool operator==(IP6 const &a, IP6 const &b);
+bool operator==(IP const &a, IP const &b);
+bool operator==(IP_Port const &a, IP_Port const &b);
+
 std::ostream &operator<<(std::ostream &out, IP const &v);
 std::ostream &operator<<(std::ostream &out, IP_Port const &v);
 

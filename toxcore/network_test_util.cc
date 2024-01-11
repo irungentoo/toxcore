@@ -27,6 +27,30 @@ IP_Port random_ip_port(const Random *rng)
     return ip_port;
 }
 
+bool operator==(Family const &a, Family const &b) { return a.value == b.value; }
+
+bool operator==(IP4 const &a, IP4 const &b) { return a.uint32 == b.uint32; }
+
+bool operator==(IP6 const &a, IP6 const &b)
+{
+    return a.uint64[0] == b.uint64[0] && a.uint64[1] == b.uint64[1];
+}
+
+bool operator==(IP const &a, IP const &b)
+{
+    if (!(a.family == b.family)) {
+        return false;
+    }
+
+    if (net_family_is_ipv4(a.family)) {
+        return a.ip.v4 == b.ip.v4;
+    } else {
+        return a.ip.v6 == b.ip.v6;
+    }
+}
+
+bool operator==(IP_Port const &a, IP_Port const &b) { return a.ip == b.ip && a.port == b.port; }
+
 std::ostream &operator<<(std::ostream &out, IP const &v)
 {
     Ip_Ntoa ip_str;

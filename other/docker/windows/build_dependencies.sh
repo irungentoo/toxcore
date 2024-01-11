@@ -40,9 +40,9 @@ build() {
 
   echo
   echo "=== Building Sodium $VERSION_SODIUM $ARCH ==="
-  curl "${CURL_OPTIONS[@]}" -O "https://download.libsodium.org/libsodium/releases/libsodium-$VERSION_SODIUM.tar.gz"
+  curl "${CURL_OPTIONS[@]}" -O "https://github.com/jedisct1/libsodium/releases/download/$VERSION_SODIUM-RELEASE/libsodium-$VERSION_SODIUM.tar.gz"
   tar -xf "libsodium-$VERSION_SODIUM.tar.gz"
-  cd "libsodium-$VERSION_SODIUM"
+  cd "libsodium-stable"
   ./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-shared --enable-static
   make
   make install

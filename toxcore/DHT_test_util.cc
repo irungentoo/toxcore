@@ -17,7 +17,8 @@ Node_format random_node_format(const Random *rng)
 
 bool operator==(Node_format const &a, Node_format const &b)
 {
-    return std::memcmp(&a, &b, sizeof(Node_format)) == 0;
+    return std::memcmp(a.public_key, b.public_key, sizeof(a.public_key)) == 0
+        && a.ip_port == b.ip_port;
 }
 
 std::ostream &operator<<(std::ostream &out, Node_format const &v)

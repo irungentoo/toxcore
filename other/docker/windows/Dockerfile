@@ -2,7 +2,7 @@ FROM debian:bullseye-slim
 
 # Build-time environment variables
 ARG VERSION_MSGPACK=4.0.0 \
-    VERSION_SODIUM=1.0.18 \
+    VERSION_SODIUM=1.0.19 \
     VERSION_OPUS=1.3.1 \
     VERSION_VPX=1.11.0 \
  \
