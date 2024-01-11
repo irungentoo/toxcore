@@ -60,6 +60,7 @@ RUN source .github/scripts/flags-coverage.sh \
  -DSTRICT_ABI=ON \
  -DAUTOTEST=ON \
  -DPROXY_TEST=ON \
+ -DBUILD_FUZZ_TESTS=ON \
  -DUSE_IPV6=OFF \
  -DTEST_TIMEOUT_SECONDS=40 \
  && cmake --build _build --parallel 8 --target install

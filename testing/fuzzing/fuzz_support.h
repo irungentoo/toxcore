@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <deque>
 #include <memory>
 #include <unordered_map>
@@ -28,13 +29,20 @@ struct Fuzz_Data {
     Fuzz_Data &operator=(const Fuzz_Data &rhs) = delete;
     Fuzz_Data(const Fuzz_Data &rhs) = delete;
 
-    uint8_t consume1()
-    {
-        const uint8_t val = data[0];
-        ++data;
-        --size;
-        return val;
-    }
+    struct Consumer {
+        Fuzz_Data &fd;
+
+        template <typename T>
+        operator T()
+        {
+            const uint8_t *bytes = fd.consume(sizeof(T));
+            T val;
+            std::memcpy(&val, bytes, sizeof(T));
+            return val;
+        }
+    };
+
+    Consumer consume1() { return Consumer{*this}; }
 
     const uint8_t *consume(std::size_t count)
     {

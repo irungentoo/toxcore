@@ -12,7 +12,8 @@ namespace {
 void TestUnpackAnnouncesList(Fuzz_Data &input)
 {
     CONSUME1_OR_RETURN(const uint8_t max_count, input);
-    std::vector<GC_Announce> announces(max_count);
+    // Always allocate at least something to avoid passing nullptr to functions below.
+    std::vector<GC_Announce> announces(max_count + 1);
 
     // TODO(iphydf): How do we know the packed size?
     CONSUME1_OR_RETURN(const uint16_t packed_size, input);
@@ -20,10 +21,11 @@ void TestUnpackAnnouncesList(Fuzz_Data &input)
     Logger *logger = logger_new();
     if (gca_unpack_announces_list(logger, input.data, input.size, announces.data(), max_count)
         != -1) {
-        std::vector<uint8_t> packed(packed_size);
+        // Always allocate at least something to avoid passing nullptr to functions below.
+        std::vector<uint8_t> packed(packed_size + 1);
         size_t processed;
         gca_pack_announces_list(
-            logger, packed.data(), packed.size(), announces.data(), announces.size(), &processed);
+            logger, packed.data(), packed_size, announces.data(), max_count, &processed);
     }
     logger_kill(logger);
 }
@@ -37,8 +39,9 @@ void TestUnpackPublicAnnounce(Fuzz_Data &input)
 
     Logger *logger = logger_new();
     if (gca_unpack_public_announce(logger, input.data, input.size, &public_announce) != -1) {
-        std::vector<uint8_t> packed(packed_size);
-        gca_pack_public_announce(logger, packed.data(), packed.size(), &public_announce);
+        // Always allocate at least something to avoid passing nullptr to functions below.
+        std::vector<uint8_t> packed(packed_size + 1);
+        gca_pack_public_announce(logger, packed.data(), packed_size, &public_announce);
     }
     logger_kill(logger);
 }

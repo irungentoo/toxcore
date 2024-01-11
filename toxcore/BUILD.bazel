@@ -88,6 +88,7 @@ cc_test(
     srcs = ["util_test.cc"],
     deps = [
         ":crypto_core",
+        ":crypto_core_test_util",
         ":util",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",

@@ -31,8 +31,8 @@ out = (subprocess.run(
 
 errors = 0
 for line in out.split("\n"):
-    # other/fun can do what it wants.
-    if "/fun/" in line:
+    # other/fun and mallocfail can do what they want.
+    if "/fun/" in line or "/mallocfail/" in line:
         continue
     filename, include = line.split(":", 1)
     # We only check headers.
