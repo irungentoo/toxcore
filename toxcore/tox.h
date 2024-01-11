@@ -4736,6 +4736,12 @@ typedef enum Tox_Err_Group_Send_Custom_Packet {
      */
     TOX_ERR_GROUP_SEND_CUSTOM_PACKET_DISCONNECTED,
 
+    /**
+     * The packet did not successfully send to any peer. This often indicates
+     * a connection issue on the sender's side.
+     */
+    TOX_ERR_GROUP_SEND_CUSTOM_PACKET_FAIL_SEND,
+
 } Tox_Err_Group_Send_Custom_Packet;
 
 const char *tox_err_group_send_custom_packet_to_string(Tox_Err_Group_Send_Custom_Packet value);

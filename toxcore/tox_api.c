@@ -1259,6 +1259,9 @@ const char *tox_err_group_send_custom_packet_to_string(Tox_Err_Group_Send_Custom
 
         case TOX_ERR_GROUP_SEND_CUSTOM_PACKET_DISCONNECTED:
             return "TOX_ERR_GROUP_SEND_CUSTOM_PACKET_DISCONNECTED";
+
+        case TOX_ERR_GROUP_SEND_CUSTOM_PACKET_FAIL_SEND:
+            return "TOX_ERR_GROUP_SEND_CUSTOM_PACKET_FAIL_SEND";
     }
 
     return "<invalid Tox_Err_Group_Send_Custom_Packet>";

@@ -4021,6 +4021,11 @@ bool tox_group_send_custom_packet(const Tox *tox, uint32_t group_number, bool lo
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_PERMISSIONS);
             return false;
         }
+
+        case -4: {
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_FAIL_SEND);
+            return false;
+        }
     }
 
     /* can't happen */

@@ -2262,34 +2262,56 @@ FAILED_INVITE:
     return ret;
 }
 
-/** @brief Sends a lossless packet of type and length to all confirmed peers. */
+/** @brief Sends a lossless packet of type and length to all confirmed peers.
+ *
+ * Return true if packet is successfully sent to at least one peer.
+ */
 non_null()
-static void send_gc_lossless_packet_all_peers(const GC_Chat *chat, const uint8_t *data, uint16_t length, uint8_t type)
+static bool send_gc_lossless_packet_all_peers(const GC_Chat *chat, const uint8_t *data, uint16_t length, uint8_t type)
 {
+    uint32_t sent = 0;
+
     for (uint32_t i = 1; i < chat->numpeers; ++i) {
         GC_Connection *gconn = get_gc_connection(chat, i);
 
         assert(gconn != nullptr);
 
-        if (gconn->confirmed) {
-            send_lossless_group_packet(chat, gconn, data, length, type);
+        if (!gconn->confirmed) {
+            continue;
+        }
+
+        if (send_lossless_group_packet(chat, gconn, data, length, type)) {
+            ++sent;
         }
     }
+
+    return sent > 0 || chat->numpeers <= 1;
 }
 
-/** @brief Sends a lossy packet of type and length to all confirmed peers. */
+/** @brief Sends a lossy packet of type and length to all confirmed peers.
+ *
+ * Return true if packet is successfully sent to at least one peer.
+ */
 non_null()
-static void send_gc_lossy_packet_all_peers(const GC_Chat *chat, const uint8_t *data, uint16_t length, uint8_t type)
+static bool send_gc_lossy_packet_all_peers(const GC_Chat *chat, const uint8_t *data, uint16_t length, uint8_t type)
 {
+    uint32_t sent = 0;
+
     for (uint32_t i = 1; i < chat->numpeers; ++i) {
         const GC_Connection *gconn = get_gc_connection(chat, i);
 
         assert(gconn != nullptr);
 
-        if (gconn->confirmed) {
-            send_lossy_group_packet(chat, gconn, data, length, type);
+        if (!gconn->confirmed) {
+            continue;
+        }
+
+        if (send_lossy_group_packet(chat, gconn, data, length, type)) {
+            ++sent;
         }
     }
+
+    return sent > 0 || chat->numpeers <= 1;
 }
 
 /** @brief Creates packet with broadcast header info followed by data of length.
@@ -2329,11 +2351,11 @@ static bool send_gc_broadcast_message(const GC_Chat *chat, const uint8_t *data, 
 
     const uint16_t packet_len = make_gc_broadcast_header(data, length, packet, bc_type);
 
-    send_gc_lossless_packet_all_peers(chat, packet, packet_len, GP_BROADCAST);
+    const bool ret = send_gc_lossless_packet_all_peers(chat, packet, packet_len, GP_BROADCAST);
 
     free(packet);
 
-    return true;
+    return ret;
 }
 
 non_null()
@@ -2787,9 +2809,7 @@ static bool broadcast_gc_shared_state(const GC_Chat *chat)
         return false;
     }
 
-    send_gc_lossless_packet_all_peers(chat, packet, (uint16_t)packet_len, GP_SHARED_STATE);
-
-    return true;
+    return send_gc_lossless_packet_all_peers(chat, packet, (uint16_t)packet_len, GP_SHARED_STATE);
 }
 
 /** @brief Helper function for `do_gc_shared_state_changes()`.
@@ -3310,11 +3330,11 @@ static bool broadcast_gc_sanctions_list(const GC_Chat *chat)
         return false;
     }
 
-    send_gc_lossless_packet_all_peers(chat, packet, (uint16_t)packet_len, GP_SANCTIONS_LIST);
+    const bool ret = send_gc_lossless_packet_all_peers(chat, packet, (uint16_t)packet_len, GP_SANCTIONS_LIST);
 
     free(packet);
 
-    return true;
+    return ret;
 }
 
 /** @brief Re-signs all sanctions list entries signed by public_sig_key and broadcasts
@@ -3356,11 +3376,11 @@ static bool broadcast_gc_mod_list(const GC_Chat *chat)
         return false;
     }
 
-    send_gc_lossless_packet_all_peers(chat, packet, length, GP_MOD_LIST);
+    const bool ret = send_gc_lossless_packet_all_peers(chat, packet, length, GP_MOD_LIST);
 
     free(packet);
 
-    return true;
+    return ret;
 }
 
 /** @brief Sends a parting signal to the group.
@@ -3717,11 +3737,11 @@ static bool broadcast_gc_topic(const GC_Chat *chat)
         return false;
     }
 
-    send_gc_lossless_packet_all_peers(chat, packet, packet_buf_size, GP_TOPIC);
+    const bool ret = send_gc_lossless_packet_all_peers(chat, packet, packet_buf_size, GP_TOPIC);
 
     free(packet);
 
-    return true;
+    return ret;
 }
 
 int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length)
@@ -5072,13 +5092,15 @@ int gc_send_custom_packet(const GC_Chat *chat, bool lossless, const uint8_t *dat
         return -3;
     }
 
+    bool success;
+
     if (lossless) {
-        send_gc_lossless_packet_all_peers(chat, data, length, GP_CUSTOM_PACKET);
+        success = send_gc_lossless_packet_all_peers(chat, data, length, GP_CUSTOM_PACKET);
     } else {
-        send_gc_lossy_packet_all_peers(chat, data, length, GP_CUSTOM_PACKET);
+        success = send_gc_lossy_packet_all_peers(chat, data, length, GP_CUSTOM_PACKET);
     }
 
-    return 0;
+    return success ? 0 : -4;
 }
 
 /** @brief Handles a custom packet.
@@ -7729,7 +7751,9 @@ bool gc_disconnect_from_group(const GC_Session *c, GC_Chat *chat)
 
     chat->connection_state = CS_DISCONNECTED;
 
-    send_gc_broadcast_message(chat, nullptr, 0, GM_PEER_EXIT);
+    if (!send_gc_broadcast_message(chat, nullptr, 0, GM_PEER_EXIT)) {
+        LOGGER_DEBUG(chat->log, "Failed to broadcast group exit packet");
+    }
 
     for (uint32_t i = 1; i < chat->numpeers; ++i) {
         GC_Connection *gconn = get_gc_connection(chat, i);
