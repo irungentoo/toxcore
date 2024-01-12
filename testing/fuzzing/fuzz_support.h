@@ -60,14 +60,14 @@ struct Fuzz_Data {
  *
  * @example
  * @code
- * CONSUME1_OR_RETURN(const uint8_t one_byte, input);
+ * CONSUME1_OR_RETURN(const uint8_t, one_byte, input);
  * @endcode
  */
-#define CONSUME1_OR_RETURN(DECL, INPUT) \
-    if (INPUT.size < 1) {               \
-        return;                         \
-    }                                   \
-    DECL = INPUT.consume1()
+#define CONSUME1_OR_RETURN(TYPE, NAME, INPUT) \
+    if (INPUT.size < sizeof(TYPE)) {          \
+        return;                               \
+    }                                         \
+    TYPE NAME = INPUT.consume1()
 
 /** @brief Consumes 1 byte of the fuzzer input or returns a value if no data
  * available.
@@ -80,11 +80,11 @@ struct Fuzz_Data {
  * CONSUME1_OR_RETURN_VAL(const uint8_t one_byte, input, nullptr);
  * @endcode
  */
-#define CONSUME1_OR_RETURN_VAL(DECL, INPUT, VAL) \
-    if (INPUT.size < 1) {                        \
-        return VAL;                              \
-    }                                            \
-    DECL = INPUT.consume1()
+#define CONSUME1_OR_RETURN_VAL(TYPE, NAME, INPUT, VAL) \
+    if (INPUT.size < sizeof(TYPE)) {                   \
+        return VAL;                                    \
+    }                                                  \
+    TYPE NAME = INPUT.consume1()
 
 /** @brief Consumes SIZE bytes of the fuzzer input or returns if not enough data available.
  *
@@ -129,7 +129,7 @@ void fuzz_select_target(const uint8_t *data, std::size_t size, Args &&...args)
 {
     Fuzz_Data input{data, size};
 
-    CONSUME1_OR_RETURN(uint8_t selector, input);
+    CONSUME1_OR_RETURN(const uint8_t, selector, input);
     return fuzz_select_target(selector, input, std::forward<Args>(args)...);
 }
 

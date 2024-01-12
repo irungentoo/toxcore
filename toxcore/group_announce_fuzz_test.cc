@@ -11,12 +11,12 @@ namespace {
 
 void TestUnpackAnnouncesList(Fuzz_Data &input)
 {
-    CONSUME1_OR_RETURN(const uint8_t max_count, input);
+    CONSUME1_OR_RETURN(const uint8_t, max_count, input);
     // Always allocate at least something to avoid passing nullptr to functions below.
     std::vector<GC_Announce> announces(max_count + 1);
 
     // TODO(iphydf): How do we know the packed size?
-    CONSUME1_OR_RETURN(const uint16_t packed_size, input);
+    CONSUME1_OR_RETURN(const uint16_t, packed_size, input);
 
     Logger *logger = logger_new();
     if (gca_unpack_announces_list(logger, input.data, input.size, announces.data(), max_count)
@@ -35,7 +35,7 @@ void TestUnpackPublicAnnounce(Fuzz_Data &input)
     GC_Public_Announce public_announce;
 
     // TODO(iphydf): How do we know the packed size?
-    CONSUME1_OR_RETURN(const uint16_t packed_size, input);
+    CONSUME1_OR_RETURN(const uint16_t, packed_size, input);
 
     Logger *logger = logger_new();
     if (gca_unpack_public_announce(logger, input.data, input.size, &public_announce) != -1) {
@@ -61,11 +61,11 @@ void TestDoGca(Fuzz_Data &input)
     assert(gca != nullptr);
 
     while (input.size > 0) {
-        CONSUME1_OR_RETURN(const uint8_t choice, input);
+        CONSUME1_OR_RETURN(const uint8_t, choice, input);
         switch (choice) {
         case 0: {
             // Add an announce.
-            CONSUME1_OR_RETURN(const uint16_t length, input);
+            CONSUME1_OR_RETURN(const uint16_t, length, input);
             CONSUME_OR_RETURN(const uint8_t *data, input, length);
             GC_Public_Announce public_announce;
             if (gca_unpack_public_announce(logger.get(), data, length, &public_announce) != -1) {
@@ -75,7 +75,7 @@ void TestDoGca(Fuzz_Data &input)
         }
         case 1: {
             // Advance the time by a number of tox_iteration_intervals.
-            CONSUME1_OR_RETURN(const uint8_t iterations, input);
+            CONSUME1_OR_RETURN(const uint8_t, iterations, input);
             clock += iterations * 20;
             // Do an iteration.
             do_gca(mono_time.get(), gca.get());
@@ -83,7 +83,7 @@ void TestDoGca(Fuzz_Data &input)
         }
         case 2: {
             // Get announces.
-            CONSUME1_OR_RETURN(const uint8_t max_nodes, input);
+            CONSUME1_OR_RETURN(const uint8_t, max_nodes, input);
             std::vector<GC_Announce> gc_announces(max_nodes);
             CONSUME_OR_RETURN(const uint8_t *chat_id, input, CHAT_ID_SIZE);
             CONSUME_OR_RETURN(const uint8_t *except_public_key, input, ENC_PUBLIC_KEY_SIZE);

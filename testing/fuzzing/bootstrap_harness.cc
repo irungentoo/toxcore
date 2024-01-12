@@ -126,7 +126,7 @@ void TestBootstrap(Fuzz_Data &input)
             }
         });
 
-    CONSUME1_OR_RETURN(const uint8_t proxy_type, input);
+    CONSUME1_OR_RETURN(const uint8_t, proxy_type, input);
     if (proxy_type == 0) {
         tox_options_set_proxy_type(opts.get(), TOX_PROXY_TYPE_NONE);
     } else if (proxy_type == 1) {
@@ -139,7 +139,7 @@ void TestBootstrap(Fuzz_Data &input)
         tox_options_set_proxy_port(opts.get(), 8080);
     }
 
-    CONSUME1_OR_RETURN(const uint8_t tcp_relay_enabled, input);
+    CONSUME1_OR_RETURN(const uint8_t, tcp_relay_enabled, input);
     if (tcp_relay_enabled >= (UINT8_MAX / 2)) {
         tox_options_set_tcp_port(opts.get(), 33445);
     }

@@ -23,7 +23,7 @@ void TestHandleRequest(Fuzz_Data &input)
 
 void TestUnpackNodes(Fuzz_Data &input)
 {
-    CONSUME1_OR_RETURN(const bool tcp_enabled, input);
+    CONSUME1_OR_RETURN(const bool, tcp_enabled, input);
 
     const uint16_t node_count = 5;
     Node_format nodes[node_count];

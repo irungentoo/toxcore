@@ -77,7 +77,7 @@ static int recv_common(Fuzz_Data &input, uint8_t *buf, size_t buf_len)
 template <typename F>
 static void *alloc_common(Fuzz_Data &data, F func)
 {
-    CONSUME1_OR_RETURN_VAL(const uint8_t want_alloc, data, func());
+    CONSUME1_OR_RETURN_VAL(const uint8_t, want_alloc, data, func());
     if (!want_alloc) {
         return nullptr;
     }
