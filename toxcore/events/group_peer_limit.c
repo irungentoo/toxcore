@@ -139,42 +139,6 @@ static Tox_Event_Group_Peer_Limit *tox_events_add_group_peer_limit(Tox_Events *e
     return group_peer_limit;
 }
 
-const Tox_Event_Group_Peer_Limit *tox_events_get_group_peer_limit(const Tox_Events *events, uint32_t index)
-{
-    uint32_t group_peer_limit_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (group_peer_limit_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_GROUP_PEER_LIMIT) {
-            const Tox_Event_Group_Peer_Limit *group_peer_limit = events->events[i].data.group_peer_limit;
-            if (group_peer_limit_index == index) {
-                return group_peer_limit;
-            }
-            ++group_peer_limit_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_group_peer_limit_size(const Tox_Events *events)
-{
-    uint32_t group_peer_limit_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_GROUP_PEER_LIMIT) {
-            ++group_peer_limit_size;
-        }
-    }
-
-    return group_peer_limit_size;
-}
-
 bool tox_event_group_peer_limit_unpack(
     Tox_Event_Group_Peer_Limit **event, Bin_Unpack *bu, const Memory *mem)
 {

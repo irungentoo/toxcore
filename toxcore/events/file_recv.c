@@ -211,42 +211,6 @@ static Tox_Event_File_Recv *tox_events_add_file_recv(Tox_Events *events, const M
     return file_recv;
 }
 
-const Tox_Event_File_Recv *tox_events_get_file_recv(const Tox_Events *events, uint32_t index)
-{
-    uint32_t file_recv_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (file_recv_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_FILE_RECV) {
-            const Tox_Event_File_Recv *file_recv = events->events[i].data.file_recv;
-            if (file_recv_index == index) {
-                return file_recv;
-            }
-            ++file_recv_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_file_recv_size(const Tox_Events *events)
-{
-    uint32_t file_recv_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_FILE_RECV) {
-            ++file_recv_size;
-        }
-    }
-
-    return file_recv_size;
-}
-
 bool tox_event_file_recv_unpack(
     Tox_Event_File_Recv **event, Bin_Unpack *bu, const Memory *mem)
 {

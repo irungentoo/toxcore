@@ -118,42 +118,6 @@ static Tox_Event_Conference_Connected *tox_events_add_conference_connected(Tox_E
     return conference_connected;
 }
 
-const Tox_Event_Conference_Connected *tox_events_get_conference_connected(const Tox_Events *events, uint32_t index)
-{
-    uint32_t conference_connected_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (conference_connected_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_CONFERENCE_CONNECTED) {
-            const Tox_Event_Conference_Connected *conference_connected = events->events[i].data.conference_connected;
-            if (conference_connected_index == index) {
-                return conference_connected;
-            }
-            ++conference_connected_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_conference_connected_size(const Tox_Events *events)
-{
-    uint32_t conference_connected_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_CONFERENCE_CONNECTED) {
-            ++conference_connected_size;
-        }
-    }
-
-    return conference_connected_size;
-}
-
 bool tox_event_conference_connected_unpack(
     Tox_Event_Conference_Connected **event, Bin_Unpack *bu, const Memory *mem)
 {

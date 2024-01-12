@@ -404,28 +404,6 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
     f << "    tox_events_add(events, &event);\n";
     f << "    return " << event_name_l << ";\n}\n\n";
 
-    // get
-    f << "const Tox_Event_" << event_name << " *tox_events_get_" << event_name_l << "(const Tox_Events *events, uint32_t index)\n{\n";
-    f << "    uint32_t " << event_name_l << "_index = 0;\n";
-    f << "    const uint32_t size = tox_events_get_size(events);\n\n";
-    f << "    for (uint32_t i = 0; i < size; ++i) {\n";
-    f << "        if (" << event_name_l << "_index > index) {\n";
-    f << "            return nullptr;\n        }\n\n";
-    f << "        if (events->events[i].type == TOX_EVENT_" << str_toupper(event_name) << ") {\n";
-    f << "            const Tox_Event_" << event_name << " *" << event_name_l << " = events->events[i].data." << event_name_l << ";\n";
-    f << "            if (" << event_name_l << "_index == index) {\n";
-    f << "                return " << event_name_l << ";\n            }\n";
-    f << "            ++" << event_name_l << "_index;\n        }\n    }\n\n    return nullptr;\n}\n\n";
-
-    // get size
-    f << "uint32_t tox_events_get_" << event_name_l << "_size(const Tox_Events *events)\n{\n";
-    f << "    uint32_t " << event_name_l << "_size = 0;\n";
-    f << "    const uint32_t size = tox_events_get_size(events);\n\n";
-    f << "    for (uint32_t i = 0; i < size; ++i) {\n";
-    f << "        if (events->events[i].type == TOX_EVENT_" << str_toupper(event_name) << ") {\n";
-    f << "            ++" << event_name_l << "_size;\n        }\n    }\n\n";
-    f << "    return " << event_name_l << "_size;\n}\n\n";
-
     // unpack
     f << "bool tox_event_" << event_name_l << "_unpack(\n";
     f << "    Tox_Event_" << event_name << " **event, Bin_Unpack *bu, const Memory *mem)\n{\n";

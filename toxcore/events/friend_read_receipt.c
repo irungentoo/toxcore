@@ -139,42 +139,6 @@ static Tox_Event_Friend_Read_Receipt *tox_events_add_friend_read_receipt(Tox_Eve
     return friend_read_receipt;
 }
 
-const Tox_Event_Friend_Read_Receipt *tox_events_get_friend_read_receipt(const Tox_Events *events, uint32_t index)
-{
-    uint32_t friend_read_receipt_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (friend_read_receipt_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_FRIEND_READ_RECEIPT) {
-            const Tox_Event_Friend_Read_Receipt *friend_read_receipt = events->events[i].data.friend_read_receipt;
-            if (friend_read_receipt_index == index) {
-                return friend_read_receipt;
-            }
-            ++friend_read_receipt_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_friend_read_receipt_size(const Tox_Events *events)
-{
-    uint32_t friend_read_receipt_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_FRIEND_READ_RECEIPT) {
-            ++friend_read_receipt_size;
-        }
-    }
-
-    return friend_read_receipt_size;
-}
-
 bool tox_event_friend_read_receipt_unpack(
     Tox_Event_Friend_Read_Receipt **event, Bin_Unpack *bu, const Memory *mem)
 {

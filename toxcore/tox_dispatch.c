@@ -278,7 +278,7 @@ void tox_events_callback_group_moderation(
     dispatch->group_moderation_callback = callback;
 }
 
-non_null(1, 2, 3) nullable(4)
+non_null(1, 2) nullable(3, 4)
 static void tox_dispatch_invoke_event(const Tox_Dispatch *dispatch, const Tox_Event *event, Tox *tox, void *user_data)
 {
     switch (event->type) {

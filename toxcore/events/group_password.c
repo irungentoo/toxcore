@@ -163,42 +163,6 @@ static Tox_Event_Group_Password *tox_events_add_group_password(Tox_Events *event
     return group_password;
 }
 
-const Tox_Event_Group_Password *tox_events_get_group_password(const Tox_Events *events, uint32_t index)
-{
-    uint32_t group_password_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (group_password_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_GROUP_PASSWORD) {
-            const Tox_Event_Group_Password *group_password = events->events[i].data.group_password;
-            if (group_password_index == index) {
-                return group_password;
-            }
-            ++group_password_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_group_password_size(const Tox_Events *events)
-{
-    uint32_t group_password_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_GROUP_PASSWORD) {
-            ++group_password_size;
-        }
-    }
-
-    return group_password_size;
-}
-
 bool tox_event_group_password_unpack(
     Tox_Event_Group_Password **event, Bin_Unpack *bu, const Memory *mem)
 {

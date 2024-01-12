@@ -156,42 +156,6 @@ static Tox_Event_File_Recv_Control *tox_events_add_file_recv_control(Tox_Events 
     return file_recv_control;
 }
 
-const Tox_Event_File_Recv_Control *tox_events_get_file_recv_control(const Tox_Events *events, uint32_t index)
-{
-    uint32_t file_recv_control_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (file_recv_control_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_FILE_RECV_CONTROL) {
-            const Tox_Event_File_Recv_Control *file_recv_control = events->events[i].data.file_recv_control;
-            if (file_recv_control_index == index) {
-                return file_recv_control;
-            }
-            ++file_recv_control_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_file_recv_control_size(const Tox_Events *events)
-{
-    uint32_t file_recv_control_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_FILE_RECV_CONTROL) {
-            ++file_recv_control_size;
-        }
-    }
-
-    return file_recv_control_size;
-}
-
 bool tox_event_file_recv_control_unpack(
     Tox_Event_File_Recv_Control **event, Bin_Unpack *bu, const Memory *mem)
 {

@@ -140,42 +140,6 @@ static Tox_Event_Group_Join_Fail *tox_events_add_group_join_fail(Tox_Events *eve
     return group_join_fail;
 }
 
-const Tox_Event_Group_Join_Fail *tox_events_get_group_join_fail(const Tox_Events *events, uint32_t index)
-{
-    uint32_t group_join_fail_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (group_join_fail_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_GROUP_JOIN_FAIL) {
-            const Tox_Event_Group_Join_Fail *group_join_fail = events->events[i].data.group_join_fail;
-            if (group_join_fail_index == index) {
-                return group_join_fail;
-            }
-            ++group_join_fail_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_group_join_fail_size(const Tox_Events *events)
-{
-    uint32_t group_join_fail_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_GROUP_JOIN_FAIL) {
-            ++group_join_fail_size;
-        }
-    }
-
-    return group_join_fail_size;
-}
-
 bool tox_event_group_join_fail_unpack(
     Tox_Event_Group_Join_Fail **event, Bin_Unpack *bu, const Memory *mem)
 {

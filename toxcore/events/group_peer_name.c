@@ -179,42 +179,6 @@ static Tox_Event_Group_Peer_Name *tox_events_add_group_peer_name(Tox_Events *eve
     return group_peer_name;
 }
 
-const Tox_Event_Group_Peer_Name *tox_events_get_group_peer_name(const Tox_Events *events, uint32_t index)
-{
-    uint32_t group_peer_name_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (group_peer_name_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_GROUP_PEER_NAME) {
-            const Tox_Event_Group_Peer_Name *group_peer_name = events->events[i].data.group_peer_name;
-            if (group_peer_name_index == index) {
-                return group_peer_name;
-            }
-            ++group_peer_name_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_group_peer_name_size(const Tox_Events *events)
-{
-    uint32_t group_peer_name_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_GROUP_PEER_NAME) {
-            ++group_peer_name_size;
-        }
-    }
-
-    return group_peer_name_size;
-}
-
 bool tox_event_group_peer_name_unpack(
     Tox_Event_Group_Peer_Name **event, Bin_Unpack *bu, const Memory *mem)
 {

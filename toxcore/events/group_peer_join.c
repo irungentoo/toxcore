@@ -139,42 +139,6 @@ static Tox_Event_Group_Peer_Join *tox_events_add_group_peer_join(Tox_Events *eve
     return group_peer_join;
 }
 
-const Tox_Event_Group_Peer_Join *tox_events_get_group_peer_join(const Tox_Events *events, uint32_t index)
-{
-    uint32_t group_peer_join_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (group_peer_join_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_GROUP_PEER_JOIN) {
-            const Tox_Event_Group_Peer_Join *group_peer_join = events->events[i].data.group_peer_join;
-            if (group_peer_join_index == index) {
-                return group_peer_join;
-            }
-            ++group_peer_join_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_group_peer_join_size(const Tox_Events *events)
-{
-    uint32_t group_peer_join_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_GROUP_PEER_JOIN) {
-            ++group_peer_join_size;
-        }
-    }
-
-    return group_peer_join_size;
-}
-
 bool tox_event_group_peer_join_unpack(
     Tox_Event_Group_Peer_Join **event, Bin_Unpack *bu, const Memory *mem)
 {

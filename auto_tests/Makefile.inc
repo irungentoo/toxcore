@@ -192,13 +192,13 @@ TCP_test_SOURCES = ../auto_tests/TCP_test.c
 TCP_test_CFLAGS = $(AUTOTEST_CFLAGS)
 TCP_test_LDADD = $(AUTOTEST_LDADD)
 
-tox_events_test_SOURCES = ../auto_tests/tox_events_test.c
-tox_events_test_CFLAGS = $(AUTOTEST_CFLAGS)
-tox_events_test_LDADD = $(AUTOTEST_LDADD)
-
 tox_dispatch_test_SOURCES = ../auto_tests/tox_dispatch_test.c
 tox_dispatch_test_CFLAGS = $(AUTOTEST_CFLAGS)
 tox_dispatch_test_LDADD = $(AUTOTEST_LDADD)
+
+tox_events_test_SOURCES = ../auto_tests/tox_events_test.c
+tox_events_test_CFLAGS = $(AUTOTEST_CFLAGS)
+tox_events_test_LDADD = $(AUTOTEST_LDADD)
 
 tox_many_tcp_test_SOURCES = ../auto_tests/tox_many_tcp_test.c
 tox_many_tcp_test_CFLAGS = $(AUTOTEST_CFLAGS)

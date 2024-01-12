@@ -140,42 +140,6 @@ static Tox_Event_Group_Privacy_State *tox_events_add_group_privacy_state(Tox_Eve
     return group_privacy_state;
 }
 
-const Tox_Event_Group_Privacy_State *tox_events_get_group_privacy_state(const Tox_Events *events, uint32_t index)
-{
-    uint32_t group_privacy_state_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (group_privacy_state_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_GROUP_PRIVACY_STATE) {
-            const Tox_Event_Group_Privacy_State *group_privacy_state = events->events[i].data.group_privacy_state;
-            if (group_privacy_state_index == index) {
-                return group_privacy_state;
-            }
-            ++group_privacy_state_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_group_privacy_state_size(const Tox_Events *events)
-{
-    uint32_t group_privacy_state_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_GROUP_PRIVACY_STATE) {
-            ++group_privacy_state_size;
-        }
-    }
-
-    return group_privacy_state_size;
-}
-
 bool tox_event_group_privacy_state_unpack(
     Tox_Event_Group_Privacy_State **event, Bin_Unpack *bu, const Memory *mem)
 {

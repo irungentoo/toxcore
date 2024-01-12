@@ -163,42 +163,6 @@ static Tox_Event_Friend_Lossless_Packet *tox_events_add_friend_lossless_packet(T
     return friend_lossless_packet;
 }
 
-const Tox_Event_Friend_Lossless_Packet *tox_events_get_friend_lossless_packet(const Tox_Events *events, uint32_t index)
-{
-    uint32_t friend_lossless_packet_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (friend_lossless_packet_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_FRIEND_LOSSLESS_PACKET) {
-            const Tox_Event_Friend_Lossless_Packet *friend_lossless_packet = events->events[i].data.friend_lossless_packet;
-            if (friend_lossless_packet_index == index) {
-                return friend_lossless_packet;
-            }
-            ++friend_lossless_packet_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_friend_lossless_packet_size(const Tox_Events *events)
-{
-    uint32_t friend_lossless_packet_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_FRIEND_LOSSLESS_PACKET) {
-            ++friend_lossless_packet_size;
-        }
-    }
-
-    return friend_lossless_packet_size;
-}
-
 bool tox_event_friend_lossless_packet_unpack(
     Tox_Event_Friend_Lossless_Packet **event, Bin_Unpack *bu, const Memory *mem)
 {

@@ -140,42 +140,6 @@ static Tox_Event_Group_Topic_Lock *tox_events_add_group_topic_lock(Tox_Events *e
     return group_topic_lock;
 }
 
-const Tox_Event_Group_Topic_Lock *tox_events_get_group_topic_lock(const Tox_Events *events, uint32_t index)
-{
-    uint32_t group_topic_lock_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (group_topic_lock_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_GROUP_TOPIC_LOCK) {
-            const Tox_Event_Group_Topic_Lock *group_topic_lock = events->events[i].data.group_topic_lock;
-            if (group_topic_lock_index == index) {
-                return group_topic_lock;
-            }
-            ++group_topic_lock_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_group_topic_lock_size(const Tox_Events *events)
-{
-    uint32_t group_topic_lock_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_GROUP_TOPIC_LOCK) {
-            ++group_topic_lock_size;
-        }
-    }
-
-    return group_topic_lock_size;
-}
-
 bool tox_event_group_topic_lock_unpack(
     Tox_Event_Group_Topic_Lock **event, Bin_Unpack *bu, const Memory *mem)
 {

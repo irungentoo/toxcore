@@ -179,42 +179,6 @@ static Tox_Event_Group_Custom_Packet *tox_events_add_group_custom_packet(Tox_Eve
     return group_custom_packet;
 }
 
-const Tox_Event_Group_Custom_Packet *tox_events_get_group_custom_packet(const Tox_Events *events, uint32_t index)
-{
-    uint32_t group_custom_packet_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (group_custom_packet_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_GROUP_CUSTOM_PACKET) {
-            const Tox_Event_Group_Custom_Packet *group_custom_packet = events->events[i].data.group_custom_packet;
-            if (group_custom_packet_index == index) {
-                return group_custom_packet;
-            }
-            ++group_custom_packet_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_group_custom_packet_size(const Tox_Events *events)
-{
-    uint32_t group_custom_packet_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_GROUP_CUSTOM_PACKET) {
-            ++group_custom_packet_size;
-        }
-    }
-
-    return group_custom_packet_size;
-}
-
 bool tox_event_group_custom_packet_unpack(
     Tox_Event_Group_Custom_Packet **event, Bin_Unpack *bu, const Memory *mem)
 {

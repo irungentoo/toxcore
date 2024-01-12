@@ -180,42 +180,6 @@ static Tox_Event_Conference_Invite *tox_events_add_conference_invite(Tox_Events 
     return conference_invite;
 }
 
-const Tox_Event_Conference_Invite *tox_events_get_conference_invite(const Tox_Events *events, uint32_t index)
-{
-    uint32_t conference_invite_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (conference_invite_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_CONFERENCE_INVITE) {
-            const Tox_Event_Conference_Invite *conference_invite = events->events[i].data.conference_invite;
-            if (conference_invite_index == index) {
-                return conference_invite;
-            }
-            ++conference_invite_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_conference_invite_size(const Tox_Events *events)
-{
-    uint32_t conference_invite_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_CONFERENCE_INVITE) {
-            ++conference_invite_size;
-        }
-    }
-
-    return conference_invite_size;
-}
-
 bool tox_event_conference_invite_unpack(
     Tox_Event_Conference_Invite **event, Bin_Unpack *bu, const Memory *mem)
 {

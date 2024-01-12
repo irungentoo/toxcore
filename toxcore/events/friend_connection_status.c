@@ -140,42 +140,6 @@ static Tox_Event_Friend_Connection_Status *tox_events_add_friend_connection_stat
     return friend_connection_status;
 }
 
-const Tox_Event_Friend_Connection_Status *tox_events_get_friend_connection_status(const Tox_Events *events, uint32_t index)
-{
-    uint32_t friend_connection_status_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (friend_connection_status_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_FRIEND_CONNECTION_STATUS) {
-            const Tox_Event_Friend_Connection_Status *friend_connection_status = events->events[i].data.friend_connection_status;
-            if (friend_connection_status_index == index) {
-                return friend_connection_status;
-            }
-            ++friend_connection_status_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_friend_connection_status_size(const Tox_Events *events)
-{
-    uint32_t friend_connection_status_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_FRIEND_CONNECTION_STATUS) {
-            ++friend_connection_status_size;
-        }
-    }
-
-    return friend_connection_status_size;
-}
-
 bool tox_event_friend_connection_status_unpack(
     Tox_Event_Friend_Connection_Status **event, Bin_Unpack *bu, const Memory *mem)
 {

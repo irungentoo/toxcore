@@ -171,42 +171,6 @@ static Tox_Event_File_Chunk_Request *tox_events_add_file_chunk_request(Tox_Event
     return file_chunk_request;
 }
 
-const Tox_Event_File_Chunk_Request *tox_events_get_file_chunk_request(const Tox_Events *events, uint32_t index)
-{
-    uint32_t file_chunk_request_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (file_chunk_request_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_FILE_CHUNK_REQUEST) {
-            const Tox_Event_File_Chunk_Request *file_chunk_request = events->events[i].data.file_chunk_request;
-            if (file_chunk_request_index == index) {
-                return file_chunk_request;
-            }
-            ++file_chunk_request_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_file_chunk_request_size(const Tox_Events *events)
-{
-    uint32_t file_chunk_request_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_FILE_CHUNK_REQUEST) {
-            ++file_chunk_request_size;
-        }
-    }
-
-    return file_chunk_request_size;
-}
-
 bool tox_event_file_chunk_request_unpack(
     Tox_Event_File_Chunk_Request **event, Bin_Unpack *bu, const Memory *mem)
 {

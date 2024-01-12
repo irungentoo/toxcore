@@ -196,42 +196,6 @@ static Tox_Event_Group_Private_Message *tox_events_add_group_private_message(Tox
     return group_private_message;
 }
 
-const Tox_Event_Group_Private_Message *tox_events_get_group_private_message(const Tox_Events *events, uint32_t index)
-{
-    uint32_t group_private_message_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (group_private_message_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_GROUP_PRIVATE_MESSAGE) {
-            const Tox_Event_Group_Private_Message *group_private_message = events->events[i].data.group_private_message;
-            if (group_private_message_index == index) {
-                return group_private_message;
-            }
-            ++group_private_message_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_group_private_message_size(const Tox_Events *events)
-{
-    uint32_t group_private_message_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_GROUP_PRIVATE_MESSAGE) {
-            ++group_private_message_size;
-        }
-    }
-
-    return group_private_message_size;
-}
-
 bool tox_event_group_private_message_unpack(
     Tox_Event_Group_Private_Message **event, Bin_Unpack *bu, const Memory *mem)
 {

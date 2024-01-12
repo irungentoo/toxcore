@@ -179,42 +179,6 @@ static Tox_Event_Conference_Peer_Name *tox_events_add_conference_peer_name(Tox_E
     return conference_peer_name;
 }
 
-const Tox_Event_Conference_Peer_Name *tox_events_get_conference_peer_name(const Tox_Events *events, uint32_t index)
-{
-    uint32_t conference_peer_name_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (conference_peer_name_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_CONFERENCE_PEER_NAME) {
-            const Tox_Event_Conference_Peer_Name *conference_peer_name = events->events[i].data.conference_peer_name;
-            if (conference_peer_name_index == index) {
-                return conference_peer_name;
-            }
-            ++conference_peer_name_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_conference_peer_name_size(const Tox_Events *events)
-{
-    uint32_t conference_peer_name_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_CONFERENCE_PEER_NAME) {
-            ++conference_peer_name_size;
-        }
-    }
-
-    return conference_peer_name_size;
-}
-
 bool tox_event_conference_peer_name_unpack(
     Tox_Event_Conference_Peer_Name **event, Bin_Unpack *bu, const Memory *mem)
 {

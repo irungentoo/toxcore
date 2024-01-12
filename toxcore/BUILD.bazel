@@ -961,6 +961,7 @@ cc_fuzz_test(
     srcs = ["tox_events_fuzz_test.cc"],
     corpus = ["//tools/toktok-fuzzer/corpus:tox_events_fuzz_test"],
     deps = [
+        ":tox_dispatch",
         ":tox_events",
         "//c-toxcore/testing/fuzzing:fuzz_support",
     ],

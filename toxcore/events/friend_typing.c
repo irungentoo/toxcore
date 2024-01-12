@@ -139,42 +139,6 @@ static Tox_Event_Friend_Typing *tox_events_add_friend_typing(Tox_Events *events,
     return friend_typing;
 }
 
-const Tox_Event_Friend_Typing *tox_events_get_friend_typing(const Tox_Events *events, uint32_t index)
-{
-    uint32_t friend_typing_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (friend_typing_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_FRIEND_TYPING) {
-            const Tox_Event_Friend_Typing *friend_typing = events->events[i].data.friend_typing;
-            if (friend_typing_index == index) {
-                return friend_typing;
-            }
-            ++friend_typing_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_friend_typing_size(const Tox_Events *events)
-{
-    uint32_t friend_typing_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_FRIEND_TYPING) {
-            ++friend_typing_size;
-        }
-    }
-
-    return friend_typing_size;
-}
-
 bool tox_event_friend_typing_unpack(
     Tox_Event_Friend_Typing **event, Bin_Unpack *bu, const Memory *mem)
 {

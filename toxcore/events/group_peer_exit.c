@@ -235,42 +235,6 @@ static Tox_Event_Group_Peer_Exit *tox_events_add_group_peer_exit(Tox_Events *eve
     return group_peer_exit;
 }
 
-const Tox_Event_Group_Peer_Exit *tox_events_get_group_peer_exit(const Tox_Events *events, uint32_t index)
-{
-    uint32_t group_peer_exit_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (group_peer_exit_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_GROUP_PEER_EXIT) {
-            const Tox_Event_Group_Peer_Exit *group_peer_exit = events->events[i].data.group_peer_exit;
-            if (group_peer_exit_index == index) {
-                return group_peer_exit;
-            }
-            ++group_peer_exit_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_group_peer_exit_size(const Tox_Events *events)
-{
-    uint32_t group_peer_exit_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_GROUP_PEER_EXIT) {
-            ++group_peer_exit_size;
-        }
-    }
-
-    return group_peer_exit_size;
-}
-
 bool tox_event_group_peer_exit_unpack(
     Tox_Event_Group_Peer_Exit **event, Bin_Unpack *bu, const Memory *mem)
 {

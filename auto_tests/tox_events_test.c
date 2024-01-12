@@ -22,20 +22,22 @@ static bool await_message(Tox **toxes)
         Tox_Events *events = tox_events_iterate(toxes[1], false, nullptr);
 
         if (events != nullptr) {
-            ck_assert(tox_events_get_friend_message_size(events) == 1);
-            const Tox_Event_Friend_Message *msg_event = tox_events_get_friend_message(events, 0);
+            uint32_t events_size = tox_events_get_size(events);
+            ck_assert(events_size == 1);
+
+            const Tox_Event_Friend_Message *msg_event = nullptr;
+            for (uint32_t j = 0; j < events_size; ++j) {
+                const Tox_Event *ev = tox_events_get(events, j);
+                if (tox_event_get_type(ev) == TOX_EVENT_FRIEND_MESSAGE) {
+                    msg_event = tox_event_get_friend_message(ev);
+                }
+            }
+
+            ck_assert(msg_event != nullptr);
             ck_assert(tox_event_friend_message_get_message_length(msg_event) == sizeof("hello"));
             const uint8_t *msg = tox_event_friend_message_get_message(msg_event);
             ck_assert_msg(memcmp(msg, "hello", sizeof("hello")) == 0,
                           "message was not expected 'hello' but '%s'", (const char *)msg);
-
-            const uint32_t event_count = tox_events_get_size(events);
-            for (uint32_t j = 0; j < event_count; ++j) {
-                const Tox_Event *event = tox_events_get(events, j);
-                if (tox_event_get_type(event) == TOX_EVENT_FRIEND_MESSAGE) {
-                    ck_assert(tox_event_get_friend_message(event) == msg_event);
-                }
-            }
 
             tox_events_free(events);
             return true;

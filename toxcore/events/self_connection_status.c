@@ -119,42 +119,6 @@ static Tox_Event_Self_Connection_Status *tox_events_add_self_connection_status(T
     return self_connection_status;
 }
 
-const Tox_Event_Self_Connection_Status *tox_events_get_self_connection_status(const Tox_Events *events, uint32_t index)
-{
-    uint32_t self_connection_status_index = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (self_connection_status_index > index) {
-            return nullptr;
-        }
-
-        if (events->events[i].type == TOX_EVENT_SELF_CONNECTION_STATUS) {
-            const Tox_Event_Self_Connection_Status *self_connection_status = events->events[i].data.self_connection_status;
-            if (self_connection_status_index == index) {
-                return self_connection_status;
-            }
-            ++self_connection_status_index;
-        }
-    }
-
-    return nullptr;
-}
-
-uint32_t tox_events_get_self_connection_status_size(const Tox_Events *events)
-{
-    uint32_t self_connection_status_size = 0;
-    const uint32_t size = tox_events_get_size(events);
-
-    for (uint32_t i = 0; i < size; ++i) {
-        if (events->events[i].type == TOX_EVENT_SELF_CONNECTION_STATUS) {
-            ++self_connection_status_size;
-        }
-    }
-
-    return self_connection_status_size;
-}
-
 bool tox_event_self_connection_status_unpack(
     Tox_Event_Self_Connection_Status **event, Bin_Unpack *bu, const Memory *mem)
 {

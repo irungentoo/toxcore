@@ -33,7 +33,7 @@ TEST(ToxEvents, UnpackEmptyArrayCreatesEmptyEvents)
     std::array<uint8_t, 1> data{0x90};  // empty msgpack array
     Tox_Events *events = tox_events_load(&sys, data.data(), data.size());
     ASSERT_NE(events, nullptr);
-    EXPECT_EQ(tox_events_get_conference_connected_size(events), 0);
+    EXPECT_EQ(tox_events_get_size(events), 0);
     tox_events_free(events);
 }
 
