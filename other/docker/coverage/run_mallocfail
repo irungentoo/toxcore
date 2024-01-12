@@ -27,11 +27,12 @@ from typing import NoReturn
 from typing import Optional
 from typing import Tuple
 
-_PRIMER = "./unit_util_test"
+_PRIMER = "auto_tests/auto_version_test"
 _MALLOCFAIL_SO = "/usr/local/lib/mallocfail.so"
 _HASHES = "mallocfail_hashes"
 _HASHES_PREV = "mallocfail_hashes.prev"
 _TIMEOUT = 3.0
+_BUILD_DIR = os.getcwd()
 
 _ENV = {
     "LD_PRELOAD": _MALLOCFAIL_SO,
@@ -45,10 +46,19 @@ def run_mallocfail(tmpdir: str, timeout: float, exe: str, iteration: int,
     print(f"\x1b[1;33mmallocfail '{exe}' run #{iteration}\x1b[0m")
     hashes = os.path.join(tmpdir, _HASHES)
     hashes_prev = os.path.join(tmpdir, _HASHES_PREV)
+    profraw = os.path.join(_BUILD_DIR, "mallocfail.out", exe, "%p.profraw")
     if os.path.exists(hashes):
         shutil.copy(hashes, hashes_prev)
     try:
-        proc = subprocess.run([exe], timeout=timeout, env=_ENV, cwd=tmpdir)
+        proc = subprocess.run(
+            [exe],
+            timeout=timeout,
+            env={
+                "LLVM_PROFILE_FILE": profraw,
+                **_ENV,
+            },
+            cwd=tmpdir,
+        )
     except subprocess.TimeoutExpired:
         print(f"\x1b[1;34mProgram {exe} timed out\x1b[0m")
         return True
@@ -65,13 +75,16 @@ def run_mallocfail(tmpdir: str, timeout: float, exe: str, iteration: int,
         # Process exited cleanly (success or failure).
         pass
     elif proc.returncode == -6:
-        # Assertion failed.
+        # abort(), we allow it.
+        pass
+    elif proc.returncode == 7:
+        # ck_assert failed, also fine for us.
         pass
     elif proc.returncode == -14:
         print(f"\x1b[0;34mProgram '{exe}' timed out\x1b[0m")
     else:
         print(
-            f"\x1b[1;32mProgram '{exe}' failed to handle OOM situation cleanly\x1b[0m"
+            f"\x1b[1;32mProgram '{exe}' failed to handle OOM situation cleanly (code {proc.returncode})\x1b[0m"
         )
         if not keep_going:
             raise Exception("Aborting test")
@@ -96,8 +109,8 @@ def find_prog(name: str) -> Tuple[Optional[str], ...]:
             return path
         return None
 
-    return (attempt(f"./unit_{name}_test"),
-            attempt(f"auto_tests/auto_{name}_test"))
+    return (attempt(f"auto_tests/auto_{name}_test"),
+            )  # attempt(f"./unit_{name}_test"),
 
 
 def parse_flags(args: List[str]) -> Tuple[Dict[str, str], List[str]]:
@@ -128,6 +141,9 @@ def isolated_mallocfail(timeout: int, exe: str) -> None:
         shutil.copy(exe, os.path.join(tmpdir, exe))
         shutil.copy(_HASHES, os.path.join(tmpdir, _HASHES))
         loop_mallocfail(tmpdir, timeout, exe)
+        profraw = os.path.join(tmpdir, "default.profraw")
+        if os.path.exists(profraw):
+            shutil.copy(profraw, exe + ".mallocfail.profraw")
 
 
 def main(args: List[str]) -> None:
@@ -150,12 +166,12 @@ def main(args: List[str]) -> None:
     else:
         jobs = 1
 
-    # Start by running util_test, which allocates no memory of its own, just
+    # Start by running version_test, which allocates no memory of its own, just
     # to prime the mallocfail hashes so it doesn't make global initialisers
     # such as llvm_gcov_init fail.
     if os.path.exists(_PRIMER):
-        print(f"\x1b[1;33mPriming hashes with unit_util_test\x1b[0m")
-        loop_mallocfail(".", timeout, _PRIMER, keep_going=True)
+        print(f"\x1b[1;33mPriming hashes with {_PRIMER}\x1b[0m")
+        loop_mallocfail(os.getcwd(), timeout, _PRIMER, keep_going=True)
 
     print(f"\x1b[1;33m--------------------------------\x1b[0m")
     print(f"\x1b[1;33mStarting mallocfail for {len(exes)} programs:\x1b[0m")

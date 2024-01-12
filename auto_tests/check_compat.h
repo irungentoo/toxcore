@@ -9,7 +9,7 @@
 #define ck_assert(ok) do {                                              \
   if (!(ok)) {                                                          \
     fprintf(stderr, "%s:%d: failed `%s'\n", __FILE__, __LINE__, #ok);   \
-    abort();                                                            \
+    exit(7);                                                            \
   }                                                                     \
 } while (0)
 
@@ -18,7 +18,7 @@
     fprintf(stderr, "%s:%d: failed `%s': ", __FILE__, __LINE__, #ok);   \
     fprintf(stderr, __VA_ARGS__);                                       \
     fprintf(stderr, "\n");                                              \
-    abort();                                                            \
+    exit(7);                                                            \
   }                                                                     \
 } while (0)
 
@@ -26,7 +26,7 @@
   fprintf(stderr, "%s:%d: ", __FILE__, __LINE__);                       \
   fprintf(stderr, __VA_ARGS__);                                         \
   fprintf(stderr, "\n");                                                \
-  abort();                                                              \
+  exit(7);                                                              \
 } while (0)
 
 #endif // C_TOXCORE_AUTO_TESTS_CHECK_COMPAT_H

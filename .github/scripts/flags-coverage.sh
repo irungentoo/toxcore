@@ -5,10 +5,10 @@
 add_ld_flag -Wl,-z,defs
 
 # Make compilation error on a warning
-add_flag -Werror
+add_flag -Werror -Wno-unsafe-buffer-usage
 
 # Coverage flags.
-add_flag --coverage
+add_flag -fprofile-instr-generate -fcoverage-mapping
 
 # Optimisation, but keep stack traces useful.
 add_c_flag -fno-inline -fno-omit-frame-pointer

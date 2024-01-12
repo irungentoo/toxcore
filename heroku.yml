@@ -1,4 +1,0 @@
----
-build:
-  docker:
-    web: other/bootstrap_daemon/websocket/Dockerfile
