@@ -1,7 +1,7 @@
 #!/bin/sh
 
-HARNESS_BIN="../_afl_build/bootstrap_fuzzer"
-COV_BIN="../_cov_build/bootstrap_fuzzer"
+HARNESS_BIN="../_afl_build/bootstrap_fuzz_test"
+COV_BIN="../_cov_build/bootstrap_fuzz_test"
 # move to repo root
 cd ../
 

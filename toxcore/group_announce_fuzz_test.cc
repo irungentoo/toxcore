@@ -19,7 +19,7 @@ void TestUnpackAnnouncesList(Fuzz_Data &input)
     CONSUME1_OR_RETURN(const uint16_t, packed_size, input);
 
     Logger *logger = logger_new();
-    if (gca_unpack_announces_list(logger, input.data, input.size, announces.data(), max_count)
+    if (gca_unpack_announces_list(logger, input.data(), input.size(), announces.data(), max_count)
         != -1) {
         // Always allocate at least something to avoid passing nullptr to functions below.
         std::vector<uint8_t> packed(packed_size + 1);
@@ -38,7 +38,7 @@ void TestUnpackPublicAnnounce(Fuzz_Data &input)
     CONSUME1_OR_RETURN(const uint16_t, packed_size, input);
 
     Logger *logger = logger_new();
-    if (gca_unpack_public_announce(logger, input.data, input.size, &public_announce) != -1) {
+    if (gca_unpack_public_announce(logger, input.data(), input.size(), &public_announce) != -1) {
         // Always allocate at least something to avoid passing nullptr to functions below.
         std::vector<uint8_t> packed(packed_size + 1);
         gca_pack_public_announce(logger, packed.data(), packed_size, &public_announce);
@@ -50,17 +50,17 @@ void TestDoGca(Fuzz_Data &input)
 {
     const Memory *mem = system_memory();
     std::unique_ptr<Logger, void (*)(Logger *)> logger(logger_new(), logger_kill);
-    std::unique_ptr<Mono_Time, std::function<void(Mono_Time *)>> mono_time(
-        mono_time_new(mem, nullptr, nullptr), [mem](Mono_Time *ptr) { mono_time_free(mem, ptr); });
-    assert(mono_time != nullptr);
+
     uint64_t clock = 1;
-    mono_time_set_current_time_callback(
-        mono_time.get(), [](void *user_data) { return *static_cast<uint64_t *>(user_data); },
-        &clock);
+    std::unique_ptr<Mono_Time, std::function<void(Mono_Time *)>> mono_time(
+        mono_time_new(
+            mem, [](void *user_data) { return *static_cast<uint64_t *>(user_data); }, &clock),
+        [mem](Mono_Time *ptr) { mono_time_free(mem, ptr); });
+    assert(mono_time != nullptr);
     std::unique_ptr<GC_Announces_List, void (*)(GC_Announces_List *)> gca(new_gca_list(), kill_gca);
     assert(gca != nullptr);
 
-    while (input.size > 0) {
+    while (!input.empty()) {
         CONSUME1_OR_RETURN(const uint8_t, choice, input);
         switch (choice) {
         case 0: {
@@ -84,7 +84,8 @@ void TestDoGca(Fuzz_Data &input)
         case 2: {
             // Get announces.
             CONSUME1_OR_RETURN(const uint8_t, max_nodes, input);
-            std::vector<GC_Announce> gc_announces(max_nodes);
+            // Always allocate at least something to avoid passing nullptr to functions below.
+            std::vector<GC_Announce> gc_announces(max_nodes + 1);
             CONSUME_OR_RETURN(const uint8_t *chat_id, input, CHAT_ID_SIZE);
             CONSUME_OR_RETURN(const uint8_t *except_public_key, input, ENC_PUBLIC_KEY_SIZE);
             gca_get_announces(
@@ -106,6 +107,6 @@ void TestDoGca(Fuzz_Data &input)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    fuzz_select_target(data, size, TestUnpackAnnouncesList, TestUnpackPublicAnnounce, TestDoGca);
+    fuzz_select_target<TestUnpackAnnouncesList, TestUnpackPublicAnnounce, TestDoGca>(data, size);
     return 0;
 }

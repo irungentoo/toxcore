@@ -1,6 +1,6 @@
 #!/bin/bash -eu
 
-FUZZ_TARGETS="bootstrap_fuzzer toxsave_fuzzer"
+FUZZ_TARGETS="bootstrap_fuzz_test toxsave_fuzz_test"
 
 # out of tree build
 cd "$WORK"

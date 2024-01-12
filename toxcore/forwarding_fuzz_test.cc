@@ -89,6 +89,6 @@ void TestForwardReply(Fuzz_Data &input)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    fuzz_select_target(data, size, TestSendForwardRequest, TestForwardReply);
+    fuzz_select_target<TestSendForwardRequest, TestForwardReply>(data, size);
     return 0;
 }

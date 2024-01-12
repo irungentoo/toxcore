@@ -17,8 +17,8 @@
  *
  * Usage:
  *
- *   bazel build //c-toxcore/testing/fuzzing:protodump_bin && \
- *     bazel-bin/c-toxcore/testing/fuzzing/protodump_bin
+ *   bazel build //c-toxcore/testing/fuzzing:protodump && \
+ *     bazel-bin/c-toxcore/testing/fuzzing/protodump
  */
 #include <array>
 #include <cassert>
@@ -165,15 +165,14 @@ void setup_callbacks(Tox_Dispatch *dispatch)
         });
 }
 
-void dump(std::vector<uint8_t> &recording, const char *filename)
+void dump(std::vector<uint8_t> recording, const char *filename)
 {
     std::printf("%zu bytes: %s\n", recording.size(), filename);
     std::ofstream(filename, std::ios::binary)
         .write(reinterpret_cast<const char *>(recording.data()), recording.size());
-    recording.clear();
 }
 
-void RecordBootstrap()
+void RecordBootstrap(const char *init, const char *bootstrap)
 {
     Record_System::Global global;
 
@@ -258,13 +257,17 @@ void RecordBootstrap()
         sys1.clock += clock_increment;
         sys2.clock += clock_increment;
 
-        sys1.recording.push_back(clock_increment);
-        sys2.recording.push_back(clock_increment);
+        if (Fuzz_Data::DEBUG) {
+            printf("tox1: rng: %d (for clock)\n", clock_increment);
+            printf("tox2: rng: %d (for clock)\n", clock_increment);
+        }
+        sys1.push(clock_increment);
+        sys2.push(clock_increment);
     };
 
     while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE
         || tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE) {
-        if (DEBUG) {
+        if (Fuzz_Data::DEBUG) {
             std::printf("tox1: %d, tox2: %d\n", tox_self_get_connection_status(tox1),
                 tox_self_get_connection_status(tox2));
         }
@@ -279,7 +282,7 @@ void RecordBootstrap()
 
     while (tox_friend_get_connection_status(tox2, friend_number, nullptr) == TOX_CONNECTION_NONE
         || tox_friend_get_connection_status(tox1, 0, nullptr) == TOX_CONNECTION_NONE) {
-        if (DEBUG) {
+        if (Fuzz_Data::DEBUG) {
             std::printf("tox1: %d, tox2: %d, tox1 -> tox2: %d, tox2 -> tox1: %d\n",
                 tox_self_get_connection_status(tox1), tox_self_get_connection_status(tox2),
                 tox_friend_get_connection_status(tox1, 0, nullptr),
@@ -290,10 +293,10 @@ void RecordBootstrap()
 
     std::printf("tox clients connected\n");
 
-    dump(sys1.recording, "tools/toktok-fuzzer/init/e2e_fuzz_test.dat");
+    dump(sys1.take_recording(), init);
 
     while (done1 < MESSAGE_COUNT && done2 < MESSAGE_COUNT) {
-        if (DEBUG) {
+        if (Fuzz_Data::DEBUG) {
             std::printf("tox1: %d, tox2: %d, tox1 -> tox2: %d, tox2 -> tox1: %d\n",
                 tox_self_get_connection_status(tox1), tox_self_get_connection_status(tox2),
                 tox_friend_get_connection_status(tox1, 0, nullptr),
@@ -308,9 +311,18 @@ void RecordBootstrap()
     tox_kill(tox2);
     tox_kill(tox1);
 
-    dump(sys1.recording, "tools/toktok-fuzzer/corpus/e2e_fuzz_test/bootstrap.dat");
+    dump(sys1.recording(), bootstrap);
 }
 
 }
 
-int main(void) { RecordBootstrap(); }
+int main(int argc, char *argv[])
+{
+    const char *init = "tools/toktok-fuzzer/init/e2e_fuzz_test.dat";
+    const char *bootstrap = "tools/toktok-fuzzer/corpus/e2e_fuzz_test/bootstrap.dat";
+    if (argc == 3) {
+        init = argv[1];
+        bootstrap = argv[2];
+    }
+    RecordBootstrap(init, bootstrap);
+}

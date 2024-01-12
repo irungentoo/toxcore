@@ -18,7 +18,7 @@ void TestUnpack(Fuzz_Data data)
     // events_size bytes: events data (max 64K)
     CONSUME_OR_RETURN(const uint8_t *events_data, data, events_size);
 
-    if (data.size == 0) {
+    if (data.empty()) {
         // If there's no more input, no malloc failure paths can possibly be
         // tested, so we ignore this input.
         return;

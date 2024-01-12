@@ -140,7 +140,7 @@ Mono_Time *mono_time_new(const Memory *mem, mono_time_current_time_cb *current_t
     mono_time->cur_time = 0;
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     // Maximum reproducibility. Never return time = 0.
-    mono_time->base_time = 1;
+    mono_time->base_time = 1000000000;
 #else
     // Never return time = 0 in case time() returns 0 (e.g. on microcontrollers
     // without battery-powered RTC or ones where NTP didn't initialise it yet).

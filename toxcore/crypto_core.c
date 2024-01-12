@@ -437,14 +437,10 @@ void new_symmetric_key(const Random *rng, uint8_t *key)
 
 int32_t crypto_new_keypair(const Random *rng, uint8_t *public_key, uint8_t *secret_key)
 {
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     random_bytes(rng, secret_key, CRYPTO_SECRET_KEY_SIZE);
     memset(public_key, 0, CRYPTO_PUBLIC_KEY_SIZE);  // Make MSAN happy
     crypto_derive_public_key(public_key, secret_key);
     return 0;
-#else
-    return crypto_box_keypair(public_key, secret_key);
-#endif
 }
 
 void crypto_derive_public_key(uint8_t *public_key, const uint8_t *secret_key)

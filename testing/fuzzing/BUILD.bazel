@@ -1,6 +1,5 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
-load("@rules_fuzzing//fuzzing/private:binary.bzl", "fuzzing_binary")  # buildifier: disable=bzl-visibility
 
 cc_library(
     name = "fuzz_support",
@@ -27,9 +26,9 @@ cc_library(
 cc_fuzz_test(
     name = "bootstrap_fuzz_test",
     size = "small",
-    srcs = ["bootstrap_harness.cc"],
+    srcs = ["bootstrap_fuzz_test.cc"],
     copts = ["-UNDEBUG"],
-    corpus = ["//tools/toktok-fuzzer/corpus:bootstrap_fuzzer"],
+    corpus = ["//tools/toktok-fuzzer/corpus:bootstrap_fuzz_test"],
     deps = [
         ":fuzz_support",
         ":fuzz_tox",
@@ -58,9 +57,9 @@ cc_fuzz_test(
 cc_fuzz_test(
     name = "toxsave_fuzz_test",
     size = "small",
-    srcs = ["toxsave_harness.cc"],
+    srcs = ["toxsave_fuzz_test.cc"],
     copts = ["-UNDEBUG"],
-    corpus = ["//tools/toktok-fuzzer/corpus:toxsave_fuzzer"],
+    corpus = ["//tools/toktok-fuzzer/corpus:toxsave_fuzz_test"],
     deps = [
         ":fuzz_support",
         "//c-toxcore/toxcore:tox",
@@ -80,12 +79,34 @@ cc_binary(
     ],
 )
 
-fuzzing_binary(
-    name = "protodump_bin",
-    testonly = True,
-    binary = ":protodump",
-    engine = "@rules_fuzzing//fuzzing:cc_engine",
+genrule(
+    name = "e2e_fuzz_test_init",
+    outs = [
+        "e2e_fuzz_test_init.dat",
+        "e2e_fuzz_test_bootstrap.dat",
+    ],
+    cmd = "$(location :protodump) $(location e2e_fuzz_test_init.dat) $(location e2e_fuzz_test_bootstrap.dat)",
     tags = ["manual"],
+    tools = [":protodump"],
+)
+
+# bazel test --config=asan-libfuzzer //c-toxcore/testing/fuzzing:protodump_reduce_test
+cc_test(
+    name = "protodump_reduce_test",
+    size = "small",
+    srcs = ["protodump_reduce.cc"],
+    args = ["$(location :e2e_fuzz_test_init.dat)"],
+    copts = ["-UNDEBUG"],
+    data = [":e2e_fuzz_test_init.dat"],
+    tags = ["manual"],
+    deps = [
+        ":fuzz_support",
+        ":fuzz_tox",
+        "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_dispatch",
+        "//c-toxcore/toxcore:tox_events",
+        "@rules_fuzzing//fuzzing:cc_engine",
+    ],
 )
 
 cc_fuzz_test(

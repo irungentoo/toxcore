@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -eux
+
+bazel test --config=asan-libfuzzer //c-toxcore/testing/fuzzing:protodump_reduce_test
+
+bazel build --config=asan-libfuzzer //c-toxcore/testing/fuzzing:protodump
+bazel-bin/c-toxcore/testing/fuzzing/protodump | grep -v '^tox2'
+
+bazel build --config=asan-libfuzzer //c-toxcore/testing/fuzzing:protodump_reduce_bin
+bazel-bin/c-toxcore/testing/fuzzing/protodump_reduce_bin "$PWD/tools/toktok-fuzzer/init/e2e_fuzz_test.dat"
+
+#export PROTODUMP_REDUCE=1
+#bazel-bin/c-toxcore/testing/fuzzing/protodump_reduce_bin -minimize_crash=1 "$PWD/tools/toktok-fuzzer/init/e2e_fuzz_test.dat"

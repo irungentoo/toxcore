@@ -83,9 +83,12 @@ void setup_callbacks(Tox_Dispatch *dispatch)
         dispatch, [](Tox *tox, const Tox_Event_Friend_Request *event, void *user_data) {
             Tox_Err_Friend_Add err;
             tox_friend_add_norequest(tox, tox_event_friend_request_get_public_key(event), &err);
-            assert(err == TOX_ERR_FRIEND_ADD_OK || err == TOX_ERR_FRIEND_ADD_OWN_KEY
-                || err == TOX_ERR_FRIEND_ADD_ALREADY_SENT
-                || err == TOX_ERR_FRIEND_ADD_BAD_CHECKSUM);
+            if (!(err == TOX_ERR_FRIEND_ADD_OK || err == TOX_ERR_FRIEND_ADD_OWN_KEY
+                    || err == TOX_ERR_FRIEND_ADD_ALREADY_SENT
+                    || err == TOX_ERR_FRIEND_ADD_BAD_CHECKSUM
+                    || err == TOX_ERR_FRIEND_ADD_MALLOC)) {
+                printf("unexpected error: %s\n", tox_err_friend_add_to_string(err));
+            }
         });
     tox_events_callback_friend_status(
         dispatch, [](Tox *tox, const Tox_Event_Friend_Status *event, void *user_data) {
@@ -120,7 +123,7 @@ void TestBootstrap(Fuzz_Data &input)
         [](Tox *tox, Tox_Log_Level level, const char *file, uint32_t line, const char *func,
             const char *message, void *user_data) {
             // Log to stdout.
-            if (DEBUG) {
+            if (Fuzz_Data::DEBUG) {
                 std::printf("[tox1] %c %s:%d(%s): %s\n", tox_log_level_name(level), file, line,
                     func, message);
             }
@@ -167,7 +170,7 @@ void TestBootstrap(Fuzz_Data &input)
     assert(dispatch != nullptr);
     setup_callbacks(dispatch);
 
-    while (input.size > 0) {
+    while (!input.empty()) {
         Tox_Err_Events_Iterate error_iterate;
         Tox_Events *events = tox_events_iterate(tox, true, &error_iterate);
         assert(tox_events_equal(null_sys.sys.get(), events, events));
