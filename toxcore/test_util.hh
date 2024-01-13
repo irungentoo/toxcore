@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <type_traits>
 #include <vector>
@@ -65,5 +67,17 @@ Container sorted(Container arr, Less less)
     std::sort(arr.begin(), arr.end(), less);
     return arr;
 }
+
+template <typename T>
+T *require_not_null(const char *file, int line, T *ptr)
+{
+    if (ptr == nullptr) {
+        std::fprintf(stderr, "unexpected null pointer at %s:%d\n", file, line);
+        std::exit(7);
+    }
+    return ptr;
+}
+
+#define REQUIRE_NOT_NULL(ptr) require_not_null(__FILE__, __LINE__, ptr)
 
 #endif  // C_TOXCORE_TOXCORE_TEST_UTIL_H

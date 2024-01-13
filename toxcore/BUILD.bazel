@@ -1,6 +1,5 @@
-load("@rules_cc//cc:defs.bzl", "cc_test")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
-load("//tools:no_undefined.bzl", "cc_library")
 
 exports_files(
     srcs = [
@@ -12,6 +11,7 @@ exports_files(
 
 cc_library(
     name = "test_util",
+    testonly = True,
     srcs = ["test_util.cc"],
     hdrs = ["test_util.hh"],
 )
@@ -49,6 +49,17 @@ cc_library(
     deps = [
         ":attributes",
         ":ccompat",
+    ],
+)
+
+cc_library(
+    name = "mem_test_util",
+    testonly = True,
+    srcs = ["mem_test_util.cc"],
+    hdrs = ["mem_test_util.hh"],
+    deps = [
+        ":mem",
+        ":test_util",
     ],
 )
 
@@ -162,6 +173,7 @@ cc_library(
 
 cc_library(
     name = "crypto_core_test_util",
+    testonly = True,
     srcs = ["crypto_core_test_util.cc"],
     hdrs = ["crypto_core_test_util.hh"],
     deps = [
@@ -240,6 +252,7 @@ cc_test(
     size = "small",
     srcs = ["mono_time_test.cc"],
     deps = [
+        ":mem_test_util",
         ":mono_time",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
@@ -292,6 +305,7 @@ cc_library(
 
 cc_library(
     name = "network_test_util",
+    testonly = True,
     srcs = ["network_test_util.cc"],
     hdrs = ["network_test_util.hh"],
     deps = [
@@ -307,6 +321,7 @@ cc_test(
     srcs = ["network_test.cc"],
     deps = [
         ":network",
+        ":network_test_util",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
@@ -341,6 +356,7 @@ cc_test(
     size = "small",
     srcs = ["ping_array_test.cc"],
     deps = [
+        ":mem_test_util",
         ":mono_time",
         ":ping_array",
         "@com_google_googletest//:gtest",
@@ -399,6 +415,7 @@ cc_library(
 
 cc_library(
     name = "DHT_test_util",
+    testonly = True,
     srcs = ["DHT_test_util.cc"],
     hdrs = ["DHT_test_util.hh"],
     deps = [
@@ -418,6 +435,7 @@ cc_test(
         ":DHT",
         ":DHT_test_util",
         ":crypto_core",
+        ":mem_test_util",
         ":network_test_util",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
@@ -468,7 +486,7 @@ cc_fuzz_test(
     name = "forwarding_fuzz_test",
     size = "small",
     srcs = ["forwarding_fuzz_test.cc"],
-    #corpus = ["//tools/toktok-fuzzer/corpus:forwarding_fuzz_test"],
+    corpus = ["//tools/toktok-fuzzer/corpus:forwarding_fuzz_test"],
     deps = [
         ":forwarding",
         "//c-toxcore/testing/fuzzing:fuzz_support",
@@ -641,9 +659,23 @@ cc_test(
     srcs = ["group_announce_test.cc"],
     deps = [
         ":group_announce",
+        ":mem_test_util",
         ":mono_time",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_fuzz_test(
+    name = "group_announce_fuzz_test",
+    size = "small",
+    testonly = True,
+    srcs = ["group_announce_fuzz_test.cc"],
+    corpus = ["//tools/toktok-fuzzer/corpus:group_announce_fuzz_test"],
+    deps = [
+        ":group_announce",
+        ":mem_test_util",
+        "//c-toxcore/testing/fuzzing:fuzz_support",
     ],
 )
 
@@ -660,17 +692,6 @@ cc_library(
         ":ccompat",
         ":group_announce",
         ":onion_announce",
-    ],
-)
-
-cc_fuzz_test(
-    name = "group_announce_fuzz_test",
-    size = "small",
-    srcs = ["group_announce_fuzz_test.cc"],
-    #corpus = ["//tools/toktok-fuzzer/corpus:group_announce_fuzz_test"],
-    deps = [
-        ":group_announce",
-        "//c-toxcore/testing/fuzzing:fuzz_support",
     ],
 )
 
@@ -759,8 +780,10 @@ cc_test(
     srcs = ["group_moderation_test.cc"],
     deps = [
         ":crypto_core",
+        ":crypto_core_test_util",
         ":group_moderation",
         ":logger",
+        ":mem_test_util",
         ":util",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
@@ -770,10 +793,12 @@ cc_test(
 cc_fuzz_test(
     name = "group_moderation_fuzz_test",
     size = "small",
+    testonly = True,
     srcs = ["group_moderation_fuzz_test.cc"],
     corpus = ["//tools/toktok-fuzzer/corpus:group_moderation_fuzz_test"],
     deps = [
         ":group_moderation",
+        ":mem_test_util",
         "//c-toxcore/testing/fuzzing:fuzz_support",
     ],
 )

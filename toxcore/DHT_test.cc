@@ -11,6 +11,7 @@
 #include "DHT_test_util.hh"
 #include "crypto_core.h"
 #include "crypto_core_test_util.hh"
+#include "mem_test_util.hh"
 #include "network_test_util.hh"
 
 namespace {
@@ -326,8 +327,8 @@ TEST(Request, CreateAndParse)
 TEST(AnnounceNodes, SetAndTest)
 {
     Test_Random rng;
-    const Network *ns = system_network();
-    const Memory *mem = system_memory();
+    Test_Memory mem;
+    Test_Network ns;
 
     Logger *log = logger_new();
     ASSERT_NE(log, nullptr);

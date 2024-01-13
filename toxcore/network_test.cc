@@ -2,7 +2,16 @@
 
 #include <gtest/gtest.h>
 
+#include "network_test_util.hh"
+
 namespace {
+
+TEST(TestUtil, ProducesNonNullNetwork)
+{
+    Test_Network net;
+    const Network *ns = net;
+    EXPECT_NE(ns, nullptr);
+}
 
 TEST(IpNtoa, DoesntWriteOutOfBounds)
 {

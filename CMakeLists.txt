@@ -481,6 +481,8 @@ add_library(test_util STATIC
   toxcore/DHT_test_util.hh
   toxcore/crypto_core_test_util.cc
   toxcore/crypto_core_test_util.hh
+  toxcore/mem_test_util.cc
+  toxcore/mem_test_util.hh
   toxcore/network_test_util.cc
   toxcore/network_test_util.hh
   toxcore/test_util.cc

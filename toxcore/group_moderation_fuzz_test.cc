@@ -1,13 +1,15 @@
 #include "group_moderation.h"
 
 #include "../testing/fuzzing/fuzz_support.h"
+#include "mem_test_util.hh"
 
 namespace {
 
 void TestModListUnpack(Fuzz_Data &input)
 {
     CONSUME1_OR_RETURN(const uint16_t, num_mods, input);
-    Moderation mods{system_memory()};
+    Test_Memory mem;
+    Moderation mods{mem};
     mod_list_unpack(&mods, input.data(), input.size(), num_mods);
     mod_list_cleanup(&mods);
 }

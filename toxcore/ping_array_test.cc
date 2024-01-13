@@ -4,6 +4,7 @@
 
 #include <memory>
 
+#include "mem_test_util.hh"
 #include "mono_time.h"
 
 namespace {
@@ -15,7 +16,7 @@ struct Ping_Array_Deleter {
 using Ping_Array_Ptr = std::unique_ptr<Ping_Array, Ping_Array_Deleter>;
 
 struct Mono_Time_Deleter {
-    Mono_Time_Deleter(const Memory *mem)
+    Mono_Time_Deleter(const Test_Memory &mem)
         : mem_(mem)
     {
     }
@@ -29,21 +30,21 @@ using Mono_Time_Ptr = std::unique_ptr<Mono_Time, Mono_Time_Deleter>;
 
 TEST(PingArray, MinimumTimeoutIsOne)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
     EXPECT_EQ(ping_array_new(mem, 1, 0), nullptr);
     EXPECT_NE(Ping_Array_Ptr(ping_array_new(mem, 1, 1)), nullptr);
 }
 
 TEST(PingArray, MinimumArraySizeIsOne)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
     EXPECT_EQ(ping_array_new(mem, 0, 1), nullptr);
     EXPECT_NE(Ping_Array_Ptr(ping_array_new(mem, 1, 1)), nullptr);
 }
 
 TEST(PingArray, ArraySizeMustBePowerOfTwo)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
 
     Ping_Array_Ptr arr;
     arr.reset(ping_array_new(mem, 2, 1));
@@ -59,7 +60,7 @@ TEST(PingArray, ArraySizeMustBePowerOfTwo)
 
 TEST(PingArray, StoredDataCanBeRetrieved)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
 
     Ping_Array_Ptr const arr(ping_array_new(mem, 2, 1));
     Mono_Time_Ptr const mono_time(mono_time_new(mem, nullptr, nullptr), mem);
@@ -78,7 +79,7 @@ TEST(PingArray, StoredDataCanBeRetrieved)
 
 TEST(PingArray, RetrievingDataWithTooSmallOutputBufferHasNoEffect)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
 
     Ping_Array_Ptr const arr(ping_array_new(mem, 2, 1));
     Mono_Time_Ptr const mono_time(mono_time_new(mem, nullptr, nullptr), mem);
@@ -101,7 +102,7 @@ TEST(PingArray, RetrievingDataWithTooSmallOutputBufferHasNoEffect)
 
 TEST(PingArray, ZeroLengthDataCanBeAdded)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
 
     Ping_Array_Ptr const arr(ping_array_new(mem, 2, 1));
     Mono_Time_Ptr const mono_time(mono_time_new(mem, nullptr, nullptr), mem);
@@ -118,7 +119,7 @@ TEST(PingArray, ZeroLengthDataCanBeAdded)
 
 TEST(PingArray, PingId0IsInvalid)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
 
     Ping_Array_Ptr const arr(ping_array_new(mem, 2, 1));
     Mono_Time_Ptr const mono_time(mono_time_new(mem, nullptr, nullptr), mem);
@@ -131,7 +132,7 @@ TEST(PingArray, PingId0IsInvalid)
 // Protection against replay attacks.
 TEST(PingArray, DataCanOnlyBeRetrievedOnce)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
 
     Ping_Array_Ptr const arr(ping_array_new(mem, 2, 1));
     Mono_Time_Ptr const mono_time(mono_time_new(mem, nullptr, nullptr), mem);
@@ -149,7 +150,7 @@ TEST(PingArray, DataCanOnlyBeRetrievedOnce)
 
 TEST(PingArray, PingIdMustMatchOnCheck)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
 
     Ping_Array_Ptr const arr(ping_array_new(mem, 1, 1));
     Mono_Time_Ptr const mono_time(mono_time_new(mem, nullptr, nullptr), mem);

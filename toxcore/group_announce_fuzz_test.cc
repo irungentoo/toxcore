@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "../testing/fuzzing/fuzz_support.h"
+#include "mem_test_util.hh"
 
 namespace {
 
@@ -48,7 +49,7 @@ void TestUnpackPublicAnnounce(Fuzz_Data &input)
 
 void TestDoGca(Fuzz_Data &input)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
     std::unique_ptr<Logger, void (*)(Logger *)> logger(logger_new(), logger_kill);
 
     uint64_t clock = 1;

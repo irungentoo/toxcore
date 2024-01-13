@@ -2,6 +2,81 @@
 
 #include <iomanip>
 
+Network_Funcs const Network_Class::vtable = {
+    Method<net_close_cb, Network_Class>::invoke<&Network_Class::close>,
+    Method<net_accept_cb, Network_Class>::invoke<&Network_Class::accept>,
+    Method<net_bind_cb, Network_Class>::invoke<&Network_Class::bind>,
+    Method<net_listen_cb, Network_Class>::invoke<&Network_Class::listen>,
+    Method<net_recvbuf_cb, Network_Class>::invoke<&Network_Class::recvbuf>,
+    Method<net_recv_cb, Network_Class>::invoke<&Network_Class::recv>,
+    Method<net_recvfrom_cb, Network_Class>::invoke<&Network_Class::recvfrom>,
+    Method<net_send_cb, Network_Class>::invoke<&Network_Class::send>,
+    Method<net_sendto_cb, Network_Class>::invoke<&Network_Class::sendto>,
+    Method<net_socket_cb, Network_Class>::invoke<&Network_Class::socket>,
+    Method<net_socket_nonblock_cb, Network_Class>::invoke<&Network_Class::socket_nonblock>,
+    Method<net_getsockopt_cb, Network_Class>::invoke<&Network_Class::getsockopt>,
+    Method<net_setsockopt_cb, Network_Class>::invoke<&Network_Class::setsockopt>,
+    Method<net_getaddrinfo_cb, Network_Class>::invoke<&Network_Class::getaddrinfo>,
+    Method<net_freeaddrinfo_cb, Network_Class>::invoke<&Network_Class::freeaddrinfo>,
+};
+
+int Test_Network::close(void *obj, int sock) { return net->funcs->close(net->obj, sock); }
+int Test_Network::accept(void *obj, int sock) { return net->funcs->accept(net->obj, sock); }
+int Test_Network::bind(void *obj, int sock, const Network_Addr *addr)
+{
+    return net->funcs->bind(net->obj, sock, addr);
+}
+int Test_Network::listen(void *obj, int sock, int backlog)
+{
+    return net->funcs->listen(net->obj, sock, backlog);
+}
+int Test_Network::recvbuf(void *obj, int sock) { return net->funcs->recvbuf(net->obj, sock); }
+int Test_Network::recv(void *obj, int sock, uint8_t *buf, size_t len)
+{
+    return net->funcs->recv(net->obj, sock, buf, len);
+}
+int Test_Network::recvfrom(void *obj, int sock, uint8_t *buf, size_t len, Network_Addr *addr)
+{
+    return net->funcs->recvfrom(net->obj, sock, buf, len, addr);
+}
+int Test_Network::send(void *obj, int sock, const uint8_t *buf, size_t len)
+{
+    return net->funcs->send(net->obj, sock, buf, len);
+}
+int Test_Network::sendto(
+    void *obj, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr)
+{
+    return net->funcs->sendto(net->obj, sock, buf, len, addr);
+}
+int Test_Network::socket(void *obj, int domain, int type, int proto)
+{
+    return net->funcs->socket(net->obj, domain, type, proto);
+}
+int Test_Network::socket_nonblock(void *obj, int sock, bool nonblock)
+{
+    return net->funcs->socket_nonblock(net->obj, sock, nonblock);
+}
+int Test_Network::getsockopt(
+    void *obj, int sock, int level, int optname, void *optval, size_t *optlen)
+{
+    return net->funcs->getsockopt(net->obj, sock, level, optname, optval, optlen);
+}
+int Test_Network::setsockopt(
+    void *obj, int sock, int level, int optname, const void *optval, size_t optlen)
+{
+    return net->funcs->setsockopt(net->obj, sock, level, optname, optval, optlen);
+}
+int Test_Network::getaddrinfo(void *obj, int family, Network_Addr **addrs)
+{
+    return net->funcs->getaddrinfo(net->obj, family, addrs);
+}
+int Test_Network::freeaddrinfo(void *obj, Network_Addr *addrs)
+{
+    return net->funcs->freeaddrinfo(net->obj, addrs);
+}
+
+Network_Class::~Network_Class() = default;
+
 IP_Port increasing_ip_port::operator()()
 {
     IP_Port ip_port;

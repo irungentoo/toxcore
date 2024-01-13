@@ -5,11 +5,13 @@
 #include <chrono>
 #include <thread>
 
+#include "mem_test_util.hh"
+
 namespace {
 
 TEST(MonoTime, UnixTimeIncreasesOverTime)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
     ASSERT_NE(mono_time, nullptr);
 
@@ -28,7 +30,7 @@ TEST(MonoTime, UnixTimeIncreasesOverTime)
 
 TEST(MonoTime, IsTimeout)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
     ASSERT_NE(mono_time, nullptr);
 
@@ -46,7 +48,7 @@ TEST(MonoTime, IsTimeout)
 
 TEST(MonoTime, IsTimeoutReal)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
     ASSERT_NE(mono_time, nullptr);
 
@@ -67,7 +69,7 @@ TEST(MonoTime, IsTimeoutReal)
 
 TEST(MonoTime, CustomTime)
 {
-    const Memory *mem = system_memory();
+    Test_Memory mem;
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
     ASSERT_NE(mono_time, nullptr);
 
