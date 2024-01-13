@@ -1442,6 +1442,9 @@ non_null(1, 2, 3, 5, 6) nullable(4)
 static int group_packet_unwrap(const Logger *log, const GC_Connection *gconn, uint8_t *data, uint64_t *message_id,
                                uint8_t *packet_type, const uint8_t *packet, uint16_t length)
 {
+    assert(data != nullptr);
+    assert(packet != nullptr);
+
     if (length <= CRYPTO_NONCE_SIZE) {
         LOGGER_FATAL(log, "Invalid packet length: %u", length);
         return -1;

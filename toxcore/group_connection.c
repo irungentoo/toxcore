@@ -101,16 +101,12 @@ static bool create_array_entry(const Logger *log, const Mono_Time *mono_time, GC
     }
 
     if (length == 0) {
-        if (data != nullptr) {
-            LOGGER_FATAL(log, "Got non-null data with zero length (type %d)", packet_type); // should never happen
-            return false;
-        }
-
         array_entry->data = nullptr;
         array_entry->data_length = 0;
     } else {
-        if (data == nullptr) {
-            LOGGER_FATAL(log, "Got null data with non-zero length (type %u)", packet_type); // should never happen
+        if (data == nullptr) {  // should never happen
+            LOGGER_FATAL(log, "Got null data with non-zero length (length: %u, type %u)",
+                         length, packet_type);
             return false;
         }
 
