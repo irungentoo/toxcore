@@ -5,6 +5,8 @@
 #include "../testing/misc_tools.h"
 #include "../toxcore/Messenger.h"
 #include "../toxcore/mono_time.h"
+#include "../toxcore/tox_dispatch.h"
+#include "../toxcore/tox_events.h"
 #include "../toxcore/tox_struct.h"
 
 #include "auto_test_support.h"
@@ -23,6 +25,7 @@ Run_Auto_Options default_run_auto_options(void)
         .graph = GRAPH_COMPLETE,
         .init_autotox = nullptr,
         .tcp_port = 33188,
+        .events = true,
     };
 }
 
@@ -131,7 +134,15 @@ void iterate_all_wait(AutoTox *autotoxes, uint32_t tox_count, uint32_t wait)
 
     for (uint32_t i = 0; i < tox_count; ++i) {
         if (autotoxes[i].alive) {
-            tox_iterate(autotoxes[i].tox, &autotoxes[i]);
+            if (autotoxes[i].events) {
+                Tox_Err_Events_Iterate err;
+                Tox_Events *events = tox_events_iterate(autotoxes[i].tox, true, &err);
+                ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
+                tox_dispatch_invoke(autotoxes[i].dispatch, events, autotoxes[i].tox, &autotoxes[i]);
+                tox_events_free(events);
+            } else {
+                tox_iterate(autotoxes[i].tox, &autotoxes[i]);
+            }
             autotoxes[i].clock += wait;
         }
     }
@@ -181,6 +192,7 @@ void kill_autotox(AutoTox *autotox)
     ck_assert(autotox->alive);
     fprintf(stderr, "Killing #%u\n", autotox->index);
     autotox->alive = false;
+    tox_dispatch_free(autotox->dispatch);
     tox_kill(autotox->tox);
 }
 
@@ -202,6 +214,11 @@ void reload(AutoTox *autotox)
     tox_options_set_savedata_data(options, autotox->save_state, autotox->save_size);
     autotox->tox = tox_new_log(options, nullptr, &autotox->index);
     ck_assert(autotox->tox != nullptr);
+    autotox->dispatch = tox_dispatch_new(nullptr);
+    ck_assert(autotox->dispatch != nullptr);
+    if (autotox->events) {
+        tox_events_init(autotox->tox);
+    }
     tox_options_free(options);
 
     set_mono_time_callback(autotox);
@@ -212,6 +229,7 @@ static void initialise_autotox(struct Tox_Options *options, AutoTox *autotox, ui
                                Run_Auto_Options *autotest_opts)
 {
     autotox->index = index;
+    autotox->events = autotest_opts->events;
 
     Tox_Err_New err = TOX_ERR_NEW_OK;
 
@@ -258,6 +276,12 @@ static void initialise_autotox(struct Tox_Options *options, AutoTox *autotox, ui
     ck_assert_msg(autotox->tox != nullptr, "failed to create tox instance #%u (error = %d)", index, err);
 
     set_mono_time_callback(autotox);
+
+    autotox->dispatch = tox_dispatch_new(nullptr);
+    ck_assert(autotox->dispatch != nullptr);
+    if (autotox->events) {
+        tox_events_init(autotox->tox);
+    }
 
     autotox->alive = true;
     autotox->save_state = nullptr;
@@ -371,6 +395,7 @@ void run_auto_test(struct Tox_Options *options, uint32_t tox_count, void test(Au
     test(autotoxes);
 
     for (uint32_t i = 0; i < tox_count; ++i) {
+        tox_dispatch_free(autotoxes[i].dispatch);
         tox_kill(autotoxes[i].tox);
         free(autotoxes[i].state);
         free(autotoxes[i].save_state);
@@ -455,4 +480,3 @@ Tox *tox_new_log(struct Tox_Options *options, Tox_Err_New *err, void *log_user_d
 {
     return tox_new_log_lan(options, err, log_user_data, false);
 }
-

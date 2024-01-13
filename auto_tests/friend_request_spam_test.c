@@ -22,9 +22,13 @@ typedef struct State {
     bool unused;
 } State;
 
-static void accept_friend_request(Tox *tox, const uint8_t *public_key, const uint8_t *data, size_t length,
+static void accept_friend_request(Tox *tox, const Tox_Event_Friend_Request *event,
                                   void *userdata)
 {
+    const uint8_t *public_key = tox_event_friend_request_get_public_key(event);
+    const uint8_t *data = tox_event_friend_request_get_message(event);
+    const size_t length = tox_event_friend_request_get_message_length(event);
+
     ck_assert_msg(length == sizeof(FR_MESSAGE) && memcmp(FR_MESSAGE, data, sizeof(FR_MESSAGE)) == 0,
                   "unexpected friend request message");
     tox_friend_add_norequest(tox, public_key, nullptr);
@@ -35,7 +39,7 @@ static void test_friend_request(AutoTox *autotoxes)
     const time_t con_time = time(nullptr);
 
     printf("All toxes add tox1 as friend.\n");
-    tox_callback_friend_request(autotoxes[0].tox, accept_friend_request);
+    tox_events_callback_friend_request(autotoxes[0].dispatch, accept_friend_request);
 
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(autotoxes[0].tox, address);

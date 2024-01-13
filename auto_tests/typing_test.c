@@ -17,10 +17,14 @@ typedef struct State {
 
 #include "auto_test_support.h"
 
-static void typing_callback(Tox *m, uint32_t friendnumber, bool typing, void *user_data)
+static void typing_callback(Tox *m, const Tox_Event_Friend_Typing *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
     State *state = (State *)autotox->state;
+
+    //const uint32_t friend_number = tox_event_friend_typing_get_friend_number(event);
+    const bool typing = tox_event_friend_typing_get_typing(event);
+
     state->friend_is_typing = typing;
 }
 
@@ -28,7 +32,7 @@ static void test_typing(AutoTox *autotoxes)
 {
     time_t cur_time = time(nullptr);
 
-    tox_callback_friend_typing(autotoxes[1].tox, &typing_callback);
+    tox_events_callback_friend_typing(autotoxes[1].dispatch, &typing_callback);
     tox_self_set_typing(autotoxes[0].tox, 0, true, nullptr);
 
     do {

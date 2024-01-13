@@ -32,16 +32,22 @@
 #endif
 #define TCP_RELAY_PORT 33431
 
-static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+static void accept_friend_request(Tox *m, const Tox_Event_Friend_Request *event, void *userdata)
 {
-    if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
+    const uint8_t *public_key = tox_event_friend_request_get_public_key(event);
+    const uint8_t *message = tox_event_friend_request_get_message(event);
+    uint32_t message_length = tox_event_friend_request_get_message_length(event);
+
+    if (message_length == 7 && memcmp("Gentoo", message, 7) == 0) {
         tox_friend_add_norequest(m, public_key, nullptr);
     }
 }
 
 static unsigned int connected_t1;
-static void tox_connection_status(Tox *tox, Tox_Connection connection_status, void *user_data)
+static void tox_connection_status(Tox *tox, const Tox_Event_Self_Connection_Status *event, void *user_data)
 {
+    const Tox_Connection connection_status = tox_event_self_connection_status_get_connection_status(event);
+
     if (connected_t1 && !connection_status) {
         ck_abort_msg("Tox went offline");
     }
@@ -147,6 +153,9 @@ static void test_few_clients(void)
     Tox *tox1 = tox_new_log(opts1, &t_n_error, &index[0]);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "Failed to create tox instance: %d", t_n_error);
     tox_options_free(opts1);
+    tox_events_init(tox1);
+    Tox_Dispatch* dispatch1 = tox_dispatch_new(nullptr);
+    ck_assert(dispatch1 != nullptr);
 
     struct Tox_Options *opts2 = tox_options_new(nullptr);
     tox_options_set_ipv6_enabled(opts2, USE_IPV6);
@@ -154,6 +163,9 @@ static void test_few_clients(void)
     tox_options_set_local_discovery_enabled(opts2, false);
     Tox *tox2 = tox_new_log(opts2, &t_n_error, &index[1]);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "Failed to create tox instance: %d", t_n_error);
+    tox_events_init(tox2);
+    Tox_Dispatch* dispatch2 = tox_dispatch_new(nullptr);
+    ck_assert(dispatch2 != nullptr);
 
     struct Tox_Options *opts3 = tox_options_new(nullptr);
     tox_options_set_ipv6_enabled(opts3, USE_IPV6);
@@ -183,8 +195,8 @@ static void test_few_clients(void)
     tox_bootstrap(tox3, "localhost", dht_port, dht_key, nullptr);
 
     connected_t1 = 0;
-    tox_callback_self_connection_status(tox1, tox_connection_status);
-    tox_callback_friend_request(tox2, accept_friend_request);
+    tox_events_callback_self_connection_status(dispatch1, tox_connection_status);
+    tox_events_callback_friend_request(dispatch2, accept_friend_request);
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address);
     uint32_t test = tox_friend_add(tox3, address, (const uint8_t *)"Gentoo", 7, nullptr);
@@ -193,8 +205,20 @@ static void test_few_clients(void)
     uint8_t off = 1;
 
     while (true) {
-        tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, nullptr);
+        {
+            Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
+            Tox_Events *events = tox_events_iterate(tox1, true, &err);
+            ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
+            tox_dispatch_invoke(dispatch1, events, tox1, nullptr);
+            tox_events_free(events);
+        }
+        {
+            Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
+            Tox_Events *events = tox_events_iterate(tox2, true, &err);
+            ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
+            tox_dispatch_invoke(dispatch2, events, tox2, nullptr);
+            tox_events_free(events);
+        }
         tox_iterate(tox3, nullptr);
 
         if (tox_self_get_connection_status(tox1) && tox_self_get_connection_status(tox2)
@@ -220,9 +244,10 @@ static void test_few_clients(void)
 
     // We're done with this callback, so unset it to ensure we don't fail the
     // test if tox1 goes offline while tox2 and 3 are reloaded.
-    tox_callback_self_connection_status(tox1, nullptr);
+    tox_events_callback_self_connection_status(dispatch1, nullptr);
 
     reload_tox(&tox2, opts2, &index[1]);
+    tox_events_init(tox2);
 
     reload_tox(&tox3, opts3, &index[2]);
 
@@ -231,8 +256,20 @@ static void test_few_clients(void)
     off = 1;
 
     while (true) {
-        tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, nullptr);
+        {
+            Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
+            Tox_Events *events = tox_events_iterate(tox1, true, &err);
+            ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
+            tox_dispatch_invoke(dispatch1, events, tox1, nullptr);
+            tox_events_free(events);
+        }
+        {
+            Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
+            Tox_Events *events = tox_events_iterate(tox2, true, &err);
+            ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
+            tox_dispatch_invoke(dispatch2, events, tox2, nullptr);
+            tox_events_free(events);
+        }
         tox_iterate(tox3, nullptr);
 
         if (tox_self_get_connection_status(tox1) && tox_self_get_connection_status(tox2)
@@ -256,6 +293,9 @@ static void test_few_clients(void)
     printf("tox clients connected took %lu seconds\n", (unsigned long)(time(nullptr) - con_time));
 
     printf("test_few_clients succeeded, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
+
+    tox_dispatch_free(dispatch1);
+    tox_dispatch_free(dispatch2);
 
     tox_kill(tox1);
     tox_kill(tox2);

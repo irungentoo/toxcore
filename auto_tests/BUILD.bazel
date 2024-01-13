@@ -17,6 +17,8 @@ cc_library(
         "//c-toxcore/toxcore:Messenger",
         "//c-toxcore/toxcore:mono_time",
         "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_dispatch",
+        "//c-toxcore/toxcore:tox_events",
     ],
 )
 

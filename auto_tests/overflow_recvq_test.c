@@ -11,9 +11,13 @@ typedef struct State {
 
 #define NUM_MSGS 40000
 
-static void handle_friend_message(Tox *tox, uint32_t friend_number, Tox_Message_Type type,
-                                  const uint8_t *message, size_t length, void *user_data)
+static void handle_friend_message(Tox *tox, const Tox_Event_Friend_Message *event, void *user_data)
 {
+    //const uint32_t friend_number = tox_event_friend_message_get_friend_number(event);
+    //const Tox_Message_Type type = tox_event_friend_message_get_type(event);
+    //const uint8_t *message = tox_event_friend_message_get_message(event);
+    //const uint32_t message_length = tox_event_friend_message_get_message_length(event);
+
     const AutoTox *autotox = (AutoTox *)user_data;
     State *state = (State *)autotox->state;
     state->recv_count++;
@@ -21,7 +25,7 @@ static void handle_friend_message(Tox *tox, uint32_t friend_number, Tox_Message_
 
 static void net_crypto_overflow_test(AutoTox *autotoxes)
 {
-    tox_callback_friend_message(autotoxes[0].tox, handle_friend_message);
+    tox_events_callback_friend_message(autotoxes[0].dispatch, handle_friend_message);
 
     printf("sending many messages to tox0\n");
 

@@ -51,12 +51,14 @@ static bool group_has_full_graph(const AutoTox *autotoxes, uint32_t group_number
     return true;
 }
 
-static void group_join_fail_handler(Tox *tox, uint32_t group_number, Tox_Group_Join_Fail fail_type, void *user_data)
+static void group_join_fail_handler(Tox *tox, const Tox_Event_Group_Join_Fail *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
 
     State *state = (State *)autotox->state;
+
+    const Tox_Group_Join_Fail fail_type = tox_event_group_join_fail_get_fail_type(event);
 
     switch (fail_type) {
         case TOX_GROUP_JOIN_FAIL_PEER_LIMIT: {
@@ -79,7 +81,7 @@ static void group_join_fail_handler(Tox *tox, uint32_t group_number, Tox_Group_J
     }
 }
 
-static void group_self_join_handler(Tox *tox, uint32_t group_number, void *user_data)
+static void group_self_join_handler(Tox *tox, const Tox_Event_Group_Self_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -89,7 +91,7 @@ static void group_self_join_handler(Tox *tox, uint32_t group_number, void *user_
     state->connected = true;
 }
 
-static void group_peer_join_handler(Tox *tox, uint32_t group_number, uint32_t peer_id, void *user_data)
+static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -105,9 +107,9 @@ static void group_invite_test(AutoTox *autotoxes)
     ck_assert_msg(NUM_GROUP_TOXES > 7, "NUM_GROUP_TOXES is too small: %d", NUM_GROUP_TOXES);
 
     for (size_t i = 0; i < NUM_GROUP_TOXES; ++i) {
-        tox_callback_group_peer_join(autotoxes[i].tox, group_peer_join_handler);
-        tox_callback_group_join_fail(autotoxes[i].tox, group_join_fail_handler);
-        tox_callback_group_self_join(autotoxes[i].tox, group_self_join_handler);
+        tox_events_callback_group_peer_join(autotoxes[i].dispatch, group_peer_join_handler);
+        tox_events_callback_group_join_fail(autotoxes[i].dispatch, group_join_fail_handler);
+        tox_events_callback_group_self_join(autotoxes[i].dispatch, group_self_join_handler);
     }
 
     Tox *tox0 = autotoxes[0].tox;

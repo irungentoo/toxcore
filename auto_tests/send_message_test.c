@@ -14,11 +14,14 @@ typedef struct State {
 #define MESSAGE_FILLER 'G'
 
 static void message_callback(
-    Tox *m, uint32_t friendnumber, Tox_Message_Type type,
-    const uint8_t *string, size_t length, void *user_data)
+    Tox *m, const Tox_Event_Friend_Message *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
     State *state = (State *)autotox->state;
+
+    const Tox_Message_Type type = tox_event_friend_message_get_type(event);
+    const uint8_t *string = tox_event_friend_message_get_message(event);
+    const uint32_t length = tox_event_friend_message_get_message_length(event);
 
     if (type != TOX_MESSAGE_TYPE_NORMAL) {
         ck_abort_msg("Bad type");
@@ -38,7 +41,7 @@ static void message_callback(
 
 static void send_message_test(AutoTox *autotoxes)
 {
-    tox_callback_friend_message(autotoxes[1].tox, &message_callback);
+    tox_events_callback_friend_message(autotoxes[1].dispatch, &message_callback);
 
     const size_t msgs_len = tox_max_message_length() + 1;
     uint8_t *msgs = (uint8_t *)malloc(msgs_len);

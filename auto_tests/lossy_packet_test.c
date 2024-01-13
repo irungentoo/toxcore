@@ -18,13 +18,17 @@ typedef struct State {
 
 #define LOSSY_PACKET_FILLER 200
 
-static void handle_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length, void *user_data)
+static void handle_lossy_packet(Tox *tox, const Tox_Event_Friend_Lossy_Packet *event, void *user_data)
 {
+    //const uint32_t friend_number = tox_event_friend_lossy_packet_get_friend_number(event);
+    const uint8_t *data = tox_event_friend_lossy_packet_get_data(event);
+    const uint32_t data_length = tox_event_friend_lossy_packet_get_data_length(event);
+
     uint8_t *cmp_packet = (uint8_t *)malloc(tox_max_custom_packet_size());
     ck_assert(cmp_packet != nullptr);
     memset(cmp_packet, LOSSY_PACKET_FILLER, tox_max_custom_packet_size());
 
-    if (length == tox_max_custom_packet_size() && memcmp(data, cmp_packet, tox_max_custom_packet_size()) == 0) {
+    if (data_length == tox_max_custom_packet_size() && memcmp(data, cmp_packet, tox_max_custom_packet_size()) == 0) {
         const AutoTox *autotox = (AutoTox *)user_data;
         State *state = (State *)autotox->state;
         state->custom_packet_received = true;
@@ -35,7 +39,7 @@ static void handle_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_t 
 
 static void test_lossy_packet(AutoTox *autotoxes)
 {
-    tox_callback_friend_lossy_packet(autotoxes[1].tox, &handle_lossy_packet);
+    tox_events_callback_friend_lossy_packet(autotoxes[1].dispatch, &handle_lossy_packet);
     const size_t packet_size = tox_max_custom_packet_size() + 1;
     uint8_t *packet = (uint8_t *)malloc(packet_size);
     ck_assert(packet != nullptr);

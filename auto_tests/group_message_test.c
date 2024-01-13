@@ -71,9 +71,12 @@ static uint16_t get_message_checksum(const uint8_t *message, uint16_t length)
     return sum;
 }
 
-static void group_invite_handler(Tox *tox, uint32_t friend_number, const uint8_t *invite_data, size_t length,
-                                 const uint8_t *group_name, size_t group_name_length, void *user_data)
+static void group_invite_handler(Tox *tox, const Tox_Event_Group_Invite *event, void *user_data)
 {
+    const uint32_t friend_number = tox_event_group_invite_get_friend_number(event);
+    const uint8_t *invite_data = tox_event_group_invite_get_invite_data(event);
+    const size_t length = tox_event_group_invite_get_invite_data_length(event);
+
     printf("invite arrived; accepting\n");
     Tox_Err_Group_Invite_Accept err_accept;
     tox_group_invite_accept(tox, friend_number, invite_data, length, (const uint8_t *)PEER0_NICK, PEER0_NICK_LEN,
@@ -81,17 +84,20 @@ static void group_invite_handler(Tox *tox, uint32_t friend_number, const uint8_t
     ck_assert(err_accept == TOX_ERR_GROUP_INVITE_ACCEPT_OK);
 }
 
-static void group_join_fail_handler(Tox *tox, uint32_t groupnumber, Tox_Group_Join_Fail fail_type, void *user_data)
+static void group_join_fail_handler(Tox *tox, const Tox_Event_Group_Join_Fail *event, void *user_data)
 {
+    const Tox_Group_Join_Fail fail_type = tox_event_group_join_fail_get_fail_type(event);
     printf("join failed: %d\n", fail_type);
 }
 
-static void group_peer_join_handler(Tox *tox, uint32_t groupnumber, uint32_t peer_id, void *user_data)
+static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
 
     State *state = (State *)autotox->state;
+
+    const uint32_t peer_id = tox_event_group_peer_join_get_peer_id(event);
 
     ck_assert_msg(state->peer_joined == false, "Peer timedout");
 
@@ -100,9 +106,13 @@ static void group_peer_join_handler(Tox *tox, uint32_t groupnumber, uint32_t pee
     state->peer_id = peer_id;
 }
 
-static void group_custom_private_packet_handler(Tox *tox, uint32_t groupnumber, uint32_t peer_id, const uint8_t *data,
-        size_t length, void *user_data)
+static void group_custom_private_packet_handler(Tox *tox, const Tox_Event_Group_Custom_Private_Packet *event, void *user_data)
 {
+    const uint32_t groupnumber = tox_event_group_custom_private_packet_get_group_number(event);
+    const uint32_t peer_id = tox_event_group_custom_private_packet_get_peer_id(event);
+    const uint8_t *data = tox_event_group_custom_private_packet_get_data(event);
+    const size_t length = tox_event_group_custom_private_packet_get_data_length(event);
+
     ck_assert_msg(length == TEST_CUSTOM_PRIVATE_PACKET_LEN,
                   "Failed to receive custom private packet. Invalid length: %zu\n", length);
 
@@ -146,9 +156,13 @@ static void group_custom_private_packet_handler(Tox *tox, uint32_t groupnumber, 
     ++state->custom_private_packets_received;
 }
 
-static void group_custom_packet_handler(Tox *tox, uint32_t groupnumber, uint32_t peer_id, const uint8_t *data,
-                                        size_t length, void *user_data)
+static void group_custom_packet_handler(Tox *tox, const Tox_Event_Group_Custom_Packet *event, void *user_data)
 {
+    const uint32_t groupnumber = tox_event_group_custom_packet_get_group_number(event);
+    const uint32_t peer_id = tox_event_group_custom_packet_get_peer_id(event);
+    const uint8_t *data = tox_event_group_custom_packet_get_data(event);
+    const size_t length = tox_event_group_custom_packet_get_data_length(event);
+
     ck_assert_msg(length == TEST_CUSTOM_PACKET_LEN, "Failed to receive custom packet. Invalid length: %zu\n", length);
 
     char message_buf[TOX_MAX_CUSTOM_PACKET_SIZE + 1];
@@ -191,9 +205,11 @@ static void group_custom_packet_handler(Tox *tox, uint32_t groupnumber, uint32_t
     ++state->custom_packets_received;
 }
 
-static void group_custom_packet_large_handler(Tox *tox, uint32_t groupnumber, uint32_t peer_id, const uint8_t *data,
-                                        size_t length, void *user_data)
+static void group_custom_packet_large_handler(Tox *tox, const Tox_Event_Group_Custom_Packet *event, void *user_data)
 {
+    const uint8_t *data = tox_event_group_custom_packet_get_data(event);
+    const size_t length = tox_event_group_custom_packet_get_data_length(event);
+
     ck_assert_msg(length == TEST_CUSTOM_PACKET_LARGE_LEN, "Failed to receive large custom packet. Invalid length: %zu\n", length);
 
     ck_assert(memcmp(data, TEST_CUSTOM_PACKET_LARGE, length) == 0);
@@ -206,9 +222,14 @@ static void group_custom_packet_large_handler(Tox *tox, uint32_t groupnumber, ui
     ++state->custom_packets_received;
 }
 
-static void group_message_handler(Tox *tox, uint32_t groupnumber, uint32_t peer_id, TOX_MESSAGE_TYPE type,
-                                  const uint8_t *message, size_t length, uint32_t pseudo_msg_id, void *user_data)
+static void group_message_handler(Tox *tox, const Tox_Event_Group_Message *event, void *user_data)
 {
+    const uint32_t groupnumber = tox_event_group_message_get_group_number(event);
+    const uint32_t peer_id = tox_event_group_message_get_peer_id(event);
+    const uint8_t *message = tox_event_group_message_get_message(event);
+    const size_t length = tox_event_group_message_get_message_length(event);
+    const uint32_t pseudo_msg_id = tox_event_group_message_get_message_id(event);
+
     ck_assert(!(length == IGNORE_MESSAGE_LEN && memcmp(message, IGNORE_MESSAGE, length) == 0));
     ck_assert_msg(length == TEST_MESSAGE_LEN, "Failed to receive message. Invalid length: %zu\n", length);
 
@@ -254,9 +275,14 @@ static void group_message_handler(Tox *tox, uint32_t groupnumber, uint32_t peer_
     state->pseudo_msg_id = pseudo_msg_id;
 }
 
-static void group_private_message_handler(Tox *tox, uint32_t groupnumber, uint32_t peer_id, TOX_MESSAGE_TYPE type,
-        const uint8_t *message, size_t length, void *user_data)
+static void group_private_message_handler(Tox *tox, const Tox_Event_Group_Private_Message *event, void *user_data)
 {
+    const uint32_t groupnumber = tox_event_group_private_message_get_group_number(event);
+    const uint32_t peer_id = tox_event_group_private_message_get_peer_id(event);
+    const Tox_Message_Type type = tox_event_group_private_message_get_type(event);
+    const uint8_t *message = tox_event_group_private_message_get_message(event);
+    const size_t length = tox_event_group_private_message_get_message_length(event);
+
     ck_assert_msg(length == TEST_PRIVATE_MESSAGE_LEN, "Failed to receive message. Invalid length: %zu\n", length);
 
     char message_buf[TOX_GROUP_MAX_MESSAGE_LENGTH + 1];
@@ -301,9 +327,11 @@ static void group_private_message_handler(Tox *tox, uint32_t groupnumber, uint32
     state->private_message_received = true;
 }
 
-static void group_message_handler_lossless_test(Tox *tox, uint32_t groupnumber, uint32_t peer_id, TOX_MESSAGE_TYPE type,
-        const uint8_t *message, size_t length, uint32_t pseudo_msg_id, void *user_data)
+static void group_message_handler_lossless_test(Tox *tox, const Tox_Event_Group_Message *event, void *user_data)
 {
+    const uint8_t *message = tox_event_group_message_get_message(event);
+    const size_t length = tox_event_group_message_get_message_length(event);
+
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
 
@@ -325,10 +353,11 @@ static void group_message_handler_lossless_test(Tox *tox, uint32_t groupnumber, 
         state->lossless_check = true;
     }
 }
-static void group_message_handler_wraparound_test(Tox *tox, uint32_t groupnumber, uint32_t peer_id,
-        TOX_MESSAGE_TYPE type,
-        const uint8_t *message, size_t length, uint32_t pseudo_msg_id, void *user_data)
+static void group_message_handler_wraparound_test(Tox *tox, const Tox_Event_Group_Message *event, void *user_data)
 {
+    const uint8_t *message = tox_event_group_message_get_message(event);
+    const size_t length = tox_event_group_message_get_message_length(event);
+
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
 
@@ -365,15 +394,15 @@ static void group_message_test(AutoTox *autotoxes)
     state0->pseudo_msg_id = 0;
     state1->pseudo_msg_id = 1;
 
-    tox_callback_group_invite(tox1, group_invite_handler);
-    tox_callback_group_join_fail(tox1, group_join_fail_handler);
-    tox_callback_group_peer_join(tox1, group_peer_join_handler);
-    tox_callback_group_join_fail(tox0, group_join_fail_handler);
-    tox_callback_group_peer_join(tox0, group_peer_join_handler);
-    tox_callback_group_message(tox0, group_message_handler);
-    tox_callback_group_custom_packet(tox0, group_custom_packet_handler);
-    tox_callback_group_custom_private_packet(tox0, group_custom_private_packet_handler);
-    tox_callback_group_private_message(tox0, group_private_message_handler);
+    tox_events_callback_group_invite(autotoxes[1].dispatch, group_invite_handler);
+    tox_events_callback_group_join_fail(autotoxes[1].dispatch, group_join_fail_handler);
+    tox_events_callback_group_peer_join(autotoxes[1].dispatch, group_peer_join_handler);
+    tox_events_callback_group_join_fail(autotoxes[0].dispatch, group_join_fail_handler);
+    tox_events_callback_group_peer_join(autotoxes[0].dispatch, group_peer_join_handler);
+    tox_events_callback_group_message(autotoxes[0].dispatch, group_message_handler);
+    tox_events_callback_group_custom_packet(autotoxes[0].dispatch, group_custom_packet_handler);
+    tox_events_callback_group_custom_private_packet(autotoxes[0].dispatch, group_custom_private_packet_handler);
+    tox_events_callback_group_private_message(autotoxes[0].dispatch, group_private_message_handler);
 
     Tox_Err_Group_Send_Message err_send;
 
@@ -472,7 +501,7 @@ static void group_message_test(AutoTox *autotoxes)
     // tox0 sends a large max sized lossy custom packet
 
     // overwrite callback for larger packet
-    tox_callback_group_custom_packet(tox0, group_custom_packet_large_handler);
+    tox_events_callback_group_custom_packet(autotoxes[0].dispatch, group_custom_packet_large_handler);
 
     tox_group_send_custom_packet(tox1, group_number, false, (const uint8_t *)TEST_CUSTOM_PACKET_LARGE, TEST_CUSTOM_PACKET_LARGE_LEN,
                                  &c_err);
@@ -486,7 +515,7 @@ static void group_message_test(AutoTox *autotoxes)
 
     fprintf(stderr, "Doing lossless packet test...\n");
 
-    tox_callback_group_message(tox1, group_message_handler_lossless_test);
+    tox_events_callback_group_message(autotoxes[1].dispatch, group_message_handler_lossless_test);
     state1->last_msg_recv = -1;
 
     // lossless and packet splitting/reassembly test
@@ -517,7 +546,7 @@ static void group_message_test(AutoTox *autotoxes)
     }
 
     state1->last_msg_recv = -1;
-    tox_callback_group_message(tox1, group_message_handler_wraparound_test);
+    tox_events_callback_group_message(autotoxes[1].dispatch, group_message_handler_wraparound_test);
 
     fprintf(stderr, "Doing wraparound test...\n");
 

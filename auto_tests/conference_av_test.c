@@ -23,10 +23,11 @@ typedef struct State {
 } State;
 
 static void handle_self_connection_status(
-    Tox *tox, Tox_Connection connection_status, void *user_data)
+    Tox *tox, const Tox_Event_Self_Connection_Status *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
 
+    const Tox_Connection connection_status = tox_event_self_connection_status_get_connection_status(event);
     if (connection_status != TOX_CONNECTION_NONE) {
         printf("tox #%u: is now connected\n", autotox->index);
     } else {
@@ -35,9 +36,12 @@ static void handle_self_connection_status(
 }
 
 static void handle_friend_connection_status(
-    Tox *tox, uint32_t friendnumber, Tox_Connection connection_status, void *user_data)
+    Tox *tox, const Tox_Event_Friend_Connection_Status *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
+
+    const uint32_t friendnumber = tox_event_friend_connection_status_get_friend_number(event);
+    const Tox_Connection connection_status = tox_event_friend_connection_status_get_connection_status(event);
 
     if (connection_status != TOX_CONNECTION_NONE) {
         printf("tox #%u: is now connected to friend %u\n", autotox->index, friendnumber);
@@ -70,18 +74,23 @@ static void audio_callback(void *tox, uint32_t groupnumber, uint32_t peernumber,
 }
 
 static void handle_conference_invite(
-    Tox *tox, uint32_t friendnumber, Tox_Conference_Type type,
-    const uint8_t *data, size_t length, void *user_data)
+    Tox *tox, const Tox_Event_Conference_Invite *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
+
+    const uint32_t friend_number = tox_event_conference_invite_get_friend_number(event);
+    const Tox_Conference_Type type = tox_event_conference_invite_get_type(event);
+    const uint8_t *cookie = tox_event_conference_invite_get_cookie(event);
+    const size_t length = tox_event_conference_invite_get_cookie_length(event);
+
     ck_assert_msg(type == TOX_CONFERENCE_TYPE_AV, "tox #%u: wrong conference type: %d", autotox->index, type);
 
-    ck_assert_msg(toxav_join_av_groupchat(tox, friendnumber, data, length, audio_callback, user_data) == 0,
+    ck_assert_msg(toxav_join_av_groupchat(tox, friend_number, cookie, length, audio_callback, user_data) == 0,
                   "tox #%u: failed to join group", autotox->index);
 }
 
 static void handle_conference_connected(
-    Tox *tox, uint32_t conference_number, void *user_data)
+    Tox *tox, const Tox_Event_Conference_Connected *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
     State *state = (State *)autotox->state;
@@ -138,7 +147,10 @@ static void disconnect_toxes(uint32_t tox_count, AutoTox *autotoxes,
         do {
             for (uint32_t i = 0; i < tox_count; ++i) {
                 if (!disconnect_now[i]) {
-                    tox_iterate(autotoxes[i].tox, &autotoxes[i]);
+                    Tox_Err_Events_Iterate err;
+                    Tox_Events *events = tox_events_iterate(autotoxes[i].tox, true, &err);
+                    tox_dispatch_invoke(autotoxes[i].dispatch, events, autotoxes[i].tox, &autotoxes[i]);
+                    tox_events_free(events);
                     autotoxes[i].clock += 1000;
                 }
             }
@@ -402,10 +414,10 @@ static void test_groupav(AutoTox *autotoxes)
     const time_t test_start_time = time(nullptr);
 
     for (uint32_t i = 0; i < NUM_AV_GROUP_TOX; ++i) {
-        tox_callback_self_connection_status(autotoxes[i].tox, &handle_self_connection_status);
-        tox_callback_friend_connection_status(autotoxes[i].tox, &handle_friend_connection_status);
-        tox_callback_conference_invite(autotoxes[i].tox, &handle_conference_invite);
-        tox_callback_conference_connected(autotoxes[i].tox, &handle_conference_connected);
+        tox_events_callback_self_connection_status(autotoxes[i].dispatch, handle_self_connection_status);
+        tox_events_callback_friend_connection_status(autotoxes[i].dispatch, handle_friend_connection_status);
+        tox_events_callback_conference_invite(autotoxes[i].dispatch, handle_conference_invite);
+        tox_events_callback_conference_connected(autotoxes[i].dispatch, handle_conference_connected);
     }
 
     ck_assert_msg(toxav_add_av_groupchat(autotoxes[0].tox, audio_callback, &autotoxes[0]) != UINT32_MAX,

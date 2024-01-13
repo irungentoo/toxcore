@@ -156,17 +156,21 @@ static size_t get_state_index_by_nick(const AutoTox *autotoxes, size_t num_peers
     ck_assert_msg(0, "Failed to find index");
 }
 
-static void group_join_fail_handler(Tox *tox, uint32_t group_number, Tox_Group_Join_Fail fail_type, void *user_data)
+static void group_join_fail_handler(Tox *tox, const Tox_Event_Group_Join_Fail *event, void *user_data)
 {
+    const Tox_Group_Join_Fail fail_type = tox_event_group_join_fail_get_fail_type(event);
     fprintf(stderr, "Failed to join group: %d", fail_type);
 }
 
-static void group_peer_join_handler(Tox *tox, uint32_t group_number, uint32_t peer_id, void *user_data)
+static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
 
     State *state = (State *)autotox->state;
+
+    const uint32_t group_number = tox_event_group_peer_join_get_group_number(event);
+    const uint32_t peer_id = tox_event_group_peer_join_get_peer_id(event);
 
     ck_assert(state->group_number == group_number);
 
@@ -243,13 +247,16 @@ static void handle_user(State *state, const char *peer_name, size_t peer_name_le
     state->user_check = true;
 }
 
-static void group_mod_event_handler(Tox *tox, uint32_t group_number, uint32_t source_peer_id, uint32_t target_peer_id,
-                                    Tox_Group_Mod_Event mod_type, void *user_data)
+static void group_mod_event_handler(Tox *tox, const Tox_Event_Group_Moderation *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
 
     State *state = (State *)autotox->state;
+
+    const uint32_t group_number = tox_event_group_moderation_get_group_number(event);
+    const uint32_t target_peer_id = tox_event_group_moderation_get_target_peer_id(event);
+    const Tox_Group_Mod_Event mod_type = tox_event_group_moderation_get_mod_type(event);
 
     ck_assert(state->group_number == group_number);
 
@@ -445,9 +452,9 @@ static void group_moderation_test(AutoTox *autotoxes)
         snprintf(state->self_name, sizeof(state->self_name), "peer_%zu", i);
         state->self_name[name_length] = 0;
 
-        tox_callback_group_join_fail(autotoxes[i].tox, group_join_fail_handler);
-        tox_callback_group_peer_join(autotoxes[i].tox, group_peer_join_handler);
-        tox_callback_group_moderation(autotoxes[i].tox, group_mod_event_handler);
+        tox_events_callback_group_join_fail(autotoxes[i].dispatch, group_join_fail_handler);
+        tox_events_callback_group_peer_join(autotoxes[i].dispatch, group_peer_join_handler);
+        tox_events_callback_group_moderation(autotoxes[i].dispatch, group_mod_event_handler);
     }
 
     iterate_all_wait(autotoxes, NUM_GROUP_TOXES, ITERATION_INTERVAL);

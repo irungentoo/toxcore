@@ -15,9 +15,13 @@
 
 #define STATUS_MESSAGE "Installing Gentoo"
 
-static void status_callback(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length, void *user_data)
+static void status_callback(Tox *tox, const Tox_Event_Friend_Status_Message *event, void *user_data)
 {
-    ck_assert_msg(length == sizeof(STATUS_MESSAGE) &&
+    //uint32_t friend_number = tox_event_friend_status_message_get_friend_number(event);
+    const uint8_t *message = tox_event_friend_status_message_get_message(event);
+    uint32_t message_length = tox_event_friend_status_message_get_message_length(event);
+
+    ck_assert_msg(message_length == sizeof(STATUS_MESSAGE) &&
                   memcmp(message, STATUS_MESSAGE, sizeof(STATUS_MESSAGE)) == 0,
                   "incorrect data in status callback");
     bool *status_updated = (bool *)user_data;
@@ -33,6 +37,12 @@ static void test_set_status_message(void)
     Tox *const tox2 = tox_new_log(nullptr, nullptr, &index[1]);
 
     ck_assert_msg(tox1 && tox2, "failed to create 2 tox instances");
+
+    // we only run events on tox2 in this test case
+    tox_events_init(tox2);
+
+    Tox_Dispatch *dispatch2 = tox_dispatch_new(nullptr);
+    ck_assert(dispatch2 != nullptr);
 
     printf("tox1 adds tox2 as friend, tox2 adds tox1\n");
     uint8_t public_key[TOX_PUBLIC_KEY_SIZE];
@@ -50,7 +60,12 @@ static void test_set_status_message(void)
 
     do {
         tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, nullptr);
+
+        Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
+        Tox_Events *events = tox_events_iterate(tox2, true, &err);
+        ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
+        //tox_dispatch_invoke(dispatch2, events, tox2, nullptr);
+        tox_events_free(events);
 
         c_sleep(ITERATION_INTERVAL);
     } while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
@@ -61,7 +76,12 @@ static void test_set_status_message(void)
 
     do {
         tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, nullptr);
+
+        Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
+        Tox_Events *events = tox_events_iterate(tox2, true, &err);
+        ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
+        //tox_dispatch_invoke(dispatch2, events, tox2, nullptr);
+        tox_events_free(events);
 
         c_sleep(ITERATION_INTERVAL);
     } while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
@@ -69,8 +89,8 @@ static void test_set_status_message(void)
 
     printf("tox clients connected took %lu seconds\n", (unsigned long)(time(nullptr) - con_time));
 
+    tox_events_callback_friend_status_message(dispatch2, status_callback);
     Tox_Err_Set_Info err_n;
-    tox_callback_friend_status_message(tox2, status_callback);
     bool ret = tox_self_set_status_message(tox1, (const uint8_t *)STATUS_MESSAGE, sizeof(STATUS_MESSAGE),
                                            &err_n);
     ck_assert_msg(ret && err_n == TOX_ERR_SET_INFO_OK, "tox_self_set_status_message failed because %d\n", err_n);
@@ -79,7 +99,13 @@ static void test_set_status_message(void)
 
     do {
         tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, &status_updated);
+
+        Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
+        Tox_Events *events = tox_events_iterate(tox2, true, &err);
+        ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
+        tox_dispatch_invoke(dispatch2, events, tox2, &status_updated);
+        tox_events_free(events);
+
         c_sleep(ITERATION_INTERVAL);
     } while (!status_updated);
 
@@ -91,6 +117,8 @@ static void test_set_status_message(void)
                   "status message not correct");
 
     printf("test_set_status_message succeeded, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
+
+    tox_dispatch_free(dispatch2);
 
     tox_kill(tox1);
     tox_kill(tox2);

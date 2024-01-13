@@ -55,8 +55,11 @@ static bool all_group_peers_connected(const AutoTox *autotoxes, uint32_t tox_cou
     return true;
 }
 
-static void group_peer_join_handler(Tox *tox, uint32_t groupnumber, uint32_t peer_id, void *user_data)
+static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
+    //const uint32_t group_number = tox_event_group_peer_join_get_group_number(event);
+    const uint32_t peer_id = tox_event_group_peer_join_get_peer_id(event);
+
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
 
@@ -65,26 +68,33 @@ static void group_peer_join_handler(Tox *tox, uint32_t groupnumber, uint32_t pee
     state->peer_id = peer_id;
 }
 
-static void group_topic_handler(Tox *tox, uint32_t groupnumber, uint32_t peer_id, const uint8_t *topic,
-                                size_t length, void *user_data)
+static void group_topic_handler(Tox *tox, const Tox_Event_Group_Topic *event, void *user_data)
 {
-    ck_assert(length <= TOX_GROUP_MAX_TOPIC_LENGTH);
+    const uint32_t group_number = tox_event_group_topic_get_group_number(event);
+    //const uint32_t peer_id = tox_event_group_topic_get_peer_id(event);
+    const uint8_t *topic = tox_event_group_topic_get_topic(event);
+    const uint32_t topic_length = tox_event_group_topic_get_topic_length(event);
+
+    ck_assert(topic_length <= TOX_GROUP_MAX_TOPIC_LENGTH);
 
     Tox_Err_Group_State_Queries query_err;
     uint8_t topic2[TOX_GROUP_MAX_TOPIC_LENGTH];
-    tox_group_get_topic(tox, groupnumber, topic2, &query_err);
+    tox_group_get_topic(tox, group_number, topic2, &query_err);
     ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
 
-    size_t topic_length = tox_group_get_topic_size(tox, groupnumber, &query_err);
+    size_t topic_length_getter = tox_group_get_topic_size(tox, group_number, &query_err);
     ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
-    ck_assert_msg(topic_length == length && memcmp(topic, topic2, length) == 0,
+    ck_assert_msg(topic_length_getter == topic_length && memcmp(topic, topic2, topic_length) == 0,
                   "topic differs in callback: %s, %s", topic, topic2);
 }
 
-static void group_topic_lock_handler(Tox *tox, uint32_t groupnumber, Tox_Group_Topic_Lock topic_lock, void *user_data)
+static void group_topic_lock_handler(Tox *tox, const Tox_Event_Group_Topic_Lock *event, void *user_data)
 {
+    const uint32_t group_number = tox_event_group_topic_lock_get_group_number(event);
+    const Tox_Group_Topic_Lock topic_lock = tox_event_group_topic_lock_get_topic_lock(event);
+
     Tox_Err_Group_State_Queries err;
-    Tox_Group_Topic_Lock current_lock = tox_group_get_topic_lock(tox, groupnumber, &err);
+    Tox_Group_Topic_Lock current_lock = tox_group_get_topic_lock(tox, group_number, &err);
 
     ck_assert(err == TOX_ERR_GROUP_STATE_QUERIES_OK);
     ck_assert_msg(topic_lock == current_lock, "topic locks differ in callback");
@@ -209,13 +219,14 @@ static void group_topic_test(AutoTox *autotoxes)
     ck_assert(rng != nullptr);
 
     Tox *tox0 = autotoxes[0].tox;
+    Tox_Dispatch *dispatch0 = autotoxes[0].dispatch;
     const State *state0 = (const State *)autotoxes[0].state;
 
-    tox_callback_group_peer_join(tox0, group_peer_join_handler);
+    tox_events_callback_group_peer_join(dispatch0, group_peer_join_handler);
 
     for (size_t i = 0; i < NUM_GROUP_TOXES; ++i) {
-        tox_callback_group_topic(autotoxes[i].tox, group_topic_handler);
-        tox_callback_group_topic_lock(autotoxes[i].tox, group_topic_lock_handler);
+        tox_events_callback_group_topic(autotoxes[i].dispatch, group_topic_handler);
+        tox_events_callback_group_topic_lock(autotoxes[i].dispatch, group_topic_lock_handler);
     }
 
     /* Tox1 creates a group and is the founder of a newly created group */

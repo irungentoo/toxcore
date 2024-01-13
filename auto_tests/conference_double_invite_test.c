@@ -12,11 +12,15 @@ typedef struct State {
 #include "auto_test_support.h"
 
 static void handle_conference_invite(
-    Tox *tox, uint32_t friend_number, Tox_Conference_Type type,
-    const uint8_t *cookie, size_t length, void *user_data)
+    Tox *tox, const Tox_Event_Conference_Invite *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
     State *state = (State *)autotox->state;
+
+    const uint32_t friend_number = tox_event_conference_invite_get_friend_number(event);
+    const Tox_Conference_Type type = tox_event_conference_invite_get_type(event);
+    const uint8_t *cookie = tox_event_conference_invite_get_cookie(event);
+    const size_t length = tox_event_conference_invite_get_cookie_length(event);
 
     fprintf(stderr, "handle_conference_invite(#%u, %u, %d, uint8_t[%u], _)\n",
             autotox->index, friend_number, type, (unsigned)length);
@@ -37,8 +41,8 @@ static void handle_conference_invite(
 static void conference_double_invite_test(AutoTox *autotoxes)
 {
     // Conference callbacks.
-    tox_callback_conference_invite(autotoxes[0].tox, handle_conference_invite);
-    tox_callback_conference_invite(autotoxes[1].tox, handle_conference_invite);
+    tox_events_callback_conference_invite(autotoxes[0].dispatch, handle_conference_invite);
+    tox_events_callback_conference_invite(autotoxes[1].dispatch, handle_conference_invite);
 
     State *state[2];
     state[0] = (State *)autotoxes[0].state;

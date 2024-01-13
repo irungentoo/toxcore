@@ -44,18 +44,25 @@ static void set_string(uint8_t **to, const uint8_t *from, size_t length)
     memcpy(*to, from, length);
 }
 
-static void namechange_callback(Tox *tox, uint32_t friend_number, const uint8_t *name, size_t length, void *user_data)
+static void namechange_callback(Tox *tox, const Tox_Event_Friend_Name *event, void *user_data)
 {
+    //const uint32_t friend_number = tox_event_friend_name_get_friend_number(event);
+    const uint8_t *name = tox_event_friend_name_get_name(event);
+    const uint32_t name_length = tox_event_friend_name_get_name_length(event);
+
     struct test_data *to_compare = (struct test_data *)user_data;
-    set_string(&to_compare->name, name, length);
+    set_string(&to_compare->name, name, name_length);
     to_compare->received_name = true;
 }
 
-static void statuschange_callback(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
-                                  void *user_data)
+static void statuschange_callback(Tox *tox, const Tox_Event_Friend_Status_Message *event, void *user_data)
 {
+    //const uint32_t friend_number = tox_event_friend_status_message_get_friend_number(event);
+    const uint8_t *message = tox_event_friend_status_message_get_message(event);
+    const uint32_t message_length = tox_event_friend_status_message_get_message_length(event);
+
     struct test_data *to_compare = (struct test_data *)user_data;
-    set_string(&to_compare->status_message, message, length);
+    set_string(&to_compare->status_message, message, message_length);
     to_compare->received_status_message = true;
 }
 
@@ -65,6 +72,12 @@ int main(void)
 
     Tox *const tox1 = tox_new_log(nullptr, nullptr, nullptr);
     Tox *const tox2 = tox_new_log(nullptr, nullptr, nullptr);
+    ck_assert(tox1 != nullptr);
+    ck_assert(tox2 != nullptr);
+
+    tox_events_init(tox1);
+    Tox_Dispatch* dispatch1 = tox_dispatch_new(nullptr);
+    ck_assert(dispatch1 != nullptr);
 
     printf("bootstrapping tox2 off tox1\n");
     uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
@@ -96,8 +109,8 @@ int main(void)
     tox_self_get_name(tox2, reference_name);
     tox_self_get_status_message(tox2, reference_status);
 
-    tox_callback_friend_name(tox1, namechange_callback);
-    tox_callback_friend_status_message(tox1, statuschange_callback);
+    tox_events_callback_friend_name(dispatch1, namechange_callback);
+    tox_events_callback_friend_status_message(dispatch1, statuschange_callback);
 
     while (true) {
         if (tox_self_get_connection_status(tox1) &&
@@ -107,7 +120,12 @@ int main(void)
             break;
         }
 
-        tox_iterate(tox1, &to_compare);
+        Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
+        Tox_Events *events = tox_events_iterate(tox1, true, &err);
+        ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
+        tox_dispatch_invoke(dispatch1, events, tox1, &to_compare);
+        tox_events_free(events);
+
         tox_iterate(tox2, nullptr);
 
         c_sleep(tox_iteration_interval(tox1));
@@ -119,7 +137,12 @@ int main(void)
             break;
         }
 
-        tox_iterate(tox1, &to_compare);
+        Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
+        Tox_Events *events = tox_events_iterate(tox1, true, &err);
+        ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
+        tox_dispatch_invoke(dispatch1, events, tox1, &to_compare);
+        tox_events_free(events);
+
         tox_iterate(tox2, nullptr);
 
         c_sleep(tox_iteration_interval(tox1));
@@ -146,6 +169,7 @@ int main(void)
                   "incorrect status message: should be all zeroes");
 
     tox_options_free(options);
+    tox_dispatch_free(dispatch1);
     tox_kill(tox1);
     tox_kill(tox2);
     tox_kill(tox_to_compare);

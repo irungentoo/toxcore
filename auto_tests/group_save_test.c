@@ -26,9 +26,12 @@ typedef struct State {
 #define PEER0_NICK_LEN (sizeof(PEER0_NICK) -1)
 #define NEW_USER_STATUS TOX_USER_STATUS_BUSY
 
-static void group_invite_handler(Tox *tox, uint32_t friend_number, const uint8_t *invite_data, size_t length,
-                                 const uint8_t *group_name, size_t group_name_length, void *user_data)
+static void group_invite_handler(Tox *tox, const Tox_Event_Group_Invite *event, void *user_data)
 {
+    const uint32_t friend_number = tox_event_group_invite_get_friend_number(event);
+    const uint8_t *invite_data = tox_event_group_invite_get_invite_data(event);
+    const size_t length = tox_event_group_invite_get_invite_data_length(event);
+
     Tox_Err_Group_Invite_Accept err_accept;
     tox_group_invite_accept(tox, friend_number, invite_data, length, (const uint8_t *)"test2", 5,
                             nullptr, 0, &err_accept);
@@ -36,7 +39,7 @@ static void group_invite_handler(Tox *tox, uint32_t friend_number, const uint8_t
 
 }
 
-static void group_peer_join_handler(Tox *tox, uint32_t group_number, uint32_t peer_id, void *user_data)
+static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -120,7 +123,7 @@ static int has_correct_self_state(const Tox *tox, uint32_t group_number, const u
         return -1;
     }
 
-    TOX_USER_STATUS self_status = tox_group_self_get_status(tox, group_number, &sq_err);
+    Tox_User_Status self_status = tox_group_self_get_status(tox, group_number, &sq_err);
     ck_assert(sq_err == TOX_ERR_GROUP_SELF_QUERY_OK);
 
     if (self_status != NEW_USER_STATUS) {
@@ -151,8 +154,8 @@ static void group_save_test(AutoTox *autotoxes)
     ck_assert_msg(NUM_GROUP_TOXES > 1, "NUM_GROUP_TOXES is too small: %d", NUM_GROUP_TOXES);
 
     for (size_t i = 0; i < NUM_GROUP_TOXES; ++i) {
-        tox_callback_group_invite(autotoxes[i].tox, group_invite_handler);
-        tox_callback_group_peer_join(autotoxes[i].tox, group_peer_join_handler);
+        tox_events_callback_group_invite(autotoxes[i].dispatch, group_invite_handler);
+        tox_events_callback_group_peer_join(autotoxes[i].dispatch, group_peer_join_handler);
     }
 
     Tox *tox0 = autotoxes[0].tox;

@@ -169,22 +169,9 @@ static void test_tox_events(void)
     }
 }
 
-static void fake_test_unpack(void)
-{
-    // TODO(Green-Sky): add proper unpack tests and/or implement ngc events
-    (void)tox_group_privacy_state_unpack;
-    (void)tox_group_privacy_state_unpack;
-    (void)tox_group_voice_state_unpack;
-    (void)tox_group_topic_lock_unpack;
-    (void)tox_group_join_fail_unpack;
-    (void)tox_group_mod_event_unpack;
-    (void)tox_group_exit_type_unpack;
-}
-
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
     test_tox_events();
-    fake_test_unpack();
     return 0;
 }

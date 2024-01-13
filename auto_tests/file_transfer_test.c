@@ -26,8 +26,12 @@
 #define TOX_LOCALHOST "127.0.0.1"
 #endif
 
-static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+static void accept_friend_request(Tox *m, const Tox_Event_Friend_Request *event, void *userdata)
 {
+    const uint8_t *public_key = tox_event_friend_request_get_public_key(event);
+    const uint8_t *data = tox_event_friend_request_get_message(event);
+    const size_t length = tox_event_friend_request_get_message_length(event);
+
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
         tox_friend_add_norequest(m, public_key, nullptr);
     }
@@ -39,9 +43,15 @@ static uint64_t sending_pos;
 static uint8_t file_cmp_id[TOX_FILE_ID_LENGTH];
 static uint32_t file_accepted;
 static uint64_t file_size;
-static void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t kind, uint64_t filesize,
-                             const uint8_t *filename, size_t filename_length, void *userdata)
+static void tox_file_receive(Tox *tox, const Tox_Event_File_Recv *event, void *userdata)
 {
+    const uint32_t friend_number = tox_event_file_recv_get_friend_number(event);
+    const uint32_t file_number = tox_event_file_recv_get_file_number(event);
+    const uint32_t kind = tox_event_file_recv_get_kind(event);
+    const uint64_t filesize = tox_event_file_recv_get_file_size(event);
+    const uint8_t *filename = tox_event_file_recv_get_filename(event);
+    const size_t filename_length = tox_event_file_recv_get_filename_length(event);
+
     ck_assert_msg(kind == TOX_FILE_KIND_DATA, "bad kind");
 
     ck_assert_msg(filename_length == sizeof("Gentoo.exe")
@@ -86,9 +96,12 @@ static void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_num
 }
 
 static uint32_t sendf_ok;
-static void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, Tox_File_Control control,
+static void file_print_control(Tox *tox, const Tox_Event_File_Recv_Control *event,
                                void *userdata)
 {
+    const uint32_t file_number = tox_event_file_recv_control_get_file_number(event);
+    const Tox_File_Control control = tox_event_file_recv_control_get_control(event);
+
     /* First send file num is 0.*/
     if (file_number == 0 && control == TOX_FILE_CONTROL_RESUME) {
         sendf_ok = 1;
@@ -99,12 +112,16 @@ static uint64_t max_sending;
 static bool m_send_reached;
 static uint8_t sending_num;
 static bool file_sending_done;
-static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
-                                   size_t length, void *user_data)
+static void tox_file_chunk_request(Tox *tox, const Tox_Event_File_Chunk_Request *event, void *user_data)
 {
+    const uint32_t friend_number = tox_event_file_chunk_request_get_friend_number(event);
+    const uint32_t file_number = tox_event_file_chunk_request_get_file_number(event);
+    const uint64_t position = tox_event_file_chunk_request_get_position(event);
+    size_t length = tox_event_file_chunk_request_get_length(event);
+
     ck_assert_msg(sendf_ok, "didn't get resume control");
 
-    ck_assert_msg(sending_pos == position, "bad position %lu", (unsigned long)position);
+    ck_assert_msg(sending_pos == position, "bad position %lu (should be %lu)", (unsigned long)position, (unsigned long)sending_pos);
 
     if (length == 0) {
         ck_assert_msg(!file_sending_done, "file sending already done");
@@ -126,7 +143,6 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
     Tox_Err_File_Send_Chunk error;
     tox_file_send_chunk(tox, friend_number, file_number, position, f_data, length, &error);
 
-
     ck_assert_msg(error == TOX_ERR_FILE_SEND_CHUNK_OK,
                   "could not send chunk, error num=%d pos=%d len=%d", (int)error, (int)position, (int)length);
 
@@ -137,9 +153,12 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
 
 static uint8_t num;
 static bool file_recv;
-static void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
-                       size_t length, void *user_data)
+static void write_file(Tox *tox, const Tox_Event_File_Recv_Chunk *event, void *user_data)
 {
+    const uint64_t position = tox_event_file_recv_chunk_get_position(event);
+    const uint8_t *data = tox_event_file_recv_chunk_get_data(event);
+    const size_t length = tox_event_file_recv_chunk_get_data_length(event);
+
     ck_assert_msg(size_recv == position, "bad position");
 
     if (length == 0) {
@@ -154,6 +173,17 @@ static void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uin
     ck_assert_msg(memcmp(f_data, data, length) == 0, "FILE_CORRUPTED");
 
     size_recv += length;
+}
+
+static void iterate_and_dispatch(Tox_Dispatch *dispatch, Tox *tox)
+{
+    Tox_Err_Events_Iterate err;
+    Tox_Events *events;
+
+    events = tox_events_iterate(tox, true, &err);
+    ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
+    tox_dispatch_invoke(dispatch, events, tox, nullptr);
+    tox_events_free(events);
 }
 
 static void file_transfer_test(void)
@@ -171,7 +201,19 @@ static void file_transfer_test(void)
 
     ck_assert_msg(tox1 && tox2 && tox3, "Failed to create 3 tox instances");
 
-    tox_callback_friend_request(tox2, accept_friend_request);
+    tox_events_init(tox1);
+    tox_events_init(tox2);
+    tox_events_init(tox3);
+
+    Tox_Dispatch *dispatch1 = tox_dispatch_new(nullptr);
+    ck_assert(dispatch1 != nullptr);
+    Tox_Dispatch *dispatch2 = tox_dispatch_new(nullptr);
+    ck_assert(dispatch2 != nullptr);
+    Tox_Dispatch *dispatch3 = tox_dispatch_new(nullptr);
+    ck_assert(dispatch3 != nullptr);
+
+    tox_events_callback_friend_request(dispatch2, accept_friend_request);
+
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address);
     uint32_t test = tox_friend_add(tox3, address, (const uint8_t *)"Gentoo", 7, nullptr);
@@ -187,9 +229,9 @@ static void file_transfer_test(void)
     printf("Waiting for toxes to come online\n");
 
     do {
-        tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, nullptr);
-        tox_iterate(tox3, nullptr);
+        iterate_and_dispatch(dispatch1, tox1);
+        iterate_and_dispatch(dispatch2, tox2);
+        iterate_and_dispatch(dispatch3, tox3);
 
         printf("Connections: self (%d, %d, %d), friends (%d, %d)\n",
                tox_self_get_connection_status(tox1),
@@ -210,11 +252,11 @@ static void file_transfer_test(void)
     file_recv = 0;
     max_sending = UINT64_MAX;
     uint64_t f_time = time(nullptr);
-    tox_callback_file_recv_chunk(tox3, write_file);
-    tox_callback_file_recv_control(tox2, file_print_control);
-    tox_callback_file_chunk_request(tox2, tox_file_chunk_request);
-    tox_callback_file_recv_control(tox3, file_print_control);
-    tox_callback_file_recv(tox3, tox_file_receive);
+    tox_events_callback_file_recv_chunk(dispatch3, write_file);
+    tox_events_callback_file_recv_control(dispatch2, file_print_control);
+    tox_events_callback_file_chunk_request(dispatch2, tox_file_chunk_request);
+    tox_events_callback_file_recv_control(dispatch3, file_print_control);
+    tox_events_callback_file_recv(dispatch3, tox_file_receive);
     uint64_t totalf_size = 100 * 1024 * 1024;
     uint32_t fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, nullptr, (const uint8_t *)"Gentoo.exe",
                                   sizeof("Gentoo.exe"), nullptr);
@@ -231,9 +273,9 @@ static void file_transfer_test(void)
     const size_t max_iterations = INT16_MAX;
 
     for (size_t i = 0; i < max_iterations; i++) {
-        tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, nullptr);
-        tox_iterate(tox3, nullptr);
+        iterate_and_dispatch(dispatch1, tox1);
+        iterate_and_dispatch(dispatch2, tox2);
+        iterate_and_dispatch(dispatch3, tox3);
 
         if (file_sending_done) {
             ck_assert_msg(sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv
@@ -274,11 +316,11 @@ static void file_transfer_test(void)
     sendf_ok = 0;
     size_recv = 0;
     file_recv = 0;
-    tox_callback_file_recv_chunk(tox3, write_file);
-    tox_callback_file_recv_control(tox2, file_print_control);
-    tox_callback_file_chunk_request(tox2, tox_file_chunk_request);
-    tox_callback_file_recv_control(tox3, file_print_control);
-    tox_callback_file_recv(tox3, tox_file_receive);
+    tox_events_callback_file_recv_chunk(dispatch3, write_file);
+    tox_events_callback_file_recv_control(dispatch2, file_print_control);
+    tox_events_callback_file_chunk_request(dispatch2, tox_file_chunk_request);
+    tox_events_callback_file_recv_control(dispatch3, file_print_control);
+    tox_events_callback_file_recv(dispatch3, tox_file_receive);
     totalf_size = 0;
     fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, nullptr,
                          (const uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"), nullptr);
@@ -298,9 +340,9 @@ static void file_transfer_test(void)
 
         c_sleep(min_u32(tox1_interval, min_u32(tox2_interval, tox3_interval)));
 
-        tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, nullptr);
-        tox_iterate(tox3, nullptr);
+        iterate_and_dispatch(dispatch1, tox1);
+        iterate_and_dispatch(dispatch2, tox2);
+        iterate_and_dispatch(dispatch3, tox3);
     } while (!file_sending_done);
 
     ck_assert_msg(sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size
@@ -312,9 +354,12 @@ static void file_transfer_test(void)
 
     printf("file_transfer_test succeeded, took %llu seconds\n", time(nullptr) - cur_time);
 
-    tox_kill(tox1);
-    tox_kill(tox2);
+    tox_dispatch_free(dispatch3);
+    tox_dispatch_free(dispatch2);
+    tox_dispatch_free(dispatch1);
     tox_kill(tox3);
+    tox_kill(tox2);
+    tox_kill(tox1);
 }
 
 int main(void)
