@@ -15,6 +15,7 @@ TESTS = \
 	crypto_test \
 	encryptsave_test \
 	file_saving_test \
+	file_streaming_test \
 	file_transfer_test \
 	forwarding_test \
 	friend_connection_test \
@@ -102,6 +103,10 @@ encryptsave_test_LDADD = $(AUTOTEST_LDADD)
 file_saving_test_SOURCES = ../auto_tests/file_saving_test.c
 file_saving_test_CFLAGS = $(AUTOTEST_CFLAGS)
 file_saving_test_LDADD = $(AUTOTEST_LDADD)
+
+file_streaming_test_SOURCES = ../auto_tests/file_streaming_test.c
+file_streaming_test_CFLAGS = $(AUTOTEST_CFLAGS)
+file_streaming_test_LDADD = $(AUTOTEST_LDADD)
 
 file_transfer_test_SOURCES = ../auto_tests/file_transfer_test.c
 file_transfer_test_CFLAGS = $(AUTOTEST_CFLAGS)

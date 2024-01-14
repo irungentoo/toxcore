@@ -1,4 +1,4 @@
-/* File transfer test.
+/* File transfer test: streaming version (no known size).
  */
 
 #include <stdio.h>
@@ -204,64 +204,9 @@ static void file_transfer_test(void)
     file_accepted = file_size = sendf_ok = size_recv = 0;
     file_recv = 0;
     max_sending = UINT64_MAX;
-    uint64_t f_time = time(nullptr);
-    tox_callback_file_recv_chunk(tox3, write_file);
-    tox_callback_file_recv_control(tox2, file_print_control);
-    tox_callback_file_chunk_request(tox2, tox_file_chunk_request);
-    tox_callback_file_recv_control(tox3, file_print_control);
-    tox_callback_file_recv(tox3, tox_file_receive);
     uint64_t totalf_size = 100 * 1024 * 1024;
-    uint32_t fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, nullptr, (const uint8_t *)"Gentoo.exe",
-                                  sizeof("Gentoo.exe"), nullptr);
-    ck_assert_msg(fnum != UINT32_MAX, "tox_new_file_sender fail");
 
-    Tox_Err_File_Get gfierr;
-    ck_assert_msg(!tox_file_get_file_id(tox2, 1, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id didn't fail");
-    ck_assert_msg(gfierr == TOX_ERR_FILE_GET_FRIEND_NOT_FOUND, "wrong error");
-    ck_assert_msg(!tox_file_get_file_id(tox2, 0, fnum + 1, file_cmp_id, &gfierr), "tox_file_get_file_id didn't fail");
-    ck_assert_msg(gfierr == TOX_ERR_FILE_GET_NOT_FOUND, "wrong error");
-    ck_assert_msg(tox_file_get_file_id(tox2, 0, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id failed");
-    ck_assert_msg(gfierr == TOX_ERR_FILE_GET_OK, "wrong error");
-
-    const size_t max_iterations = INT16_MAX;
-
-    for (size_t i = 0; i < max_iterations; i++) {
-        tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, nullptr);
-        tox_iterate(tox3, nullptr);
-
-        if (file_sending_done) {
-            ck_assert_msg(sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv
-                          && file_accepted == 1,
-                          "Something went wrong in file transfer %u %u %u %u %u %u %lu %lu %lu",
-                          sendf_ok, file_recv, totalf_size == file_size, size_recv == file_size, sending_pos == size_recv,
-                          file_accepted == 1, (unsigned long)totalf_size, (unsigned long)size_recv,
-                          (unsigned long)sending_pos);
-            break;
-        }
-
-        uint32_t tox1_interval = tox_iteration_interval(tox1);
-        uint32_t tox2_interval = tox_iteration_interval(tox2);
-        uint32_t tox3_interval = tox_iteration_interval(tox3);
-
-        if ((i + 1) % 500 == 0) {
-            printf("after %u iterations: %.2fMiB done\n", (unsigned int)i + 1, (double)size_recv / 1024 / 1024);
-        }
-
-        c_sleep(min_u32(tox1_interval, min_u32(tox2_interval, tox3_interval)));
-    }
-
-    ck_assert_msg(file_sending_done, "file sending did not complete after %u iterations: sendf_ok:%u file_recv:%u "
-                  "totalf_size==file_size:%u size_recv==file_size:%u sending_pos==size_recv:%u file_accepted:%u "
-                  "totalf_size:%lu size_recv:%lu sending_pos:%lu",
-                  (unsigned int)max_iterations, sendf_ok, file_recv,
-                  totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1,
-                  (unsigned long)totalf_size, (unsigned long)size_recv,
-                  (unsigned long)sending_pos);
-
-    printf("100MiB file sent in %lu seconds\n", (unsigned long)(time(nullptr) - f_time));
-
-    printf("starting file 0 transfer test.\n");
+    printf("Starting file streaming transfer test.\n");
 
     file_sending_done = 0;
     file_accepted = 0;
@@ -274,11 +219,13 @@ static void file_transfer_test(void)
     tox_callback_file_chunk_request(tox2, tox_file_chunk_request);
     tox_callback_file_recv_control(tox3, file_print_control);
     tox_callback_file_recv(tox3, tox_file_receive);
-    totalf_size = 0;
-    fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, nullptr,
-                         (const uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"), nullptr);
+    totalf_size = UINT64_MAX;
+    Tox_File_Number fnum = tox_file_send(
+        tox2, 0, TOX_FILE_KIND_DATA, totalf_size, nullptr,
+        (const uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"), nullptr);
     ck_assert_msg(fnum != UINT32_MAX, "tox_new_file_sender fail");
 
+    Tox_Err_File_Get gfierr;
     ck_assert_msg(!tox_file_get_file_id(tox2, 1, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id didn't fail");
     ck_assert_msg(gfierr == TOX_ERR_FILE_GET_FRIEND_NOT_FOUND, "wrong error");
     ck_assert_msg(!tox_file_get_file_id(tox2, 0, fnum + 1, file_cmp_id, &gfierr), "tox_file_get_file_id didn't fail");
@@ -286,24 +233,27 @@ static void file_transfer_test(void)
     ck_assert_msg(tox_file_get_file_id(tox2, 0, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id failed");
     ck_assert_msg(gfierr == TOX_ERR_FILE_GET_OK, "wrong error");
 
+    max_sending = 100 * 1024;
+    m_send_reached = 0;
+
     do {
+        tox_iterate(tox1, nullptr);
+        tox_iterate(tox2, nullptr);
+        tox_iterate(tox3, nullptr);
+
         uint32_t tox1_interval = tox_iteration_interval(tox1);
         uint32_t tox2_interval = tox_iteration_interval(tox2);
         uint32_t tox3_interval = tox_iteration_interval(tox3);
 
         c_sleep(min_u32(tox1_interval, min_u32(tox2_interval, tox3_interval)));
-
-        tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, nullptr);
-        tox_iterate(tox3, nullptr);
     } while (!file_sending_done);
 
-    ck_assert_msg(sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size
+    ck_assert_msg(sendf_ok && file_recv && m_send_reached && totalf_size == file_size && size_recv == max_sending
                   && sending_pos == size_recv && file_accepted == 1,
-                  "something went wrong in file transfer %u %u %u %u %u %u %llu %llu %llu", sendf_ok, file_recv,
-                  totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1,
-                  (unsigned long long)totalf_size, (unsigned long long)size_recv,
-                  (unsigned long long)sending_pos);
+                  "something went wrong in file transfer %u %u %u %u %u %u %u %lu %lu %lu %lu", sendf_ok, file_recv,
+                  m_send_reached, totalf_size == file_size, size_recv == max_sending, sending_pos == size_recv, file_accepted == 1,
+                  (unsigned long)totalf_size, (unsigned long)file_size,
+                  (unsigned long)size_recv, (unsigned long)sending_pos);
 
     printf("file_transfer_test succeeded, took %llu seconds\n", time(nullptr) - cur_time);
 
