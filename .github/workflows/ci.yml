@@ -85,7 +85,7 @@ jobs:
       - name: Configure CMake
         run: cmake --preset windows-default
       - name: Build
-        run: cmake --build _build
+        run: cmake --build _build -j $([int]$env:NUMBER_OF_PROCESSORS+2)
       - name: Test
         run: |
           cd _build
