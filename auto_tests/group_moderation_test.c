@@ -247,7 +247,7 @@ static void handle_user(State *state, const char *peer_name, size_t peer_name_le
 }
 
 static void group_mod_event_handler(Tox *tox, uint32_t group_number, uint32_t source_peer_id, uint32_t target_peer_id,
-                                    Tox_Group_Mod_Event event, void *user_data)
+                                    Tox_Group_Mod_Event mod_type, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -275,7 +275,11 @@ static void group_mod_event_handler(Tox *tox, uint32_t group_number, uint32_t so
     Tox_Group_Role role = tox_group_peer_get_role(tox, group_number, target_peer_id, &q_err);
     ck_assert(q_err == TOX_ERR_GROUP_PEER_QUERY_OK);
 
-    switch (event) {
+    fprintf(stderr, "tox%u: got moderator event %d (%s), role = %s\n",
+            autotox->index, mod_type, tox_group_mod_event_to_string(mod_type),
+            tox_group_role_to_string(role));
+
+    switch (mod_type) {
         case TOX_GROUP_MOD_EVENT_MODERATOR: {
             handle_mod(state, peer_name, peer_name_len, role);
             break;
@@ -298,7 +302,7 @@ static void group_mod_event_handler(Tox *tox, uint32_t group_number, uint32_t so
         }
 
         default: {
-            ck_assert_msg(0, "Got invalid moderator event %d", event);
+            ck_assert_msg(0, "Got invalid moderator event %d", mod_type);
             return;
         }
     }
