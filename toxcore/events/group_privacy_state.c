@@ -71,8 +71,6 @@ bool tox_event_group_privacy_state_pack(
 {
     assert(event != nullptr);
     return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_GROUP_PRIVACY_STATE)
-           && bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->privacy_state);
 }

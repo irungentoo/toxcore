@@ -56,9 +56,7 @@ bool tox_event_self_connection_status_pack(
     const Tox_Event_Self_Connection_Status *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_SELF_CONNECTION_STATUS)
-           && bin_pack_u32(bp, event->connection_status);
+    return bin_pack_u32(bp, event->connection_status);
 }
 
 non_null()

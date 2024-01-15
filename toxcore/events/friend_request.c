@@ -95,8 +95,6 @@ bool tox_event_friend_request_pack(
 {
     assert(event != nullptr);
     return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_FRIEND_REQUEST)
-           && bin_pack_array(bp, 2)
            && bin_pack_bin(bp, event->public_key, TOX_PUBLIC_KEY_SIZE)
            && bin_pack_bin(bp, event->message, event->message_length);
 }

@@ -568,6 +568,10 @@ bool tox_event_pack(const Tox_Event *event, Bin_Pack *bp)
 {
     assert(event->type != TOX_EVENT_INVALID);
 
+    if (!(bin_pack_array(bp, 2) && bin_pack_u32(bp, event->type))) {
+        return false;
+    }
+
     switch (event->type) {
         case TOX_EVENT_CONFERENCE_CONNECTED:
             return tox_event_conference_connected_pack(event->data.conference_connected, bp);

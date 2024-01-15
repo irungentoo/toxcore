@@ -71,8 +71,6 @@ bool tox_event_group_voice_state_pack(
 {
     assert(event != nullptr);
     return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_GROUP_VOICE_STATE)
-           && bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->voice_state);
 }

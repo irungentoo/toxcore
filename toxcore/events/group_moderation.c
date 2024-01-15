@@ -98,9 +98,7 @@ bool tox_event_group_moderation_pack(
     const Tox_Event_Group_Moderation *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_GROUP_MODERATION)
-           && bin_pack_array(bp, 4)
+    return bin_pack_array(bp, 4)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->source_peer_id)
            && bin_pack_u32(bp, event->target_peer_id)

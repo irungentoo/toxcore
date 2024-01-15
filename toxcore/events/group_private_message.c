@@ -122,9 +122,7 @@ bool tox_event_group_private_message_pack(
     const Tox_Event_Group_Private_Message *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_GROUP_PRIVATE_MESSAGE)
-           && bin_pack_array(bp, 4)
+    return bin_pack_array(bp, 4)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->peer_id)
            && bin_pack_u32(bp, event->type)

@@ -159,9 +159,7 @@ bool tox_event_group_peer_exit_pack(
     const Tox_Event_Group_Peer_Exit *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_GROUP_PEER_EXIT)
-           && bin_pack_array(bp, 5)
+    return bin_pack_array(bp, 5)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->peer_id)
            && bin_pack_u32(bp, event->exit_type)

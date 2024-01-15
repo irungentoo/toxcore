@@ -84,9 +84,7 @@ bool tox_event_file_recv_control_pack(
     const Tox_Event_File_Recv_Control *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_FILE_RECV_CONTROL)
-           && bin_pack_array(bp, 3)
+    return bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_u32(bp, event->file_number)
            && bin_pack_u32(bp, event->control);

@@ -107,9 +107,7 @@ bool tox_event_group_peer_name_pack(
     const Tox_Event_Group_Peer_Name *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_GROUP_PEER_NAME)
-           && bin_pack_array(bp, 3)
+    return bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->peer_id)
            && bin_pack_bin(bp, event->name, event->name_length);

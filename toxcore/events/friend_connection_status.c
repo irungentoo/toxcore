@@ -71,8 +71,6 @@ bool tox_event_friend_connection_status_pack(
 {
     assert(event != nullptr);
     return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_FRIEND_CONNECTION_STATUS)
-           && bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_u32(bp, event->connection_status);
 }

@@ -97,9 +97,7 @@ bool tox_event_file_chunk_request_pack(
     const Tox_Event_File_Chunk_Request *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_FILE_CHUNK_REQUEST)
-           && bin_pack_array(bp, 4)
+    return bin_pack_array(bp, 4)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_u32(bp, event->file_number)
            && bin_pack_u64(bp, event->position)

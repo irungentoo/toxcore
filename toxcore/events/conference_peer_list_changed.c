@@ -55,9 +55,7 @@ bool tox_event_conference_peer_list_changed_pack(
     const Tox_Event_Conference_Peer_List_Changed *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_CONFERENCE_PEER_LIST_CHANGED)
-           && bin_pack_u32(bp, event->conference_number);
+    return bin_pack_u32(bp, event->conference_number);
 }
 
 non_null()

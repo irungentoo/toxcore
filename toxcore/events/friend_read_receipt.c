@@ -70,8 +70,6 @@ bool tox_event_friend_read_receipt_pack(
 {
     assert(event != nullptr);
     return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_FRIEND_READ_RECEIPT)
-           && bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_u32(bp, event->message_id);
 }

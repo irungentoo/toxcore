@@ -107,9 +107,7 @@ bool tox_event_conference_title_pack(
     const Tox_Event_Conference_Title *event, Bin_Pack *bp)
 {
     assert(event != nullptr);
-    return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_CONFERENCE_TITLE)
-           && bin_pack_array(bp, 3)
+    return bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->conference_number)
            && bin_pack_u32(bp, event->peer_number)
            && bin_pack_bin(bp, event->title, event->title_length);

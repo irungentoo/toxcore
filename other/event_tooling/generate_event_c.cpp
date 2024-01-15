@@ -311,14 +311,21 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
     f << "bool tox_event_" << event_name_l << "_pack(\n";
     f << "    const Tox_Event_" << event_name << " *event, Bin_Pack *bp)\n{\n";
     f << "    assert(event != nullptr);\n";
-    f << "    return bin_pack_array(bp, 2)\n";
-    f << "           && bin_pack_u32(bp, TOX_EVENT_" << str_toupper(event_name) << ")";
+
+    bool return_started = false;
+
     if (event_types.size() > 1) {
-        f << "\n           && bin_pack_array(bp, " << event_types.size() << ")";
+        f << "    return bin_pack_array(bp, " << event_types.size() << ")";
+        return_started = true;
     }
 
     for (const auto& t : event_types) {
-        f << "\n           && ";
+        if (return_started) {
+            f << "\n           && ";
+        } else {
+            f << "    return ";
+        }
+
         std::visit(
             overloaded{
                 [&](const EventTypeTrivial& t) {

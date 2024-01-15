@@ -71,8 +71,6 @@ bool tox_event_group_topic_lock_pack(
 {
     assert(event != nullptr);
     return bin_pack_array(bp, 2)
-           && bin_pack_u32(bp, TOX_EVENT_GROUP_TOPIC_LOCK)
-           && bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->topic_lock);
 }
