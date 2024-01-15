@@ -1058,6 +1058,11 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t publ
     bool udp_success = tox->m->options.udp_disabled;
 
     for (int32_t i = 0; i < count; ++i) {
+        if (!tox->m->options.ipv6enabled && net_family_is_ipv6(root[i].ip.family)) {
+            // We can't use ipv6 when it's disabled.
+            continue;
+        }
+
         root[i].port = net_htons(port);
 
         if (onion_add_bs_path_node(tox->m->onion_c, &root[i], public_key)) {
