@@ -10,6 +10,7 @@
 #include "bin_unpack.h"
 #include "mem.h"
 #include "tox_events.h"
+#include "tox_private.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,6 +61,7 @@ typedef union Tox_Event_Data {
     Tox_Event_Group_Self_Join *group_self_join;
     Tox_Event_Group_Join_Fail *group_join_fail;
     Tox_Event_Group_Moderation *group_moderation;
+    Tox_Event_Dht_Get_Nodes_Response *dht_get_nodes_response;
 } Tox_Event_Data;
 
 struct Tox_Event {
@@ -111,6 +113,7 @@ non_null() Tox_Event_Group_Peer_Exit *tox_event_group_peer_exit_new(const Memory
 non_null() Tox_Event_Group_Self_Join *tox_event_group_self_join_new(const Memory *mem);
 non_null() Tox_Event_Group_Join_Fail *tox_event_group_join_fail_new(const Memory *mem);
 non_null() Tox_Event_Group_Moderation *tox_event_group_moderation_new(const Memory *mem);
+non_null() Tox_Event_Dht_Get_Nodes_Response *tox_event_dht_get_nodes_response_new(const Memory *mem);
 
 /**
  * Destructor.
@@ -156,6 +159,7 @@ non_null(2) nullable(1) void tox_event_group_peer_exit_free(Tox_Event_Group_Peer
 non_null(2) nullable(1) void tox_event_group_self_join_free(Tox_Event_Group_Self_Join *group_self_join, const Memory *mem);
 non_null(2) nullable(1) void tox_event_group_join_fail_free(Tox_Event_Group_Join_Fail *group_join_fail, const Memory *mem);
 non_null(2) nullable(1) void tox_event_group_moderation_free(Tox_Event_Group_Moderation *group_moderation, const Memory *mem);
+non_null(2) nullable(1) void tox_event_dht_get_nodes_response_free(Tox_Event_Dht_Get_Nodes_Response *dht_get_nodes_response, const Memory *mem);
 
 /**
  * Pack into msgpack.
@@ -201,6 +205,7 @@ non_null() bool tox_event_group_peer_exit_pack(const Tox_Event_Group_Peer_Exit *
 non_null() bool tox_event_group_self_join_pack(const Tox_Event_Group_Self_Join *event, Bin_Pack *bp);
 non_null() bool tox_event_group_join_fail_pack(const Tox_Event_Group_Join_Fail *event, Bin_Pack *bp);
 non_null() bool tox_event_group_moderation_pack(const Tox_Event_Group_Moderation *event, Bin_Pack *bp);
+non_null() bool tox_event_dht_get_nodes_response_pack(const Tox_Event_Dht_Get_Nodes_Response *event, Bin_Pack *bp);
 
 /**
  * Unpack from msgpack.
@@ -246,6 +251,7 @@ non_null() bool tox_event_group_peer_exit_unpack(Tox_Event_Group_Peer_Exit **eve
 non_null() bool tox_event_group_self_join_unpack(Tox_Event_Group_Self_Join **event, Bin_Unpack *bu, const Memory *mem);
 non_null() bool tox_event_group_join_fail_unpack(Tox_Event_Group_Join_Fail **event, Bin_Unpack *bu, const Memory *mem);
 non_null() bool tox_event_group_moderation_unpack(Tox_Event_Group_Moderation **event, Bin_Unpack *bu, const Memory *mem);
+non_null() bool tox_event_dht_get_nodes_response_unpack(Tox_Event_Dht_Get_Nodes_Response **event, Bin_Unpack *bu, const Memory *mem);
 
 #ifdef __cplusplus
 }

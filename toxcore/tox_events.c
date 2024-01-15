@@ -67,6 +67,7 @@ void tox_events_init(Tox *tox)
     tox_callback_group_self_join(tox, tox_events_handle_group_self_join);
     tox_callback_group_join_fail(tox, tox_events_handle_group_join_fail);
     tox_callback_group_moderation(tox, tox_events_handle_group_moderation);
+    tox_callback_dht_get_nodes_response(tox, tox_events_handle_dht_get_nodes_response);
 }
 
 uint32_t tox_events_get_size(const Tox_Events *events)

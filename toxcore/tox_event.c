@@ -132,6 +132,9 @@ const char *tox_event_type_to_string(Tox_Event_Type type)
         case TOX_EVENT_GROUP_MODERATION:
             return "TOX_EVENT_GROUP_MODERATION";
 
+        case TOX_EVENT_DHT_GET_NODES_RESPONSE:
+            return "TOX_EVENT_DHT_GET_NODES_RESPONSE";
+
         case TOX_EVENT_INVALID:
             return "TOX_EVENT_INVALID";
     }
@@ -346,6 +349,11 @@ bool tox_event_construct(Tox_Event *event, Tox_Event_Type type, const Memory *me
             break;
         }
 
+        case TOX_EVENT_DHT_GET_NODES_RESPONSE: {
+            event->data.dht_get_nodes_response = tox_event_dht_get_nodes_response_new(mem);
+            break;
+        }
+
         case TOX_EVENT_INVALID: {
             return false;
         }
@@ -556,6 +564,11 @@ void tox_event_destruct(Tox_Event *event, const Memory *mem)
             break;
         }
 
+        case TOX_EVENT_DHT_GET_NODES_RESPONSE: {
+            tox_event_dht_get_nodes_response_free(event->data.dht_get_nodes_response, mem);
+            break;
+        }
+
         case TOX_EVENT_INVALID: {
             break;
         }
@@ -690,6 +703,9 @@ static bool tox_event_data_pack(Tox_Event_Type type, const Tox_Event_Data *data,
 
         case TOX_EVENT_GROUP_MODERATION:
             return tox_event_group_moderation_pack(data->group_moderation, bp);
+
+        case TOX_EVENT_DHT_GET_NODES_RESPONSE:
+            return tox_event_dht_get_nodes_response_pack(data->dht_get_nodes_response, bp);
 
         case TOX_EVENT_INVALID:
             return false;
@@ -906,6 +922,11 @@ static bool tox_event_type_from_int(uint32_t value, Tox_Event_Type *out)
             return true;
         }
 
+        case TOX_EVENT_DHT_GET_NODES_RESPONSE: {
+            *out = TOX_EVENT_DHT_GET_NODES_RESPONSE;
+            return true;
+        }
+
         case TOX_EVENT_INVALID: {
             *out = TOX_EVENT_INVALID;
             return true;
@@ -1061,6 +1082,9 @@ bool tox_event_unpack_into(Tox_Event *event, Bin_Unpack *bu, const Memory *mem)
 
         case TOX_EVENT_GROUP_MODERATION:
             return tox_event_group_moderation_unpack(&event->data.group_moderation, bu, mem);
+
+        case TOX_EVENT_DHT_GET_NODES_RESPONSE:
+            return tox_event_dht_get_nodes_response_unpack(&event->data.dht_get_nodes_response, bu, mem);
 
         case TOX_EVENT_INVALID:
             return false;
