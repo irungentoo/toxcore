@@ -70,7 +70,7 @@ build/
 *.nvim*
 *.vim*
 
-#kdevelop
+# kdevelop
 .kdev/
 *.kdev*
 
@@ -92,6 +92,10 @@ cscope.files
 
 # rpm
 tox.spec
+
+# clangd
+.cache/
+compile_commands.json
 
 /infer
 .idea/
