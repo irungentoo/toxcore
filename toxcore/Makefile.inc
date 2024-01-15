@@ -94,6 +94,8 @@ libtoxcore_la_SOURCES = ../third_party/cmp/cmp.c \
                         ../toxcore/tox_event.c \
                         ../toxcore/tox_events.h \
                         ../toxcore/tox_events.c \
+                        ../toxcore/tox_pack.h \
+                        ../toxcore/tox_pack.c \
                         ../toxcore/tox_unpack.h \
                         ../toxcore/tox_unpack.c \
                         ../toxcore/tox_private.c \

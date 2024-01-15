@@ -134,7 +134,6 @@ static void tox_event_file_recv_destruct(Tox_Event_File_Recv *file_recv, const M
 bool tox_event_file_recv_pack(
     const Tox_Event_File_Recv *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 5)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_u32(bp, event->file_number)

@@ -14,6 +14,7 @@
 #include "../mem.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_pack.h"
 #include "../tox_unpack.h"
 
 
@@ -107,10 +108,9 @@ static void tox_event_conference_invite_destruct(Tox_Event_Conference_Invite *co
 bool tox_event_conference_invite_pack(
     const Tox_Event_Conference_Invite *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->friend_number)
-           && bin_pack_u32(bp, event->type)
+           && tox_conference_type_pack(event->type, bp)
            && bin_pack_bin(bp, event->cookie, event->cookie_length);
 }
 
@@ -124,7 +124,7 @@ static bool tox_event_conference_invite_unpack_into(
     }
 
     return bin_unpack_u32(bu, &event->friend_number)
-           && tox_conference_type_unpack(bu, &event->type)
+           && tox_conference_type_unpack(&event->type, bu)
            && bin_unpack_bin(bu, &event->cookie, &event->cookie_length);
 }
 

@@ -12,6 +12,7 @@
 #include "../mem.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_pack.h"
 #include "../tox_unpack.h"
 
 
@@ -83,11 +84,10 @@ static void tox_event_file_recv_control_destruct(Tox_Event_File_Recv_Control *fi
 bool tox_event_file_recv_control_pack(
     const Tox_Event_File_Recv_Control *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_u32(bp, event->file_number)
-           && bin_pack_u32(bp, event->control);
+           && tox_file_control_pack(event->control, bp);
 }
 
 non_null()
@@ -101,7 +101,7 @@ static bool tox_event_file_recv_control_unpack_into(
 
     return bin_unpack_u32(bu, &event->friend_number)
            && bin_unpack_u32(bu, &event->file_number)
-           && tox_file_control_unpack(bu, &event->control);
+           && tox_file_control_unpack(&event->control, bu);
 }
 
 

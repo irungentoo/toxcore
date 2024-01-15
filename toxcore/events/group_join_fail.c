@@ -12,6 +12,7 @@
 #include "../mem.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_pack.h"
 #include "../tox_unpack.h"
 
 
@@ -69,10 +70,9 @@ static void tox_event_group_join_fail_destruct(Tox_Event_Group_Join_Fail *group_
 bool tox_event_group_join_fail_pack(
     const Tox_Event_Group_Join_Fail *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->group_number)
-           && bin_pack_u32(bp, event->fail_type);
+           && tox_group_join_fail_pack(event->fail_type, bp);
 }
 
 non_null()
@@ -85,7 +85,7 @@ static bool tox_event_group_join_fail_unpack_into(
     }
 
     return bin_unpack_u32(bu, &event->group_number)
-           && tox_group_join_fail_unpack(bu, &event->fail_type);
+           && tox_group_join_fail_unpack(&event->fail_type, bu);
 }
 
 

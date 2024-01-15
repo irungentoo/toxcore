@@ -68,7 +68,6 @@ static void tox_event_group_peer_join_destruct(Tox_Event_Group_Peer_Join *group_
 bool tox_event_group_peer_join_pack(
     const Tox_Event_Group_Peer_Join *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->peer_id);

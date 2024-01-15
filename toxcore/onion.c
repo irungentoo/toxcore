@@ -48,7 +48,7 @@ static void change_symmetric_key(Onion *onion)
 
 /** packing and unpacking functions */
 non_null()
-static void ip_pack(uint8_t *data, const IP *source)
+static void ip_pack_to_bytes(uint8_t *data, const IP *source)
 {
     data[0] = source->family.value;
 
@@ -62,7 +62,7 @@ static void ip_pack(uint8_t *data, const IP *source)
 
 /** return 0 on success, -1 on failure. */
 non_null()
-static int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size, bool disable_family_check)
+static int ip_unpack_from_bytes(IP *target, const uint8_t *data, unsigned int data_size, bool disable_family_check)
 {
     if (data_size < (1 + SIZE_IP6)) {
         return -1;
@@ -87,7 +87,7 @@ static int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size, bo
 non_null()
 static void ipport_pack(uint8_t *data, const IP_Port *source)
 {
-    ip_pack(data, &source->ip);
+    ip_pack_to_bytes(data, &source->ip);
     memcpy(data + SIZE_IP, &source->port, SIZE_PORT);
 }
 
@@ -99,7 +99,7 @@ static int ipport_unpack(IP_Port *target, const uint8_t *data, unsigned int data
         return -1;
     }
 
-    if (ip_unpack(&target->ip, data, data_size, disable_family_check) == -1) {
+    if (ip_unpack_from_bytes(&target->ip, data, data_size, disable_family_check) == -1) {
         return -1;
     }
 

@@ -12,6 +12,7 @@
 #include "../mem.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_pack.h"
 #include "../tox_unpack.h"
 
 
@@ -69,10 +70,9 @@ static void tox_event_group_topic_lock_destruct(Tox_Event_Group_Topic_Lock *grou
 bool tox_event_group_topic_lock_pack(
     const Tox_Event_Group_Topic_Lock *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->group_number)
-           && bin_pack_u32(bp, event->topic_lock);
+           && tox_group_topic_lock_pack(event->topic_lock, bp);
 }
 
 non_null()
@@ -85,7 +85,7 @@ static bool tox_event_group_topic_lock_unpack_into(
     }
 
     return bin_unpack_u32(bu, &event->group_number)
-           && tox_group_topic_lock_unpack(bu, &event->topic_lock);
+           && tox_group_topic_lock_unpack(&event->topic_lock, bu);
 }
 
 

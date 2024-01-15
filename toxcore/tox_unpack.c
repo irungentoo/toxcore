@@ -29,7 +29,7 @@ static bool tox_conference_type_from_int(uint32_t value, Tox_Conference_Type *ou
         }
     }
 }
-bool tox_conference_type_unpack(Bin_Unpack *bu, Tox_Conference_Type *val)
+bool tox_conference_type_unpack(Tox_Conference_Type *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)
@@ -62,7 +62,7 @@ static bool tox_connection_from_int(uint32_t value, Tox_Connection *out)
     }
 }
 
-bool tox_connection_unpack(Bin_Unpack *bu, Tox_Connection *val)
+bool tox_connection_unpack(Tox_Connection *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)
@@ -95,7 +95,7 @@ static bool tox_file_control_from_int(uint32_t value, Tox_File_Control *out)
     }
 }
 
-bool tox_file_control_unpack(Bin_Unpack *bu, Tox_File_Control *val)
+bool tox_file_control_unpack(Tox_File_Control *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)
@@ -123,7 +123,7 @@ static bool tox_message_type_from_int(uint32_t value, Tox_Message_Type *out)
     }
 }
 
-bool tox_message_type_unpack(Bin_Unpack *bu, Tox_Message_Type *val)
+bool tox_message_type_unpack(Tox_Message_Type *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)
@@ -156,7 +156,7 @@ static bool tox_user_status_from_int(uint32_t value, Tox_User_Status *out)
     }
 }
 
-bool tox_user_status_unpack(Bin_Unpack *bu, Tox_User_Status *val)
+bool tox_user_status_unpack(Tox_User_Status *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)
@@ -181,7 +181,7 @@ static bool tox_group_privacy_state_from_int(uint32_t value, Tox_Group_Privacy_S
     }
   }
 }
-bool tox_group_privacy_state_unpack(Bin_Unpack *bu, Tox_Group_Privacy_State *val)
+bool tox_group_privacy_state_unpack(Tox_Group_Privacy_State *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)
@@ -209,7 +209,7 @@ static bool tox_group_voice_state_from_int(uint32_t value, Tox_Group_Voice_State
     }
   }
 }
-bool tox_group_voice_state_unpack(Bin_Unpack *bu, Tox_Group_Voice_State *val)
+bool tox_group_voice_state_unpack(Tox_Group_Voice_State *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)
@@ -234,7 +234,7 @@ static bool tox_group_topic_lock_from_int(uint32_t value, Tox_Group_Topic_Lock *
     }
   }
 }
-bool tox_group_topic_lock_unpack(Bin_Unpack *bu, Tox_Group_Topic_Lock *val)
+bool tox_group_topic_lock_unpack(Tox_Group_Topic_Lock *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)
@@ -263,7 +263,7 @@ static bool tox_group_join_fail_from_int(uint32_t value, Tox_Group_Join_Fail *ou
     }
   }
 }
-bool tox_group_join_fail_unpack(Bin_Unpack *bu, Tox_Group_Join_Fail *val)
+bool tox_group_join_fail_unpack(Tox_Group_Join_Fail *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)
@@ -296,7 +296,7 @@ static bool tox_group_mod_event_from_int(uint32_t value, Tox_Group_Mod_Event *ou
     }
   }
 }
-bool tox_group_mod_event_unpack(Bin_Unpack *bu, Tox_Group_Mod_Event *val)
+bool tox_group_mod_event_unpack(Tox_Group_Mod_Event *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)
@@ -337,7 +337,7 @@ static bool tox_group_exit_type_from_int(uint32_t value, Tox_Group_Exit_Type *ou
     }
   }
 }
-bool tox_group_exit_type_unpack(Bin_Unpack *bu, Tox_Group_Exit_Type *val)
+bool tox_group_exit_type_unpack(Tox_Group_Exit_Type *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)

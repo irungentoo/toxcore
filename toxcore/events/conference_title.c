@@ -106,7 +106,6 @@ static void tox_event_conference_title_destruct(Tox_Event_Conference_Title *conf
 bool tox_event_conference_title_pack(
     const Tox_Event_Conference_Title *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->conference_number)
            && bin_pack_u32(bp, event->peer_number)

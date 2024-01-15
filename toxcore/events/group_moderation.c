@@ -12,6 +12,7 @@
 #include "../mem.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_pack.h"
 #include "../tox_unpack.h"
 
 
@@ -97,12 +98,11 @@ static void tox_event_group_moderation_destruct(Tox_Event_Group_Moderation *grou
 bool tox_event_group_moderation_pack(
     const Tox_Event_Group_Moderation *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 4)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->source_peer_id)
            && bin_pack_u32(bp, event->target_peer_id)
-           && bin_pack_u32(bp, event->mod_type);
+           && tox_group_mod_event_pack(event->mod_type, bp);
 }
 
 non_null()
@@ -117,7 +117,7 @@ static bool tox_event_group_moderation_unpack_into(
     return bin_unpack_u32(bu, &event->group_number)
            && bin_unpack_u32(bu, &event->source_peer_id)
            && bin_unpack_u32(bu, &event->target_peer_id)
-           && tox_group_mod_event_unpack(bu, &event->mod_type);
+           && tox_group_mod_event_unpack(&event->mod_type, bu);
 }
 
 

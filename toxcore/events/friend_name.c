@@ -92,7 +92,6 @@ static void tox_event_friend_name_destruct(Tox_Event_Friend_Name *friend_name, c
 bool tox_event_friend_name_pack(
     const Tox_Event_Friend_Name *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_bin(bp, event->name, event->name_length);

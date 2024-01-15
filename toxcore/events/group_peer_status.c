@@ -12,6 +12,7 @@
 #include "../mem.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_pack.h"
 #include "../tox_unpack.h"
 
 
@@ -83,11 +84,10 @@ static void tox_event_group_peer_status_destruct(Tox_Event_Group_Peer_Status *gr
 bool tox_event_group_peer_status_pack(
     const Tox_Event_Group_Peer_Status *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->peer_id)
-           && bin_pack_u32(bp, event->status);
+           && tox_user_status_pack(event->status, bp);
 }
 
 non_null()
@@ -101,7 +101,7 @@ static bool tox_event_group_peer_status_unpack_into(
 
     return bin_unpack_u32(bu, &event->group_number)
            && bin_unpack_u32(bu, &event->peer_id)
-           && tox_user_status_unpack(bu, &event->status);
+           && tox_user_status_unpack(&event->status, bu);
 }
 
 

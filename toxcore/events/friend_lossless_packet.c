@@ -92,7 +92,6 @@ static void tox_event_friend_lossless_packet_destruct(Tox_Event_Friend_Lossless_
 bool tox_event_friend_lossless_packet_pack(
     const Tox_Event_Friend_Lossless_Packet *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_bin(bp, event->data, event->data_length);

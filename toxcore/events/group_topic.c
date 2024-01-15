@@ -106,7 +106,6 @@ static void tox_event_group_topic_destruct(Tox_Event_Group_Topic *group_topic, c
 bool tox_event_group_topic_pack(
     const Tox_Event_Group_Topic *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->peer_id)

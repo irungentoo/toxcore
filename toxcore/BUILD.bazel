@@ -893,6 +893,19 @@ cc_test(
 )
 
 cc_library(
+    name = "tox_pack",
+    srcs = ["tox_pack.c"],
+    hdrs = ["tox_pack.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        ":attributes",
+        ":bin_pack",
+        ":ccompat",
+        ":tox",
+    ],
+)
+
+cc_library(
     name = "tox_unpack",
     srcs = ["tox_unpack.c"],
     hdrs = ["tox_unpack.h"],
@@ -926,6 +939,7 @@ cc_library(
         ":ccompat",
         ":mem",
         ":tox",
+        ":tox_pack",
         ":tox_unpack",
         "//c-toxcore/third_party:cmp",
     ],

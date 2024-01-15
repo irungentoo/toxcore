@@ -54,7 +54,6 @@ static void tox_event_conference_connected_destruct(Tox_Event_Conference_Connect
 bool tox_event_conference_connected_pack(
     const Tox_Event_Conference_Connected *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_u32(bp, event->conference_number);
 }
 

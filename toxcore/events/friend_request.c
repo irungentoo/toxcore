@@ -93,7 +93,6 @@ static void tox_event_friend_request_destruct(Tox_Event_Friend_Request *friend_r
 bool tox_event_friend_request_pack(
     const Tox_Event_Friend_Request *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 2)
            && bin_pack_bin(bp, event->public_key, TOX_PUBLIC_KEY_SIZE)
            && bin_pack_bin(bp, event->message, event->message_length);

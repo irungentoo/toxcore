@@ -12,6 +12,7 @@
 #include "../mem.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_pack.h"
 #include "../tox_unpack.h"
 
 
@@ -55,8 +56,7 @@ static void tox_event_self_connection_status_destruct(Tox_Event_Self_Connection_
 bool tox_event_self_connection_status_pack(
     const Tox_Event_Self_Connection_Status *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
-    return bin_pack_u32(bp, event->connection_status);
+    return tox_connection_pack(event->connection_status, bp);
 }
 
 non_null()
@@ -64,7 +64,7 @@ static bool tox_event_self_connection_status_unpack_into(
     Tox_Event_Self_Connection_Status *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-    return tox_connection_unpack(bu, &event->connection_status);
+    return tox_connection_unpack(&event->connection_status, bu);
 }
 
 

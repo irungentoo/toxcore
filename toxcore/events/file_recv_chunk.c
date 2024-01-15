@@ -120,7 +120,6 @@ static void tox_event_file_recv_chunk_destruct(Tox_Event_File_Recv_Chunk *file_r
 bool tox_event_file_recv_chunk_pack(
     const Tox_Event_File_Recv_Chunk *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 4)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_u32(bp, event->file_number)

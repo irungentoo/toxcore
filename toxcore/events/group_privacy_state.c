@@ -12,6 +12,7 @@
 #include "../mem.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_pack.h"
 #include "../tox_unpack.h"
 
 
@@ -69,10 +70,9 @@ static void tox_event_group_privacy_state_destruct(Tox_Event_Group_Privacy_State
 bool tox_event_group_privacy_state_pack(
     const Tox_Event_Group_Privacy_State *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->group_number)
-           && bin_pack_u32(bp, event->privacy_state);
+           && tox_group_privacy_state_pack(event->privacy_state, bp);
 }
 
 non_null()
@@ -85,7 +85,7 @@ static bool tox_event_group_privacy_state_unpack_into(
     }
 
     return bin_unpack_u32(bu, &event->group_number)
-           && tox_group_privacy_state_unpack(bu, &event->privacy_state);
+           && tox_group_privacy_state_unpack(&event->privacy_state, bu);
 }
 
 

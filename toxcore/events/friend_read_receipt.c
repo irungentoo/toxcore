@@ -68,7 +68,6 @@ static void tox_event_friend_read_receipt_destruct(Tox_Event_Friend_Read_Receipt
 bool tox_event_friend_read_receipt_pack(
     const Tox_Event_Friend_Read_Receipt *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 2)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_u32(bp, event->message_id);

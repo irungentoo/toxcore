@@ -338,6 +338,8 @@ set(toxcore_SOURCES
   toxcore/tox.h
   toxcore/tox_private.c
   toxcore/tox_private.h
+  toxcore/tox_pack.c
+  toxcore/tox_pack.h
   toxcore/tox_unpack.c
   toxcore/tox_unpack.h
   toxcore/util.c

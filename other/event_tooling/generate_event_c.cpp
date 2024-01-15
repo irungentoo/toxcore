@@ -56,15 +56,31 @@ std::string bin_pack_name_from_type(const std::string& type) {
         return "bin_pack_u8";
     } else if (type == "bool") {
         return "bin_pack_bool";
-    // only unpack is special TODO(Green-Sky): should we change that?
-    //} else if (type == "Tox_User_Status") {
-        //return "tox_pack_user_status";
-    //} else if (type == "Tox_Conference_Type") {
-        //return "tox_pack_conference_type";
+    } else if (type == "Tox_User_Status") {
+        return "tox_user_status_pack";
+    } else if (type == "Tox_Conference_Type") {
+        return "tox_conference_type_pack";
+    } else if (type == "Tox_Message_Type") {
+        return "tox_message_type_pack";
+    } else if (type == "Tox_File_Control") {
+        return "tox_file_control_pack";
+    } else if (type == "Tox_Connection") {
+        return "tox_connection_pack";
+    } else if (type == "Tox_Group_Privacy_State") {
+        return "tox_group_privacy_state_pack";
+    } else if (type == "Tox_Group_Voice_State") {
+        return "tox_group_voice_state_pack";
+    } else if (type == "Tox_Group_Topic_Lock") {
+        return "tox_group_topic_lock_pack";
+    } else if (type == "Tox_Group_Join_Fail") {
+        return "tox_group_join_fail_pack";
+    } else if (type == "Tox_Group_Mod_Event") {
+        return "tox_group_mod_event_pack";
+    } else if (type == "Tox_Group_Exit_Type") {
+        return "tox_group_exit_type_pack";
     } else {
-        //std::cerr << "unknown type " << type << "\n";
-        //exit(1);
-        // assume enum -> u32
+        std::cerr << "unknown type " << type << "\n";
+        exit(1);
         return "bin_pack_u32";
     }
 }
@@ -164,6 +180,7 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
 #include "../tox_events.h")";
     if (need_tox_unpack_h) {
         f << R"(
+#include "../tox_pack.h"
 #include "../tox_unpack.h")";
     }
     f << R"(
@@ -310,7 +327,6 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
     // pack
     f << "bool tox_event_" << event_name_l << "_pack(\n";
     f << "    const Tox_Event_" << event_name << " *event, Bin_Pack *bp)\n{\n";
-    f << "    assert(event != nullptr);\n";
 
     bool return_started = false;
 
@@ -330,7 +346,11 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
             overloaded{
                 [&](const EventTypeTrivial& t) {
                     f << bin_pack_name_from_type(t.type);
-                    f << "(bp, event->" << t.name << ")";
+                    if (t.type.rfind("Tox_", 0) == 0) {
+                        f << "(event->" << t.name << ", bp)";
+                    } else {
+                        f << "(bp, event->" << t.name << ")";
+                    }
                 },
                 [&](const EventTypeByteRange& t) {
                     f << "bin_pack_bin(bp, event->" << t.name_data << ", event->" << t.name_length << ")";
@@ -361,7 +381,11 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
             overloaded{
                 [&](const EventTypeTrivial& t) {
                     f << bin_unpack_name_from_type(t.type);
-                    f << "(bu, &event->" << t.name << ")";
+                    if (t.type.rfind("Tox_", 0) == 0) {
+                        f << "(&event->" << t.name << ", bu)";
+                    } else {
+                        f << "(bu, &event->" << t.name << ")";
+                    }
                 },
                 [&](const EventTypeByteRange& t) {
                     f << "bin_unpack_bin(bu, &event->" << t.name_data << ", &event->" << t.name_length << ")";

@@ -129,7 +129,6 @@ static void tox_event_group_invite_destruct(Tox_Event_Group_Invite *group_invite
 bool tox_event_group_invite_pack(
     const Tox_Event_Group_Invite *event, Bin_Pack *bp)
 {
-    assert(event != nullptr);
     return bin_pack_array(bp, 3)
            && bin_pack_u32(bp, event->friend_number)
            && bin_pack_bin(bp, event->invite_data, event->invite_data_length)
