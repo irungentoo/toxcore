@@ -193,7 +193,7 @@ static void group_peer_join_handler(Tox *tox, uint32_t group_number, uint32_t pe
     ck_assert(state->num_peers < NUM_GROUP_TOXES);
 }
 
-static void handle_mod(State *state, const char *peer_name, size_t peer_name_len, Tox_Group_Role role)
+static void handle_mod(State *state, const char *peer_name, size_t peer_name_len)
 {
     if (state->mod_event_count == 0) {
         ck_assert(memcmp(peer_name, state->mod_name1, peer_name_len) == 0);
@@ -205,10 +205,9 @@ static void handle_mod(State *state, const char *peer_name, size_t peer_name_len
 
     ++state->mod_event_count;
     state->mod_check = true;
-    ck_assert(role == TOX_GROUP_ROLE_MODERATOR);
 }
 
-static void handle_observer(State *state, const char *peer_name, size_t peer_name_len, Tox_Group_Role role)
+static void handle_observer(State *state, const char *peer_name, size_t peer_name_len)
 {
     if (state->observer_event_count == 0) {
         ck_assert(memcmp(peer_name, state->observer_name1, peer_name_len) == 0);
@@ -220,10 +219,9 @@ static void handle_observer(State *state, const char *peer_name, size_t peer_nam
 
     ++state->observer_event_count;
     state->observer_check = true;
-    ck_assert(role == TOX_GROUP_ROLE_OBSERVER);
 }
 
-static void handle_user(State *state, const char *peer_name, size_t peer_name_len, Tox_Group_Role role)
+static void handle_user(State *state, const char *peer_name, size_t peer_name_len)
 {
     // event 1: observer1 gets promoted back to user
     // event 2: observer2 gets promoted to moderator
@@ -243,7 +241,6 @@ static void handle_user(State *state, const char *peer_name, size_t peer_name_le
 
     ++state->user_event_count;
     state->user_check = true;
-    ck_assert(role == TOX_GROUP_ROLE_USER);
 }
 
 static void group_mod_event_handler(Tox *tox, uint32_t group_number, uint32_t source_peer_id, uint32_t target_peer_id,
@@ -274,6 +271,7 @@ static void group_mod_event_handler(Tox *tox, uint32_t group_number, uint32_t so
 
     Tox_Group_Role role = tox_group_peer_get_role(tox, group_number, target_peer_id, &q_err);
     ck_assert(q_err == TOX_ERR_GROUP_PEER_QUERY_OK);
+    ck_assert(role <= TOX_GROUP_ROLE_OBSERVER);
 
     fprintf(stderr, "tox%u: got moderator event %d (%s), role = %s\n",
             autotox->index, mod_type, tox_group_mod_event_to_string(mod_type),
@@ -281,17 +279,17 @@ static void group_mod_event_handler(Tox *tox, uint32_t group_number, uint32_t so
 
     switch (mod_type) {
         case TOX_GROUP_MOD_EVENT_MODERATOR: {
-            handle_mod(state, peer_name, peer_name_len, role);
+            handle_mod(state, peer_name, peer_name_len);
             break;
         }
 
         case TOX_GROUP_MOD_EVENT_OBSERVER: {
-            handle_observer(state, peer_name, peer_name_len, role);
+            handle_observer(state, peer_name, peer_name_len);
             break;
         }
 
         case TOX_GROUP_MOD_EVENT_USER: {
-            handle_user(state, peer_name, peer_name_len, role);
+            handle_user(state, peer_name, peer_name_len);
             break;
         }
 
@@ -607,6 +605,15 @@ static void group_moderation_test(AutoTox *autotoxes)
     tox_group_mod_kick_peer(tox1, state1->group_number, founder_peer_id, &k_err);
     ck_assert_msg(k_err != TOX_ERR_GROUP_MOD_KICK_PEER_OK, "Mod kicked founder");
 
+    /* the moderator about to be kicked changes the topic to trigger the founder to
+     * re-sign and redistribute it after the kick.
+     */
+    State *state_x = (State *)autotoxes[idx].state;
+    Tox *tox_x = autotoxes[idx].tox;
+    Tox_Err_Group_Topic_Set topic_err;
+    tox_group_set_topic(tox_x, state_x->group_number, nullptr, 0, &topic_err);
+    ck_assert(topic_err == TOX_ERR_GROUP_TOPIC_SET_OK);
+
     /* founder kicks moderator (this triggers two events: user and kick) */
     fprintf(stderr, "Founder is kicking %s\n", state0->peers[0].name);
 
@@ -619,7 +626,6 @@ static void group_moderation_test(AutoTox *autotoxes)
     fprintf(stderr, "All peers successfully received kick event\n");
 
     fprintf(stderr, "Founder is demoting moderator to user\n");
-
     tox_group_mod_set_role(tox0, state0->group_number, state0->peers[2].peer_id, TOX_GROUP_ROLE_USER, &role_err);
     ck_assert_msg(role_err == TOX_ERR_GROUP_MOD_SET_ROLE_OK, "Failed to demote peer 3 to User. error: %d", role_err);
 

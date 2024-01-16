@@ -3862,6 +3862,7 @@ static bool update_gc_topic(GC_Chat *chat, const uint8_t *public_sig_key)
         return true;
     }
 
+    LOGGER_TRACE(chat->log, "founder is re-signing topic");
     return gc_set_topic(chat, chat->topic_info.topic, chat->topic_info.length) == 0;
 }
 
