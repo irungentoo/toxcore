@@ -10,115 +10,138 @@
 
 namespace {
 
-struct Bin_Pack_Deleter {
-    void operator()(Bin_Pack *bp) const { bin_pack_free(bp); }
-};
-
-using Bin_Pack_Ptr = std::unique_ptr<Bin_Pack, Bin_Pack_Deleter>;
-
-struct Bin_Unpack_Deleter {
-    void operator()(Bin_Unpack *bu) const { bin_unpack_free(bu); }
-};
-
-using Bin_Unpack_Ptr = std::unique_ptr<Bin_Unpack, Bin_Unpack_Deleter>;
-
 TEST(BinPack, TooSmallBufferIsNotExceeded)
 {
-    std::array<uint8_t, 7> buf;
-    Bin_Pack_Ptr bp(bin_pack_new(buf.data(), buf.size()));
-    ASSERT_NE(bp, nullptr);
-    EXPECT_FALSE(bin_pack_u64_b(bp.get(), 1234567812345678LL));
+    const uint64_t orig = 1234567812345678LL;
+    std::array<uint8_t, sizeof(orig) - 1> buf;
+    EXPECT_FALSE(bin_pack_obj(
+        [](Bin_Pack *bp, const Logger *logger, const void *obj) {
+            return bin_pack_u64_b(bp, *static_cast<const uint64_t *>(obj));
+        },
+        nullptr, &orig, buf.data(), buf.size()));
 }
 
 TEST(BinPack, PackedUint64CanBeUnpacked)
 {
+    const uint64_t orig = 1234567812345678LL;
     std::array<uint8_t, 8> buf;
-    Bin_Pack_Ptr bp(bin_pack_new(buf.data(), buf.size()));
-    ASSERT_NE(bp, nullptr);
-    ASSERT_TRUE(bin_pack_u64_b(bp.get(), 1234567812345678LL));
+    EXPECT_TRUE(bin_pack_obj(
+        [](Bin_Pack *bp, const Logger *logger, const void *obj) {
+            return bin_pack_u64_b(bp, *static_cast<const uint64_t *>(obj));
+        },
+        nullptr, &orig, buf.data(), buf.size()));
 
-    Bin_Unpack_Ptr bu(bin_unpack_new(buf.data(), buf.size()));
-    ASSERT_NE(bu, nullptr);
-    uint64_t val;
-    ASSERT_TRUE(bin_unpack_u64_b(bu.get(), &val));
-    EXPECT_EQ(val, 1234567812345678LL);
+    uint64_t unpacked;
+    EXPECT_TRUE(bin_unpack_obj(
+        [](Bin_Unpack *bu, void *obj) {
+            return bin_unpack_u64_b(bu, static_cast<uint64_t *>(obj));
+        },
+        &unpacked, buf.data(), buf.size()));
+    EXPECT_EQ(unpacked, 1234567812345678LL);
 }
 
 TEST(BinPack, MsgPackedUint8CanBeUnpackedAsUint32)
 {
+    const uint8_t orig = 123;
     std::array<uint8_t, 2> buf;
-    Bin_Pack_Ptr bp(bin_pack_new(buf.data(), buf.size()));
-    ASSERT_NE(bp, nullptr);
-    ASSERT_TRUE(bin_pack_u08(bp.get(), 123));
+    EXPECT_TRUE(bin_pack_obj(
+        [](Bin_Pack *bp, const Logger *logger, const void *obj) {
+            return bin_pack_u08(bp, *static_cast<const uint8_t *>(obj));
+        },
+        nullptr, &orig, buf.data(), buf.size()));
 
-    Bin_Unpack_Ptr bu(bin_unpack_new(buf.data(), buf.size()));
-    ASSERT_NE(bu, nullptr);
-    uint32_t val;
-    ASSERT_TRUE(bin_unpack_u32(bu.get(), &val));
-    EXPECT_EQ(val, 123);
+    uint32_t unpacked;
+    EXPECT_TRUE(bin_unpack_obj(
+        [](Bin_Unpack *bu, void *obj) { return bin_unpack_u32(bu, static_cast<uint32_t *>(obj)); },
+        &unpacked, buf.data(), buf.size()));
+    EXPECT_EQ(unpacked, 123);
 }
 
 TEST(BinPack, MsgPackedUint32CanBeUnpackedAsUint8IfSmallEnough)
 {
+    const uint32_t orig = 123;
     std::array<uint8_t, 2> buf;
-    Bin_Pack_Ptr bp(bin_pack_new(buf.data(), buf.size()));
-    ASSERT_NE(bp, nullptr);
-    ASSERT_TRUE(bin_pack_u32(bp.get(), 123));
+    EXPECT_TRUE(bin_pack_obj(
+        [](Bin_Pack *bp, const Logger *logger, const void *obj) {
+            return bin_pack_u32(bp, *static_cast<const uint32_t *>(obj));
+        },
+        nullptr, &orig, buf.data(), buf.size()));
 
-    Bin_Unpack_Ptr bu(bin_unpack_new(buf.data(), buf.size()));
-    ASSERT_NE(bu, nullptr);
-    uint8_t val;
-    ASSERT_TRUE(bin_unpack_u08(bu.get(), &val));
-    EXPECT_EQ(val, 123);
+    uint8_t unpacked;
+    EXPECT_TRUE(bin_unpack_obj(
+        [](Bin_Unpack *bu, void *obj) { return bin_unpack_u08(bu, static_cast<uint8_t *>(obj)); },
+        &unpacked, buf.data(), buf.size()));
+
+    EXPECT_EQ(unpacked, 123);
 }
 
 TEST(BinPack, LargeMsgPackedUint32CannotBeUnpackedAsUint8)
 {
+    const uint32_t orig = 1234567;
     std::array<uint8_t, 5> buf;
-    Bin_Pack_Ptr bp(bin_pack_new(buf.data(), buf.size()));
-    ASSERT_NE(bp, nullptr);
-    ASSERT_TRUE(bin_pack_u32(bp.get(), 1234567));
+    EXPECT_TRUE(bin_pack_obj(
+        [](Bin_Pack *bp, const Logger *logger, const void *obj) {
+            return bin_pack_u32(bp, *static_cast<const uint32_t *>(obj));
+        },
+        nullptr, &orig, buf.data(), buf.size()));
 
-    Bin_Unpack_Ptr bu(bin_unpack_new(buf.data(), buf.size()));
-    ASSERT_NE(bu, nullptr);
-    uint8_t val;
-    EXPECT_FALSE(bin_unpack_u08(bu.get(), &val));
+    uint8_t unpacked;
+    EXPECT_FALSE(bin_unpack_obj(
+        [](Bin_Unpack *bu, void *obj) { return bin_unpack_u08(bu, static_cast<uint8_t *>(obj)); },
+        &unpacked, buf.data(), buf.size()));
 }
 
 TEST(BinPack, BinCanHoldPackedInts)
 {
-    std::array<uint8_t, 12> buf;
-    Bin_Pack_Ptr bp(bin_pack_new(buf.data(), buf.size()));
-    ASSERT_NE(bp, nullptr);
-    ASSERT_TRUE(bin_pack_bin_marker(bp.get(), 8));
-    ASSERT_TRUE(bin_pack_u64_b(bp.get(), 1234567812345678LL));
-    ASSERT_TRUE(bin_pack_u16_b(bp.get(), 54321));
+    struct Stuff {
+        uint64_t u64;
+        uint16_t u16;
+    };
+    const Stuff orig = {1234567812345678LL, 54321};
+    static const uint32_t packed_size = sizeof(uint64_t) + sizeof(uint16_t);
 
-    Bin_Unpack_Ptr bu(bin_unpack_new(buf.data(), buf.size()));
-    ASSERT_NE(bu, nullptr);
-    uint32_t size;
-    EXPECT_TRUE(bin_unpack_bin_size(bu.get(), &size));
-    EXPECT_EQ(size, 8);
-    uint64_t val1;
-    EXPECT_TRUE(bin_unpack_u64_b(bu.get(), &val1));
-    EXPECT_EQ(val1, 1234567812345678LL);
-    uint16_t val2;
-    EXPECT_TRUE(bin_unpack_u16_b(bu.get(), &val2));
-    EXPECT_EQ(val2, 54321);
+    std::array<uint8_t, 12> buf;
+    EXPECT_TRUE(bin_pack_obj(
+        [](Bin_Pack *bp, const Logger *logger, const void *obj) {
+            const Stuff *self = static_cast<const Stuff *>(obj);
+            return bin_pack_bin_marker(bp, packed_size)  //
+                && bin_pack_u64_b(bp, self->u64)  //
+                && bin_pack_u16_b(bp, self->u16);
+        },
+        nullptr, &orig, buf.data(), buf.size()));
+
+    Stuff unpacked;
+    EXPECT_TRUE(bin_unpack_obj(
+        [](Bin_Unpack *bu, void *obj) {
+            Stuff *stuff = static_cast<Stuff *>(obj);
+            uint32_t size;
+            return bin_unpack_bin_size(bu, &size)  //
+                && size == 10  //
+                && bin_unpack_u64_b(bu, &stuff->u64)  //
+                && bin_unpack_u16_b(bu, &stuff->u16);
+        },
+        &unpacked, buf.data(), buf.size()));
+    EXPECT_EQ(unpacked.u64, 1234567812345678LL);
+    EXPECT_EQ(unpacked.u16, 54321);
 }
 
 TEST(BinPack, BinCanHoldArbitraryData)
 {
     std::array<uint8_t, 7> buf;
-    Bin_Pack_Ptr bp(bin_pack_new(buf.data(), buf.size()));
-    ASSERT_NE(bp, nullptr);
-    ASSERT_TRUE(bin_pack_bin_marker(bp.get(), 5));
-    ASSERT_TRUE(bin_pack_bin_b(bp.get(), reinterpret_cast<const uint8_t *>("hello"), 5));
+    EXPECT_TRUE(bin_pack_obj(
+        [](Bin_Pack *bp, const Logger *logger, const void *obj) {
+            return bin_pack_bin_marker(bp, 5)  //
+                && bin_pack_bin_b(bp, reinterpret_cast<const uint8_t *>("hello"), 5);
+        },
+        nullptr, nullptr, buf.data(), buf.size()));
 
-    Bin_Unpack_Ptr bu(bin_unpack_new(buf.data(), buf.size()));
-    ASSERT_NE(bu, nullptr);
     std::array<uint8_t, 5> str;
-    EXPECT_TRUE(bin_unpack_bin_fixed(bu.get(), str.data(), str.size()));
+    EXPECT_TRUE(bin_unpack_obj(
+        [](Bin_Unpack *bu, void *obj) {
+            uint8_t *data = static_cast<uint8_t *>(obj);
+            return bin_unpack_bin_fixed(bu, data, 5);
+        },
+        str.data(), buf.data(), buf.size()));
     EXPECT_EQ(str, (std::array<uint8_t, 5>{'h', 'e', 'l', 'l', 'o'}));
 }
 
@@ -126,9 +149,13 @@ TEST(BinPack, OversizedArrayFailsUnpack)
 {
     std::array<uint8_t, 1> buf = {0x91};
 
-    Bin_Unpack_Ptr bu(bin_unpack_new(buf.data(), buf.size()));
     uint32_t size;
-    EXPECT_FALSE(bin_unpack_array(bu.get(), &size));
+    EXPECT_FALSE(bin_unpack_obj(
+        [](Bin_Unpack *bu, void *obj) {
+            uint32_t *size_ptr = static_cast<uint32_t *>(obj);
+            return bin_unpack_array(bu, size_ptr);
+        },
+        &size, buf.data(), buf.size()));
 }
 
 }  // namespace

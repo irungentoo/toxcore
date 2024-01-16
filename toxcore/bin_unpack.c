@@ -51,21 +51,19 @@ static size_t null_writer(cmp_ctx_t *ctx, const void *data, size_t count)
     return 0;
 }
 
-Bin_Unpack *bin_unpack_new(const uint8_t *buf, uint32_t buf_size)
+non_null()
+static void bin_unpack_init(Bin_Unpack *bu, const uint8_t *buf, uint32_t buf_size)
 {
-    Bin_Unpack *bu = (Bin_Unpack *)calloc(1, sizeof(Bin_Unpack));
-    if (bu == nullptr) {
-        return nullptr;
-    }
     bu->bytes = buf;
     bu->bytes_size = buf_size;
     cmp_init(&bu->ctx, bu, buf_reader, buf_skipper, null_writer);
-    return bu;
 }
 
-void bin_unpack_free(Bin_Unpack *bu)
+bool bin_unpack_obj(bin_unpack_cb *callback, void *obj, const uint8_t *buf, uint32_t buf_size)
 {
-    free(bu);
+    Bin_Unpack bu;
+    bin_unpack_init(&bu, buf, buf_size);
+    return callback(&bu, obj);
 }
 
 bool bin_unpack_array(Bin_Unpack *bu, uint32_t *size)

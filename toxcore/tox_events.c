@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2022 The TokTok team.
+ * Copyright © 2022-2024 The TokTok team.
  */
 
 #include "tox_events.h"
@@ -102,14 +102,20 @@ Tox_Events *tox_events_iterate(Tox *tox, bool fail_hard, Tox_Err_Events_Iterate 
     return state.events;
 }
 
-bool tox_events_pack(const Tox_Events *events, Bin_Pack *bp)
+non_null(1) nullable(2, 3)
+static bool tox_events_pack(Bin_Pack *bp, const Logger *logger, const void *obj)
 {
-    const uint32_t size = tox_events_get_size(events);
-    if (!bin_pack_array(bp, size)) {
+    const Tox_Events *events = (const Tox_Events *)obj;
+
+    if (events == nullptr) {
+        return bin_pack_array(bp, 0);
+    }
+
+    if (!bin_pack_array(bp, events->events_size)) {
         return false;
     }
 
-    for (uint32_t i = 0; i < size; ++i) {
+    for (uint32_t i = 0; i < events->events_size; ++i) {
         if (!tox_event_pack(&events->events[i], bp)) {
             return false;
         }
@@ -118,8 +124,11 @@ bool tox_events_pack(const Tox_Events *events, Bin_Pack *bp)
     return true;
 }
 
-bool tox_events_unpack(Tox_Events *events, Bin_Unpack *bu, const Memory *mem)
+non_null()
+static bool tox_events_unpack(Bin_Unpack *bu, void *obj)
 {
+    Tox_Events *events = (Tox_Events *)obj;
+
     uint32_t size;
     if (!bin_unpack_array(bu, &size)) {
         return false;
@@ -127,13 +136,13 @@ bool tox_events_unpack(Tox_Events *events, Bin_Unpack *bu, const Memory *mem)
 
     for (uint32_t i = 0; i < size; ++i) {
         Tox_Event event = {TOX_EVENT_INVALID};
-        if (!tox_event_unpack_into(&event, bu, mem)) {
-            tox_event_destruct(&event, mem);
+        if (!tox_event_unpack_into(&event, bu, events->mem)) {
+            tox_event_destruct(&event, events->mem);
             return false;
         }
 
         if (!tox_events_add(events, &event)) {
-            tox_event_destruct(&event, mem);
+            tox_event_destruct(&event, events->mem);
             return false;
         }
     }
@@ -143,35 +152,21 @@ bool tox_events_unpack(Tox_Events *events, Bin_Unpack *bu, const Memory *mem)
     return true;
 }
 
-non_null(1) nullable(2, 3)
-static bool tox_events_bin_pack_handler(Bin_Pack *bp, const Logger *logger, const void *obj)
-{
-    const Tox_Events *events = (const Tox_Events *)obj;
-    return tox_events_pack(events, bp);
-}
-
 uint32_t tox_events_bytes_size(const Tox_Events *events)
 {
-    return bin_pack_obj_size(tox_events_bin_pack_handler, nullptr, events);
+    return bin_pack_obj_size(tox_events_pack, nullptr, events);
 }
 
 bool tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes)
 {
-    return bin_pack_obj(tox_events_bin_pack_handler, nullptr, events, bytes, UINT32_MAX);
+    return bin_pack_obj(tox_events_pack, nullptr, events, bytes, UINT32_MAX);
 }
 
 Tox_Events *tox_events_load(const Tox_System *sys, const uint8_t *bytes, uint32_t bytes_size)
 {
-    Bin_Unpack *bu = bin_unpack_new(bytes, bytes_size);
-
-    if (bu == nullptr) {
-        return nullptr;
-    }
-
     Tox_Events *events = (Tox_Events *)mem_alloc(sys->mem, sizeof(Tox_Events));
 
     if (events == nullptr) {
-        bin_unpack_free(bu);
         return nullptr;
     }
 
@@ -180,13 +175,11 @@ Tox_Events *tox_events_load(const Tox_System *sys, const uint8_t *bytes, uint32_
     };
     events->mem = sys->mem;
 
-    if (!tox_events_unpack(events, bu, sys->mem)) {
+    if (!bin_unpack_obj(tox_events_unpack, events, bytes, bytes_size)) {
         tox_events_free(events);
-        bin_unpack_free(bu);
         return nullptr;
     }
 
-    bin_unpack_free(bu);
     return events;
 }
 

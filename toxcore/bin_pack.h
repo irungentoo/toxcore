@@ -69,27 +69,24 @@ bool bin_pack_obj(bin_pack_cb *callback, const Logger *logger, const void *obj, 
 
 /** @brief Determine the serialised size of an object array.
  *
- * Calls the callback `count` times with increasing `index` argument from 0 to
- * `count`. This function is here just so we don't need to write the same
- * trivial loop many times and so we don't need an extra struct just to contain
- * an array with size so it can be passed to `bin_pack_obj_size`.
+ * Behaves exactly like `bin_pack_obj_b_array` but doesn't write.
  *
  * @param callback The function called on the created packer and each object to
  *   be packed.
  * @param logger Optional logger object to pass to the callback.
  * @param arr The object array to be packed, passed as `arr` to the callback.
- * @param count The number of elements in the object array.
+ * @param arr_size The number of elements in the object array.
  *
  * @return The packed size of the passed object array according to the callback.
  * @retval UINT32_MAX in case of errors such as buffer overflow.
  */
 non_null(1, 3) nullable(2)
-uint32_t bin_pack_obj_array_size(bin_pack_array_cb *callback, const Logger *logger, const void *arr, uint32_t count);
+uint32_t bin_pack_obj_array_b_size(bin_pack_array_cb *callback, const Logger *logger, const void *arr, uint32_t arr_size);
 
 /** @brief Pack an object array into a buffer of a given size.
  *
- * Calls the callback `count` times with increasing `index` argument from 0 to
- * `count`. This function is here just so we don't need to write the same
+ * Calls the callback `arr_size` times with increasing `index` argument from 0 to
+ * `arr_size`. This function is here just so we don't need to write the same
  * trivial loop many times and so we don't need an extra struct just to contain
  * an array with size so it can be passed to `bin_pack_obj`.
  *
@@ -100,33 +97,14 @@ uint32_t bin_pack_obj_array_size(bin_pack_array_cb *callback, const Logger *logg
  *   array.
  * @param logger Optional logger object to pass to the callback.
  * @param arr The object array to be packed, passed as `arr` to the callback.
- * @param count The number of elements in the object array.
+ * @param arr_size The number of elements in the object array.
  * @param buf A byte array large enough to hold the serialised representation of `arr`.
  * @param buf_size The size of the byte array. Can be `UINT32_MAX` to disable bounds checking.
  *
  * @retval false if an error occurred (e.g. buffer overflow).
  */
 non_null(1, 3, 5) nullable(2)
-bool bin_pack_obj_array(bin_pack_array_cb *callback, const Logger *logger, const void *arr, uint32_t count, uint8_t *buf, uint32_t buf_size);
-
-/** @brief Allocate a new packer object.
- *
- * This is the only function that allocates memory in this module.
- *
- * @param buf A byte array large enough to hold the serialised representation of `obj`.
- * @param buf_size The size of the byte array. Can be `UINT32_MAX` to disable bounds checking.
- *
- * @retval nullptr on allocation failure.
- */
-non_null()
-Bin_Pack *bin_pack_new(uint8_t *buf, uint32_t buf_size);
-
-/** @brief Deallocates a packer object.
- *
- * Does not deallocate the buffer inside.
- */
-nullable(1)
-void bin_pack_free(Bin_Pack *bp);
+bool bin_pack_obj_array_b(bin_pack_array_cb *callback, const Logger *logger, const void *arr, uint32_t arr_size, uint8_t *buf, uint32_t buf_size);
 
 /** @brief Start packing a MessagePack array.
  *

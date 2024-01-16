@@ -552,8 +552,8 @@ static bool bin_pack_node_handler(Bin_Pack *bp, const Logger *logger, const void
 
 int pack_nodes(const Logger *logger, uint8_t *data, uint16_t length, const Node_format *nodes, uint16_t number)
 {
-    const uint32_t size = bin_pack_obj_array_size(bin_pack_node_handler, logger, nodes, number);
-    if (!bin_pack_obj_array(bin_pack_node_handler, logger, nodes, number, data, length)) {
+    const uint32_t size = bin_pack_obj_array_b_size(bin_pack_node_handler, logger, nodes, number);
+    if (!bin_pack_obj_array_b(bin_pack_node_handler, logger, nodes, number, data, length)) {
         return -1;
     }
     return size;

@@ -16,25 +16,34 @@ extern "C" {
 
 /**
  * @brief Binary deserialisation object.
+ *
+ * User code never creates this object. It is created and destroyed within the below functions,
+ * and passed to the callback. This enforces an alloc/dealloc bracket, so user code can never
+ * forget to clean up an unpacker.
  */
 typedef struct Bin_Unpack Bin_Unpack;
 
-/** @brief Allocate a new unpacker object.
+/** @brief Function used to unpack an object.
  *
- * @param buf The byte array to unpack values from.
+ * This function would typically cast the `void *` to the actual object pointer type and then call
+ * more appropriately typed unpacking functions.
+ */
+typedef bool bin_unpack_cb(Bin_Unpack *bu, void *obj);
+
+/** @brief Unpack an object from a buffer of a given size.
+ *
+ * This function creates and initialises a `Bin_Unpack` object, calls the callback with the
+ * unpacker object and the to-be-unpacked object, and then cleans up the unpacker object.
+ *
+ * @param callback The function called on the created unpacker and unpacked object.
+ * @param obj The object to be packed, passed as `obj` to the callback.
+ * @param buf A byte array containing the serialised representation of `obj`.
  * @param buf_size The size of the byte array.
  *
- * @retval nullptr on allocation failure.
+ * @retval false if an error occurred (e.g. buffer overrun).
  */
 non_null()
-Bin_Unpack *bin_unpack_new(const uint8_t *buf, uint32_t buf_size);
-
-/** @brief Deallocates an unpacker object.
- *
- * Does not deallocate the buffer inside.
- */
-nullable(1)
-void bin_unpack_free(Bin_Unpack *bu);
+bool bin_unpack_obj(bin_unpack_cb *callback, void *obj, const uint8_t *buf, uint32_t buf_size);
 
 /** @brief Start unpacking a MessagePack array.
  *

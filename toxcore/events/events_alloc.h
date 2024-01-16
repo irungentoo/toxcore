@@ -69,12 +69,6 @@ tox_group_self_join_cb tox_events_handle_group_self_join;
 tox_group_join_fail_cb tox_events_handle_group_join_fail;
 tox_group_moderation_cb tox_events_handle_group_moderation;
 
-non_null(2) nullable(1)
-bool tox_events_pack(const Tox_Events *events, Bin_Pack *bp);
-
-non_null()
-bool tox_events_unpack(Tox_Events *events, Bin_Unpack *bu, const Memory *mem);
-
 non_null()
 Tox_Events_State *tox_events_alloc(void *user_data);
 
