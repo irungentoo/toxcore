@@ -133,6 +133,7 @@ typedef struct GC_Connection {
     bool        pending_key_rotation_request;
 
     bool        pending_delete;  /* true if this peer has been marked for deletion */
+    bool        delete_this_iteration;  /* true if this peer should be deleted this do_gc() iteration*/
     GC_Exit_Info exit_info;
 } GC_Connection;
 
