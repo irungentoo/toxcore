@@ -56,7 +56,7 @@ uint32_t tox_event_conference_title_get_peer_number(const Tox_Event_Conference_T
     return conference_title->peer_number;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_conference_title_set_title(Tox_Event_Conference_Title *conference_title,
         const uint8_t *title, uint32_t title_length)
 {
@@ -66,6 +66,11 @@ static bool tox_event_conference_title_set_title(Tox_Event_Conference_Title *con
         free(conference_title->title);
         conference_title->title = nullptr;
         conference_title->title_length = 0;
+    }
+
+    if (title == nullptr) {
+        assert(title_length == 0);
+        return true;
     }
 
     uint8_t *title_copy = (uint8_t *)malloc(title_length);

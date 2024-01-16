@@ -44,7 +44,7 @@ uint32_t tox_event_group_invite_get_friend_number(const Tox_Event_Group_Invite *
     return group_invite->friend_number;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_group_invite_set_invite_data(Tox_Event_Group_Invite *group_invite,
         const uint8_t *invite_data, uint32_t invite_data_length)
 {
@@ -54,6 +54,11 @@ static bool tox_event_group_invite_set_invite_data(Tox_Event_Group_Invite *group
         free(group_invite->invite_data);
         group_invite->invite_data = nullptr;
         group_invite->invite_data_length = 0;
+    }
+
+    if (invite_data == nullptr) {
+        assert(invite_data_length == 0);
+        return true;
     }
 
     uint8_t *invite_data_copy = (uint8_t *)malloc(invite_data_length);
@@ -78,7 +83,7 @@ const uint8_t *tox_event_group_invite_get_invite_data(const Tox_Event_Group_Invi
     return group_invite->invite_data;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_group_invite_set_group_name(Tox_Event_Group_Invite *group_invite,
         const uint8_t *group_name, uint32_t group_name_length)
 {
@@ -88,6 +93,11 @@ static bool tox_event_group_invite_set_group_name(Tox_Event_Group_Invite *group_
         free(group_invite->group_name);
         group_invite->group_name = nullptr;
         group_invite->group_name_length = 0;
+    }
+
+    if (group_name == nullptr) {
+        assert(group_name_length == 0);
+        return true;
     }
 
     uint8_t *group_name_copy = (uint8_t *)malloc(group_name_length);

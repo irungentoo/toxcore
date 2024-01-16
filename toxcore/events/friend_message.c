@@ -58,7 +58,7 @@ Tox_Message_Type tox_event_friend_message_get_type(const Tox_Event_Friend_Messag
     return friend_message->type;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_friend_message_set_message(Tox_Event_Friend_Message *friend_message,
         const uint8_t *message, uint32_t message_length)
 {
@@ -68,6 +68,11 @@ static bool tox_event_friend_message_set_message(Tox_Event_Friend_Message *frien
         free(friend_message->message);
         friend_message->message = nullptr;
         friend_message->message_length = 0;
+    }
+
+    if (message == nullptr) {
+        assert(message_length == 0);
+        return true;
     }
 
     uint8_t *message_copy = (uint8_t *)malloc(message_length);

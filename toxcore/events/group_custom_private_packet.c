@@ -56,7 +56,7 @@ uint32_t tox_event_group_custom_private_packet_get_peer_id(const Tox_Event_Group
     return group_custom_private_packet->peer_id;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_group_custom_private_packet_set_data(Tox_Event_Group_Custom_Private_Packet *group_custom_private_packet,
         const uint8_t *data, uint32_t data_length)
 {
@@ -66,6 +66,11 @@ static bool tox_event_group_custom_private_packet_set_data(Tox_Event_Group_Custo
         free(group_custom_private_packet->data);
         group_custom_private_packet->data = nullptr;
         group_custom_private_packet->data_length = 0;
+    }
+
+    if (data == nullptr) {
+        assert(data_length == 0);
+        return true;
     }
 
     uint8_t *data_copy = (uint8_t *)malloc(data_length);

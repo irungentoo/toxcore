@@ -42,7 +42,7 @@ uint32_t tox_event_group_password_get_group_number(const Tox_Event_Group_Passwor
     return group_password->group_number;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_group_password_set_password(Tox_Event_Group_Password *group_password,
         const uint8_t *password, uint32_t password_length)
 {
@@ -52,6 +52,11 @@ static bool tox_event_group_password_set_password(Tox_Event_Group_Password *grou
         free(group_password->password);
         group_password->password = nullptr;
         group_password->password_length = 0;
+    }
+
+    if (password == nullptr) {
+        assert(password_length == 0);
+        return true;
     }
 
     uint8_t *password_copy = (uint8_t *)malloc(password_length);

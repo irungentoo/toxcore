@@ -56,7 +56,7 @@ uint32_t tox_event_group_peer_name_get_peer_id(const Tox_Event_Group_Peer_Name *
     return group_peer_name->peer_id;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_group_peer_name_set_name(Tox_Event_Group_Peer_Name *group_peer_name,
         const uint8_t *name, uint32_t name_length)
 {
@@ -66,6 +66,11 @@ static bool tox_event_group_peer_name_set_name(Tox_Event_Group_Peer_Name *group_
         free(group_peer_name->name);
         group_peer_name->name = nullptr;
         group_peer_name->name_length = 0;
+    }
+
+    if (name == nullptr) {
+        assert(name_length == 0);
+        return true;
     }
 
     uint8_t *name_copy = (uint8_t *)malloc(name_length);

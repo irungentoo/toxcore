@@ -72,7 +72,7 @@ Tox_Message_Type tox_event_conference_message_get_type(const Tox_Event_Conferenc
     return conference_message->type;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_conference_message_set_message(Tox_Event_Conference_Message *conference_message,
         const uint8_t *message, uint32_t message_length)
 {
@@ -82,6 +82,11 @@ static bool tox_event_conference_message_set_message(Tox_Event_Conference_Messag
         free(conference_message->message);
         conference_message->message = nullptr;
         conference_message->message_length = 0;
+    }
+
+    if (message == nullptr) {
+        assert(message_length == 0);
+        return true;
     }
 
     uint8_t *message_copy = (uint8_t *)malloc(message_length);

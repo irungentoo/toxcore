@@ -58,7 +58,7 @@ Tox_Conference_Type tox_event_conference_invite_get_type(const Tox_Event_Confere
     return conference_invite->type;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_conference_invite_set_cookie(Tox_Event_Conference_Invite *conference_invite,
         const uint8_t *cookie, uint32_t cookie_length)
 {
@@ -68,6 +68,11 @@ static bool tox_event_conference_invite_set_cookie(Tox_Event_Conference_Invite *
         free(conference_invite->cookie);
         conference_invite->cookie = nullptr;
         conference_invite->cookie_length = 0;
+    }
+
+    if (cookie == nullptr) {
+        assert(cookie_length == 0);
+        return true;
     }
 
     uint8_t *cookie_copy = (uint8_t *)malloc(cookie_length);

@@ -73,7 +73,7 @@ Tox_Message_Type tox_event_group_message_get_type(const Tox_Event_Group_Message 
     return group_message->type;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_group_message_set_message(Tox_Event_Group_Message *group_message,
         const uint8_t *message, uint32_t message_length)
 {
@@ -83,6 +83,11 @@ static bool tox_event_group_message_set_message(Tox_Event_Group_Message *group_m
         free(group_message->message);
         group_message->message = nullptr;
         group_message->message_length = 0;
+    }
+
+    if (message == nullptr) {
+        assert(message_length == 0);
+        return true;
     }
 
     uint8_t *message_copy = (uint8_t *)malloc(message_length);

@@ -216,7 +216,17 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
     // gen setters and getters
     for (const auto& t : event_types) {
         // setter
-        f << "non_null()\n";
+        std::visit(
+            overloaded{
+                [&](const EventTypeTrivial& t) {
+                    f << "non_null()\n";
+                },
+                [&](const EventTypeByteRange& t) {
+                    f << "non_null(1) nullable(2)\n";
+                }
+            },
+            t
+        );
         f << "static " << (t.index() == 0 ? "void" : "bool") << " tox_event_" << event_name_l << "_set_";
         std::visit(
             overloaded{
@@ -254,6 +264,9 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
                     f << "        " << event_name_l << "->" << t.name_data << " = nullptr;\n";
                     f << "        " << event_name_l << "->" << t.name_length << " = 0;\n";
                     f << "    }\n\n";
+                    f << "    if (" << t.name_data << " == nullptr) {\n";
+                    f << "        assert(" << t.name_length << " == 0);\n";
+                    f << "        return true;\n    }\n\n";
                     f << "    uint8_t *" << t.name_data << "_copy = (uint8_t *)malloc(" << t.name_length << ");\n\n";
                     f << "    if (" << t.name_data << "_copy == nullptr) {\n";
                     f << "        return false;\n    }\n\n";

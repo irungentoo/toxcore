@@ -84,7 +84,7 @@ uint64_t tox_event_file_recv_get_file_size(const Tox_Event_File_Recv *file_recv)
     return file_recv->file_size;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_file_recv_set_filename(Tox_Event_File_Recv *file_recv,
         const uint8_t *filename, uint32_t filename_length)
 {
@@ -94,6 +94,11 @@ static bool tox_event_file_recv_set_filename(Tox_Event_File_Recv *file_recv,
         free(file_recv->filename);
         file_recv->filename = nullptr;
         file_recv->filename_length = 0;
+    }
+
+    if (filename == nullptr) {
+        assert(filename_length == 0);
+        return true;
     }
 
     uint8_t *filename_copy = (uint8_t *)malloc(filename_length);

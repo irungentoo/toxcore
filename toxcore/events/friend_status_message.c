@@ -42,7 +42,7 @@ uint32_t tox_event_friend_status_message_get_friend_number(const Tox_Event_Frien
     return friend_status_message->friend_number;
 }
 
-non_null()
+non_null(1) nullable(2)
 static bool tox_event_friend_status_message_set_message(Tox_Event_Friend_Status_Message *friend_status_message,
         const uint8_t *message, uint32_t message_length)
 {
@@ -52,6 +52,11 @@ static bool tox_event_friend_status_message_set_message(Tox_Event_Friend_Status_
         free(friend_status_message->message);
         friend_status_message->message = nullptr;
         friend_status_message->message_length = 0;
+    }
+
+    if (message == nullptr) {
+        assert(message_length == 0);
+        return true;
     }
 
     uint8_t *message_copy = (uint8_t *)malloc(message_length);
