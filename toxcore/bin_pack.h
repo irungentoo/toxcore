@@ -16,6 +16,21 @@ extern "C" {
 
 /**
  * @brief Binary serialisation object.
+ *
+ * Some notes on parameter order:
+ *
+ * - We pass the `obj` pointer as `this`-like pointer first to the callbacks.
+ * - Any extra arguments passed to the callback follow the `obj` (and in case of
+ *   array packing, the `arr` and `arr_size` parameters).
+ * - The packer is passed last.
+ *
+ * This roughly matches a curried lambda function:
+ *
+ * @code
+ * bin_pack_obj([](const void *obj, const Logger *logger, Bin_Pack *bp) { ... }, obj, logger, buf, buf_size);
+ * // Translates roughly to:
+ * bin_pack_obj([obj, logger](Bin_Pack *bp) { ... }, buf, buf_size);
+ * @endcode
  */
 typedef struct Bin_Pack Bin_Pack;
 
@@ -24,7 +39,7 @@ typedef struct Bin_Pack Bin_Pack;
  * This function would typically cast the `void *` to the actual object pointer type and then call
  * more appropriately typed packing functions.
  */
-typedef bool bin_pack_cb(Bin_Pack *bp, const Logger *logger, const void *obj);
+typedef bool bin_pack_cb(const void *obj, const Logger *logger, Bin_Pack *bp);
 
 /** @brief Function used to pack an array of objects.
  *
@@ -34,19 +49,19 @@ typedef bool bin_pack_cb(Bin_Pack *bp, const Logger *logger, const void *obj);
  * @param arr is the object array as void pointer.
  * @param index is the index in the object array that is currently being packed.
  */
-typedef bool bin_pack_array_cb(Bin_Pack *bp, const Logger *logger, const void *arr, uint32_t index);
+typedef bool bin_pack_array_cb(const void *arr, uint32_t index, const Logger *logger, Bin_Pack *bp);
 
 /** @brief Determine the serialised size of an object.
  *
  * @param callback The function called on the created packer and packed object.
- * @param logger Optional logger object to pass to the callback.
  * @param obj The object to be packed, passed as `obj` to the callback.
+ * @param logger Optional logger object to pass to the callback.
  *
  * @return The packed size of the passed object according to the callback.
  * @retval UINT32_MAX in case of errors such as buffer overflow.
  */
 non_null(1) nullable(2, 3)
-uint32_t bin_pack_obj_size(bin_pack_cb *callback, const Logger *logger, const void *obj);
+uint32_t bin_pack_obj_size(bin_pack_cb *callback, const void *obj, const Logger *logger);
 
 /** @brief Pack an object into a buffer of a given size.
  *
@@ -56,16 +71,18 @@ uint32_t bin_pack_obj_size(bin_pack_cb *callback, const Logger *logger, const vo
  * You can use `bin_pack_obj_size` to determine the minimum required size of `buf`. If packing
  * overflows `uint32_t`, this function returns `false`.
  *
+ * Passing NULL for `obj` is supported, but requires that the callback supports nullable inputs.
+ *
  * @param callback The function called on the created packer and packed object.
- * @param logger Optional logger object to pass to the callback.
  * @param obj The object to be packed, passed as `obj` to the callback.
+ * @param logger Optional logger object to pass to the callback.
  * @param buf A byte array large enough to hold the serialised representation of `obj`.
  * @param buf_size The size of the byte array. Can be `UINT32_MAX` to disable bounds checking.
  *
  * @retval false if an error occurred (e.g. buffer overflow).
  */
 non_null(1, 4) nullable(2, 3)
-bool bin_pack_obj(bin_pack_cb *callback, const Logger *logger, const void *obj, uint8_t *buf, uint32_t buf_size);
+bool bin_pack_obj(bin_pack_cb *callback, const void *obj, const Logger *logger, uint8_t *buf, uint32_t buf_size);
 
 /** @brief Determine the serialised size of an object array.
  *
@@ -73,15 +90,15 @@ bool bin_pack_obj(bin_pack_cb *callback, const Logger *logger, const void *obj, 
  *
  * @param callback The function called on the created packer and each object to
  *   be packed.
- * @param logger Optional logger object to pass to the callback.
  * @param arr The object array to be packed, passed as `arr` to the callback.
  * @param arr_size The number of elements in the object array.
+ * @param logger Optional logger object to pass to the callback.
  *
  * @return The packed size of the passed object array according to the callback.
  * @retval UINT32_MAX in case of errors such as buffer overflow.
  */
-non_null(1, 3) nullable(2)
-uint32_t bin_pack_obj_array_b_size(bin_pack_array_cb *callback, const Logger *logger, const void *arr, uint32_t arr_size);
+non_null(1) nullable(2, 4)
+uint32_t bin_pack_obj_array_b_size(bin_pack_array_cb *callback, const void *arr, uint32_t arr_size, const Logger *logger);
 
 /** @brief Pack an object array into a buffer of a given size.
  *
@@ -93,18 +110,20 @@ uint32_t bin_pack_obj_array_b_size(bin_pack_array_cb *callback, const Logger *lo
  * Similar to `bin_pack_obj` but for arrays. Does not write the array length, so
  * if you need that, write it manually using `bin_pack_array`.
  *
+ * Passing NULL for `arr` has no effect, but requires that `arr_size` is 0.
+ *
  * @param callback The function called on the created packer and packed object
  *   array.
- * @param logger Optional logger object to pass to the callback.
  * @param arr The object array to be packed, passed as `arr` to the callback.
  * @param arr_size The number of elements in the object array.
+ * @param logger Optional logger object to pass to the callback.
  * @param buf A byte array large enough to hold the serialised representation of `arr`.
  * @param buf_size The size of the byte array. Can be `UINT32_MAX` to disable bounds checking.
  *
  * @retval false if an error occurred (e.g. buffer overflow).
  */
-non_null(1, 3, 5) nullable(2)
-bool bin_pack_obj_array_b(bin_pack_array_cb *callback, const Logger *logger, const void *arr, uint32_t arr_size, uint8_t *buf, uint32_t buf_size);
+non_null(1, 5) nullable(2, 4)
+bool bin_pack_obj_array_b(bin_pack_array_cb *callback, const void *arr, uint32_t arr_size, const Logger *logger, uint8_t *buf, uint32_t buf_size);
 
 /** @brief Start packing a MessagePack array.
  *

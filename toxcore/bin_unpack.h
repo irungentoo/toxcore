@@ -28,12 +28,15 @@ typedef struct Bin_Unpack Bin_Unpack;
  * This function would typically cast the `void *` to the actual object pointer type and then call
  * more appropriately typed unpacking functions.
  */
-typedef bool bin_unpack_cb(Bin_Unpack *bu, void *obj);
+typedef bool bin_unpack_cb(void *obj, Bin_Unpack *bu);
 
 /** @brief Unpack an object from a buffer of a given size.
  *
  * This function creates and initialises a `Bin_Unpack` object, calls the callback with the
  * unpacker object and the to-be-unpacked object, and then cleans up the unpacker object.
+ *
+ * Unlike `bin_pack_obj`, this function does not support NULL anywhere. The input array
+ * must be non-null, even if it is zero-length.
  *
  * @param callback The function called on the created unpacker and unpacked object.
  * @param obj The object to be packed, passed as `obj` to the callback.

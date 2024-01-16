@@ -420,7 +420,7 @@ static bool bin_pack_ip_port(Bin_Pack *bp, const Logger *logger, const IP_Port *
 }
 
 non_null()
-static bool bin_pack_ip_port_handler(Bin_Pack *bp, const Logger *logger, const void *obj)
+static bool bin_pack_ip_port_handler(const void *obj, const Logger *logger, Bin_Pack *bp)
 {
     const IP_Port *ip_port = (const IP_Port *)obj;
     return bin_pack_ip_port(bp, logger, ip_port);
@@ -428,13 +428,13 @@ static bool bin_pack_ip_port_handler(Bin_Pack *bp, const Logger *logger, const v
 
 int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_Port *ip_port)
 {
-    const uint32_t size = bin_pack_obj_size(bin_pack_ip_port_handler, logger, ip_port);
+    const uint32_t size = bin_pack_obj_size(bin_pack_ip_port_handler, ip_port, logger);
 
     if (size > length) {
         return -1;
     }
 
-    if (!bin_pack_obj(bin_pack_ip_port_handler, logger, ip_port, data, length)) {
+    if (!bin_pack_obj(bin_pack_ip_port_handler, ip_port, logger, data, length)) {
         return -1;
     }
 
@@ -543,7 +543,7 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool 
  * @retval true on success.
  */
 non_null()
-static bool bin_pack_node_handler(Bin_Pack *bp, const Logger *logger, const void *arr, uint32_t index)
+static bool bin_pack_node_handler(const void *arr, uint32_t index, const Logger *logger, Bin_Pack *bp)
 {
     const Node_format *nodes = (const Node_format *)arr;
     return bin_pack_ip_port(bp, logger, &nodes[index].ip_port)
@@ -552,8 +552,8 @@ static bool bin_pack_node_handler(Bin_Pack *bp, const Logger *logger, const void
 
 int pack_nodes(const Logger *logger, uint8_t *data, uint16_t length, const Node_format *nodes, uint16_t number)
 {
-    const uint32_t size = bin_pack_obj_array_b_size(bin_pack_node_handler, logger, nodes, number);
-    if (!bin_pack_obj_array_b(bin_pack_node_handler, logger, nodes, number, data, length)) {
+    const uint32_t size = bin_pack_obj_array_b_size(bin_pack_node_handler, nodes, number, logger);
+    if (!bin_pack_obj_array_b(bin_pack_node_handler, nodes, number, logger, data, length)) {
         return -1;
     }
     return size;

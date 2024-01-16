@@ -102,8 +102,8 @@ Tox_Events *tox_events_iterate(Tox *tox, bool fail_hard, Tox_Err_Events_Iterate 
     return state.events;
 }
 
-non_null(1) nullable(2, 3)
-static bool tox_events_pack(Bin_Pack *bp, const Logger *logger, const void *obj)
+non_null(3) nullable(1, 2)
+static bool tox_events_pack(const void *obj, const Logger *logger, Bin_Pack *bp)
 {
     const Tox_Events *events = (const Tox_Events *)obj;
 
@@ -125,7 +125,7 @@ static bool tox_events_pack(Bin_Pack *bp, const Logger *logger, const void *obj)
 }
 
 non_null()
-static bool tox_events_unpack(Bin_Unpack *bu, void *obj)
+static bool tox_events_unpack(void *obj, Bin_Unpack *bu)
 {
     Tox_Events *events = (Tox_Events *)obj;
 
@@ -154,12 +154,12 @@ static bool tox_events_unpack(Bin_Unpack *bu, void *obj)
 
 uint32_t tox_events_bytes_size(const Tox_Events *events)
 {
-    return bin_pack_obj_size(tox_events_pack, nullptr, events);
+    return bin_pack_obj_size(tox_events_pack, events, nullptr);
 }
 
 bool tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes)
 {
-    return bin_pack_obj(tox_events_pack, nullptr, events, bytes, UINT32_MAX);
+    return bin_pack_obj(tox_events_pack, events, nullptr, bytes, UINT32_MAX);
 }
 
 Tox_Events *tox_events_load(const Tox_System *sys, const uint8_t *bytes, uint32_t bytes_size)

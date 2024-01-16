@@ -63,7 +63,7 @@ bool bin_unpack_obj(bin_unpack_cb *callback, void *obj, const uint8_t *buf, uint
 {
     Bin_Unpack bu;
     bin_unpack_init(&bu, buf, buf_size);
-    return callback(&bu, obj);
+    return callback(obj, &bu);
 }
 
 bool bin_unpack_array(Bin_Unpack *bu, uint32_t *size)

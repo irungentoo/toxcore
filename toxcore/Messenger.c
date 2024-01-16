@@ -3191,7 +3191,7 @@ static void pack_groupchats(const GC_Session *c, Bin_Pack *bp)
 }
 
 non_null()
-static bool pack_groupchats_handler(Bin_Pack *bp, const Logger *log, const void *obj)
+static bool pack_groupchats_handler(const void *obj, const Logger *log, Bin_Pack *bp)
 {
     const GC_Session *session = (const GC_Session *)obj;
     pack_groupchats(session, bp);
@@ -3201,8 +3201,8 @@ static bool pack_groupchats_handler(Bin_Pack *bp, const Logger *log, const void 
 non_null()
 static uint32_t saved_groups_size(const Messenger *m)
 {
-    const GC_Session *c = m->group_handler;
-    return bin_pack_obj_size(pack_groupchats_handler, m->log, c);
+    const GC_Session *session = m->group_handler;
+    return bin_pack_obj_size(pack_groupchats_handler, session, m->log);
 }
 
 non_null()
@@ -3224,7 +3224,7 @@ static uint8_t *groups_save(const Messenger *m, uint8_t *data)
 
     data = state_write_section_header(data, STATE_COOKIE_TYPE, len, STATE_TYPE_GROUPS);
 
-    if (!bin_pack_obj(pack_groupchats_handler, m->log, c, data, len)) {
+    if (!bin_pack_obj(pack_groupchats_handler, c, m->log, data, len)) {
         LOGGER_FATAL(m->log, "failed to pack group chats into buffer of length %u", len);
         return data;
     }
@@ -3237,7 +3237,7 @@ static uint8_t *groups_save(const Messenger *m, uint8_t *data)
 }
 
 non_null()
-static bool handle_groups_load(Bin_Unpack *bu, void *obj)
+static bool handle_groups_load(void *obj, Bin_Unpack *bu)
 {
     Messenger *m = (Messenger *)obj;
 
