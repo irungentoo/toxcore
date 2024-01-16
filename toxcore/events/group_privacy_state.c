@@ -142,6 +142,7 @@ bool tox_event_group_privacy_state_unpack(
     Tox_Event_Group_Privacy_State **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_group_privacy_state_new(mem);
 
     if (*event == nullptr) {

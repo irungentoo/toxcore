@@ -140,6 +140,7 @@ bool tox_event_friend_read_receipt_unpack(
     Tox_Event_Friend_Read_Receipt **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_friend_read_receipt_new(mem);
 
     if (*event == nullptr) {

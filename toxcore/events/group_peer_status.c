@@ -158,6 +158,7 @@ bool tox_event_group_peer_status_unpack(
     Tox_Event_Group_Peer_Status **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_group_peer_status_new(mem);
 
     if (*event == nullptr) {

@@ -174,6 +174,7 @@ bool tox_event_group_moderation_unpack(
     Tox_Event_Group_Moderation **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_group_moderation_new(mem);
 
     if (*event == nullptr) {

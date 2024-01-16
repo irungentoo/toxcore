@@ -142,6 +142,7 @@ bool tox_event_group_join_fail_unpack(
     Tox_Event_Group_Join_Fail **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_group_join_fail_new(mem);
 
     if (*event == nullptr) {

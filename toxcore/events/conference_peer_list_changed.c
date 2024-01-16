@@ -119,6 +119,7 @@ bool tox_event_conference_peer_list_changed_unpack(
     Tox_Event_Conference_Peer_List_Changed **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_conference_peer_list_changed_new(mem);
 
     if (*event == nullptr) {

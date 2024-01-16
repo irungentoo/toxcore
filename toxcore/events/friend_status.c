@@ -142,6 +142,7 @@ bool tox_event_friend_status_unpack(
     Tox_Event_Friend_Status **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_friend_status_new(mem);
 
     if (*event == nullptr) {

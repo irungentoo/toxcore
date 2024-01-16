@@ -201,6 +201,7 @@ bool tox_event_file_recv_chunk_unpack(
     Tox_Event_File_Recv_Chunk **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_file_recv_chunk_new(mem);
 
     if (*event == nullptr) {

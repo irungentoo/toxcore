@@ -187,6 +187,7 @@ bool tox_event_conference_invite_unpack(
     Tox_Event_Conference_Invite **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_conference_invite_new(mem);
 
     if (*event == nullptr) {

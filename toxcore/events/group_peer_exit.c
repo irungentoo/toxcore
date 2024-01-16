@@ -247,6 +247,7 @@ bool tox_event_group_peer_exit_unpack(
     Tox_Event_Group_Peer_Exit **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_group_peer_exit_new(mem);
 
     if (*event == nullptr) {

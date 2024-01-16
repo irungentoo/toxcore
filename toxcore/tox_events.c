@@ -75,6 +75,12 @@ uint32_t tox_events_get_size(const Tox_Events *events)
     return events == nullptr ? 0 : events->events_size;
 }
 
+nullable(1)
+static const Tox_Event *tox_events_get_events(const Tox_Events *events)
+{
+    return events == nullptr ? nullptr : events->events;
+}
+
 const Tox_Event *tox_events_get(const Tox_Events *events, uint32_t index)
 {
     if (index >= tox_events_get_size(events)) {
@@ -102,26 +108,29 @@ Tox_Events *tox_events_iterate(Tox *tox, bool fail_hard, Tox_Err_Events_Iterate 
     return state.events;
 }
 
+non_null()
+static bool tox_event_pack_handler(const void *obj, uint32_t index, const Logger *logger, Bin_Pack *bp)
+{
+    const Tox_Event *events = (const Tox_Event *)obj;
+    assert(events != nullptr);
+    return tox_event_pack(&events[index], bp);
+}
+
 non_null(3) nullable(1, 2)
-static bool tox_events_pack(const void *obj, const Logger *logger, Bin_Pack *bp)
+static bool tox_events_pack_handler(const void *obj, const Logger *logger, Bin_Pack *bp)
 {
     const Tox_Events *events = (const Tox_Events *)obj;
+    return bin_pack_obj_array(bp, tox_event_pack_handler, tox_events_get_events(events), tox_events_get_size(events), logger);
+}
 
-    if (events == nullptr) {
-        return bin_pack_array(bp, 0);
-    }
+uint32_t tox_events_bytes_size(const Tox_Events *events)
+{
+    return bin_pack_obj_size(tox_events_pack_handler, events, nullptr);
+}
 
-    if (!bin_pack_array(bp, events->events_size)) {
-        return false;
-    }
-
-    for (uint32_t i = 0; i < events->events_size; ++i) {
-        if (!tox_event_pack(&events->events[i], bp)) {
-            return false;
-        }
-    }
-
-    return true;
+bool tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes)
+{
+    return bin_pack_obj(tox_events_pack_handler, events, nullptr, bytes, UINT32_MAX);
 }
 
 non_null()
@@ -150,16 +159,6 @@ static bool tox_events_unpack(void *obj, Bin_Unpack *bu)
     // Invariant: if all adds worked, the events size must be the input array size.
     assert(tox_events_get_size(events) == size);
     return true;
-}
-
-uint32_t tox_events_bytes_size(const Tox_Events *events)
-{
-    return bin_pack_obj_size(tox_events_pack, events, nullptr);
-}
-
-bool tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes)
-{
-    return bin_pack_obj(tox_events_pack, events, nullptr, bytes, UINT32_MAX);
 }
 
 Tox_Events *tox_events_load(const Tox_System *sys, const uint8_t *bytes, uint32_t bytes_size)

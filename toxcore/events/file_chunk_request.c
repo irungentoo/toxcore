@@ -172,6 +172,7 @@ bool tox_event_file_chunk_request_unpack(
     Tox_Event_File_Chunk_Request **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_file_chunk_request_new(mem);
 
     if (*event == nullptr) {

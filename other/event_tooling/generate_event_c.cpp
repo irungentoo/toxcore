@@ -452,6 +452,7 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
     f << "bool tox_event_" << event_name_l << "_unpack(\n";
     f << "    Tox_Event_" << event_name << " **event, Bin_Unpack *bu, const Memory *mem)\n{\n";
     f << "    assert(event != nullptr);\n";
+    f << "    assert(*event == nullptr);\n";
     f << "    *event = tox_event_" << event_name_l << "_new(mem);\n\n";
     f << "    if (*event == nullptr) {\n        return false;\n    }\n\n";
     f << "    return tox_event_" << event_name_l << "_unpack_into(*event, bu);\n}\n\n";

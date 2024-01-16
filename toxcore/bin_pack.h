@@ -17,6 +17,11 @@ extern "C" {
 /**
  * @brief Binary serialisation object.
  *
+ * Naming convention:
+ * - Functions ending in `_b` (or `_b_size`) are NOT MessagePack, i.e. write
+ *   data in plain big endian binary format.
+ * - All other functions encode their input in MessagePack format.
+ *
  * Some notes on parameter order:
  *
  * - We pass the `obj` pointer as `this`-like pointer first to the callbacks.
@@ -66,7 +71,9 @@ uint32_t bin_pack_obj_size(bin_pack_cb *callback, const void *obj, const Logger 
 /** @brief Pack an object into a buffer of a given size.
  *
  * This function creates and initialises a `Bin_Pack` packer object, calls the callback with the
- * packer object and the to-be-packed object, and then cleans up the packer object.
+ * packer object and the to-be-packed object, and then cleans up the packer object. Note that
+ * there is nothing MessagePack-specific about this function, so it can be used for both custom
+ * binary and MessagePack formats.
  *
  * You can use `bin_pack_obj_size` to determine the minimum required size of `buf`. If packing
  * overflows `uint32_t`, this function returns `false`.
@@ -102,13 +109,8 @@ uint32_t bin_pack_obj_array_b_size(bin_pack_array_cb *callback, const void *arr,
 
 /** @brief Pack an object array into a buffer of a given size.
  *
- * Calls the callback `arr_size` times with increasing `index` argument from 0 to
- * `arr_size`. This function is here just so we don't need to write the same
- * trivial loop many times and so we don't need an extra struct just to contain
- * an array with size so it can be passed to `bin_pack_obj`.
- *
- * Similar to `bin_pack_obj` but for arrays. Does not write the array length, so
- * if you need that, write it manually using `bin_pack_array`.
+ * Similar to `bin_pack_obj_array` but does not write the array length, so
+ * if you need that, encoding it is on you.
  *
  * Passing NULL for `arr` has no effect, but requires that `arr_size` is 0.
  *
@@ -124,6 +126,32 @@ uint32_t bin_pack_obj_array_b_size(bin_pack_array_cb *callback, const void *arr,
  */
 non_null(1, 5) nullable(2, 4)
 bool bin_pack_obj_array_b(bin_pack_array_cb *callback, const void *arr, uint32_t arr_size, const Logger *logger, uint8_t *buf, uint32_t buf_size);
+
+/** @brief Encode an object array as MessagePack array into a bin packer.
+ *
+ * Calls the callback `arr_size` times with increasing `index` argument from 0 to
+ * `arr_size`. This function is here just so we don't need to write the same
+ * trivial loop many times and so we don't need an extra struct just to contain
+ * an array with size so it can be passed to `bin_pack_obj`.
+ *
+ * Similar to `bin_pack_obj` but for arrays. Note that a `Bin_Pack` object is
+ * required here, so it must be called from within a callback to one of the
+ * functions above.
+ *
+ * Passing NULL for `arr` requires that `arr_size` is 0. This will write a 0-size
+ * MessagePack array to the packer.
+ *
+ * @param bp Bin packer object.
+ * @param callback The function called on the created packer and packed object
+ *   array.
+ * @param arr The object array to be packed, passed as `arr` to the callback.
+ * @param arr_size The number of elements in the object array.
+ * @param logger Optional logger object to pass to the callback.
+ *
+ * @retval false if an error occurred (e.g. buffer overflow).
+ */
+non_null(1, 2) nullable(3, 5)
+bool bin_pack_obj_array(Bin_Pack *bp, bin_pack_array_cb *callback, const void *arr, uint32_t arr_size, const Logger *logger);
 
 /** @brief Start packing a MessagePack array.
  *

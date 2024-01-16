@@ -185,6 +185,7 @@ bool tox_event_conference_title_unpack(
     Tox_Event_Conference_Title **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_conference_title_new(mem);
 
     if (*event == nullptr) {

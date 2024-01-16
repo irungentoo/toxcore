@@ -142,6 +142,7 @@ bool tox_event_group_topic_lock_unpack(
     Tox_Event_Group_Topic_Lock **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_group_topic_lock_new(mem);
 
     if (*event == nullptr) {

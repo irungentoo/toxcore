@@ -947,6 +947,137 @@ static bool tox_event_type_unpack(Bin_Unpack *bu, Tox_Event_Type *val)
            && tox_event_type_from_int(u32, val);
 }
 
+non_null()
+static bool tox_event_data_unpack(Tox_Event_Type type, Tox_Event_Data *data, Bin_Unpack *bu, const Memory *mem)
+{
+    switch (type) {
+        case TOX_EVENT_CONFERENCE_CONNECTED:
+            return tox_event_conference_connected_unpack(&data->conference_connected, bu, mem);
+
+        case TOX_EVENT_CONFERENCE_INVITE:
+            return tox_event_conference_invite_unpack(&data->conference_invite, bu, mem);
+
+        case TOX_EVENT_CONFERENCE_MESSAGE:
+            return tox_event_conference_message_unpack(&data->conference_message, bu, mem);
+
+        case TOX_EVENT_CONFERENCE_PEER_LIST_CHANGED:
+            return tox_event_conference_peer_list_changed_unpack(&data->conference_peer_list_changed, bu, mem);
+
+        case TOX_EVENT_CONFERENCE_PEER_NAME:
+            return tox_event_conference_peer_name_unpack(&data->conference_peer_name, bu, mem);
+
+        case TOX_EVENT_CONFERENCE_TITLE:
+            return tox_event_conference_title_unpack(&data->conference_title, bu, mem);
+
+        case TOX_EVENT_FILE_CHUNK_REQUEST:
+            return tox_event_file_chunk_request_unpack(&data->file_chunk_request, bu, mem);
+
+        case TOX_EVENT_FILE_RECV_CHUNK:
+            return tox_event_file_recv_chunk_unpack(&data->file_recv_chunk, bu, mem);
+
+        case TOX_EVENT_FILE_RECV_CONTROL:
+            return tox_event_file_recv_control_unpack(&data->file_recv_control, bu, mem);
+
+        case TOX_EVENT_FILE_RECV:
+            return tox_event_file_recv_unpack(&data->file_recv, bu, mem);
+
+        case TOX_EVENT_FRIEND_CONNECTION_STATUS:
+            return tox_event_friend_connection_status_unpack(&data->friend_connection_status, bu, mem);
+
+        case TOX_EVENT_FRIEND_LOSSLESS_PACKET:
+            return tox_event_friend_lossless_packet_unpack(&data->friend_lossless_packet, bu, mem);
+
+        case TOX_EVENT_FRIEND_LOSSY_PACKET:
+            return tox_event_friend_lossy_packet_unpack(&data->friend_lossy_packet, bu, mem);
+
+        case TOX_EVENT_FRIEND_MESSAGE:
+            return tox_event_friend_message_unpack(&data->friend_message, bu, mem);
+
+        case TOX_EVENT_FRIEND_NAME:
+            return tox_event_friend_name_unpack(&data->friend_name, bu, mem);
+
+        case TOX_EVENT_FRIEND_READ_RECEIPT:
+            return tox_event_friend_read_receipt_unpack(&data->friend_read_receipt, bu, mem);
+
+        case TOX_EVENT_FRIEND_REQUEST:
+            return tox_event_friend_request_unpack(&data->friend_request, bu, mem);
+
+        case TOX_EVENT_FRIEND_STATUS_MESSAGE:
+            return tox_event_friend_status_message_unpack(&data->friend_status_message, bu, mem);
+
+        case TOX_EVENT_FRIEND_STATUS:
+            return tox_event_friend_status_unpack(&data->friend_status, bu, mem);
+
+        case TOX_EVENT_FRIEND_TYPING:
+            return tox_event_friend_typing_unpack(&data->friend_typing, bu, mem);
+
+        case TOX_EVENT_SELF_CONNECTION_STATUS:
+            return tox_event_self_connection_status_unpack(&data->self_connection_status, bu, mem);
+
+        case TOX_EVENT_GROUP_PEER_NAME:
+            return tox_event_group_peer_name_unpack(&data->group_peer_name, bu, mem);
+
+        case TOX_EVENT_GROUP_PEER_STATUS:
+            return tox_event_group_peer_status_unpack(&data->group_peer_status, bu, mem);
+
+        case TOX_EVENT_GROUP_TOPIC:
+            return tox_event_group_topic_unpack(&data->group_topic, bu, mem);
+
+        case TOX_EVENT_GROUP_PRIVACY_STATE:
+            return tox_event_group_privacy_state_unpack(&data->group_privacy_state, bu, mem);
+
+        case TOX_EVENT_GROUP_VOICE_STATE:
+            return tox_event_group_voice_state_unpack(&data->group_voice_state, bu, mem);
+
+        case TOX_EVENT_GROUP_TOPIC_LOCK:
+            return tox_event_group_topic_lock_unpack(&data->group_topic_lock, bu, mem);
+
+        case TOX_EVENT_GROUP_PEER_LIMIT:
+            return tox_event_group_peer_limit_unpack(&data->group_peer_limit, bu, mem);
+
+        case TOX_EVENT_GROUP_PASSWORD:
+            return tox_event_group_password_unpack(&data->group_password, bu, mem);
+
+        case TOX_EVENT_GROUP_MESSAGE:
+            return tox_event_group_message_unpack(&data->group_message, bu, mem);
+
+        case TOX_EVENT_GROUP_PRIVATE_MESSAGE:
+            return tox_event_group_private_message_unpack(&data->group_private_message, bu, mem);
+
+        case TOX_EVENT_GROUP_CUSTOM_PACKET:
+            return tox_event_group_custom_packet_unpack(&data->group_custom_packet, bu, mem);
+
+        case TOX_EVENT_GROUP_CUSTOM_PRIVATE_PACKET:
+            return tox_event_group_custom_private_packet_unpack(&data->group_custom_private_packet, bu, mem);
+
+        case TOX_EVENT_GROUP_INVITE:
+            return tox_event_group_invite_unpack(&data->group_invite, bu, mem);
+
+        case TOX_EVENT_GROUP_PEER_JOIN:
+            return tox_event_group_peer_join_unpack(&data->group_peer_join, bu, mem);
+
+        case TOX_EVENT_GROUP_PEER_EXIT:
+            return tox_event_group_peer_exit_unpack(&data->group_peer_exit, bu, mem);
+
+        case TOX_EVENT_GROUP_SELF_JOIN:
+            return tox_event_group_self_join_unpack(&data->group_self_join, bu, mem);
+
+        case TOX_EVENT_GROUP_JOIN_FAIL:
+            return tox_event_group_join_fail_unpack(&data->group_join_fail, bu, mem);
+
+        case TOX_EVENT_GROUP_MODERATION:
+            return tox_event_group_moderation_unpack(&data->group_moderation, bu, mem);
+
+        case TOX_EVENT_DHT_GET_NODES_RESPONSE:
+            return tox_event_dht_get_nodes_response_unpack(&data->dht_get_nodes_response, bu, mem);
+
+        case TOX_EVENT_INVALID:
+            return false;
+    }
+
+    return false;
+}
+
 bool tox_event_unpack_into(Tox_Event *event, Bin_Unpack *bu, const Memory *mem)
 {
     uint32_t size;
@@ -965,130 +1096,5 @@ bool tox_event_unpack_into(Tox_Event *event, Bin_Unpack *bu, const Memory *mem)
 
     event->type = type;
 
-    switch (type) {
-        case TOX_EVENT_CONFERENCE_CONNECTED:
-            return tox_event_conference_connected_unpack(&event->data.conference_connected, bu, mem);
-
-        case TOX_EVENT_CONFERENCE_INVITE:
-            return tox_event_conference_invite_unpack(&event->data.conference_invite, bu, mem);
-
-        case TOX_EVENT_CONFERENCE_MESSAGE:
-            return tox_event_conference_message_unpack(&event->data.conference_message, bu, mem);
-
-        case TOX_EVENT_CONFERENCE_PEER_LIST_CHANGED:
-            return tox_event_conference_peer_list_changed_unpack(&event->data.conference_peer_list_changed, bu, mem);
-
-        case TOX_EVENT_CONFERENCE_PEER_NAME:
-            return tox_event_conference_peer_name_unpack(&event->data.conference_peer_name, bu, mem);
-
-        case TOX_EVENT_CONFERENCE_TITLE:
-            return tox_event_conference_title_unpack(&event->data.conference_title, bu, mem);
-
-        case TOX_EVENT_FILE_CHUNK_REQUEST:
-            return tox_event_file_chunk_request_unpack(&event->data.file_chunk_request, bu, mem);
-
-        case TOX_EVENT_FILE_RECV_CHUNK:
-            return tox_event_file_recv_chunk_unpack(&event->data.file_recv_chunk, bu, mem);
-
-        case TOX_EVENT_FILE_RECV_CONTROL:
-            return tox_event_file_recv_control_unpack(&event->data.file_recv_control, bu, mem);
-
-        case TOX_EVENT_FILE_RECV:
-            return tox_event_file_recv_unpack(&event->data.file_recv, bu, mem);
-
-        case TOX_EVENT_FRIEND_CONNECTION_STATUS:
-            return tox_event_friend_connection_status_unpack(&event->data.friend_connection_status, bu, mem);
-
-        case TOX_EVENT_FRIEND_LOSSLESS_PACKET:
-            return tox_event_friend_lossless_packet_unpack(&event->data.friend_lossless_packet, bu, mem);
-
-        case TOX_EVENT_FRIEND_LOSSY_PACKET:
-            return tox_event_friend_lossy_packet_unpack(&event->data.friend_lossy_packet, bu, mem);
-
-        case TOX_EVENT_FRIEND_MESSAGE:
-            return tox_event_friend_message_unpack(&event->data.friend_message, bu, mem);
-
-        case TOX_EVENT_FRIEND_NAME:
-            return tox_event_friend_name_unpack(&event->data.friend_name, bu, mem);
-
-        case TOX_EVENT_FRIEND_READ_RECEIPT:
-            return tox_event_friend_read_receipt_unpack(&event->data.friend_read_receipt, bu, mem);
-
-        case TOX_EVENT_FRIEND_REQUEST:
-            return tox_event_friend_request_unpack(&event->data.friend_request, bu, mem);
-
-        case TOX_EVENT_FRIEND_STATUS_MESSAGE:
-            return tox_event_friend_status_message_unpack(&event->data.friend_status_message, bu, mem);
-
-        case TOX_EVENT_FRIEND_STATUS:
-            return tox_event_friend_status_unpack(&event->data.friend_status, bu, mem);
-
-        case TOX_EVENT_FRIEND_TYPING:
-            return tox_event_friend_typing_unpack(&event->data.friend_typing, bu, mem);
-
-        case TOX_EVENT_SELF_CONNECTION_STATUS:
-            return tox_event_self_connection_status_unpack(&event->data.self_connection_status, bu, mem);
-
-        case TOX_EVENT_GROUP_PEER_NAME:
-            return tox_event_group_peer_name_unpack(&event->data.group_peer_name, bu, mem);
-
-        case TOX_EVENT_GROUP_PEER_STATUS:
-            return tox_event_group_peer_status_unpack(&event->data.group_peer_status, bu, mem);
-
-        case TOX_EVENT_GROUP_TOPIC:
-            return tox_event_group_topic_unpack(&event->data.group_topic, bu, mem);
-
-        case TOX_EVENT_GROUP_PRIVACY_STATE:
-            return tox_event_group_privacy_state_unpack(&event->data.group_privacy_state, bu, mem);
-
-        case TOX_EVENT_GROUP_VOICE_STATE:
-            return tox_event_group_voice_state_unpack(&event->data.group_voice_state, bu, mem);
-
-        case TOX_EVENT_GROUP_TOPIC_LOCK:
-            return tox_event_group_topic_lock_unpack(&event->data.group_topic_lock, bu, mem);
-
-        case TOX_EVENT_GROUP_PEER_LIMIT:
-            return tox_event_group_peer_limit_unpack(&event->data.group_peer_limit, bu, mem);
-
-        case TOX_EVENT_GROUP_PASSWORD:
-            return tox_event_group_password_unpack(&event->data.group_password, bu, mem);
-
-        case TOX_EVENT_GROUP_MESSAGE:
-            return tox_event_group_message_unpack(&event->data.group_message, bu, mem);
-
-        case TOX_EVENT_GROUP_PRIVATE_MESSAGE:
-            return tox_event_group_private_message_unpack(&event->data.group_private_message, bu, mem);
-
-        case TOX_EVENT_GROUP_CUSTOM_PACKET:
-            return tox_event_group_custom_packet_unpack(&event->data.group_custom_packet, bu, mem);
-
-        case TOX_EVENT_GROUP_CUSTOM_PRIVATE_PACKET:
-            return tox_event_group_custom_private_packet_unpack(&event->data.group_custom_private_packet, bu, mem);
-
-        case TOX_EVENT_GROUP_INVITE:
-            return tox_event_group_invite_unpack(&event->data.group_invite, bu, mem);
-
-        case TOX_EVENT_GROUP_PEER_JOIN:
-            return tox_event_group_peer_join_unpack(&event->data.group_peer_join, bu, mem);
-
-        case TOX_EVENT_GROUP_PEER_EXIT:
-            return tox_event_group_peer_exit_unpack(&event->data.group_peer_exit, bu, mem);
-
-        case TOX_EVENT_GROUP_SELF_JOIN:
-            return tox_event_group_self_join_unpack(&event->data.group_self_join, bu, mem);
-
-        case TOX_EVENT_GROUP_JOIN_FAIL:
-            return tox_event_group_join_fail_unpack(&event->data.group_join_fail, bu, mem);
-
-        case TOX_EVENT_GROUP_MODERATION:
-            return tox_event_group_moderation_unpack(&event->data.group_moderation, bu, mem);
-
-        case TOX_EVENT_DHT_GET_NODES_RESPONSE:
-            return tox_event_dht_get_nodes_response_unpack(&event->data.dht_get_nodes_response, bu, mem);
-
-        case TOX_EVENT_INVALID:
-            return false;
-    }
-
-    return false;
+    return tox_event_data_unpack(event->type, &event->data, bu, mem);
 }

@@ -169,6 +169,7 @@ bool tox_event_friend_lossless_packet_unpack(
     Tox_Event_Friend_Lossless_Packet **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_friend_lossless_packet_new(mem);
 
     if (*event == nullptr) {

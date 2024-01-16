@@ -109,6 +109,26 @@ bool bin_pack_obj_array_b(bin_pack_array_cb *callback, const void *arr, uint32_t
     return true;
 }
 
+bool bin_pack_obj_array(Bin_Pack *bp, bin_pack_array_cb *callback, const void *arr, uint32_t arr_size, const Logger *logger)
+{
+    if (arr == nullptr) {
+        assert(arr_size == 0);
+        return bin_pack_array(bp, 0);
+    }
+
+    if (!bin_pack_array(bp, arr_size)) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < arr_size; ++i) {
+        if (!callback(arr, i, logger, bp)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool bin_pack_array(Bin_Pack *bp, uint32_t size)
 {
     return cmp_write_array(&bp->ctx, size);

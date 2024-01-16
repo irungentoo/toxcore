@@ -185,6 +185,7 @@ bool tox_event_group_topic_unpack(
     Tox_Event_Group_Topic **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_group_topic_new(mem);
 
     if (*event == nullptr) {

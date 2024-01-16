@@ -185,6 +185,7 @@ bool tox_event_group_custom_private_packet_unpack(
     Tox_Event_Group_Custom_Private_Packet **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_group_custom_private_packet_new(mem);
 
     if (*event == nullptr) {

@@ -169,6 +169,7 @@ bool tox_event_group_password_unpack(
     Tox_Event_Group_Password **event, Bin_Unpack *bu, const Memory *mem)
 {
     assert(event != nullptr);
+    assert(*event == nullptr);
     *event = tox_event_group_password_new(mem);
 
     if (*event == nullptr) {
