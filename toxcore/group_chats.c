@@ -6357,7 +6357,7 @@ static bool group_can_handle_packets(const GC_Chat *chat)
  */
 #define MIN_TCP_PACKET_SIZE (1 + ENC_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE)
 non_null(1, 3) nullable(5)
-static int handle_gc_tcp_packet(void *object, int id, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_gc_tcp_packet(void *object, int crypt_connection_id, const uint8_t *packet, uint16_t length, void *userdata)
 {
     const Messenger *m = (Messenger *)object;
 
@@ -6493,7 +6493,7 @@ static int handle_gc_tcp_oob_packet(void *object, const uint8_t *public_key, uns
 
 #define MIN_UDP_PACKET_SIZE (1 + ENC_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE)
 non_null(1, 2, 3) nullable(5)
-static int handle_gc_udp_packet(void *object, const IP_Port *ipp, const uint8_t *packet, uint16_t length,
+static int handle_gc_udp_packet(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
                                 void *userdata)
 {
     const Messenger *m = (Messenger *)object;
@@ -6558,7 +6558,7 @@ static int handle_gc_udp_packet(void *object, const IP_Port *ipp, const uint8_t 
             payload_len = payload_len - ENC_PUBLIC_KEY_SIZE;
             payload = payload + ENC_PUBLIC_KEY_SIZE;
 
-            ret = handle_gc_handshake_packet(chat, sender_pk, ipp, payload, payload_len, true, userdata) != -1;
+            ret = handle_gc_handshake_packet(chat, sender_pk, source, payload, payload_len, true, userdata) != -1;
             break;
         }
 

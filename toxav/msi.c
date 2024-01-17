@@ -68,11 +68,11 @@ static bool invoke_callback(MSICall *call, MSICallbackID cb);
 static MSICall *get_call(MSISession *session, uint32_t friend_number);
 static MSICall *new_call(MSISession *session, uint32_t friend_number);
 static void kill_call(MSICall *call);
-static void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t status, void *data);
+static void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t connection_status, void *user_data);
 static void handle_init(MSICall *call, const MSIMessage *msg);
 static void handle_push(MSICall *call, const MSIMessage *msg);
 static void handle_pop(MSICall *call, const MSIMessage *msg);
-static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object);
+static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *user_data);
 
 
 /*
@@ -655,11 +655,11 @@ CLEAR_CONTAINER:
     free(call);
     session->calls = nullptr;
 }
-static void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t status, void *data)
+static void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t connection_status, void *user_data)
 {
-    MSISession *session = (MSISession *)data;
+    MSISession *session = (MSISession *)user_data;
 
-    if (status != 0) {
+    if (connection_status != 0) {
         // Friend is online.
         return;
     }
@@ -850,9 +850,9 @@ static void handle_pop(MSICall *call, const MSIMessage *msg)
 
     kill_call(call);
 }
-static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object)
+static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *user_data)
 {
-    MSISession *session = (MSISession *)object;
+    MSISession *session = (MSISession *)user_data;
 
     LOGGER_DEBUG(m->log, "Got msi message");
 

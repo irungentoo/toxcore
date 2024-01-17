@@ -629,16 +629,15 @@ static void forwarded_request_callback(void *object, const IP_Port *forwarder,
 }
 
 non_null(1, 2, 3) nullable(5)
-static int handle_dht_announce_request(void *object, const IP_Port *source,
-                                       const uint8_t *data, uint16_t length, void *userdata)
+static int handle_dht_announce_request(
+    void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Announcements *announce = (Announcements *) object;
+    Announcements *announce = (Announcements *)object;
 
     uint8_t reply[MAX_FORWARD_DATA_SIZE];
 
-    const int len = create_reply(announce, source,
-                                 nullptr, 0,
-                                 data, length, reply, sizeof(reply));
+    const int len
+        = create_reply(announce, source, nullptr, 0, packet, length, reply, sizeof(reply));
 
     if (len == -1) {
         return -1;

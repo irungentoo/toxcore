@@ -399,7 +399,7 @@ bool addr_resolve_or_parse_ip(const Network *ns, const char *address, IP *to, IP
  * Packet data is put into data.
  * Packet length is put into length.
  */
-typedef int packet_handler_cb(void *object, const IP_Port *ip_port, const uint8_t *data, uint16_t len, void *userdata);
+typedef int packet_handler_cb(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata);
 
 typedef struct Networking_Core Networking_Core;
 

@@ -135,7 +135,7 @@ typedef struct New_Connection {
 typedef int connection_status_cb(void *object, int id, bool status, void *userdata);
 typedef int connection_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
 typedef int connection_lossy_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
-typedef void dht_pk_cb(void *data, int32_t number, const uint8_t *dht_public_key, void *userdata);
+typedef void dht_pk_cb(void *object, int32_t number, const uint8_t *dht_public_key, void *userdata);
 typedef int new_connection_cb(void *object, const New_Connection *n_c);
 
 /** @brief Set function to be called when someone requests a new connection to us.

@@ -86,7 +86,7 @@ typedef struct MSICall {
  * returned the call is considered errored and will be handled
  * as such which means it will be terminated without any notice.
  */
-typedef int msi_action_cb(void *av, MSICall *call);
+typedef int msi_action_cb(void *object, MSICall *call);
 
 /**
  * Control session struct. Please do not modify outside msi.c

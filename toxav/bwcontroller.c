@@ -56,7 +56,7 @@ struct BWCMessage {
     uint32_t recv;
 };
 
-static int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object);
+static int bwc_handle_data(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object);
 static int bwc_send_custom_lossy_packet(Tox *tox, int32_t friendnumber, const uint8_t *data, uint32_t length);
 static void send_update(BWController *bwc);
 
@@ -206,7 +206,7 @@ static int bwc_send_custom_lossy_packet(Tox *tox, int32_t friendnumber, const ui
     return -1;
 }
 
-static int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object)
+static int bwc_handle_data(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object)
 {
     BWController *bwc = (BWController *)object;
 

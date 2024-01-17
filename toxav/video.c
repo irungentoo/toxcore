@@ -343,9 +343,9 @@ void vc_iterate(VCSession *vc)
     }
 }
 
-int vc_queue_message(Mono_Time *mono_time, void *vcp, struct RTPMessage *msg)
+int vc_queue_message(Mono_Time *mono_time, void *cs, struct RTPMessage *msg)
 {
-    VCSession *vc = (VCSession *)vcp;
+    VCSession *vc = (VCSession *)cs;
 
     /* This function is called with complete messages
      * they have already been assembled.

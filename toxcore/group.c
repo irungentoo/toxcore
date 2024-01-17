@@ -2115,8 +2115,8 @@ static bool get_peer_number(const Group_c *g, const uint8_t *real_pk, uint16_t *
 }
 
 non_null(1, 3) nullable(5)
-static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length,
-                                        void *userdata)
+static void handle_friend_invite_packet(Messenger *m, uint32_t friend_number, const uint8_t *cookie, uint16_t length,
+                                        void *user_data)
 {
     Group_Chats *g_c = m->conferences_object;
 
@@ -2124,20 +2124,20 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
         return;
     }
 
-    switch (data[0]) {
+    switch (cookie[0]) {
         case INVITE_ID: {
             if (length != INVITE_PACKET_SIZE) {
                 return;
             }
 
-            const int groupnumber = get_group_num(g_c, data[1 + sizeof(uint16_t)], data + 1 + sizeof(uint16_t) + 1);
+            const int groupnumber = get_group_num(g_c, cookie[1 + sizeof(uint16_t)], cookie + 1 + sizeof(uint16_t) + 1);
 
-            const uint8_t *invite_data = data + 1;
+            const uint8_t *invite_data = cookie + 1;
             const uint16_t invite_length = length - 1;
 
             if (groupnumber == -1) {
                 if (g_c->invite_callback != nullptr) {
-                    g_c->invite_callback(m, friendnumber, invite_data[sizeof(uint16_t)], invite_data, invite_length, userdata);
+                    g_c->invite_callback(m, friend_number, invite_data[sizeof(uint16_t)], invite_data, invite_length, user_data);
                 }
 
                 return;
@@ -2145,7 +2145,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
                 const Group_c *g = get_group_c(g_c, groupnumber);
 
                 if (g != nullptr && g->status == GROUPCHAT_STATUS_CONNECTED) {
-                    send_invite_response(g_c, groupnumber, friendnumber, invite_data, invite_length);
+                    send_invite_response(g_c, groupnumber, friend_number, invite_data, invite_length);
                 }
             }
 
@@ -2154,7 +2154,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
 
         case INVITE_ACCEPT_ID:
         case INVITE_MEMBER_ID: {
-            const bool member = data[0] == INVITE_MEMBER_ID;
+            const bool member = cookie[0] == INVITE_MEMBER_ID;
 
             if (length != (member ? INVITE_MEMBER_PACKET_SIZE : INVITE_ACCEPT_PACKET_SIZE)) {
                 return;
@@ -2162,8 +2162,8 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
 
             uint16_t other_groupnum;
             uint16_t groupnum;
-            net_unpack_u16(data + 1, &other_groupnum);
-            net_unpack_u16(data + 1 + sizeof(uint16_t), &groupnum);
+            net_unpack_u16(cookie + 1, &other_groupnum);
+            net_unpack_u16(cookie + 1 + sizeof(uint16_t), &groupnum);
 
             Group_c *g = get_group_c(g_c, groupnum);
 
@@ -2171,18 +2171,18 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
                 return;
             }
 
-            if (data[1 + sizeof(uint16_t) * 2] != g->type) {
+            if (cookie[1 + sizeof(uint16_t) * 2] != g->type) {
                 return;
             }
 
-            if (!group_id_eq(data + 1 + sizeof(uint16_t) * 2 + 1, g->id)) {
+            if (!group_id_eq(cookie + 1 + sizeof(uint16_t) * 2 + 1, g->id)) {
                 return;
             }
 
             uint16_t peer_number;
 
             if (member) {
-                net_unpack_u16(data + 1 + sizeof(uint16_t) * 2 + 1 + GROUP_ID_LENGTH, &peer_number);
+                net_unpack_u16(cookie + 1 + sizeof(uint16_t) * 2 + 1 + GROUP_ID_LENGTH, &peer_number);
             } else {
                 /* TODO(irungentoo): what if two people enter the group at the
                  * same time and are given the same peer_number by different
@@ -2201,7 +2201,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
                 }
             }
 
-            const int friendcon_id = getfriendcon_id(m, friendnumber);
+            const int friendcon_id = getfriendcon_id(m, friend_number);
 
             if (friendcon_id == -1) {
                 // TODO(iphydf): Log something?
@@ -2212,7 +2212,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
             uint8_t temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
             get_friendcon_public_keys(real_pk, temp_pk, g_c->fr_c, friendcon_id);
 
-            addpeer(g_c, groupnum, real_pk, temp_pk, peer_number, userdata, true, true);
+            addpeer(g_c, groupnum, real_pk, temp_pk, peer_number, user_data, true, true);
             const int connection_index = add_conn_to_groupchat(g_c, friendcon_id, g,
                                          GROUPCHAT_CONNECTION_REASON_INTRODUCING, true);
 

@@ -194,9 +194,9 @@ void ac_iterate(ACSession *ac)
     free(temp_audio_buffer);
 }
 
-int ac_queue_message(Mono_Time *mono_time, void *acp, struct RTPMessage *msg)
+int ac_queue_message(Mono_Time *mono_time, void *cs, struct RTPMessage *msg)
 {
-    ACSession *ac = (ACSession *)acp;
+    ACSession *ac = (ACSession *)cs;
 
     if (ac == nullptr || msg == nullptr) {
         free(msg);

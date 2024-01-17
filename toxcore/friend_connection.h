@@ -84,11 +84,11 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, const Frie
 non_null()
 void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk, void *userdata);
 
-typedef int global_status_cb(void *object, int id, bool status, void *userdata);
+typedef int global_status_cb(void *object, int friendcon_id, bool status, void *userdata);
 
-typedef int fc_status_cb(void *object, int id, bool status, void *userdata);
-typedef int fc_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
-typedef int fc_lossy_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
+typedef int fc_status_cb(void *object, int friendcon_id, bool status, void *userdata);
+typedef int fc_data_cb(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata);
+typedef int fc_lossy_data_cb(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata);
 
 /** Set global status callback for friend connections. */
 non_null(1) nullable(2, 3)
@@ -144,7 +144,7 @@ int send_friend_request_packet(
     Friend_Connections *fr_c, int friendcon_id, uint32_t nospam_num, const uint8_t *data, uint16_t length);
 
 typedef int fr_request_cb(
-    void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len, void *userdata);
+    void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t length, void *userdata);
 
 /** @brief Set friend request callback.
  *

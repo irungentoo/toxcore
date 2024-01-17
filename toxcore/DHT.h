@@ -257,8 +257,8 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 
 /*----------------------------------------------------------------------------------*/
 
-typedef int cryptopacket_handler_cb(void *object, const IP_Port *ip_port, const uint8_t *source_pubkey,
-                                    const uint8_t *data, uint16_t len, void *userdata);
+typedef int cryptopacket_handler_cb(void *object, const IP_Port *source, const uint8_t *source_pubkey,
+                                    const uint8_t *packet, uint16_t length, void *userdata);
 
 typedef struct DHT DHT;
 

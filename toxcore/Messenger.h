@@ -197,11 +197,11 @@ typedef void m_friend_connectionstatuschange_internal_cb(Messenger *m, uint32_t 
         uint8_t connection_status, void *user_data);
 typedef void m_conference_invite_cb(Messenger *m, uint32_t friend_number, const uint8_t *cookie, uint16_t length,
                                     void *user_data);
-typedef void m_group_invite_cb(const Messenger *m, uint32_t friendnumber, const uint8_t *data, size_t length,
-                               const uint8_t *group_name, size_t group_name_length, void *userdata);
+typedef void m_group_invite_cb(const Messenger *m, uint32_t friend_number, const uint8_t *invite_data, size_t length,
+                               const uint8_t *group_name, size_t group_name_length, void *user_data);
 typedef void m_msi_packet_cb(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length,
                              void *user_data);
-typedef int m_lossy_rtp_packet_cb(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object);
+typedef int m_lossy_rtp_packet_cb(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object);
 
 typedef struct RTP_Packet_Handler {
     m_lossy_rtp_packet_cb *function;
@@ -646,7 +646,7 @@ bool send_conference_invite_packet(const Messenger *m, int32_t friendnumber, con
  *  return true on success
  */
 non_null()
-bool send_group_invite_packet(const Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length);
+bool send_group_invite_packet(const Messenger *m, uint32_t friendnumber, const uint8_t *packet, uint16_t length);
 
 
 /*** FILE SENDING */

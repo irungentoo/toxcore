@@ -397,10 +397,10 @@ static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint
 }
 
 non_null()
-static int handle_status(void *object, int number, bool status, void *userdata)
+static int handle_status(void *object, int id, bool status, void *userdata)
 {
     Friend_Connections *const fr_c = (Friend_Connections *)object;
-    Friend_Conn *const friend_con = get_conn(fr_c, number);
+    Friend_Conn *const friend_con = get_conn(fr_c, id);
 
     if (friend_con == nullptr) {
         return -1;
@@ -428,7 +428,7 @@ static int handle_status(void *object, int number, bool status, void *userdata)
 
     if (status_changed) {
         if (fr_c->global_status_callback != nullptr) {
-            fr_c->global_status_callback(fr_c->global_status_callback_object, number, status, userdata);
+            fr_c->global_status_callback(fr_c->global_status_callback_object, id, status, userdata);
         }
 
         for (unsigned i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
@@ -472,7 +472,7 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
 }
 
 non_null()
-static int handle_packet(void *object, int number, const uint8_t *data, uint16_t length, void *userdata)
+static int handle_packet(void *object, int id, const uint8_t *data, uint16_t length, void *userdata)
 {
     Friend_Connections *const fr_c = (Friend_Connections *)object;
 
@@ -480,7 +480,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
         return -1;
     }
 
-    Friend_Conn *friend_con = get_conn(fr_c, number);
+    Friend_Conn *friend_con = get_conn(fr_c, id);
 
     if (friend_con == nullptr) {
         return -1;
@@ -508,7 +508,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
         }
 
         for (int j = 0; j < n; ++j) {
-            friend_add_tcp_relay(fr_c, number, &nodes[j].ip_port, nodes[j].public_key);
+            friend_add_tcp_relay(fr_c, id, &nodes[j].ip_port, nodes[j].public_key);
         }
 
         return 0;
@@ -521,7 +521,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
                 friend_con->callbacks[i].callback_id, data, length, userdata);
         }
 
-        friend_con = get_conn(fr_c, number);
+        friend_con = get_conn(fr_c, id);
 
         if (friend_con == nullptr) {
             return -1;
@@ -532,7 +532,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
 }
 
 non_null()
-static int handle_lossy_packet(void *object, int number, const uint8_t *data, uint16_t length, void *userdata)
+static int handle_lossy_packet(void *object, int id, const uint8_t *data, uint16_t length, void *userdata)
 {
     const Friend_Connections *const fr_c = (const Friend_Connections *)object;
 
@@ -540,7 +540,7 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
         return -1;
     }
 
-    const Friend_Conn *friend_con = get_conn(fr_c, number);
+    const Friend_Conn *friend_con = get_conn(fr_c, id);
 
     if (friend_con == nullptr) {
         return -1;
@@ -553,7 +553,7 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
                 friend_con->callbacks[i].callback_id, data, length, userdata);
         }
 
-        friend_con = get_conn(fr_c, number);
+        friend_con = get_conn(fr_c, id);
 
         if (friend_con == nullptr) {
             return -1;

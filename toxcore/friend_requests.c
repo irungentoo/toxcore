@@ -116,7 +116,7 @@ int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk)
 
 
 non_null()
-static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, const uint8_t *packet, uint16_t length,
+static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t length,
                                   void *userdata)
 {
     Friend_Requests *const fr = (Friend_Requests *)object;
@@ -125,7 +125,7 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, co
         return 1;
     }
 
-    ++packet;
+    ++data;
     --length;
 
     if (fr->handle_friendrequest_isset == 0) {
@@ -136,12 +136,12 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, co
         return 1;
     }
 
-    if (memcmp(packet, &fr->nospam, sizeof(fr->nospam)) != 0) {
+    if (memcmp(data, &fr->nospam, sizeof(fr->nospam)) != 0) {
         return 1;
     }
 
     if (fr->filter_function != nullptr) {
-        if (fr->filter_function(source_pubkey, fr->filter_function_userdata) != 0) {
+        if (fr->filter_function(fr->filter_function_userdata, source_pubkey) != 0) {
             return 1;
         }
     }
@@ -150,7 +150,7 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, co
 
     const uint32_t message_len = length - sizeof(fr->nospam);
     VLA(uint8_t, message, message_len + 1);
-    memcpy(message, packet + sizeof(fr->nospam), message_len);
+    memcpy(message, data + sizeof(fr->nospam), message_len);
     message[SIZEOF_VLA(message) - 1] = 0; /* Be sure the message is null terminated. */
 
     fr->handle_friendrequest(fr->handle_friendrequest_object, source_pubkey, message, message_len, userdata);

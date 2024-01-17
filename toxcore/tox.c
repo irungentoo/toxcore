@@ -539,8 +539,7 @@ static void tox_group_peer_exit_handler(const Messenger *m, uint32_t group_numbe
 
     if (tox_data->tox->group_peer_exit_callback != nullptr) {
         tox_data->tox->group_peer_exit_callback(tox_data->tox, group_number, peer_id, (Tox_Group_Exit_Type) exit_type, name,
-                                                name_length,
-                                                part_message, length, tox_data->user_data);
+                                                name_length, part_message, length, tox_data->user_data);
     }
 }
 

@@ -156,7 +156,7 @@ non_null()
 int tcp_send_oob_packet(const TCP_Connections *tcp_c, unsigned int tcp_connections_number, const uint8_t *public_key,
                         const uint8_t *packet, uint16_t length);
 
-typedef int tcp_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
+typedef int tcp_data_cb(void *object, int crypt_connection_id, const uint8_t *packet, uint16_t length, void *userdata);
 
 non_null()
 int tcp_send_oob_packet_using_relay(const TCP_Connections *tcp_c, const uint8_t *relay_pk, const uint8_t *public_key,
@@ -180,7 +180,7 @@ void set_forwarding_packet_tcp_connection_callback(TCP_Connections *tcp_c,
 
 
 typedef int tcp_oob_cb(void *object, const uint8_t *public_key, unsigned int tcp_connections_number,
-                       const uint8_t *data, uint16_t length, void *userdata);
+                       const uint8_t *packet, uint16_t length, void *userdata);
 
 /** @brief Set the callback for TCP oob data packets. */
 non_null()

@@ -440,7 +440,7 @@ static int handle_video_packet(RTPSession *session, const struct RTPHeader *head
  * @retval -1 on error.
  * @retval 0 on success.
  */
-static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object)
+static int handle_rtp_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object)
 {
     RTPSession *session = (RTPSession *)object;
 

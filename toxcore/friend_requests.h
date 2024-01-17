@@ -34,7 +34,7 @@ typedef void fr_friend_request_cb(void *object, const uint8_t *public_key, const
 non_null()
 void callback_friendrequest(Friend_Requests *fr, fr_friend_request_cb *function, void *object);
 
-typedef int filter_function_cb(const uint8_t *public_key, void *user_data);
+typedef int filter_function_cb(void *object, const uint8_t *public_key);
 
 /** @brief Set the function used to check if a friend request should be displayed to the user or not.
  * It must return 0 if the request is ok (anything else if it is bad).

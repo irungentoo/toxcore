@@ -32,15 +32,15 @@ static bool buf_reader(cmp_ctx_t *ctx, void *data, size_t limit)
 }
 
 non_null()
-static bool buf_skipper(cmp_ctx_t *ctx, size_t limit)
+static bool buf_skipper(cmp_ctx_t *ctx, size_t count)
 {
     Bin_Unpack *reader = (Bin_Unpack *)ctx->buf;
     assert(reader != nullptr && reader->bytes != nullptr);
-    if (limit > reader->bytes_size) {
+    if (count > reader->bytes_size) {
         return false;
     }
-    reader->bytes += limit;
-    reader->bytes_size -= limit;
+    reader->bytes += count;
+    reader->bytes_size -= count;
     return true;
 }
 
