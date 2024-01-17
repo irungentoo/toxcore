@@ -134,7 +134,7 @@ bool tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes)
 }
 
 non_null()
-static bool tox_events_unpack(void *obj, Bin_Unpack *bu)
+static bool tox_events_unpack_handler(void *obj, Bin_Unpack *bu)
 {
     Tox_Events *events = (Tox_Events *)obj;
 
@@ -174,7 +174,7 @@ Tox_Events *tox_events_load(const Tox_System *sys, const uint8_t *bytes, uint32_
     };
     events->mem = sys->mem;
 
-    if (!bin_unpack_obj(tox_events_unpack, events, bytes, bytes_size)) {
+    if (!bin_unpack_obj(tox_events_unpack_handler, events, bytes, bytes_size)) {
         tox_events_free(events);
         return nullptr;
     }

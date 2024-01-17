@@ -940,7 +940,7 @@ static bool tox_event_type_from_int(uint32_t value, Tox_Event_Type *out)
 }
 
 non_null()
-static bool tox_event_type_unpack(Bin_Unpack *bu, Tox_Event_Type *val)
+static bool tox_event_type_unpack(Tox_Event_Type *val, Bin_Unpack *bu)
 {
     uint32_t u32;
     return bin_unpack_u32(bu, &u32)
@@ -1080,21 +1080,7 @@ static bool tox_event_data_unpack(Tox_Event_Type type, Tox_Event_Data *data, Bin
 
 bool tox_event_unpack_into(Tox_Event *event, Bin_Unpack *bu, const Memory *mem)
 {
-    uint32_t size;
-    if (!bin_unpack_array(bu, &size)) {
-        return false;
-    }
-
-    if (size != 2) {
-        return false;
-    }
-
-    Tox_Event_Type type;
-    if (!tox_event_type_unpack(bu, &type)) {
-        return false;
-    }
-
-    event->type = type;
-
-    return tox_event_data_unpack(event->type, &event->data, bu, mem);
+    return bin_unpack_array_fixed(bu, 2, nullptr)  //
+        && tox_event_type_unpack(&event->type, bu)  //
+        && tox_event_data_unpack(event->type, &event->data, bu, mem);
 }
