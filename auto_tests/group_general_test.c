@@ -62,7 +62,7 @@ static void print_ip(Tox *tox, uint32_t groupnumber, uint32_t peer_id)
 static bool all_group_peers_connected(AutoTox *autotoxes, uint32_t tox_count, uint32_t groupnumber, size_t name_length)
 {
     for (size_t i = 0; i < tox_count; ++i) {
-        // make sure we got an F response
+        // make sure we got an invite response
         if (tox_group_get_name_size(autotoxes[i].tox, groupnumber, nullptr) != name_length) {
             return false;
         }
