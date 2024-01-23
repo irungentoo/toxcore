@@ -37,12 +37,6 @@
 
 #include "network.h"
 
-#ifdef PLAN9
-#include <u.h> // Plan 9 requires this is imported first
-// Comment line here to avoid reordering by source code formatters.
-#include <libc.h>
-#endif /* PLAN9 */
-
 #ifdef OS_WIN32 // Put win32 includes here
 // The mingw32/64 Windows library warns about including winsock2.h after
 // windows.h even though with the above it's a valid thing to do. So, to make
