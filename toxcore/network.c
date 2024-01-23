@@ -9,31 +9,31 @@
 
 #ifdef __APPLE__
 #define _DARWIN_C_SOURCE
-#endif
+#endif /* __APPLE__ */
 
 // For Solaris.
 #ifdef __sun
 #define __EXTENSIONS__ 1
-#endif
+#endif /* __sun */
 
 // For Linux (and some BSDs).
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 700
-#endif
+#endif /* _XOPEN_SOURCE */
 
 #if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= _WIN32_WINNT_WINXP
 #undef _WIN32_WINNT
 #define _WIN32_WINNT  0x501
-#endif
+#endif /* defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= _WIN32_WINNT_WINXP */
 
 #if !defined(OS_WIN32) && (defined(_WIN32) || defined(__WIN32__) || defined(WIN32))
 #define OS_WIN32
-#endif
+#endif /* !defined(OS_WIN32) && (defined(_WIN32) || defined(__WIN32__) || defined(WIN32)) */
 
 #if defined(OS_WIN32) && !defined(WINVER)
 // Windows XP
 #define WINVER 0x0501
-#endif
+#endif /* defined(OS_WIN32) && !defined(WINVER) */
 
 #include "network.h"
 
@@ -41,7 +41,7 @@
 #include <u.h> // Plan 9 requires this is imported first
 // Comment line here to avoid reordering by source code formatters.
 #include <libc.h>
-#endif
+#endif /* PLAN9 */
 
 #ifdef OS_WIN32 // Put win32 includes here
 // The mingw32/64 Windows library warns about including winsock2.h after
@@ -51,12 +51,12 @@
 // Comment line here to avoid reordering by source code formatters.
 #include <windows.h>
 #include <ws2tcpip.h>
-#endif
+#endif /* OS_WIN32 */
 
 #ifdef __APPLE__
 #include <mach/clock.h>
 #include <mach/mach.h>
-#endif
+#endif /* __APPLE__ */
 
 #if !defined(OS_WIN32)
 #include <arpa/inet.h>
@@ -73,13 +73,13 @@
 #ifdef __sun
 #include <stropts.h>
 #include <sys/filio.h>
-#endif
+#endif /* __sun */
 
 #else
 #ifndef IPV6_V6ONLY
 #define IPV6_V6ONLY 27
-#endif
-#endif
+#endif /* IPV6_V6ONLY */
+#endif /* !defined(OS_WIN32) */
 
 #include <assert.h>
 #include <limits.h>
@@ -95,13 +95,13 @@
 // Disable MSG_NOSIGNAL on systems not supporting it, e.g. Windows, FreeBSD
 #if !defined(MSG_NOSIGNAL)
 #define MSG_NOSIGNAL 0
-#endif
+#endif /* !defined(MSG_NOSIGNAL) */
 
 #ifndef IPV6_ADD_MEMBERSHIP
 #ifdef IPV6_JOIN_GROUP
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
-#endif
-#endif
+#endif /* IPV6_JOIN_GROUP */
+#endif /* IPV6_ADD_MEMBERSHIP */
 
 static_assert(sizeof(IP4) == SIZE_IP4, "IP4 size must be 4");
 
@@ -148,7 +148,7 @@ static int inet_pton6(const char *addr_string, struct in6_addr *addrbuf)
 #else
 #ifndef IPV6_V6ONLY
 #define IPV6_V6ONLY 27
-#endif
+#endif /* IPV6_V6ONLY */
 
 static bool should_ignore_recv_error(int err)
 {
@@ -228,7 +228,7 @@ static int inet_pton6(const char *addrString, struct in6_addr *addrbuf)
     return 1;
 }
 
-#endif
+#endif /* !defined(OS_WIN32) */
 
 static_assert(TOX_INET6_ADDRSTRLEN >= INET6_ADDRSTRLEN,
               "TOX_INET6_ADDRSTRLEN should be greater or equal to INET6_ADDRSTRLEN (#INET6_ADDRSTRLEN)");
@@ -337,7 +337,7 @@ static void fill_addr6(const IP6 *ip, struct in6_addr *addr)
 
 #if !defined(INADDR_LOOPBACK)
 #define INADDR_LOOPBACK 0x7f000001
-#endif
+#endif /* !defined(INADDR_LOOPBACK) */
 
 static const IP empty_ip = {{0}};
 
@@ -372,7 +372,7 @@ IP6 get_ip6_loopback(void)
 
 #ifndef OS_WIN32
 #define INVALID_SOCKET (-1)
-#endif
+#endif /* OS_WIN32 */
 
 Socket net_invalid_socket(void)
 {
@@ -488,7 +488,7 @@ static int sys_close(void *obj, int sock)
     return closesocket(sock);
 #else  // !OS_WIN32
     return close(sock);
-#endif
+#endif /* OS_WIN32 */
 }
 
 non_null()
@@ -518,7 +518,7 @@ static int sys_recvbuf(void *obj, int sock)
 #else
     int count = 0;
     ioctl(sock, FIONREAD, &count);
-#endif
+#endif /* OS_WIN32 */
 
     return count;
 }
@@ -603,14 +603,14 @@ const Network *system_network(void)
     if ((true)) {
         return nullptr;
     }
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 #ifdef OS_WIN32
     WSADATA wsaData;
 
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
         return nullptr;
     }
-#endif
+#endif /* OS_WIN32 */
     return &system_network_obj;
 }
 
@@ -620,9 +620,9 @@ void system_network_deinit(const Network *ns)
 {
 #ifdef OS_WIN32
     WSACleanup();
-#endif
+#endif /* OS_WIN32 */
 }
-#endif
+#endif /* 0 */
 
 non_null()
 static int net_setsockopt(const Network *ns, Socket sock, int level, int optname, const void *optval, size_t optlen)
@@ -871,7 +871,7 @@ bool set_socket_nosigpipe(const Network *ns, Socket sock)
     return net_setsockopt(ns, sock, SOL_SOCKET, SO_NOSIGPIPE, &set, sizeof(int)) == 0;
 #else
     return true;
-#endif
+#endif /* __APPLE__ */
 }
 
 bool set_socket_reuseaddr(const Network *ns, Socket sock)
@@ -1287,7 +1287,7 @@ Networking_Core *new_networking_ex(
         }
 
         net_kill_strerror(strerror);
-#endif
+#endif /* ESP_PLATFORM */
     }
 
     /* A hanging program or a different user might block the standard port.
@@ -1622,7 +1622,7 @@ static int addr_resolve(const Network *ns, const char *address, IP *to, IP *extr
     if ((true)) {
         return 0;
     }
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 
     if (address == nullptr || to == nullptr) {
         return 0;
@@ -1750,7 +1750,7 @@ bool net_connect(const Memory *mem, const Logger *log, Socket sock, const IP_Por
     if ((true)) {
         return true;
     }
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 
     Ip_Ntoa ip_str;
     LOGGER_DEBUG(log, "connecting socket %d to %s:%d",
@@ -1807,7 +1807,7 @@ int32_t net_getipport(const Memory *mem, const char *node, IP_Port **res, int to
         *res = ip_port;
         return 1;
     }
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 
     // It's not an IP address, so now we try doing a DNS lookup.
     struct addrinfo *infos;
@@ -2019,14 +2019,14 @@ bool ipv6_ipv4_in_v6(const IP6 *a)
 
 int net_error(void)
 {
-#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#ifdef OS_WIN32
     return WSAGetLastError();
 #else
     return errno;
-#endif
+#endif /* OS_WIN32 */
 }
 
-#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#ifdef OS_WIN32
 char *net_new_strerror(int error)
 {
     char *str = nullptr;
@@ -2066,7 +2066,7 @@ static const char *net_strerror_r(int error, char *tmp, size_t tmp_size)
 
     return tmp;
 }
-#endif
+#endif /* GNU */
 char *net_new_strerror(int error)
 {
     char tmp[256];
@@ -2086,13 +2086,13 @@ char *net_new_strerror(int error)
 
     return str;
 }
-#endif
+#endif /* OS_WIN32 */
 
 void net_kill_strerror(char *strerror)
 {
-#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#ifdef OS_WIN32
     LocalFree((char *)strerror);
 #else
     free(strerror);
-#endif
+#endif /* OS_WIN32 */
 }

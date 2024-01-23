@@ -214,7 +214,7 @@ void tox_events_callback_dht_get_nodes_response(
     Tox_Dispatch *dispatch, tox_events_dht_get_nodes_response_cb *callback);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_TOX_DISPATCH_H
+#endif /* C_TOXCORE_TOXCORE_TOX_DISPATCH_H */

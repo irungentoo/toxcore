@@ -204,7 +204,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
                   bool is_keyframe, const Logger *log);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXAV_RTP_H
+#endif /* C_TOXCORE_TOXAV_RTP_H */

@@ -70,4 +70,4 @@ void ac_iterate(ACSession *ac);
 int ac_queue_message(Mono_Time *mono_time, void *cs, struct RTPMessage *msg);
 int ac_reconfigure_encoder(ACSession *ac, uint32_t bit_rate, uint32_t sampling_rate, uint8_t channels);
 
-#endif // C_TOXCORE_TOXAV_AUDIO_H
+#endif /* C_TOXCORE_TOXAV_AUDIO_H */

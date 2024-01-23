@@ -25,7 +25,7 @@ uint16_t rb_size(const RingBuffer *b);
 uint16_t rb_data(const RingBuffer *b, void **dest);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXAV_RING_BUFFER_H
+#endif /* C_TOXCORE_TOXAV_RING_BUFFER_H */

@@ -188,4 +188,4 @@ void gcc_peer_cleanup(GC_Connection *gconn);
 non_null()
 void gcc_cleanup(const GC_Chat *chat);
 
-#endif  // C_TOXCORE_TOXCORE_GROUP_CONNECTION_H
+#endif /* C_TOXCORE_TOXCORE_GROUP_CONNECTION_H */

@@ -573,7 +573,7 @@ Tox_Events *tox_events_load(const Tox_System *sys, const uint8_t *bytes, uint32_
 bool tox_events_equal(const Tox_System *sys, const Tox_Events *a, const Tox_Events *b);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_TOX_EVENTS_H
+#endif /* C_TOXCORE_TOXCORE_TOX_EVENTS_H */

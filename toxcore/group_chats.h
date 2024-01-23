@@ -806,4 +806,4 @@ GC_Chat *gc_get_group_by_public_key(const GC_Session *c, const uint8_t *public_k
 non_null()
 int gc_add_peers_from_announces(GC_Chat *chat, const GC_Announce *announces, uint8_t gc_announces_count);
 
-#endif  // C_TOXCORE_TOXCORE_GROUP_CHATS_H
+#endif /* C_TOXCORE_TOXCORE_GROUP_CHATS_H */

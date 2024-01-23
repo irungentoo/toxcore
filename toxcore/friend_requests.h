@@ -51,4 +51,4 @@ Friend_Requests *friendreq_new(void);
 nullable(1)
 void friendreq_kill(Friend_Requests *fr);
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_FRIEND_REQUESTS_H */

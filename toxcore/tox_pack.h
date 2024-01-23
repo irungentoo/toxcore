@@ -21,4 +21,4 @@ non_null() bool tox_group_join_fail_pack(Tox_Group_Join_Fail val, Bin_Pack *bp);
 non_null() bool tox_group_mod_event_pack(Tox_Group_Mod_Event val, Bin_Pack *bp);
 non_null() bool tox_group_exit_type_pack(Tox_Group_Exit_Type val, Bin_Pack *bp);
 
-#endif  // C_TOXCORE_TOXCORE_TOX_PACK_H
+#endif /* C_TOXCORE_TOXCORE_TOX_PACK_H */

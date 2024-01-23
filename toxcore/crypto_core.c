@@ -20,7 +20,7 @@
 
 #ifndef crypto_box_MACBYTES
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
-#endif
+#endif /* crypto_box_MACBYTES */
 
 // Need dht because of ENC_SECRET_KEY_SIZE and ENC_PUBLIC_KEY_SIZE
 #define ENC_PUBLIC_KEY_SIZE CRYPTO_PUBLIC_KEY_SIZE
@@ -117,7 +117,7 @@ static void crypto_free(uint8_t *ptr, size_t bytes)
 
     free(ptr);
 }
-#endif  // !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
+#endif /* !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) */
 
 void crypto_memzero(void *data, size_t length)
 {
@@ -125,7 +125,7 @@ void crypto_memzero(void *data, size_t length)
     memset(data, 0, length);
 #else
     sodium_memzero(data, length);
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 bool crypto_memlock(void *data, size_t length)
@@ -139,7 +139,7 @@ bool crypto_memlock(void *data, size_t length)
     }
 
     return true;
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 bool crypto_memunlock(void *data, size_t length)
@@ -153,7 +153,7 @@ bool crypto_memunlock(void *data, size_t length)
     }
 
     return true;
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 bool pk_equal(const uint8_t pk1[CRYPTO_PUBLIC_KEY_SIZE], const uint8_t pk2[CRYPTO_PUBLIC_KEY_SIZE])
@@ -163,7 +163,7 @@ bool pk_equal(const uint8_t pk1[CRYPTO_PUBLIC_KEY_SIZE], const uint8_t pk2[CRYPT
     return memcmp(pk1, pk2, CRYPTO_PUBLIC_KEY_SIZE) == 0;
 #else
     return crypto_verify_32(pk1, pk2) == 0;
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 void pk_copy(uint8_t dest[CRYPTO_PUBLIC_KEY_SIZE], const uint8_t src[CRYPTO_PUBLIC_KEY_SIZE])
@@ -178,7 +178,7 @@ bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2)
     return memcmp(cksum1, cksum2, CRYPTO_SHA512_SIZE) == 0;
 #else
     return crypto_verify_64(cksum1, cksum2) == 0;
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 bool crypto_sha256_eq(const uint8_t *cksum1, const uint8_t *cksum2)
@@ -188,7 +188,7 @@ bool crypto_sha256_eq(const uint8_t *cksum1, const uint8_t *cksum2)
     return memcmp(cksum1, cksum2, CRYPTO_SHA256_SIZE) == 0;
 #else
     return crypto_verify_32(cksum1, cksum2) == 0;
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 uint8_t random_u08(const Random *rng)
@@ -250,7 +250,7 @@ int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key,
     return 0;
 #else
     return crypto_box_beforenm(shared_key, public_key, secret_key);
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 int32_t encrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
@@ -300,7 +300,7 @@ int32_t encrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
 
     crypto_free(temp_plain, size_temp_plain);
     crypto_free(temp_encrypted, size_temp_encrypted);
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
     assert(length < INT32_MAX - crypto_box_MACBYTES);
     return (int32_t)(length + crypto_box_MACBYTES);
 }
@@ -350,7 +350,7 @@ int32_t decrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
 
     crypto_free(temp_plain, size_temp_plain);
     crypto_free(temp_encrypted, size_temp_encrypted);
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
     assert(length > crypto_box_MACBYTES);
     assert(length < INT32_MAX);
     return (int32_t)(length - crypto_box_MACBYTES);
@@ -461,7 +461,7 @@ void crypto_hmac(uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[CRYPTO_HMAC_K
     memcpy(auth + 16, data, length < 16 ? length : 16);
 #else
     crypto_auth(auth, data, length, key);
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 bool crypto_hmac_verify(const uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[CRYPTO_HMAC_KEY_SIZE],
@@ -471,7 +471,7 @@ bool crypto_hmac_verify(const uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[
     return memcmp(auth, key, 16) == 0 && memcmp(auth + 16, data, length < 16 ? length : 16) == 0;
 #else
     return crypto_auth_verify(auth, data, length, key) == 0;
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 void crypto_sha256(uint8_t *hash, const uint8_t *data, size_t length)
@@ -481,7 +481,7 @@ void crypto_sha256(uint8_t *hash, const uint8_t *data, size_t length)
     memcpy(hash, data, length < CRYPTO_SHA256_SIZE ? length : CRYPTO_SHA256_SIZE);
 #else
     crypto_hash_sha256(hash, data, length);
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length)
@@ -491,7 +491,7 @@ void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length)
     memcpy(hash, data, length < CRYPTO_SHA512_SIZE ? length : CRYPTO_SHA512_SIZE);
 #else
     crypto_hash_sha512(hash, data, length);
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 non_null()
@@ -519,7 +519,7 @@ const Random *system_random(void)
     if ((true)) {
         return nullptr;
     }
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
     // It is safe to call this function more than once and from different
     // threads -- subsequent calls won't have any effects.
     if (sodium_init() == -1) {

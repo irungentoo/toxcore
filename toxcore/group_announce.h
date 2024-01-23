@@ -212,7 +212,7 @@ non_null()
 bool gca_is_valid_announce(const GC_Announce *announce);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_GROUP_ANNOUNCE_H
+#endif /* C_TOXCORE_TOXCORE_GROUP_ANNOUNCE_H */

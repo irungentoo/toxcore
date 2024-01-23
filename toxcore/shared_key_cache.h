@@ -51,4 +51,4 @@ void shared_key_cache_free(Shared_Key_Cache *cache);
 non_null()
 const uint8_t* shared_key_cache_lookup(Shared_Key_Cache *cache, const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]);
 
-#endif // C_TOXCORE_TOXCORE_SHARED_KEY_CACHE_H
+#endif /* C_TOXCORE_TOXCORE_SHARED_KEY_CACHE_H */

@@ -21,4 +21,4 @@ non_null() bool tox_group_join_fail_unpack(Tox_Group_Join_Fail *val, Bin_Unpack 
 non_null() bool tox_group_mod_event_unpack(Tox_Group_Mod_Event *val, Bin_Unpack *bu);
 non_null() bool tox_group_exit_type_unpack(Tox_Group_Exit_Type *val, Bin_Unpack *bu);
 
-#endif  // C_TOXCORE_TOXCORE_TOX_UNPACK_H
+#endif /* C_TOXCORE_TOXCORE_TOX_UNPACK_H */

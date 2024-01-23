@@ -5731,7 +5731,7 @@ void tox_callback_group_moderation(Tox *tox, tox_group_moderation_cb *callback);
 /** @} */
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
 //!TOKSTYLE-
@@ -5780,4 +5780,4 @@ typedef enum Tox_File_Kind TOX_FILE_KIND;
 #endif
 //!TOKSTYLE+
 
-#endif // C_TOXCORE_TOXCORE_TOX_H
+#endif /* C_TOXCORE_TOXCORE_TOX_H */

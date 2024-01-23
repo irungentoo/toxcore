@@ -362,7 +362,7 @@ bool tox_is_data_encrypted(const uint8_t data[TOX_PASS_ENCRYPTION_EXTRA_LENGTH])
 
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
 //!TOKSTYLE-
@@ -374,4 +374,4 @@ typedef Tox_Err_Get_Salt TOX_ERR_GET_SALT;
 
 //!TOKSTYLE+
 
-#endif // C_TOXCORE_TOXENCRYPTSAVE_TOXENCRYPTSAVE_H
+#endif /* C_TOXCORE_TOXENCRYPTSAVE_TOXENCRYPTSAVE_H */

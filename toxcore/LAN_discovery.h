@@ -53,4 +53,4 @@ bool ip_is_local(const IP *ip);
 non_null()
 bool ip_is_lan(const IP *ip);
 
-#endif // C_TOXCORE_TOXCORE_LAN_DISCOVERY_H
+#endif /* C_TOXCORE_TOXCORE_LAN_DISCOVERY_H */

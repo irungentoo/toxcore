@@ -4,6 +4,7 @@ CIMPLE_FILES = [
     "//c-toxcore/toxav:cimple_files",
     "//c-toxcore/toxcore:cimple_files",
     "//c-toxcore/toxencryptsave:cimple_files",
+    "//c-toxcore/third_party:cimple_files",
 ]
 
 sh_test(
@@ -40,7 +41,6 @@ sh_test(
         "-RTS",
     ],
     data = CIMPLE_FILES + [
-        "//c-toxcore/third_party:headers",
         "//hs-tokstyle:headers",
         "@libsodium//:headers",
         "@libvpx//:headers",

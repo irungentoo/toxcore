@@ -4,31 +4,31 @@
  */
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
-#endif
+#endif /* _XOPEN_SOURCE */
 
 #if !defined(OS_WIN32) && (defined(_WIN32) || defined(__WIN32__) || defined(WIN32))
 #define OS_WIN32
-#endif
+#endif /* WIN32 */
 
 #include "mono_time.h"
 
 #ifdef OS_WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#endif
+#endif /* OS_WIN32 */
 
 #ifdef __APPLE__
 #include <mach/clock.h>
 #include <mach/mach.h>
-#endif
+#endif /* __APPLE__ */
 
 #ifndef OS_WIN32
 #include <sys/time.h>
-#endif
+#endif /* OS_WIN32 */
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 #include <assert.h>
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 #include <pthread.h>
 #include <time.h>
 
@@ -44,7 +44,7 @@ struct Mono_Time {
 #ifndef ESP_PLATFORM
     /* protect `time` from concurrent access */
     pthread_rwlock_t *time_update_lock;
-#endif
+#endif /* ESP_PLATFORM */
 
     mono_time_current_time_cb *current_time_callback;
     void *user_data;
@@ -101,13 +101,13 @@ static uint64_t current_time_monotonic_default(void *user_data)
     // This assert should always fail. If it does, the fuzzing harness didn't
     // override the mono time callback.
     assert(user_data == nullptr);
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
     struct timespec clock_mono;
     clock_gettime(CLOCK_MONOTONIC, &clock_mono);
     return timespec_to_u64(clock_mono);
 }
-#endif // !__APPLE__
-#endif // !OS_WIN32
+#endif /* !__APPLE__ */
+#endif /* !OS_WIN32 */
 
 
 Mono_Time *mono_time_new(const Memory *mem, mono_time_current_time_cb *current_time_callback, void *user_data)
@@ -133,7 +133,7 @@ Mono_Time *mono_time_new(const Memory *mem, mono_time_current_time_cb *current_t
     }
 
     mono_time->time_update_lock = rwlock;
-#endif
+#endif /* ESP_PLATFORM */
 
     mono_time_set_current_time_callback(mono_time, current_time_callback, user_data);
 
@@ -145,7 +145,7 @@ Mono_Time *mono_time_new(const Memory *mem, mono_time_current_time_cb *current_t
     // Never return time = 0 in case time() returns 0 (e.g. on microcontrollers
     // without battery-powered RTC or ones where NTP didn't initialise it yet).
     mono_time->base_time = max_u64(1, (uint64_t)time(nullptr)) * UINT64_C(1000) - current_time_monotonic(mono_time);
-#endif
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 
     mono_time_update(mono_time);
 
@@ -160,7 +160,7 @@ void mono_time_free(const Memory *mem, Mono_Time *mono_time)
 #ifndef ESP_PLATFORM
     pthread_rwlock_destroy(mono_time->time_update_lock);
     mem_delete(mem, mono_time->time_update_lock);
-#endif
+#endif /* ESP_PLATFORM */
     mem_delete(mem, mono_time);
 }
 
@@ -171,11 +171,11 @@ void mono_time_update(Mono_Time *mono_time)
 
 #ifndef ESP_PLATFORM
     pthread_rwlock_wrlock(mono_time->time_update_lock);
-#endif
+#endif /* ESP_PLATFORM */
     mono_time->cur_time = cur_time;
 #ifndef ESP_PLATFORM
     pthread_rwlock_unlock(mono_time->time_update_lock);
-#endif
+#endif /* ESP_PLATFORM */
 }
 
 uint64_t mono_time_get_ms(const Mono_Time *mono_time)
@@ -183,11 +183,11 @@ uint64_t mono_time_get_ms(const Mono_Time *mono_time)
 #if !defined(ESP_PLATFORM) && !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     // Fuzzing is only single thread for now, no locking needed */
     pthread_rwlock_rdlock(mono_time->time_update_lock);
-#endif
+#endif /* !ESP_PLATFORM */
     const uint64_t cur_time = mono_time->cur_time;
 #if !defined(ESP_PLATFORM) && !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     pthread_rwlock_unlock(mono_time->time_update_lock);
-#endif
+#endif /* !ESP_PLATFORM */
     return cur_time;
 }
 

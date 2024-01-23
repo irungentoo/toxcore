@@ -82,7 +82,7 @@ non_null()
 void lendian_bytes_to_host16(uint16_t *dest, const uint8_t *lendian);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_STATE_H
+#endif /* C_TOXCORE_TOXCORE_STATE_H */

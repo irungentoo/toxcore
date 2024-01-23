@@ -119,7 +119,7 @@ non_null() bool bin_unpack_u64_b(Bin_Unpack *bu, uint64_t *val);
 non_null() bool bin_unpack_bin_b(Bin_Unpack *bu, uint8_t *data, uint32_t length);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif  // C_TOXCORE_TOXCORE_BIN_UNPACK_H
+#endif /* C_TOXCORE_TOXCORE_BIN_UNPACK_H */

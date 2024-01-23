@@ -51,4 +51,4 @@ void vc_iterate(VCSession *vc);
 int vc_queue_message(Mono_Time *mono_time, void *cs, struct RTPMessage *msg);
 int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uint16_t height, int16_t kf_max_dist);
 
-#endif // C_TOXCORE_TOXAV_VIDEO_H
+#endif /* C_TOXCORE_TOXAV_VIDEO_H */

@@ -119,7 +119,7 @@ nullable(1)
 void kill_forwarding(Forwarding *forwarding);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_FORWARDING_H */

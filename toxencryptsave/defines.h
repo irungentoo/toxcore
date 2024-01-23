@@ -9,4 +9,4 @@
 #define TOX_ENC_SAVE_MAGIC_NUMBER ((const uint8_t *)"toxEsave")
 #define TOX_ENC_SAVE_MAGIC_LENGTH 8
 
-#endif
+#endif /* C_TOXCORE_TOXENCRYPTSAVE_DEFINES_H */

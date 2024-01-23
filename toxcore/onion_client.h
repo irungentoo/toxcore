@@ -237,4 +237,4 @@ non_null(1) nullable(2)
 void onion_friend_set_gc_data(Onion_Friend *onion_friend, const uint8_t *gc_data, uint16_t gc_data_length);
 non_null() bool onion_friend_is_groupchat(const Onion_Friend *onion_friend);
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_ONION_CLIENT_H */

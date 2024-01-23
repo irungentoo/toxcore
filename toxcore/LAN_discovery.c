@@ -21,7 +21,7 @@
 #include <ws2tcpip.h>
 
 #include <iphlpapi.h>
-#endif
+#endif /* WIN32 */
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__DragonFly__)
 #include <netinet/in.h>
@@ -29,15 +29,15 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#endif
+#endif /* Linux/BSD */
 
 #ifdef __linux__
 #include <linux/if.h>
-#endif
+#endif /* Linux */
 
 #if defined(__FreeBSD__) || defined(__DragonFly__)
 #include <net/if.h>
-#endif
+#endif /* BSD */
 
 #include "ccompat.h"
 #include "crypto_core.h"
@@ -204,7 +204,7 @@ static Broadcast_Info *fetch_broadcast_info(const Network *ns)
     return (Broadcast_Info *)calloc(1, sizeof(Broadcast_Info));
 }
 
-#endif
+#endif /* platforms */
 
 /** @brief Send packet to all IPv4 broadcast addresses
  *

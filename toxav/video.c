@@ -140,7 +140,7 @@ static void vc_init_encoder_cfg(const Logger *log, vpx_codec_enc_cfg_t *cfg, int
     cfg->rc_buf_initial_sz = 500;
     cfg->rc_buf_optimal_sz = 600;
     cfg->rc_buf_sz = 1000;
-#endif
+#endif /* 0 */
 }
 
 VCSession *vc_new(Mono_Time *mono_time, const Logger *log, ToxAV *av, uint32_t friend_number,
@@ -249,7 +249,7 @@ VCSession *vc_new(Mono_Time *mono_time, const Logger *log, ToxAV *av, uint32_t f
         goto BASE_CLEANUP_1;
     }
 
-#endif
+#endif /* 0 */
     vc->linfts = current_time_monotonic(mono_time);
     vc->lcfd = 60;
     vc->vcb = cb;

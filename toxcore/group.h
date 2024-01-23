@@ -395,4 +395,4 @@ void do_groupchats(Group_Chats *g_c, void *userdata);
 nullable(1)
 void kill_groupchats(Group_Chats *g_c);
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_GROUP_H */

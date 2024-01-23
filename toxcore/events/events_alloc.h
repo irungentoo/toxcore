@@ -76,7 +76,7 @@ non_null()
 bool tox_events_add(Tox_Events *events, const Tox_Event *event);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_EVENTS_EVENTS_ALLOC_H
+#endif /* C_TOXCORE_TOXCORE_EVENTS_EVENTS_ALLOC_H */

@@ -310,4 +310,4 @@ void do_tcp_connections(const Logger *logger, TCP_Connections *tcp_c, void *user
 nullable(1)
 void kill_tcp_connections(TCP_Connections *tcp_c);
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_TCP_CONNECTION_H */

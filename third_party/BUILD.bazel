@@ -9,7 +9,10 @@ cc_library(
 )
 
 filegroup(
-    name = "headers",
-    srcs = ["cmp/cmp.h"],
+    name = "cimple_files",
+    srcs = [
+        "cmp/cmp.c",
+        "cmp/cmp.h",
+    ],
     visibility = ["//c-toxcore:__subpackages__"],
 )

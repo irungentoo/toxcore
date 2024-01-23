@@ -138,4 +138,4 @@ Onion_Announce *new_onion_announce(const Logger *log, const Memory *mem, const R
 nullable(1)
 void kill_onion_announce(Onion_Announce *onion_a);
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_ONION_ANNOUNCE_H */

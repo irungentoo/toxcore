@@ -68,7 +68,7 @@ non_null()
 bool bs_list_remove(BS_List *list, const uint8_t *data, int id);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_LIST_H */

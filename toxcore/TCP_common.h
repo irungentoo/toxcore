@@ -111,4 +111,4 @@ int read_packet_tcp_secure_connection(
         const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data,
         uint16_t max_len, const IP_Port *ip_port);
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_TCP_COMMON_H */

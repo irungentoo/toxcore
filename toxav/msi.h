@@ -144,4 +144,4 @@ int msi_answer(MSICall *call, uint8_t capabilities);
  */
 int msi_change_capabilities(MSICall *call, uint8_t capabilities);
 
-#endif // C_TOXCORE_TOXAV_MSI_H
+#endif /* C_TOXCORE_TOXAV_MSI_H */

@@ -414,4 +414,4 @@ void do_net_crypto(Net_Crypto *c, void *userdata);
 nullable(1)
 void kill_net_crypto(Net_Crypto *c);
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_NET_CRYPTO_H */

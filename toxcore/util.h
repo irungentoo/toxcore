@@ -84,7 +84,7 @@ non_null()
 uint16_t data_checksum(const uint8_t *data, uint32_t length);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_UTIL_H
+#endif /* C_TOXCORE_TOXCORE_UTIL_H */

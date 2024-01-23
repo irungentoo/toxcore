@@ -67,7 +67,7 @@ struct Tox {
 };
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_TOX_STRUCT_H
+#endif /* C_TOXCORE_TOXCORE_TOX_STRUCT_H */

@@ -2213,7 +2213,7 @@ static int m_handle_packet_file_sendrequest(Messenger *m, const int friendcon_id
         return 0;
     }
 
-#endif
+#endif /* UINT8_MAX >= MAX_CONCURRENT_FILE_PIPES */
 
     uint64_t filesize;
     uint32_t file_type;
@@ -2281,7 +2281,7 @@ static int m_handle_packet_file_control(Messenger *m, const int friendcon_id, co
         return 0;
     }
 
-#endif
+#endif /* UINT8_MAX >= MAX_CONCURRENT_FILE_PIPES */
 
     if (handle_filecontrol(m, friendcon_id, outbound, filenumber, control_type, data + 3, data_length - 3, userdata) == -1) {
         // TODO(iphydf): Do something different here? Right now, this
@@ -2307,7 +2307,7 @@ static int m_handle_packet_file_data(Messenger *m, const int friendcon_id, const
         return 0;
     }
 
-#endif
+#endif /* UINT8_MAX >= MAX_CONCURRENT_FILE_PIPES */
 
     struct File_Transfers *ft = &m->friendlist[friendcon_id].file_receiving[filenumber];
 
@@ -3117,7 +3117,7 @@ static uint8_t *friends_list_save(const Messenger *m, uint8_t *data)
             assert(next_data - cur_data == friend_size());
 #ifdef __LP64__
             assert(memcmp(cur_data, &temp, friend_size()) == 0);
-#endif
+#endif /* __LP64__ */
             cur_data = next_data;
             ++num;
         }

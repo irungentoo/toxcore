@@ -19,4 +19,4 @@ int create_gca_announce_request(
     const uint8_t *client_id, const uint8_t *data_public_key, uint64_t sendback_data,
     const uint8_t *gc_data, uint16_t gc_data_length);
 
-#endif  // C_TOXCORE_TOXCORE_GROUP_ONION_ANNOUNCE_H
+#endif /* C_TOXCORE_TOXCORE_GROUP_ONION_ANNOUNCE_H */

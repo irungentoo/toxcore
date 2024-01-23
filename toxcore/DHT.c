@@ -585,7 +585,7 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 #ifndef NDEBUG
         const uint32_t increment = ipp_size + CRYPTO_PUBLIC_KEY_SIZE;
         assert(increment == PACKED_NODE_SIZE_IP4 || increment == PACKED_NODE_SIZE_IP6);
-#endif
+#endif /* NDEBUG */
     }
 
     if (processed_data_len != nullptr) {
@@ -829,7 +829,7 @@ static void get_close_nodes_inner(
             continue;
         }
 
-#endif
+#endif /* CHECK_ANNOUNCE_NODE */
 
         if (num_nodes < MAX_SENT_NODES) {
             memcpy(nodes_list[num_nodes].public_key, client->public_key, CRYPTO_PUBLIC_KEY_SIZE);
@@ -1035,7 +1035,7 @@ static int handle_data_search_response(void *object, const IP_Port *source,
     return 0;
 
 }
-#endif
+#endif /* CHECK_ANNOUNCE_NODE */
 
 /** @brief Is it ok to store node with public_key in client.
  *
@@ -1180,7 +1180,7 @@ static bool add_to_close(DHT *dht, const uint8_t *public_key, const IP_Port *ip_
 #ifdef CHECK_ANNOUNCE_NODE
         client->announce_node = false;
         send_announce_ping(dht, public_key, ip_port);
-#endif
+#endif /* CHECK_ANNOUNCE_NODE */
         return true;
     }
 
@@ -2691,7 +2691,7 @@ DHT *new_dht(const Logger *log, const Memory *mem, const Random *rng, const Netw
 
 #ifdef CHECK_ANNOUNCE_NODE
     networking_registerhandler(dht->net, NET_PACKET_DATA_SEARCH_RESPONSE, &handle_data_search_response, dht);
-#endif
+#endif /* CHECK_ANNOUNCE_NODE */
 
     crypto_new_keypair(rng, dht->self_public_key, dht->self_secret_key);
 

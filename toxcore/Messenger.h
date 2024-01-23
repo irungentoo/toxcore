@@ -41,7 +41,7 @@ typedef enum Message_Type {
 #ifndef MESSENGER_DEFINED
 #define MESSENGER_DEFINED
 typedef struct Messenger Messenger;
-#endif  // MESSENGER_DEFINED
+#endif /* MESSENGER_DEFINED */
 
 // Returns the size of the data
 typedef uint32_t m_state_size_cb(const Messenger *m);
@@ -890,4 +890,4 @@ uint32_t copy_friendlist(const Messenger *m, uint32_t *out_list, uint32_t list_s
 non_null()
 bool m_is_receiving_file(Messenger *m);
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_MESSENGER_H */

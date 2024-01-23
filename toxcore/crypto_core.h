@@ -445,7 +445,7 @@ non_null()
 void new_hmac_key(const Random *rng, uint8_t key[CRYPTO_HMAC_KEY_SIZE]);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_CRYPTO_CORE_H
+#endif /* C_TOXCORE_TOXCORE_CRYPTO_CORE_H */

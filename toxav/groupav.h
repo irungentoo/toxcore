@@ -61,4 +61,4 @@ int groupchat_disable_av(const Group_Chats *g_c, uint32_t conference_number);
 /** Return whether A/V is enabled in the conference. */
 bool groupchat_av_enabled(const Group_Chats *g_c, uint32_t conference_number);
 
-#endif // C_TOXCORE_TOXAV_GROUPAV_H
+#endif /* C_TOXCORE_TOXAV_GROUPAV_H */

@@ -21,7 +21,7 @@ int cmdline_parsefor_ipv46(int argc, char **argv, bool *ipv6enabled);
 int use_test_rng(uint32_t seed);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
 #endif

@@ -8,7 +8,7 @@
  */
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
-#endif
+#endif /* _XOPEN_SOURCE */
 
 #include "tox.h"
 

@@ -72,9 +72,9 @@
 #define STATIC_ASSERT_(cond, msg, line) typedef int static_assert_##line[(cond) ? 1 : -1]
 #define STATIC_ASSERT(cond, msg, line) STATIC_ASSERT_(cond, msg, line)
 #define static_assert(cond, msg) STATIC_ASSERT(cond, msg, __LINE__)
-#endif // !__GNUC__
-#endif // !static_assert
-#endif // !__cplusplus
+#endif /* !__GNUC__ */
+#endif /* !static_assert */
+#endif /* !__cplusplus */
 
 #ifdef __GNUC__
 #define GNU_PRINTF(f, a) __attribute__((__format__(__printf__, f, a)))
@@ -84,4 +84,4 @@
 
 //!TOKSTYLE+
 
-#endif // C_TOXCORE_TOXCORE_CCOMPAT_H
+#endif /* C_TOXCORE_TOXCORE_CCOMPAT_H */

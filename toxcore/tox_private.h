@@ -204,7 +204,7 @@ bool tox_group_peer_get_ip_address(const Tox *tox, uint32_t group_number, uint32
                                    Tox_Err_Group_Peer_Query *error);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_TOX_PRIVATE_H
+#endif /* C_TOXCORE_TOXCORE_TOX_PRIVATE_H */

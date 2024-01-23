@@ -169,7 +169,7 @@ typedef struct Client_data {
 #ifdef CHECK_ANNOUNCE_NODE
     /* Responded to data search? */
     bool        announce_node;
-#endif
+#endif /* CHECK_ANNOUNCE_NODE */
 } Client_data;
 
 /*----------------------------------------------------------------------------------*/
@@ -381,7 +381,7 @@ bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, const IP_Po
 /** Set node as announce node. */
 non_null()
 void set_announce_node(DHT *dht, const uint8_t *public_key);
-#endif
+#endif /* CHECK_ANNOUNCE_NODE */
 
 /**
  * @brief Get the (maximum MAX_SENT_NODES) closest nodes to public_key we know
@@ -558,7 +558,7 @@ non_null()
 unsigned int ipport_self_copy(const DHT *dht, IP_Port *dest);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_DHT_H */

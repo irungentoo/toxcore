@@ -155,4 +155,4 @@ nullable(1)
 void kill_onion(Onion *onion);
 
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_ONION_H */

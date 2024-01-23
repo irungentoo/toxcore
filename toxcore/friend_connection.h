@@ -173,4 +173,4 @@ non_null() Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_i
 non_null() int friend_conn_get_onion_friendnum(const Friend_Conn *fc);
 non_null() const IP_Port *friend_conn_get_dht_ip_port(const Friend_Conn *fc);
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_FRIEND_CONNECTION_H */

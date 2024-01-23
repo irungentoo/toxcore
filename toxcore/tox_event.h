@@ -254,7 +254,7 @@ non_null() bool tox_event_group_moderation_unpack(Tox_Event_Group_Moderation **e
 non_null() bool tox_event_dht_get_nodes_response_unpack(Tox_Event_Dht_Get_Nodes_Response **event, Bin_Unpack *bu, const Memory *mem);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_TOX_EVENT_H
+#endif /* C_TOXCORE_TOXCORE_TOX_EVENT_H */

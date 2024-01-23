@@ -100,7 +100,7 @@ void mono_time_set_current_time_callback(Mono_Time *mono_time,
         mono_time_current_time_cb *current_time_callback, void *user_data);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_MONO_TIME_H
+#endif /* C_TOXCORE_TOXCORE_MONO_TIME_H */

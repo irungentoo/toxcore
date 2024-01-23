@@ -11,12 +11,12 @@
 #include <string.h>
 #if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
 #include <sys/ioctl.h>
-#endif
+#endif /* !WIN32 */
 
 #ifdef TCP_SERVER_USE_EPOLL
 #include <sys/epoll.h>
 #include <unistd.h>
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
 
 #include "DHT.h"
 #include "TCP_common.h"
@@ -35,7 +35,7 @@
 #define TCP_SOCKET_INCOMING 1
 #define TCP_SOCKET_UNCONFIRMED 2
 #define TCP_SOCKET_CONFIRMED 3
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
 
 typedef struct TCP_Secure_Conn {
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
@@ -72,7 +72,7 @@ struct TCP_Server {
 #ifdef TCP_SERVER_USE_EPOLL
     int efd;
     uint64_t last_run_pinged;
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
     Socket *socks_listening;
     unsigned int num_listening_socks;
 
@@ -109,8 +109,8 @@ size_t tcp_server_listen_count(const TCP_Server *tcp_server)
 #ifdef TCP_SERVER_USE_EPOLL
 #ifndef EPOLLRDHUP
 #define EPOLLRDHUP 0x2000
-#endif
-#endif
+#endif /* EPOLLRDHUP */
+#endif /* TCP_SERVER_USE_EPOLL */
 
 /** @brief Increase the size of the connection list
  *
@@ -991,7 +991,7 @@ TCP_Server *new_tcp_server(const Logger *logger, const Memory *mem, const Random
         return nullptr;
     }
 
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
 
     const Family family = ipv6_enabled ? net_family_ipv6() : net_family_ipv4();
 
@@ -1012,7 +1012,7 @@ TCP_Server *new_tcp_server(const Logger *logger, const Memory *mem, const Random
             continue;
         }
 
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
 
         temp->socks_listening[temp->num_listening_socks] = sock;
         ++temp->num_listening_socks;
@@ -1057,7 +1057,7 @@ static void do_tcp_accept_new(TCP_Server *tcp_server)
         }
     }
 }
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
 
 non_null()
 static int do_incoming(TCP_Server *tcp_server, uint32_t i)
@@ -1174,7 +1174,7 @@ static void do_tcp_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_tim
         do_unconfirmed(tcp_server, mono_time, i);
     }
 }
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
 
 non_null()
 static void do_tcp_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
@@ -1186,7 +1186,7 @@ static void do_tcp_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
     }
 
     tcp_server->last_run_pinged = mono_time_get(mono_time);
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
 
     for (uint32_t i = 0; i < tcp_server->size_accepted_connections; ++i) {
         TCP_Secure_Connection *conn = &tcp_server->accepted_connection_array[i];
@@ -1229,7 +1229,7 @@ static void do_tcp_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
 
         do_confirmed_recv(tcp_server, i);
 
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
     }
 }
 
@@ -1369,7 +1369,7 @@ static void do_tcp_epoll(TCP_Server *tcp_server, const Mono_Time *mono_time)
         continue;
     }
 }
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
 
 void do_tcp_server(TCP_Server *tcp_server, const Mono_Time *mono_time)
 {
@@ -1380,7 +1380,7 @@ void do_tcp_server(TCP_Server *tcp_server, const Mono_Time *mono_time)
     do_tcp_accept_new(tcp_server);
     do_tcp_incoming(tcp_server);
     do_tcp_unconfirmed(tcp_server, mono_time);
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
 
     do_tcp_confirmed(tcp_server, mono_time);
 }
@@ -1407,7 +1407,7 @@ void kill_tcp_server(TCP_Server *tcp_server)
 
 #ifdef TCP_SERVER_USE_EPOLL
     close(tcp_server->efd);
-#endif
+#endif /* TCP_SERVER_USE_EPOLL */
 
     for (uint32_t i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
         wipe_secure_connection(&tcp_server->incoming_connection_queue[i]);

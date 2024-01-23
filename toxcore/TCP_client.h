@@ -151,4 +151,4 @@ non_null()
 void oob_data_handler(TCP_Client_Connection *con, tcp_oob_data_cb *oob_data_callback, void *object);
 
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_TCP_CLIENT_H */

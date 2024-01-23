@@ -564,7 +564,7 @@ nullable(1)
 void kill_networking(Networking_Core *net);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_NETWORK_H */

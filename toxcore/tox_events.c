@@ -109,9 +109,9 @@ Tox_Events *tox_events_iterate(Tox *tox, bool fail_hard, Tox_Err_Events_Iterate 
 }
 
 non_null()
-static bool tox_event_pack_handler(const void *obj, uint32_t index, const Logger *logger, Bin_Pack *bp)
+static bool tox_event_pack_handler(const void *arr, uint32_t index, const Logger *logger, Bin_Pack *bp)
 {
-    const Tox_Event *events = (const Tox_Event *)obj;
+    const Tox_Event *events = (const Tox_Event *)arr;
     assert(events != nullptr);
     return tox_event_pack(&events[index], bp);
 }

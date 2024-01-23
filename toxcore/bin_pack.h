@@ -197,7 +197,7 @@ non_null() bool bin_pack_u64_b(Bin_Pack *bp, uint64_t val);
 non_null() bool bin_pack_bin_b(Bin_Pack *bp, const uint8_t *data, uint32_t length);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif // C_TOXCORE_TOXCORE_BIN_PACK_H
+#endif /* C_TOXCORE_TOXCORE_BIN_PACK_H */

@@ -65,4 +65,4 @@ bool announce_store_data(Announcements *announce, const uint8_t *data_public_key
 #define ANNOUNCE_BUCKET_PREFIX_LENGTH 5
 #define ANNOUNCE_BUCKETS 32 // ANNOUNCE_BUCKETS = 2 ** ANNOUNCE_BUCKET_PREFIX_LENGTH
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_ANNOUNCE_H */

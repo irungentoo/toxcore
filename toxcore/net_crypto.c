@@ -3193,7 +3193,7 @@ static void kill_timedout(Net_Crypto *c, void *userdata)
             /* do_timeout_here(); */
         }
 
-#endif
+#endif /* 0 */
     }
 }
 

@@ -1578,7 +1578,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
         dht_delfriend(onion_c->dht, onion_c->friends_list[friend_num].dht_public_key, 0);
     }
 
-#endif
+#endif /* 0 */
 
     crypto_memzero(&onion_c->friends_list[friend_num], sizeof(Onion_Friend));
     unsigned int i;

@@ -80,7 +80,7 @@ non_null(1) nullable(2) void *mem_vrealloc(const Memory *mem, void *ptr, uint32_
 non_null(1) nullable(2) void mem_delete(const Memory *mem, void *ptr);
 
 #ifdef __cplusplus
-}  // extern "C"
+} /* extern "C" */
 #endif
 
-#endif
+#endif /* C_TOXCORE_TOXCORE_MEM_H */
