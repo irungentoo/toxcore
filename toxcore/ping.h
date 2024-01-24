@@ -22,7 +22,7 @@
 
 typedef struct Ping Ping;
 
-Ping *_Nullable ping_new(const Memory *_Nonnull mem, const Mono_Time *_Nonnull mono_time, const Random *_Nonnull rng, DHT *_Nonnull dht, Networking_Core *_Nonnull net);
+Ping *_Nullable ping_new(const Memory *_Nonnull mem, const Mono_Time *_Nonnull mono_time, const Logger *_Nonnull log, const Random *_Nonnull rng, DHT *_Nonnull dht, Networking_Core *_Nonnull net);
 
 void ping_kill(const Memory *_Nonnull mem, Ping *_Nullable ping);
 /** @brief Add nodes to the to_ping list.

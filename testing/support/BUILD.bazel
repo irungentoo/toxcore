@@ -43,6 +43,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:crypto_core",
         "//c-toxcore/toxcore:mem",
         "//c-toxcore/toxcore:net",
         "//c-toxcore/toxcore:network",

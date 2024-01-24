@@ -3,11 +3,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <iosfwd>
 #include <vector>
 
 #include "../../../toxcore/attributes.h"
 #include "../../../toxcore/net.h"
 #include "../../../toxcore/network.h"
+#include "../../../toxcore/rng.h"
 
 namespace tox::test {
 
@@ -61,6 +63,31 @@ IP make_ip(uint32_t ipv4);
  */
 IP make_node_ip(uint32_t node_id);
 
+IP_Port random_ip_port(const Random *_Nonnull rng);
+
+class increasing_ip_port {
+    std::uint8_t start_;
+    const Random *_Nonnull rng_;
+
+public:
+    explicit increasing_ip_port(std::uint8_t start, const Random *_Nonnull rng)
+        : start_(start)
+        , rng_(rng)
+    {
+    }
+
+    IP_Port operator()();
+};
+
 }  // namespace tox::test
+
+bool operator==(Family a, Family b);
+bool operator==(IP4 a, IP4 b);
+bool operator==(IP6 a, IP6 b);
+bool operator==(IP const &a, IP const &b);
+bool operator==(IP_Port const &a, IP_Port const &b);
+
+std::ostream &operator<<(std::ostream &out, IP const &v);
+std::ostream &operator<<(std::ostream &out, IP_Port const &v);
 
 #endif  // C_TOXCORE_TESTING_SUPPORT_NETWORK_H

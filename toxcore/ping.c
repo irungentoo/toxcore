@@ -9,16 +9,19 @@
  */
 #include "ping.h"
 
+#include <assert.h>
 #include <string.h>
 
 #include "DHT.h"
 #include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
+#include "logger.h"
 #include "mem.h"
 #include "mono_time.h"
 #include "network.h"
 #include "ping_array.h"
+#include "util.h"
 
 #define PING_NUM_MAX 512
 
@@ -30,6 +33,7 @@
 
 struct Ping {
     const Mono_Time *_Nonnull mono_time;
+    const Logger *_Nonnull log;
     const Random *_Nonnull rng;
     const Memory *_Nonnull mem;
     DHT *_Nonnull dht;
@@ -42,7 +46,7 @@ struct Ping {
 
 #define PING_PLAIN_SIZE (1 + sizeof(uint64_t))
 #define DHT_PING_SIZE (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + PING_PLAIN_SIZE + CRYPTO_MAC_SIZE)
-#define PING_DATA_SIZE (CRYPTO_PUBLIC_KEY_SIZE + sizeof(IP_Port))
+#define PING_DATA_SIZE (CRYPTO_PUBLIC_KEY_SIZE + SIZE_IPPORT)
 
 void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key)
 {
@@ -59,7 +63,13 @@ void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key
     // Generate random ping_id.
     uint8_t data[PING_DATA_SIZE];
     pk_copy(data, public_key);
-    memcpy(data + CRYPTO_PUBLIC_KEY_SIZE, ipp, sizeof(IP_Port));
+    const int packed_len = pack_ip_port(ping->log, &data[CRYPTO_PUBLIC_KEY_SIZE], PING_DATA_SIZE - CRYPTO_PUBLIC_KEY_SIZE, ipp);
+    if (packed_len < 0) {
+        LOGGER_ERROR(ping->log, "failed to pack IP/Port");
+        return;
+    }
+    assert(packed_len <= SIZE_IPPORT);
+    memzero(&data[CRYPTO_PUBLIC_KEY_SIZE + packed_len], SIZE_IPPORT - packed_len);
     ping_id = ping_array_add(ping->ping_array, ping->mono_time, ping->rng, data, sizeof(data));
 
     if (ping_id == 0) {
@@ -205,7 +215,10 @@ static int handle_ping_response(void *_Nonnull object, const IP_Port *_Nonnull s
     }
 
     IP_Port ipp;
-    memcpy(&ipp, data + CRYPTO_PUBLIC_KEY_SIZE, sizeof(IP_Port));
+
+    if (unpack_ip_port(&ipp, &data[CRYPTO_PUBLIC_KEY_SIZE], PING_DATA_SIZE - CRYPTO_PUBLIC_KEY_SIZE, false) == -1) {
+        return 1;
+    }
 
     if (!ipport_equal(&ipp, source)) {
         return 1;
@@ -325,7 +338,7 @@ void ping_iterate(Ping *ping)
     }
 }
 
-Ping *ping_new(const Memory *mem, const Mono_Time *mono_time, const Random *rng, DHT *dht, Networking_Core *net)
+Ping *ping_new(const Memory *mem, const Mono_Time *mono_time, const Logger *log, const Random *rng, DHT *dht, Networking_Core *net)
 {
     Ping *ping = (Ping *)mem_alloc(mem, sizeof(Ping));
 
@@ -342,6 +355,7 @@ Ping *ping_new(const Memory *mem, const Mono_Time *mono_time, const Random *rng,
     ping->ping_array = ping_array;
 
     ping->mono_time = mono_time;
+    ping->log = log;
     ping->rng = rng;
     ping->mem = mem;
     ping->dht = dht;

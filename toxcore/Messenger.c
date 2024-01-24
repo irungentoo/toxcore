@@ -2467,7 +2467,7 @@ static bool self_announce_group(const Messenger *_Nonnull m, GC_Chat *_Nonnull c
     announce.base_announce.ip_port_is_set = ip_port_is_set;
 
     if (ip_port_is_set) {
-        memcpy(&announce.base_announce.ip_port, &chat->self_ip_port, sizeof(IP_Port));
+        announce.base_announce.ip_port = chat->self_ip_port;
     }
 
     memcpy(announce.base_announce.peer_public_key, chat->self_public_key.enc, ENC_PUBLIC_KEY_SIZE);

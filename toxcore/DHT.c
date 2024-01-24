@@ -1953,7 +1953,9 @@ static int friend_iplist(const DHT *_Nonnull dht, IP_Port *_Nonnull ip_portlist,
     }
 
 #ifdef FRIEND_IPLIST_PAD
-    memcpy(ip_portlist, ipv6s, num_ipv6s * sizeof(IP_Port));
+    for (int i = 0; i < num_ipv6s; ++i) {
+        ip_portlist[i] = ipv6s[i];
+    }
 
     if (num_ipv6s == MAX_FRIEND_CLIENTS) {
         return MAX_FRIEND_CLIENTS;
@@ -1965,7 +1967,9 @@ static int friend_iplist(const DHT *_Nonnull dht, IP_Port *_Nonnull ip_portlist,
         num_ipv4s_used = num_ipv4s;
     }
 
-    memcpy(&ip_portlist[num_ipv6s], ipv4s, num_ipv4s_used * sizeof(IP_Port));
+    for (int i = 0; i < num_ipv4s_used; ++i) {
+        ip_portlist[num_ipv6s + i] = ipv4s[i];
+    }
     return num_ipv6s + num_ipv4s_used;
 
 #else /* !FRIEND_IPLIST_PAD */
@@ -1974,11 +1978,15 @@ static int friend_iplist(const DHT *_Nonnull dht, IP_Port *_Nonnull ip_portlist,
      * with the shorter one...
      */
     if (num_ipv6s >= num_ipv4s) {
-        memcpy(ip_portlist, ipv6s, num_ipv6s * sizeof(IP_Port));
+        for (int i = 0; i < num_ipv6s; ++i) {
+            ip_portlist[i] = ipv6s[i];
+        }
         return num_ipv6s;
     }
 
-    memcpy(ip_portlist, ipv4s, num_ipv4s * sizeof(IP_Port));
+    for (int i = 0; i < num_ipv4s; ++i) {
+        ip_portlist[i] = ipv4s[i];
+    }
     return num_ipv4s;
 
 #endif /* !FRIEND_IPLIST_PAD */
@@ -2537,7 +2545,7 @@ DHT *new_dht(const Logger *log, const Memory *mem, const Random *rng, const Netw
     dht->hole_punching_enabled = hole_punching_enabled;
     dht->lan_discovery_enabled = lan_discovery_enabled;
 
-    struct Ping *temp_ping = ping_new(mem, mono_time, rng, dht, net);
+    struct Ping *temp_ping = ping_new(mem, mono_time, log, rng, dht, net);
 
     if (temp_ping == nullptr) {
         LOGGER_ERROR(log, "failed to initialise ping");

@@ -594,6 +594,7 @@ cc_library(
         ":network",
         ":rng",
         ":test_util",
+        "//c-toxcore/testing/support",
     ],
 )
 
@@ -768,6 +769,7 @@ cc_fuzz_test(
     corpus = ["//tools/toktok-fuzzer/corpus:DHT_fuzz_test"],
     deps = [
         ":DHT",
+        ":DHT_test_util",
         ":net_profile",
         "//c-toxcore/testing/support",
     ],
