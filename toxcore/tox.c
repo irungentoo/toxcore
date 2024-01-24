@@ -33,6 +33,7 @@
 #include "state.h"
 #include "tox_private.h"
 #include "tox_struct.h"
+#include "util.h"
 
 #include "../toxencryptsave/defines.h"
 
@@ -992,14 +993,14 @@ void tox_get_savedata(const Tox *tox, uint8_t *savedata)
         return;
     }
 
-    memset(savedata, 0, tox_get_savedata_size(tox));
+    memzero(savedata, tox_get_savedata_size(tox));
 
     tox_lock(tox);
 
     const uint32_t size32 = sizeof(uint32_t);
 
     // write cookie
-    memset(savedata, 0, size32);
+    memzero(savedata, size32);
     savedata += size32;
     host_to_lendian_bytes32(savedata, STATE_COOKIE_GLOBAL);
     savedata += size32;

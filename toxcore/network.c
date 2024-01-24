@@ -1221,9 +1221,7 @@ Networking_Core *new_networking_ex(
 
     /* Bind our socket to port PORT and the given IP address (usually 0.0.0.0 or ::) */
     uint16_t *portptr = nullptr;
-    Network_Addr addr;
-
-    memset(&addr.addr, 0, sizeof(struct sockaddr_storage));
+    Network_Addr addr = {{0}};
 
     if (net_family_is_ipv4(temp->family)) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr.addr;
@@ -1262,8 +1260,7 @@ Networking_Core *new_networking_ex(
 
 #ifndef ESP_PLATFORM
         /* multicast local nodes */
-        struct ipv6_mreq mreq;
-        memset(&mreq, 0, sizeof(mreq));
+        struct ipv6_mreq mreq = {{0}};
         mreq.ipv6mr_multiaddr.s6_addr[ 0] = 0xFF;
         mreq.ipv6mr_multiaddr.s6_addr[ 1] = 0x02;
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
@@ -1625,8 +1622,7 @@ static int addr_resolve(const Network *ns, const char *address, IP *to, IP *extr
     const Family tox_family = to->family;
     const int family = make_family(tox_family);
 
-    struct addrinfo hints;
-    memset(&hints, 0, sizeof(hints));
+    struct addrinfo hints = {0};
     hints.ai_family   = family;
     hints.ai_socktype = SOCK_DGRAM; // type of socket Tox uses.
 

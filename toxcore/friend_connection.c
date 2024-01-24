@@ -21,6 +21,7 @@
 #include "net_crypto.h"
 #include "network.h"
 #include "onion_client.h"
+#include "util.h"
 
 #define PORTS_PER_DISCOVERY 10
 
@@ -982,7 +983,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
                     if (friend_con->dht_lock_token > 0) {
                         dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock_token);
                         friend_con->dht_lock_token = 0;
-                        memset(friend_con->dht_temp_pk, 0, CRYPTO_PUBLIC_KEY_SIZE);
+                        memzero(friend_con->dht_temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
                     }
                 }
 

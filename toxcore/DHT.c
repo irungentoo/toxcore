@@ -853,12 +853,14 @@ static void get_close_nodes_inner(
  */
 non_null()
 static int get_somewhat_close_nodes(
-        uint64_t cur_time, const uint8_t *public_key, Node_format *nodes_list,
+        uint64_t cur_time, const uint8_t *public_key, Node_format nodes_list[MAX_SENT_NODES],
         Family sa_family, const Client_data *close_clientlist,
         const DHT_Friend *friends_list, uint16_t friends_list_size,
         bool is_lan, bool want_announce)
 {
-    memset(nodes_list, 0, MAX_SENT_NODES * sizeof(Node_format));
+    for (uint16_t i = 0; i < MAX_SENT_NODES; ++i) {
+        nodes_list[i] = empty_node_format;
+    }
 
     uint32_t num_nodes = 0;
     get_close_nodes_inner(
@@ -882,7 +884,7 @@ static int get_somewhat_close_nodes(
 
 int get_close_nodes(
         const DHT *dht, const uint8_t *public_key,
-        Node_format *nodes_list, Family sa_family,
+        Node_format nodes_list[MAX_SENT_NODES], Family sa_family,
         bool is_lan, bool want_announce)
 {
     return get_somewhat_close_nodes(
@@ -1101,7 +1103,8 @@ static void update_client_with_reset(const Mono_Time *mono_time, Client_data *cl
     ipptp_write->ret_ip_self = false;
 
     /* zero out other address */
-    memset(ipptp_clear, 0, sizeof(*ipptp_clear));
+    const IPPTsPng empty_ipptp = {{{{0}}}};
+    *ipptp_clear = empty_ipptp;
 }
 
 /**

@@ -730,7 +730,7 @@ static bool set_gc_password_local(GC_Chat *chat, const uint8_t *passwd, uint16_t
 
     if (passwd == nullptr || length == 0) {
         chat->shared_state.password_length = 0;
-        memset(chat->shared_state.password, 0, MAX_GC_PASSWORD_SIZE);
+        memzero(chat->shared_state.password, MAX_GC_PASSWORD_SIZE);
     } else {
         chat->shared_state.password_length = length;
         crypto_memlock(chat->shared_state.password, sizeof(chat->shared_state.password));
@@ -1526,7 +1526,7 @@ int group_packet_wrap(
 
     assert(padding_len < packet_size);
 
-    memset(plain, 0, padding_len);
+    memzero(plain, padding_len);
 
     uint16_t enc_header_len = sizeof(uint8_t);
     plain[padding_len] = gp_packet_type;
@@ -2492,8 +2492,7 @@ static int handle_gc_ping(GC_Chat *chat, GC_Connection *gconn, const uint8_t *da
     do_gc_peer_state_sync(chat, gconn, data, length);
 
     if (length > GC_PING_PACKET_MIN_DATA_SIZE) {
-        IP_Port ip_port;
-        memset(&ip_port, 0, sizeof(IP_Port));
+        IP_Port ip_port = {{{0}}};
 
         if (unpack_ip_port(&ip_port, data + GC_PING_PACKET_MIN_DATA_SIZE,
                            length - GC_PING_PACKET_MIN_DATA_SIZE, false) > 0) {
@@ -3792,7 +3791,7 @@ int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length)
         assert(topic != nullptr);
         memcpy(chat->topic_info.topic, topic, length);
     } else {
-        memset(chat->topic_info.topic, 0, sizeof(chat->topic_info.topic));
+        memzero(chat->topic_info.topic, sizeof(chat->topic_info.topic));
     }
 
     memcpy(chat->topic_info.public_sig_key, get_sig_pk(chat->self_public_key), SIG_PUBLIC_KEY_SIZE);
@@ -5622,8 +5621,7 @@ static bool send_gc_handshake_packet(const GC_Chat *chat, GC_Connection *gconn, 
         return false;
     }
 
-    Node_format node;
-    memset(&node, 0, sizeof(node));
+    Node_format node = {{0}};
 
     if (!gcc_copy_tcp_relay(chat->rng, &node, gconn)) {
         LOGGER_TRACE(chat->log, "Failed to copy TCP relay during handshake (%u TCP relays)", gconn->tcp_relays_count);
@@ -5678,8 +5676,7 @@ static bool send_gc_oob_handshake_request(const GC_Chat *chat, const GC_Connecti
         return false;
     }
 
-    Node_format node;
-    memset(&node, 0, sizeof(node));
+    Node_format node = {{0}};
 
     if (!gcc_copy_tcp_relay(chat->rng, &node, gconn)) {
         LOGGER_WARNING(chat->log, "Failed to copy TCP relay");

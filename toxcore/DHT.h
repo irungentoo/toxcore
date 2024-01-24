@@ -396,7 +396,7 @@ void set_announce_node(DHT *dht, const uint8_t *public_key);
 non_null()
 int get_close_nodes(
         const DHT *dht, const uint8_t *public_key,
-        Node_format *nodes_list, Family sa_family,
+        Node_format nodes_list[MAX_SENT_NODES], Family sa_family,
         bool is_lan, bool want_announce);
 
 

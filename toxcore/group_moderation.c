@@ -93,7 +93,7 @@ void mod_list_get_data_hash(uint8_t *hash, const uint8_t *packed_mod_list, uint1
 bool mod_list_make_hash(const Moderation *moderation, uint8_t *hash)
 {
     if (moderation->num_mods == 0) {
-        memset(hash, 0, MOD_MODERATION_HASH_SIZE);
+        memzero(hash, MOD_MODERATION_HASH_SIZE);
         return true;
     }
 
@@ -410,7 +410,7 @@ static bool sanctions_list_make_hash(const Mod_Sanction *sanctions, uint32_t new
                                      uint8_t *hash)
 {
     if (num_sanctions == 0 || sanctions == nullptr) {
-        memset(hash, 0, MOD_SANCTION_HASH_SIZE);
+        memzero(hash, MOD_SANCTION_HASH_SIZE);
         return true;
     }
 

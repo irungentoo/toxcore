@@ -19,6 +19,7 @@
 #include "mono_time.h"
 #include "network.h"
 #include "shared_key_cache.h"
+#include "util.h"
 
 #define RETURN_1 ONION_RETURN_1
 #define RETURN_2 ONION_RETURN_2
@@ -53,7 +54,7 @@ static void ip_pack_to_bytes(uint8_t *data, const IP *source)
     data[0] = source->family.value;
 
     if (net_family_is_ipv4(source->family) || net_family_is_tox_tcp_ipv4(source->family)) {
-        memset(data + 1, 0, SIZE_IP6);
+        memzero(data + 1, SIZE_IP6);
         memcpy(data + 1, source->ip.v4.uint8, SIZE_IP4);
     } else {
         memcpy(data + 1, source->ip.v6.uint8, SIZE_IP6);

@@ -857,7 +857,7 @@ int m_copy_statusmessage(const Messenger *m, int32_t friendnumber, uint8_t *buf,
     const uint32_t msglen = min_u32(maxlen, m->friendlist[friendnumber].statusmessage_length);
 
     memcpy(buf, m->friendlist[friendnumber].statusmessage, msglen);
-    memset(buf + msglen, 0, maxlen - msglen);
+    memzero(buf + msglen, maxlen - msglen);
     return msglen;
 }
 
@@ -2620,7 +2620,7 @@ static bool self_announce_group(const Messenger *m, GC_Chat *chat, Onion_Friend 
     if (tcp_num > 0) {
         pk_copy(chat->announced_tcp_relay_pk, announce.base_announce.tcp_relays[0].public_key);
     } else {
-        memset(chat->announced_tcp_relay_pk, 0, sizeof(chat->announced_tcp_relay_pk));
+        memzero(chat->announced_tcp_relay_pk, sizeof(chat->announced_tcp_relay_pk));
     }
 
     LOGGER_DEBUG(chat->log, "Published group announce. TCP relays: %d, UDP status: %d", tcp_num,
@@ -3416,10 +3416,9 @@ static uint32_t path_node_size(const Messenger *m)
 non_null()
 static uint8_t *save_path_nodes(const Messenger *m, uint8_t *data)
 {
-    Node_format nodes[NUM_SAVED_PATH_NODES];
+    Node_format nodes[NUM_SAVED_PATH_NODES] = {{{0}}};
     uint8_t *temp_data = data;
     data = state_write_section_header(data, STATE_COOKIE_TYPE, 0, STATE_TYPE_PATH_NODE);
-    memset(nodes, 0, sizeof(nodes));
     const unsigned int num = onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
     const int l = pack_nodes(m->log, data, NUM_SAVED_PATH_NODES * packed_node_size(net_family_tcp_ipv6()), nodes, num);
 

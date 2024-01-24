@@ -9,7 +9,6 @@
 #include "LAN_discovery.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 // The mingw32/64 Windows library warns about including winsock2.h after
@@ -143,8 +142,7 @@ static Broadcast_Info *fetch_broadcast_info(const Network *ns)
     }
 
     /* Configure ifconf for the ioctl call. */
-    struct ifreq i_faces[MAX_INTERFACES];
-    memset(i_faces, 0, sizeof(struct ifreq) * MAX_INTERFACES);
+    struct ifreq i_faces[MAX_INTERFACES] = {{0}};
 
     struct ifconf ifc;
     ifc.ifc_buf = (char *)i_faces;

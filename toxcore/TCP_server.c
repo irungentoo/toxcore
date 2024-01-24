@@ -60,6 +60,8 @@ typedef struct TCP_Secure_Connection {
     uint64_t ping_id;
 } TCP_Secure_Connection;
 
+static const TCP_Secure_Connection empty_tcp_secure_connection = {{nullptr}};
+
 
 struct TCP_Server {
     const Logger *logger;
@@ -135,8 +137,9 @@ static int alloc_new_connections(TCP_Server *tcp_server, uint32_t num)
     }
 
     const uint32_t old_size = tcp_server->size_accepted_connections;
-    const uint32_t size_new_entries = num * sizeof(TCP_Secure_Connection);
-    memset(new_connections + old_size, 0, size_new_entries);
+    for (uint32_t i = 0; i < num; ++i) {
+        new_connections[old_size + i] = empty_tcp_secure_connection;
+    }
 
     tcp_server->accepted_connection_array = new_connections;
     tcp_server->size_accepted_connections = new_size;

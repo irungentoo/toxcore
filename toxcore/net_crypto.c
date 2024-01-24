@@ -227,7 +227,7 @@ static int create_cookie_request(const Net_Crypto *c, uint8_t *packet, const uin
     uint8_t plain[COOKIE_REQUEST_PLAIN_LENGTH];
 
     memcpy(plain, c->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    memset(plain + CRYPTO_PUBLIC_KEY_SIZE, 0, CRYPTO_PUBLIC_KEY_SIZE);
+    memzero(plain + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(plain + (CRYPTO_PUBLIC_KEY_SIZE * 2), &number, sizeof(uint64_t));
     const uint8_t *tmp_shared_key = dht_get_shared_key_sent(c->dht, dht_public_key);
     memcpy(shared_key, tmp_shared_key, CRYPTO_SHARED_KEY_SIZE);
@@ -1139,7 +1139,7 @@ static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint3
     VLA(uint8_t, packet, sizeof(uint32_t) + sizeof(uint32_t) + padding_length + length);
     memcpy(packet, &buffer_start, sizeof(uint32_t));
     memcpy(packet + sizeof(uint32_t), &num, sizeof(uint32_t));
-    memset(packet + (sizeof(uint32_t) * 2), 0, padding_length);
+    memzero(packet + (sizeof(uint32_t) * 2), padding_length);
     memcpy(packet + (sizeof(uint32_t) * 2) + padding_length, data, length);
 
     return send_data_packet(c, crypt_connection_id, packet, SIZEOF_VLA(packet));

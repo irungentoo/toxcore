@@ -17,6 +17,7 @@
 #include <sodium.h>
 
 #include "ccompat.h"
+#include "util.h"
 
 #ifndef crypto_box_MACBYTES
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
@@ -122,7 +123,7 @@ static void crypto_free(uint8_t *ptr, size_t bytes)
 void crypto_memzero(void *data, size_t length)
 {
 #if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
-    memset(data, 0, length);
+    memzero(data, length);
 #else
     sodium_memzero(data, length);
 #endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
@@ -264,7 +265,7 @@ int32_t encrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
     // Don't encrypt anything.
     memcpy(encrypted, plain, length);
     // Zero MAC to avoid uninitialized memory reads.
-    memset(encrypted + length, 0, crypto_box_MACBYTES);
+    memzero(encrypted + length, crypto_box_MACBYTES);
 #else
 
     const size_t size_temp_plain = length + crypto_box_ZEROBYTES;
@@ -282,9 +283,9 @@ int32_t encrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
     // crypto_box_afternm requires the entire range of the output array be
     // initialised with something. It doesn't matter what it's initialised with,
     // so we'll pick 0x00.
-    memset(temp_encrypted, 0, size_temp_encrypted);
+    memzero(temp_encrypted, size_temp_encrypted);
 
-    memset(temp_plain, 0, crypto_box_ZEROBYTES);
+    memzero(temp_plain, crypto_box_ZEROBYTES);
     // Pad the message with 32 0 bytes.
     memcpy(temp_plain + crypto_box_ZEROBYTES, plain, length);
 
@@ -333,9 +334,9 @@ int32_t decrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
     // crypto_box_open_afternm requires the entire range of the output array be
     // initialised with something. It doesn't matter what it's initialised with,
     // so we'll pick 0x00.
-    memset(temp_plain, 0, size_temp_plain);
+    memzero(temp_plain, size_temp_plain);
 
-    memset(temp_encrypted, 0, crypto_box_BOXZEROBYTES);
+    memzero(temp_encrypted, crypto_box_BOXZEROBYTES);
     // Pad the message with 16 0 bytes.
     memcpy(temp_encrypted + crypto_box_BOXZEROBYTES, encrypted, length);
 
@@ -438,7 +439,7 @@ void new_symmetric_key(const Random *rng, uint8_t *key)
 int32_t crypto_new_keypair(const Random *rng, uint8_t *public_key, uint8_t *secret_key)
 {
     random_bytes(rng, secret_key, CRYPTO_SECRET_KEY_SIZE);
-    memset(public_key, 0, CRYPTO_PUBLIC_KEY_SIZE);  // Make MSAN happy
+    memzero(public_key, CRYPTO_PUBLIC_KEY_SIZE);  // Make MSAN happy
     crypto_derive_public_key(public_key, secret_key);
     return 0;
 }
@@ -477,7 +478,7 @@ bool crypto_hmac_verify(const uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[
 void crypto_sha256(uint8_t *hash, const uint8_t *data, size_t length)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    memset(hash, 0, CRYPTO_SHA256_SIZE);
+    memzero(hash, CRYPTO_SHA256_SIZE);
     memcpy(hash, data, length < CRYPTO_SHA256_SIZE ? length : CRYPTO_SHA256_SIZE);
 #else
     crypto_hash_sha256(hash, data, length);
@@ -487,7 +488,7 @@ void crypto_sha256(uint8_t *hash, const uint8_t *data, size_t length)
 void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    memset(hash, 0, CRYPTO_SHA512_SIZE);
+    memzero(hash, CRYPTO_SHA512_SIZE);
     memcpy(hash, data, length < CRYPTO_SHA512_SIZE ? length : CRYPTO_SHA512_SIZE);
 #else
     crypto_hash_sha512(hash, data, length);

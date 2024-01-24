@@ -96,6 +96,15 @@ uint8_t *memdup(const uint8_t *data, size_t data_size)
     return copy;
 }
 
+void memzero(uint8_t *data, size_t data_size)
+{
+    if (data == nullptr || data_size == 0) {
+        return;
+    }
+
+    memset(data, 0, data_size);
+}
+
 int16_t max_s16(int16_t a, int16_t b)
 {
     return a > b ? a : b;

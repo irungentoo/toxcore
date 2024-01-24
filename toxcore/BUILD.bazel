@@ -167,6 +167,7 @@ cc_library(
     deps = [
         ":attributes",
         ":ccompat",
+        ":util",
         "@libsodium",
     ],
 )
