@@ -1223,7 +1223,8 @@ static bool file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t f
         return false;
     }
 
-    VLA(uint8_t, packet, 1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH + filename_length);
+    const uint16_t packet_size = 1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH + filename_length;
+    VLA(uint8_t, packet, packet_size);
     packet[0] = filenumber;
     file_type = net_htonl(file_type);
     memcpy(packet + 1, &file_type, sizeof(file_type));
@@ -1234,7 +1235,7 @@ static bool file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t f
         memcpy(packet + 1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH, filename, filename_length);
     }
 
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet, SIZEOF_VLA(packet), false);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet, packet_size, false);
 }
 
 /** @brief Send a file send request.
@@ -1301,7 +1302,8 @@ static bool send_file_control_packet(const Messenger *m, int32_t friendnumber, b
         return false;
     }
 
-    VLA(uint8_t, packet, 3 + data_length);
+    const uint16_t packet_size = 3 + data_length;
+    VLA(uint8_t, packet, packet_size);
 
     packet[0] = inbound ? 1 : 0;
     packet[1] = filenumber;
@@ -1311,7 +1313,7 @@ static bool send_file_control_packet(const Messenger *m, int32_t friendnumber, b
         memcpy(packet + 3, data, data_length);
     }
 
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, SIZEOF_VLA(packet), false);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, packet_size, false);
 }
 
 /** @brief Send a file control request.
@@ -1501,7 +1503,8 @@ static int64_t send_file_data_packet(const Messenger *m, int32_t friendnumber, u
         return -1;
     }
 
-    VLA(uint8_t, packet, 2 + length);
+    const uint16_t packet_size = 2 + length;
+    VLA(uint8_t, packet, packet_size);
     packet[0] = PACKET_ID_FILE_DATA;
     packet[1] = filenumber;
 
@@ -1510,7 +1513,7 @@ static int64_t send_file_data_packet(const Messenger *m, int32_t friendnumber, u
     }
 
     return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                             m->friendlist[friendnumber].friendcon_id), packet, SIZEOF_VLA(packet), true);
+                             m->friendlist[friendnumber].friendcon_id), packet, packet_size, true);
 }
 
 #define MAX_FILE_DATA_SIZE (MAX_CRYPTO_DATA_SIZE - 2)

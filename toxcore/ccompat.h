@@ -26,7 +26,6 @@
 #if !defined(DISABLE_VLA) && !defined(_MSC_VER) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 // C99 VLAs.
 #define ALLOC_VLA(type, name, size) type name[size]
-#define SIZEOF_VLA sizeof
 #else
 
 // Emulation using alloca.
@@ -47,9 +46,7 @@
 #endif
 
 #define ALLOC_VLA(type, name, size)                       \
-    const size_t name##_vla_size = (size) * sizeof(type); \
-    type *const name = (type *)alloca(name##_vla_size)
-#define SIZEOF_VLA(name) name##_vla_size
+    type *const name = (type *)alloca((size) * sizeof(type))
 
 #endif
 

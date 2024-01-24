@@ -1066,7 +1066,8 @@ static int handle_announce_response_old(void *object, const IP_Port *source, con
         return 1;
     }
 
-    VLA(uint8_t, plain, 1 + ONION_PING_ID_SIZE + len_nodes);
+    const uint16_t plain_size = 1 + ONION_PING_ID_SIZE + len_nodes;
+    VLA(uint8_t, plain, plain_size);
     int len;
     const uint16_t nonce_start = 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH;
     const uint16_t ciphertext_start = nonce_start + CRYPTO_NONCE_SIZE;
@@ -1090,8 +1091,8 @@ static int handle_announce_response_old(void *object, const IP_Port *source, con
         return 1;
     }
 
-    if ((uint32_t)len != SIZEOF_VLA(plain)) {
-        LOGGER_WARNING(onion_c->logger, "decrypted size (%lu) is not the expected plain text size (%lu)", (unsigned long)len, (unsigned long)SIZEOF_VLA(plain));
+    if ((uint32_t)len != plain_size) {
+        LOGGER_WARNING(onion_c->logger, "decrypted size (%lu) is not the expected plain text size (%u)", (unsigned long)len, plain_size);
         return 1;
     }
 
@@ -1141,21 +1142,23 @@ static int handle_data_response(void *object, const IP_Port *source, const uint8
         return 1;
     }
 
-    VLA(uint8_t, temp_plain, length - ONION_DATA_RESPONSE_MIN_SIZE);
+    const uint16_t temp_plain_size = length - ONION_DATA_RESPONSE_MIN_SIZE;
+    VLA(uint8_t, temp_plain, temp_plain_size);
     int len = decrypt_data(packet + 1 + CRYPTO_NONCE_SIZE, onion_c->temp_secret_key, packet + 1,
                            packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
                            length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE), temp_plain);
 
-    if ((uint32_t)len != SIZEOF_VLA(temp_plain)) {
+    if ((uint32_t)len != temp_plain_size) {
         return 1;
     }
 
-    VLA(uint8_t, plain, SIZEOF_VLA(temp_plain) - DATA_IN_RESPONSE_MIN_SIZE);
+    const uint16_t plain_size = temp_plain_size - DATA_IN_RESPONSE_MIN_SIZE;
+    VLA(uint8_t, plain, plain_size);
     len = decrypt_data(temp_plain, nc_get_self_secret_key(onion_c->c),
                        packet + 1, temp_plain + CRYPTO_PUBLIC_KEY_SIZE,
-                       SIZEOF_VLA(temp_plain) - CRYPTO_PUBLIC_KEY_SIZE, plain);
+                       temp_plain_size - CRYPTO_PUBLIC_KEY_SIZE, plain);
 
-    if ((uint32_t)len != SIZEOF_VLA(plain)) {
+    if ((uint32_t)len != plain_size) {
         return 1;
     }
 
@@ -1164,7 +1167,7 @@ static int handle_data_response(void *object, const IP_Port *source, const uint8
     }
 
     return onion_c->onion_data_handlers[plain[0]].function(onion_c->onion_data_handlers[plain[0]].object, temp_plain, plain,
-            SIZEOF_VLA(plain), userdata);
+            plain_size, userdata);
 }
 
 #define DHTPK_DATA_MIN_LENGTH (1 + sizeof(uint64_t) + CRYPTO_PUBLIC_KEY_SIZE)
@@ -1307,13 +1310,14 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, const uint8_t *data, 
     uint8_t nonce[CRYPTO_NONCE_SIZE];
     random_nonce(onion_c->rng, nonce);
 
-    VLA(uint8_t, packet, DATA_IN_RESPONSE_MIN_SIZE + length);
+    const uint16_t packet_size = DATA_IN_RESPONSE_MIN_SIZE + length;
+    VLA(uint8_t, packet, packet_size);
     memcpy(packet, nc_get_self_public_key(onion_c->c), CRYPTO_PUBLIC_KEY_SIZE);
     int len = encrypt_data(onion_c->friends_list[friend_num].real_public_key,
                            nc_get_self_secret_key(onion_c->c), nonce, data,
                            length, packet + CRYPTO_PUBLIC_KEY_SIZE);
 
-    if ((uint32_t)len + CRYPTO_PUBLIC_KEY_SIZE != SIZEOF_VLA(packet)) {
+    if ((uint32_t)len + CRYPTO_PUBLIC_KEY_SIZE != packet_size) {
         return -1;
     }
 
@@ -1329,7 +1333,7 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, const uint8_t *data, 
         uint8_t o_packet[ONION_MAX_PACKET_SIZE];
         len = create_data_request(
                   onion_c->rng, o_packet, sizeof(o_packet), onion_c->friends_list[friend_num].real_public_key,
-                  node_list[good_nodes[i]].data_public_key, nonce, packet, SIZEOF_VLA(packet));
+                  node_list[good_nodes[i]].data_public_key, nonce, packet, packet_size);
 
         if (len == -1) {
             continue;
@@ -1364,21 +1368,22 @@ static int send_dht_dhtpk(const Onion_Client *onion_c, int friend_num, const uin
     uint8_t nonce[CRYPTO_NONCE_SIZE];
     random_nonce(onion_c->rng, nonce);
 
-    VLA(uint8_t, temp, DATA_IN_RESPONSE_MIN_SIZE + CRYPTO_NONCE_SIZE + length);
+    const uint16_t temp_size = DATA_IN_RESPONSE_MIN_SIZE + CRYPTO_NONCE_SIZE + length;
+    VLA(uint8_t, temp, temp_size);
     memcpy(temp, nc_get_self_public_key(onion_c->c), CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(temp + CRYPTO_PUBLIC_KEY_SIZE, nonce, CRYPTO_NONCE_SIZE);
     int len = encrypt_data(onion_c->friends_list[friend_num].real_public_key,
                            nc_get_self_secret_key(onion_c->c), nonce, data,
                            length, temp + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
 
-    if ((uint32_t)len + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE != SIZEOF_VLA(temp)) {
+    if ((uint32_t)len + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE != temp_size) {
         return -1;
     }
 
     uint8_t packet_data[MAX_CRYPTO_REQUEST_SIZE];
     len = create_request(
               onion_c->rng, dht_get_self_public_key(onion_c->dht), dht_get_self_secret_key(onion_c->dht), packet_data,
-              onion_c->friends_list[friend_num].dht_public_key, temp, SIZEOF_VLA(temp), CRYPTO_PACKET_DHTPK);
+              onion_c->friends_list[friend_num].dht_public_key, temp, temp_size, CRYPTO_PACKET_DHTPK);
     assert(len <= UINT16_MAX);
     const Packet packet = {packet_data, (uint16_t)len};
 

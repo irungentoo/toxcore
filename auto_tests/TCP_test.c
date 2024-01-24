@@ -266,13 +266,14 @@ static void kill_tcp_con(struct sec_TCP_con *con)
 static int write_packet_tcp_test_connection(const Logger *logger, struct sec_TCP_con *con, const uint8_t *data,
         uint16_t length)
 {
-    VLA(uint8_t, packet, sizeof(uint16_t) + length + CRYPTO_MAC_SIZE);
+    const uint16_t packet_size = sizeof(uint16_t) + length + CRYPTO_MAC_SIZE;
+    VLA(uint8_t, packet, packet_size);
 
     uint16_t c_length = net_htons(length + CRYPTO_MAC_SIZE);
     memcpy(packet, &c_length, sizeof(uint16_t));
     int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
-    if ((unsigned int)len != (SIZEOF_VLA(packet) - sizeof(uint16_t))) {
+    if ((unsigned int)len != (packet_size - sizeof(uint16_t))) {
         return -1;
     }
 
@@ -282,7 +283,7 @@ static int write_packet_tcp_test_connection(const Logger *logger, struct sec_TCP
     localhost.ip = get_loopback();
     localhost.port = 0;
 
-    ck_assert_msg(net_send(con->ns, logger, con->sock, packet, SIZEOF_VLA(packet), &localhost) == SIZEOF_VLA(packet),
+    ck_assert_msg(net_send(con->ns, logger, con->sock, packet, packet_size, &localhost) == packet_size,
                   "Failed to send a packet.");
     return 0;
 }

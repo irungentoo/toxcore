@@ -394,10 +394,11 @@ int send_data(const Logger *logger, TCP_Client_Connection *con, uint8_t con_id, 
         return 0;
     }
 
-    VLA(uint8_t, packet, 1 + length);
+    const uint16_t packet_size = 1 + length;
+    VLA(uint8_t, packet, packet_size);
     packet[0] = con_id + NUM_RESERVED_PORTS;
     memcpy(packet + 1, data, length);
-    return write_packet_tcp_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), false);
+    return write_packet_tcp_secure_connection(logger, &con->con, packet, packet_size, false);
 }
 
 /**
@@ -412,11 +413,12 @@ int send_oob_packet(const Logger *logger, TCP_Client_Connection *con, const uint
         return -1;
     }
 
-    VLA(uint8_t, packet, 1 + CRYPTO_PUBLIC_KEY_SIZE + length);
+    const uint16_t packet_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + length;
+    VLA(uint8_t, packet, packet_size);
     packet[0] = TCP_PACKET_OOB_SEND;
     memcpy(packet + 1, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, data, length);
-    return write_packet_tcp_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), false);
+    return write_packet_tcp_secure_connection(logger, &con->con, packet, packet_size, false);
 }
 
 
@@ -536,10 +538,11 @@ int send_disconnect_request(const Logger *logger, TCP_Client_Connection *con, ui
  */
 int send_onion_request(const Logger *logger, TCP_Client_Connection *con, const uint8_t *data, uint16_t length)
 {
-    VLA(uint8_t, packet, 1 + length);
+    const uint16_t packet_size = 1 + length;
+    VLA(uint8_t, packet, packet_size);
     packet[0] = TCP_PACKET_ONION_REQUEST;
     memcpy(packet + 1, data, length);
-    return write_packet_tcp_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), false);
+    return write_packet_tcp_secure_connection(logger, &con->con, packet, packet_size, false);
 }
 
 void onion_response_handler(TCP_Client_Connection *con, tcp_onion_response_cb *onion_callback, void *object)

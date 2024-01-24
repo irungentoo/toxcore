@@ -22,13 +22,12 @@ struct test_data {
 static void set_random(Tox *m, const Random *rng, bool (*setter)(Tox *, const uint8_t *, size_t, Tox_Err_Set_Info *), size_t length)
 {
     VLA(uint8_t, text, length);
-    uint32_t i;
 
-    for (i = 0; i < length; ++i) {
+    for (uint32_t i = 0; i < length; ++i) {
         text[i] = random_u08(rng);
     }
 
-    setter(m, text, SIZEOF_VLA(text), nullptr);
+    setter(m, text, length, nullptr);
 }
 
 static void alloc_string(uint8_t **to, size_t length)

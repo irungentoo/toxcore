@@ -126,11 +126,6 @@ SUPPRESSIONS += 19.2
 #
 # Reason: We believe it should be used when #define is used in block scope.
 SUPPRESSIONS += 20.5
-# The # and ## preprocessor operators should not be used.
-#
-# TODO(iphydf): Remove suppression when VLAs are gone. This is only used in
-# the SIZEOF_VLA macro.
-SUPPRESSIONS += 20.10
 # #define and #undef shall not be used on a reserved identifier or reserved macro name.
 #
 # Reason: Needed for feature test macros like _DEFAULT_SOURCE.

@@ -148,10 +148,10 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, co
 
     addto_receivedlist(fr, source_pubkey);
 
-    const uint32_t message_len = length - sizeof(fr->nospam);
+    const uint16_t message_len = length - sizeof(fr->nospam);
     VLA(uint8_t, message, message_len + 1);
     memcpy(message, data + sizeof(fr->nospam), message_len);
-    message[SIZEOF_VLA(message) - 1] = 0; /* Be sure the message is null terminated. */
+    message[message_len] = 0; /* Be sure the message is null terminated. TODO(iphydf): But why? */
 
     fr->handle_friendrequest(fr->handle_friendrequest_object, source_pubkey, message, message_len, userdata);
     return 0;

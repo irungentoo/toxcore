@@ -532,12 +532,13 @@ static int handle_tcp_oob_send(TCP_Server *tcp_server, uint32_t con_id, const ui
     const int other_index = get_tcp_connection_index(tcp_server, public_key);
 
     if (other_index != -1) {
-        VLA(uint8_t, resp_packet, 1 + CRYPTO_PUBLIC_KEY_SIZE + length);
+        const uint16_t resp_packet_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + length;
+        VLA(uint8_t, resp_packet, resp_packet_size);
         resp_packet[0] = TCP_PACKET_OOB_RECV;
         memcpy(resp_packet + 1, con->public_key, CRYPTO_PUBLIC_KEY_SIZE);
         memcpy(resp_packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, data, length);
         write_packet_tcp_secure_connection(tcp_server->logger, &tcp_server->accepted_connection_array[other_index].con,
-                                           resp_packet, SIZEOF_VLA(resp_packet), false);
+                                           resp_packet, resp_packet_size, false);
     }
 
     return 0;
@@ -620,11 +621,12 @@ static int handle_onion_recv_1(void *object, const IP_Port *dest, const uint8_t 
 
     TCP_Secure_Connection *con = &tcp_server->accepted_connection_array[index];
 
-    VLA(uint8_t, packet, 1 + length);
+    const uint16_t packet_size = 1 + length;
+    VLA(uint8_t, packet, packet_size);
     memcpy(packet + 1, data, length);
     packet[0] = TCP_PACKET_ONION_RESPONSE;
 
-    if (write_packet_tcp_secure_connection(tcp_server->logger, &con->con, packet, SIZEOF_VLA(packet), false) != 1) {
+    if (write_packet_tcp_secure_connection(tcp_server->logger, &con->con, packet, packet_size, false) != 1) {
         return 1;
     }
 
@@ -660,11 +662,12 @@ static bool handle_forward_reply_tcp(void *object, const uint8_t *sendback_data,
         return false;
     }
 
-    VLA(uint8_t, packet, 1 + length);
+    const uint16_t packet_size = 1 + length;
+    VLA(uint8_t, packet, packet_size);
     memcpy(packet + 1, data, length);
     packet[0] = TCP_PACKET_FORWARDING;
 
-    return write_packet_tcp_secure_connection(tcp_server->logger, &con->con, packet, SIZEOF_VLA(packet), false) == 1;
+    return write_packet_tcp_secure_connection(tcp_server->logger, &con->con, packet, packet_size, false) == 1;
 }
 
 /**

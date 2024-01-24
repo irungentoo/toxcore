@@ -1116,7 +1116,7 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, const uint8_
     increment_nonce(conn->sent_nonce);
     pthread_mutex_unlock(conn->mutex);
 
-    return send_packet_to(c, crypt_connection_id, packet, SIZEOF_VLA(packet));
+    return send_packet_to(c, crypt_connection_id, packet, packet_size);
 }
 
 /** @brief Creates and sends a data packet with buffer_start and num to the peer using the fastest route.
@@ -1136,13 +1136,14 @@ static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint3
     num = net_htonl(num);
     buffer_start = net_htonl(buffer_start);
     const uint16_t padding_length = (MAX_CRYPTO_DATA_SIZE - length) % CRYPTO_MAX_PADDING;
-    VLA(uint8_t, packet, sizeof(uint32_t) + sizeof(uint32_t) + padding_length + length);
+    const uint16_t packet_size = sizeof(uint32_t) + sizeof(uint32_t) + padding_length + length;
+    VLA(uint8_t, packet, packet_size);
     memcpy(packet, &buffer_start, sizeof(uint32_t));
     memcpy(packet + sizeof(uint32_t), &num, sizeof(uint32_t));
     memzero(packet + (sizeof(uint32_t) * 2), padding_length);
     memcpy(packet + (sizeof(uint32_t) * 2) + padding_length, data, length);
 
-    return send_data_packet(c, crypt_connection_id, packet, SIZEOF_VLA(packet));
+    return send_data_packet(c, crypt_connection_id, packet, packet_size);
 }
 
 non_null()

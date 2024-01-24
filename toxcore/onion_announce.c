@@ -637,11 +637,12 @@ static int handle_data_request(void *object, const IP_Port *source, const uint8_
         return 1;
     }
 
-    VLA(uint8_t, data, length - (CRYPTO_PUBLIC_KEY_SIZE + ONION_RETURN_3));
+    const uint16_t data_size = length - (CRYPTO_PUBLIC_KEY_SIZE + ONION_RETURN_3);
+    VLA(uint8_t, data, data_size);
     data[0] = NET_PACKET_ONION_DATA_RESPONSE;
     memcpy(data + 1, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, length - (1 + CRYPTO_PUBLIC_KEY_SIZE + ONION_RETURN_3));
 
-    if (send_onion_response(onion_a->log, onion_a->net, &onion_a->entries[index].ret_ip_port, data, SIZEOF_VLA(data),
+    if (send_onion_response(onion_a->log, onion_a->net, &onion_a->entries[index].ret_ip_port, data, data_size,
                             onion_a->entries[index].ret) == -1) {
         return 1;
     }
