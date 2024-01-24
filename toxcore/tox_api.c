@@ -136,53 +136,135 @@ uint32_t tox_dht_node_public_key_size(void)
     return TOX_DHT_NODE_PUBLIC_KEY_SIZE;
 }
 
-//!TOKSTYLE-
-
-#define ACCESSORS(type, name) \
-type tox_options_get_##name(const struct Tox_Options *options) \
-{ \
-    return options->name; \
-} \
-void tox_options_set_##name(struct Tox_Options *options, type name) \
-{ \
-    options->name = name; \
+bool tox_options_get_ipv6_enabled(const Tox_Options *options) { return options->ipv6_enabled; }
+void tox_options_set_ipv6_enabled(Tox_Options *options, bool ipv6_enabled)
+{
+    options->ipv6_enabled = ipv6_enabled;
+}
+bool tox_options_get_udp_enabled(const Tox_Options *options) { return options->udp_enabled; }
+void tox_options_set_udp_enabled(Tox_Options *options, bool udp_enabled)
+{
+    options->udp_enabled = udp_enabled;
+}
+Tox_Proxy_Type tox_options_get_proxy_type(const Tox_Options *options)
+{
+    return options->proxy_type;
+}
+void tox_options_set_proxy_type(Tox_Options *options, Tox_Proxy_Type proxy_type)
+{
+    options->proxy_type = proxy_type;
+}
+const char *tox_options_get_proxy_host(const Tox_Options *options) { return options->proxy_host; }
+void tox_options_set_proxy_host(Tox_Options *options, const char *proxy_host)
+{
+    options->proxy_host = proxy_host;
+}
+uint16_t tox_options_get_proxy_port(const Tox_Options *options) { return options->proxy_port; }
+void tox_options_set_proxy_port(Tox_Options *options, uint16_t proxy_port)
+{
+    options->proxy_port = proxy_port;
+}
+uint16_t tox_options_get_start_port(const Tox_Options *options) { return options->start_port; }
+void tox_options_set_start_port(Tox_Options *options, uint16_t start_port)
+{
+    options->start_port = start_port;
+}
+uint16_t tox_options_get_end_port(const Tox_Options *options) { return options->end_port; }
+void tox_options_set_end_port(Tox_Options *options, uint16_t end_port)
+{
+    options->end_port = end_port;
+}
+uint16_t tox_options_get_tcp_port(const Tox_Options *options) { return options->tcp_port; }
+void tox_options_set_tcp_port(Tox_Options *options, uint16_t tcp_port)
+{
+    options->tcp_port = tcp_port;
+}
+bool tox_options_get_hole_punching_enabled(const Tox_Options *options)
+{
+    return options->hole_punching_enabled;
+}
+void tox_options_set_hole_punching_enabled(Tox_Options *options, bool hole_punching_enabled)
+{
+    options->hole_punching_enabled = hole_punching_enabled;
+}
+Tox_Savedata_Type tox_options_get_savedata_type(const Tox_Options *options)
+{
+    return options->savedata_type;
+}
+void tox_options_set_savedata_type(Tox_Options *options, Tox_Savedata_Type savedata_type)
+{
+    options->savedata_type = savedata_type;
+}
+size_t tox_options_get_savedata_length(const Tox_Options *options)
+{
+    return options->savedata_length;
+}
+void tox_options_set_savedata_length(Tox_Options *options, size_t savedata_length)
+{
+    options->savedata_length = savedata_length;
+}
+tox_log_cb *tox_options_get_log_callback(const Tox_Options *options)
+{
+    return options->log_callback;
+}
+void tox_options_set_log_callback(Tox_Options *options, tox_log_cb *log_callback)
+{
+    options->log_callback = log_callback;
+}
+void *tox_options_get_log_user_data(const Tox_Options *options) { return options->log_user_data; }
+void tox_options_set_log_user_data(Tox_Options *options, void *log_user_data)
+{
+    options->log_user_data = log_user_data;
+}
+bool tox_options_get_local_discovery_enabled(const Tox_Options *options)
+{
+    return options->local_discovery_enabled;
+}
+void tox_options_set_local_discovery_enabled(Tox_Options *options, bool local_discovery_enabled)
+{
+    options->local_discovery_enabled = local_discovery_enabled;
+}
+bool tox_options_get_dht_announcements_enabled(const Tox_Options *options)
+{
+    return options->dht_announcements_enabled;
+}
+void tox_options_set_dht_announcements_enabled(Tox_Options *options, bool dht_announcements_enabled)
+{
+    options->dht_announcements_enabled = dht_announcements_enabled;
+}
+bool tox_options_get_experimental_thread_safety(const Tox_Options *options)
+{
+    return options->experimental_thread_safety;
+}
+void tox_options_set_experimental_thread_safety(
+    Tox_Options *options, bool experimental_thread_safety)
+{
+    options->experimental_thread_safety = experimental_thread_safety;
+}
+const Tox_System *tox_options_get_operating_system(const Tox_Options *options)
+{
+    return options->operating_system;
+}
+void tox_options_set_operating_system(Tox_Options *options, const Tox_System *operating_system)
+{
+    options->operating_system = operating_system;
 }
 
-ACCESSORS(bool, ipv6_enabled)
-ACCESSORS(bool, udp_enabled)
-ACCESSORS(Tox_Proxy_Type, proxy_type)
-ACCESSORS(const char *, proxy_host)
-ACCESSORS(uint16_t, proxy_port)
-ACCESSORS(uint16_t, start_port)
-ACCESSORS(uint16_t, end_port)
-ACCESSORS(uint16_t, tcp_port)
-ACCESSORS(bool, hole_punching_enabled)
-ACCESSORS(Tox_Savedata_Type, savedata_type)
-ACCESSORS(size_t, savedata_length)
-ACCESSORS(tox_log_cb *, log_callback)
-ACCESSORS(void *, log_user_data)
-ACCESSORS(bool, local_discovery_enabled)
-ACCESSORS(bool, dht_announcements_enabled)
-ACCESSORS(bool, experimental_thread_safety)
-ACCESSORS(const Tox_System *, operating_system)
-
-//!TOKSTYLE+
-
-const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options)
+const uint8_t *tox_options_get_savedata_data(const Tox_Options *options)
 {
     return options->savedata_data;
 }
 
-void tox_options_set_savedata_data(struct Tox_Options *options, const uint8_t *savedata_data, size_t length)
+void tox_options_set_savedata_data(Tox_Options *options, const uint8_t *savedata_data, size_t length)
 {
     options->savedata_data = savedata_data;
     options->savedata_length = length;
 }
 
-void tox_options_default(struct Tox_Options *options)
+void tox_options_default(Tox_Options *options)
 {
     if (options != nullptr) {
-        const struct Tox_Options default_options = {0};
+        const Tox_Options default_options = {0};
         *options = default_options;
         tox_options_set_ipv6_enabled(options, true);
         tox_options_set_udp_enabled(options, true);
@@ -194,9 +276,9 @@ void tox_options_default(struct Tox_Options *options)
     }
 }
 
-struct Tox_Options *tox_options_new(Tox_Err_Options_New *error)
+Tox_Options *tox_options_new(Tox_Err_Options_New *error)
 {
-    struct Tox_Options *options = (struct Tox_Options *)calloc(1, sizeof(struct Tox_Options));
+    Tox_Options *options = (Tox_Options *)calloc(1, sizeof(Tox_Options));
 
     if (options != nullptr) {
         tox_options_default(options);
@@ -208,7 +290,7 @@ struct Tox_Options *tox_options_new(Tox_Err_Options_New *error)
     return nullptr;
 }
 
-void tox_options_free(struct Tox_Options *options)
+void tox_options_free(Tox_Options *options)
 {
     free(options);
 }
