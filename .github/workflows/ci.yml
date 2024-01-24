@@ -16,7 +16,7 @@ jobs:
   analysis:
     strategy:
       matrix:
-        tool: [autotools, clang-tidy, compcert, cppcheck, doxygen, infer, misra, tcc, tokstyle]
+        tool: [autotools, clang-tidy, compcert, cppcheck, doxygen, goblint, infer, misra, tcc, tokstyle]
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx

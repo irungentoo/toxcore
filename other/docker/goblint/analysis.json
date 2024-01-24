@@ -1,0 +1,43 @@
+{
+	"ana": {
+		"activated": [
+			"base","mallocWrapper","escape","mutex","mutexEvents","access","assert","expRelation"
+		],
+		"arrayoob": true,
+		"wp": true,
+		"apron": {
+            "strengthening": true
+        },
+		"base": {
+			"structs" : {
+				"domain" : "combined-sk"
+			},
+			"arrays": {
+				"domain": "partitioned"
+			}
+		},
+		"malloc": {
+			"wrappers": [
+				"mem_balloc",
+				"mem_alloc",
+				"mem_valloc",
+				"mem_vrealloc"
+			]
+		}
+	},
+    "warn": {
+        "behavior": false,
+        "call": false,
+        "integer": true,
+        "float": false,
+        "race": false,
+        "deadcode": false,
+        "unsound": false,
+        "imprecise": false,
+        "success": false,
+        "unknown": false
+    },
+	"exp": {
+		"earlyglobs": true
+	}
+}
