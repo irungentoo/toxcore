@@ -44,7 +44,6 @@
 /*** Messages. */
 
 typedef enum Packet_Id {
-    PACKET_ID_PADDING            = 0, // Denotes padding
     PACKET_ID_REQUEST            = 1, // Used to request unreceived packets
     PACKET_ID_KILL               = 2, // Used to kill connection
 
