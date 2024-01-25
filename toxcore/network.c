@@ -574,7 +574,7 @@ static int sys_setsockopt(void *obj, int sock, int level, int optname, const voi
     return setsockopt(sock, level, optname, (const char *)optval, optlen);
 }
 
-static const Network_Funcs system_network_funcs = {
+static const Network_Funcs os_network_funcs = {
     sys_close,
     sys_accept,
     sys_bind,
@@ -589,9 +589,9 @@ static const Network_Funcs system_network_funcs = {
     sys_getsockopt,
     sys_setsockopt,
 };
-static const Network system_network_obj = {&system_network_funcs};
+static const Network os_network_obj = {&os_network_funcs};
 
-const Network *system_network(void)
+const Network *os_network(void)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     if ((true)) {
@@ -605,12 +605,12 @@ const Network *system_network(void)
         return nullptr;
     }
 #endif /* OS_WIN32 */
-    return &system_network_obj;
+    return &os_network_obj;
 }
 
 #if 0
-/* TODO(iphydf): Call this from functions that use `system_network()`. */
-void system_network_deinit(const Network *ns)
+/* TODO(iphydf): Call this from functions that use `os_network()`. */
+void os_network_deinit(const Network *ns)
 {
 #ifdef OS_WIN32
     WSACleanup();

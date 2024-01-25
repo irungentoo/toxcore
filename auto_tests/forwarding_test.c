@@ -104,9 +104,9 @@ typedef struct Forwarding_Subtox {
 
 static Forwarding_Subtox *new_forwarding_subtox(const Memory *mem, bool no_udp, uint32_t *index, uint16_t port)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     ck_assert(ns != nullptr);
 
     Forwarding_Subtox *subtox = (Forwarding_Subtox *)calloc(1, sizeof(Forwarding_Subtox));
@@ -152,11 +152,11 @@ static void kill_forwarding_subtox(const Memory *mem, Forwarding_Subtox *subtox)
 
 static void test_forwarding(void)
 {
-    const Memory *mem = system_memory();
+    const Memory *mem = os_memory();
     ck_assert(mem != nullptr);
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     ck_assert(ns != nullptr);
 
     uint32_t index[NUM_FORWARDER];

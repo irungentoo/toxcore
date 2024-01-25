@@ -33,9 +33,9 @@ Tox_System tox_default_system(void)
     const Tox_System sys = {
         nullptr,  // mono_time_callback
         nullptr,  // mono_time_user_data
-        system_random(),
-        system_network(),
-        system_memory(),
+        os_random(),
+        os_network(),
+        os_memory(),
     };
     return sys;
 }

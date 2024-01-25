@@ -38,11 +38,11 @@ struct Network_Class {
 };
 
 /**
- * Base test Network class that just forwards to system_network. Can be
+ * Base test Network class that just forwards to os_network. Can be
  * subclassed to override individual (or all) functions.
  */
 class Test_Network : public Network_Class {
-    const Network *net = REQUIRE_NOT_NULL(system_network());
+    const Network *net = REQUIRE_NOT_NULL(os_network());
 
     int close(void *obj, int sock) override;
     int accept(void *obj, int sock) override;

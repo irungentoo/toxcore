@@ -335,7 +335,7 @@ static void topic_spam(const Random *rng, AutoTox *autotoxes, uint32_t num_peers
 static void group_sync_test(AutoTox *autotoxes)
 {
     ck_assert(NUM_GROUP_TOXES >= 5);
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
 
     for (size_t i = 0; i < NUM_GROUP_TOXES; ++i) {

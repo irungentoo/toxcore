@@ -507,14 +507,14 @@ static uint32_t sys_random_uniform(void *obj, uint32_t upper_bound)
     return randombytes_uniform(upper_bound);
 }
 
-static const Random_Funcs system_random_funcs = {
+static const Random_Funcs os_random_funcs = {
     sys_random_bytes,
     sys_random_uniform,
 };
 
-static const Random system_random_obj = {&system_random_funcs};
+static const Random os_random_obj = {&os_random_funcs};
 
-const Random *system_random(void)
+const Random *os_random(void)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     if ((true)) {
@@ -526,7 +526,7 @@ const Random *system_random(void)
     if (sodium_init() == -1) {
         return nullptr;
     }
-    return &system_random_obj;
+    return &os_random_obj;
 }
 
 void random_bytes(const Random *rng, uint8_t *bytes, size_t length)

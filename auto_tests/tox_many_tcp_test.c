@@ -50,7 +50,7 @@ static uint16_t tcp_relay_port = 33448;
 
 static void test_many_clients_tcp(void)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
     long long unsigned int cur_time = time(nullptr);
     Tox *toxes[NUM_TOXES_TCP];
@@ -162,7 +162,7 @@ loop_top:
 
 static void test_many_clients_tcp_b(void)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
     long long unsigned int cur_time = time(nullptr);
     Tox *toxes[NUM_TOXES_TCP];

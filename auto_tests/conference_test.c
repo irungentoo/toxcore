@@ -192,7 +192,7 @@ static uint32_t random_false_index(const Random *rng, bool *list, const uint32_t
 
 static void run_conference_tests(AutoTox *autotoxes)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
     /* disabling name change propagation check for now, as it occasionally
      * fails due to disconnections too short to trigger freezing */

@@ -45,11 +45,11 @@ static uint16_t ports[NUM_PORTS] = {13215, 33445, 25643};
 
 static void test_basic(void)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     ck_assert(ns != nullptr);
-    const Memory *mem = system_memory();
+    const Memory *mem = os_memory();
     ck_assert(mem != nullptr);
 
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
@@ -304,11 +304,11 @@ static int read_packet_sec_tcp(const Logger *logger, struct sec_TCP_con *con, ui
 
 static void test_some(void)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     ck_assert(ns != nullptr);
-    const Memory *mem = system_memory();
+    const Memory *mem = os_memory();
     ck_assert(mem != nullptr);
 
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
@@ -499,11 +499,11 @@ static int oob_data_callback(void *object, const uint8_t *public_key, const uint
 
 static void test_client(void)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     ck_assert(ns != nullptr);
-    const Memory *mem = system_memory();
+    const Memory *mem = os_memory();
     ck_assert(mem != nullptr);
 
     Logger *logger = logger_new();
@@ -633,11 +633,11 @@ static void test_client(void)
 // Test how the client handles servers that don't respond.
 static void test_client_invalid(void)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     ck_assert(ns != nullptr);
-    const Memory *mem = system_memory();
+    const Memory *mem = os_memory();
     ck_assert(mem != nullptr);
 
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
@@ -712,11 +712,11 @@ static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t
 
 static void test_tcp_connection(void)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     ck_assert(ns != nullptr);
-    const Memory *mem = system_memory();
+    const Memory *mem = os_memory();
     ck_assert(mem != nullptr);
 
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
@@ -825,11 +825,11 @@ static int tcp_oobdata_callback(void *object, const uint8_t *public_key, unsigne
 
 static void test_tcp_connection2(void)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     ck_assert(ns != nullptr);
-    const Memory *mem = system_memory();
+    const Memory *mem = os_memory();
     ck_assert(mem != nullptr);
 
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);

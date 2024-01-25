@@ -118,7 +118,7 @@ Tox_Pass_Key *tox_pass_key_derive(
         const uint8_t passphrase[], size_t passphrase_len,
         Tox_Err_Key_Derivation *error)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
 
     if (rng == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_FAILED);
@@ -196,7 +196,7 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(
 bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t plaintext[], size_t plaintext_len,
                           uint8_t ciphertext[], Tox_Err_Encryption *error)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
 
     if (rng == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_FAILED);

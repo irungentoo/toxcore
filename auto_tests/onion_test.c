@@ -223,11 +223,11 @@ static Networking_Core *new_networking(const Logger *log, const Memory *mem, con
 static void test_basic(void)
 {
     uint32_t index[] = { 1, 2, 3 };
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     ck_assert(ns != nullptr);
-    const Memory *mem = system_memory();
+    const Memory *mem = os_memory();
     ck_assert(mem != nullptr);
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
 
     Logger *log1 = logger_new();
@@ -407,7 +407,7 @@ static Onions *new_onions(const Memory *mem, const Random *rng, uint16_t port, u
 {
     IP ip = get_loopback();
     ip.ip.v6.uint8[15] = 1;
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     Onions *on = (Onions *)malloc(sizeof(Onions));
 
     if (!on) {
@@ -576,9 +576,9 @@ static void test_announce(void)
 {
     uint32_t index[NUM_ONIONS];
     Onions *onions[NUM_ONIONS];
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
-    const Memory *mem = system_memory();
+    const Memory *mem = os_memory();
     ck_assert(mem != nullptr);
 
     for (uint32_t i = 0; i < NUM_ONIONS; ++i) {

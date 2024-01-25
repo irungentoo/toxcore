@@ -69,7 +69,7 @@ typedef struct Network {
     void *obj;
 } Network;
 
-const Network *system_network(void);
+const Network *os_network(void);
 
 typedef struct Family {
     uint8_t value;

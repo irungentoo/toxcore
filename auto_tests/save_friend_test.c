@@ -98,7 +98,7 @@ int main(void)
     ck_assert(reference_name != nullptr);
     ck_assert(reference_status != nullptr);
 
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
     set_random(tox1, rng, tox_self_set_name, tox_max_name_length());
     set_random(tox2, rng, tox_self_set_name, tox_max_name_length());

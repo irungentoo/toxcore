@@ -292,9 +292,9 @@ int main(int argc, char *argv[])
     }
 
     const uint16_t end_port = start_port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM);
-    const Memory *mem = system_memory();
-    const Random *rng = system_random();
-    const Network *ns = system_network();
+    const Memory *mem = os_memory();
+    const Random *rng = os_random();
+    const Network *ns = os_network();
     Networking_Core *net = new_networking_ex(logger, mem, ns, &ip, start_port, end_port, nullptr);
 
     if (net == nullptr) {

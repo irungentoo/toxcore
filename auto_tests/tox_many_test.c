@@ -30,7 +30,7 @@ static void accept_friend_request(Tox *m, const Tox_Event_Friend_Request *event,
 
 static void test_many_clients(void)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
     time_t cur_time = time(nullptr);
     Tox *toxes[TCP_TEST_NUM_TOXES];

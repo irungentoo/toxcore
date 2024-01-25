@@ -13,7 +13,7 @@
 
 static void test_bucketnum(void)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
     uint8_t key1[CRYPTO_PUBLIC_KEY_SIZE], key2[CRYPTO_PUBLIC_KEY_SIZE];
     random_bytes(rng, key1, sizeof(key1));
@@ -50,11 +50,11 @@ static void test_announce_data(void *object, const uint8_t *data, uint16_t lengt
 
 static void test_store_data(void)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     ck_assert(ns != nullptr);
-    const Memory *mem = system_memory();
+    const Memory *mem = os_memory();
     ck_assert(mem != nullptr);
 
     Logger *log = logger_new();

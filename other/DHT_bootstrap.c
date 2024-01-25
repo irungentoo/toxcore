@@ -151,9 +151,9 @@ int main(int argc, char *argv[])
         logger_callback_log(logger, print_log, nullptr, nullptr);
     }
 
-    const Random *rng = system_random();
-    const Network *ns = system_network();
-    const Memory *mem = system_memory();
+    const Random *rng = os_random();
+    const Network *ns = os_network();
+    const Memory *mem = os_memory();
 
     Mono_Time *mono_time = mono_time_new(mem, nullptr, nullptr);
     const uint16_t start_port = PORT;

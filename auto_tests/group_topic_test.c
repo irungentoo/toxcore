@@ -215,7 +215,7 @@ static void group_topic_test(AutoTox *autotoxes)
 {
     ck_assert_msg(NUM_GROUP_TOXES >= 3, "NUM_GROUP_TOXES is too small: %d", NUM_GROUP_TOXES);
 
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
 
     Tox *tox0 = autotoxes[0].tox;

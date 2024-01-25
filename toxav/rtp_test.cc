@@ -29,7 +29,7 @@ RTPHeader random_header(const Random *rng)
 
 TEST(Rtp, Deserialisation)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ASSERT_NE(rng, nullptr);
     RTPHeader const header = random_header(rng);
 

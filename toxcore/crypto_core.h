@@ -88,7 +88,7 @@ typedef struct Random {
     void *obj;
 } Random;
 
-const Random *system_random(void);
+const Random *os_random(void);
 
 /**
  * @brief The number of bytes in an encryption public key used by DHT group chats.

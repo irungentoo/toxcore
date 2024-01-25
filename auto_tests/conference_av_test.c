@@ -303,7 +303,7 @@ static void do_audio(AutoTox *autotoxes, uint32_t iterations)
 
 static void run_conference_tests(AutoTox *autotoxes)
 {
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
     bool disabled[NUM_AV_GROUP_TOX] = {0};
 

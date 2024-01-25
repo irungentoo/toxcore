@@ -24,11 +24,11 @@ struct Memory_Class {
 };
 
 /**
- * Base test Memory class that just forwards to system_memory. Can be
+ * Base test Memory class that just forwards to os_memory. Can be
  * subclassed to override individual (or all) functions.
  */
 class Test_Memory : public Memory_Class {
-    const Memory *mem = REQUIRE_NOT_NULL(system_memory());
+    const Memory *mem = REQUIRE_NOT_NULL(os_memory());
 
     void *malloc(void *obj, uint32_t size) override;
     void *calloc(void *obj, uint32_t nmemb, uint32_t size) override;

@@ -35,7 +35,7 @@ typedef struct Memory {
     void *obj;
 } Memory;
 
-const Memory *system_memory(void);
+const Memory *os_memory(void);
 
 /**
  * @brief Allocate an array of a given size for built-in types.

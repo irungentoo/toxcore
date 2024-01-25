@@ -33,17 +33,17 @@ static void sys_free(void *obj, void *ptr)
     free(ptr);
 }
 
-static const Memory_Funcs system_memory_funcs = {
+static const Memory_Funcs os_memory_funcs = {
     sys_malloc,
     sys_calloc,
     sys_realloc,
     sys_free,
 };
-static const Memory system_memory_obj = {&system_memory_funcs};
+static const Memory os_memory_obj = {&os_memory_funcs};
 
-const Memory *system_memory(void)
+const Memory *os_memory(void)
 {
-    return &system_memory_obj;
+    return &os_memory_obj;
 }
 
 void *mem_balloc(const Memory *mem, uint32_t size)

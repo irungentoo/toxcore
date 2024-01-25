@@ -20,7 +20,7 @@ static void test_addr_resolv_localhost(void)
     errno = 0;
 #endif
 
-    const Network *ns = system_network();
+    const Network *ns = os_network();
     ck_assert(ns != nullptr);
 
     const char localhost[] = "localhost";

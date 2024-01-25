@@ -168,7 +168,7 @@ static void test_keys(void)
     ck_assert(encrypted2a != nullptr);
     uint8_t *in_plaintext2a = (uint8_t *)malloc(plaintext_length2a);
     ck_assert(in_plaintext2a != nullptr);
-    const Random *rng = system_random();
+    const Random *rng = os_random();
     ck_assert(rng != nullptr);
     random_bytes(rng, in_plaintext2a, plaintext_length2a);
     ret = tox_pass_encrypt(in_plaintext2a, plaintext_length2a, key_char, 12, encrypted2a, &encerr);
