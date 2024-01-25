@@ -1,9 +1,7 @@
+FROM toxchat/c-toxcore:sources AS sources
 FROM toxchat/infer:latest
 
-COPY toxav/ /work/c-toxcore/toxav/
-COPY toxcore/ /work/c-toxcore/toxcore/
-COPY toxencryptsave/ /work/c-toxcore/toxencryptsave/
-COPY third_party/ /work/c-toxcore/third_party/
+COPY --from=sources /src/ /work/c-toxcore/
 RUN infer capture -- clang++ -fsyntax-only \
   $(pkg-config --cflags libconfig libsodium opus vpx) \
   /work/c-toxcore/toxav/*.c \

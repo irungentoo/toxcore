@@ -2,4 +2,5 @@
 
 set -eux
 BUILD=misra
-docker build -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/Dockerfile" .
+other/docker/sources/build
+docker build -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/$BUILD.Dockerfile" .

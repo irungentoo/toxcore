@@ -2,7 +2,9 @@
 
 set -eux
 
-docker build -t toxchat/c-toxcore:sources -f other/docker/sources/Dockerfile .
-docker build -t toxchat/c-toxcore:coverage -f other/docker/coverage/Dockerfile .
-docker build -t toxchat/c-toxcore:coverage-nginx -f other/docker/coverage/Dockerfile.nginx other/docker/coverage
+BUILD=coverage
+other/docker/sources/build
+docker build -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/$BUILD.Dockerfile" .
+
+docker build -t toxchat/c-toxcore:coverage-nginx -f other/docker/coverage/nginx.Dockerfile other/docker/coverage
 docker run --name toxcore-coverage --rm -it -p "28192:80" toxchat/c-toxcore:coverage-nginx

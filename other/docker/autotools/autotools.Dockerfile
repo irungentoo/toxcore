@@ -1,5 +1,6 @@
 ################################################
 # autotools-linux
+FROM toxchat/c-toxcore:sources AS sources
 FROM ubuntu:22.04
 
 RUN apt-get update && \
@@ -24,7 +25,12 @@ USER builder
 
 WORKDIR /home/builder
 
-# Copy the sources and run the build.
+# Copy autotools-specific build scripts not present in the sources image.
+# These change less frequently than the sources, thus are copied first.
 COPY --chown=builder:builder . /home/builder/c-toxcore/
+
+# Copy the sources and run the build.
+COPY --chown=builder:builder --from=sources /src/ /home/builder/c-toxcore/
+
 WORKDIR /home/builder/c-toxcore
 RUN CC=gcc .github/scripts/autotools-linux

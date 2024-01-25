@@ -1,3 +1,4 @@
+FROM toxchat/c-toxcore:sources AS sources
 FROM ghcr.io/goblint/analyzer:latest
 
 RUN apt-get update && \
@@ -8,15 +9,9 @@ RUN apt-get update && \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /work
-COPY auto_tests/ /work/auto_tests/
-COPY testing/ /work/testing/
-COPY toxav/ /work/toxav/
-COPY toxcore/ /work/toxcore/
-COPY toxencryptsave/ /work/toxencryptsave/
-COPY third_party/ /work/third_party/
+COPY --from=sources /src/ /work/
 
 COPY other/make_single_file /work/other/
-COPY other/docker/goblint/sodium.c /work/other/docker/goblint/
 
 RUN other/make_single_file -core auto_tests/tox_new_test.c other/docker/goblint/sodium.c > analysis.c
 # Try compiling+linking just to make sure we have all the fake functions.

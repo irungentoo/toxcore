@@ -1,3 +1,4 @@
+FROM toxchat/c-toxcore:sources AS sources
 FROM ubuntu:22.04
 
 RUN apt-get update && \
@@ -12,12 +13,7 @@ RUN apt-get update && \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /work
-COPY auto_tests/ /work/auto_tests/
-COPY testing/ /work/testing/
-COPY toxav/ /work/toxav/
-COPY toxcore/ /work/toxcore/
-COPY toxencryptsave/ /work/toxencryptsave/
-COPY third_party/ /work/third_party/
+COPY --from=sources /src/ /work/
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 

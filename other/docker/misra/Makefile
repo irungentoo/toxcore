@@ -155,7 +155,12 @@ SUPPRESSIONS += 21.10
 
 CPPFLAGS := -DCMP_NO_FLOAT=1 -DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE
 
-SOURCES := $(shell find /src/workspace/c-toxcore -name "*.c")
+FIND_FLAGS := -name "*.c"								\
+			  -and -not -wholename "*/auto_tests/*"		\
+			  -and -not -wholename "*/other/*"			\
+			  -and -not -wholename "*/super_donators/*"	\
+			  -and -not -wholename "*/third_party/*"
+SOURCES := $(shell find /src/workspace/c-toxcore $(FIND_FLAGS))
 
 analyse: $(DUMPS:.dump=.diag)
 	cppcheck --error-exitcode=1 -j8 --addon=misra --suppress=doubleFree $(patsubst %,--suppress=misra-c2012-%,$(SUPPRESSIONS)) $(CPPFLAGS) $(SOURCES)

@@ -135,6 +135,7 @@ static void test_save_compatibility(const char *save_path)
     tox_kill(tox);
 }
 
+// cppcheck-suppress constParameter
 int main(int argc, char *argv[])
 {
     char base_path[4096] = {0};

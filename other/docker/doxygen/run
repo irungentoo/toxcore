@@ -1,6 +1,8 @@
 #!/bin/sh
 
 set -eux
+BUILD=doxygen
+other/docker/sources/build
+docker build -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/$BUILD.Dockerfile" .
 
-docker build -t toxchat/c-toxcore:docs -f other/docker/doxygen/Dockerfile .
-docker run --name toxcore-docs --rm -it -p "28192:80" toxchat/c-toxcore:docs
+docker run --name toxcore-doxygen --rm -it -p "28192:80" "toxchat/c-toxcore:$BUILD"

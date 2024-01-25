@@ -1,0 +1,12 @@
+**/*
+!.github/scripts/autotools-linux
+!m4/*
+!configure.ac
+!*.pc.in
+!*.spec.in
+!**/Makefile.am
+!**/Makefile.inc
+!docs/updates/*
+!other/DHTnodes
+!other/astyle/*
+!other/tox.png

@@ -21,10 +21,17 @@ jobs:
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+      - name: Build toxchat/c-toxcore:sources
+        uses: docker/build-push-action@v4
+        with:
+          file: other/docker/sources/sources.Dockerfile
+          tags: toxchat/c-toxcore:sources
       - name: Docker Build
         uses: docker/build-push-action@v4
         with:
-          file: other/docker/${{ matrix.tool }}/Dockerfile
+          file: other/docker/${{ matrix.tool }}/${{ matrix.tool }}.Dockerfile
 
   coverage-linux:
     runs-on: ubuntu-latest

@@ -1,4 +1,4 @@
-FROM toxchat/c-toxcore:sources AS src
+FROM toxchat/c-toxcore:sources AS sources
 FROM ubuntu:20.04 AS build
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -41,7 +41,7 @@ ENV CC=clang-17 \
     PYTHONUNBUFFERED=1 \
     PATH=$PATH:/usr/lib/go-1.18/bin
 
-COPY --from=src /src/ /work/
+COPY --from=sources /src/ /work/
 
 WORKDIR /work
 RUN git clone --depth=1 https://github.com/TokTok/toktok-fuzzer /work/testing/fuzzing/toktok-fuzzer

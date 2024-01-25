@@ -170,6 +170,7 @@ int main(int argc, char *argv[])
 
     if (!(onion && forwarding && onion_a)) {
         printf("Something failed to initialize.\n");
+        // cppcheck-suppress resourceLeak
         return 1;
     }
 
@@ -178,6 +179,7 @@ int main(int argc, char *argv[])
     perror("Initialization");
 
     if (!manage_keys(dht)) {
+        // cppcheck-suppress resourceLeak
         return 1;
     }
     printf("Public key: ");
@@ -189,6 +191,7 @@ int main(int argc, char *argv[])
 
     if (tcp_s == nullptr) {
         printf("TCP server failed to initialize.\n");
+        // cppcheck-suppress resourceLeak
         return 1;
     }
 
@@ -199,6 +202,7 @@ int main(int argc, char *argv[])
 
     if (file == nullptr) {
         printf("Could not open file \"%s\" for writing. Exiting...\n", public_id_filename);
+        // cppcheck-suppress resourceLeak
         return 1;
     }
 
