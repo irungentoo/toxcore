@@ -385,7 +385,7 @@ static void group_message_test(AutoTox *autotoxes)
     ck_assert(rng != nullptr);
 
     Tox *tox0 = autotoxes[0].tox;
-    Tox *tox1 = autotoxes[1].tox;
+    const Tox *tox1 = autotoxes[1].tox;
 
     State *state0 = (State *)autotoxes[0].state;
     State *state1 = (State *)autotoxes[1].state;

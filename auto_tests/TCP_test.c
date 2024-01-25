@@ -582,7 +582,7 @@ static void test_client(void)
     do_tcp_connection(logger, mono_time, conn2, nullptr);
     c_sleep(50);
 
-    uint8_t data[5] = {1, 2, 3, 4, 5};
+    const uint8_t data[5] = {1, 2, 3, 4, 5};
     memcpy(oob_pubkey, f2_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     send_oob_packet(logger, conn2, f_public_key, data, 5);
     send_routing_request(logger, conn, f2_public_key);

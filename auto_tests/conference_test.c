@@ -97,7 +97,7 @@ static void handle_conference_message(
 }
 
 static bool toxes_are_disconnected_from_group(uint32_t tox_count, AutoTox *autotoxes,
-        bool *disconnected)
+        const bool *disconnected)
 {
     uint32_t num_disconnected = 0;
 
@@ -179,7 +179,7 @@ static bool names_propagated(uint32_t tox_count, AutoTox *autotoxes)
  * returns a random index at which a list of booleans is false
  * (some such index is required to exist)
  */
-static uint32_t random_false_index(const Random *rng, bool *list, const uint32_t length)
+static uint32_t random_false_index(const Random *rng, const bool *list, const uint32_t length)
 {
     uint32_t index;
 

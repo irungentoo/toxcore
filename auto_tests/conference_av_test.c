@@ -108,7 +108,7 @@ static void handle_conference_connected(
 }
 
 static bool toxes_are_disconnected_from_group(uint32_t tox_count, AutoTox *autotoxes,
-        bool *disconnected)
+        const bool *disconnected)
 {
     uint32_t num_disconnected = 0;
 
@@ -177,7 +177,7 @@ static bool all_connected_to_group(uint32_t tox_count, AutoTox *autotoxes)
  * returns a random index at which a list of booleans is false
  * (some such index is required to exist)
  */
-static uint32_t random_false_index(const Random *rng, bool *list, const uint32_t length)
+static uint32_t random_false_index(const Random *rng, const bool *list, const uint32_t length)
 {
     uint32_t index;
 
@@ -197,7 +197,7 @@ static bool all_got_audio(AutoTox *autotoxes, const bool *disabled)
     }
 
     for (uint32_t i = 0; i < NUM_AV_GROUP_TOX; ++i) {
-        State *state = (State *)autotoxes[i].state;
+        const State *state = (const State *)autotoxes[i].state;
 
         if (disabled[i] ^ (state->received_audio_num
                            != NUM_AV_GROUP_TOX - num_disabled - 1)) {

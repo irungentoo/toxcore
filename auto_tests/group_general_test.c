@@ -43,7 +43,7 @@ typedef struct State {
 
 #define PEER_LIMIT 20
 
-static void print_ip(Tox *tox, uint32_t groupnumber, uint32_t peer_id)
+static void print_ip(const Tox *tox, uint32_t groupnumber, uint32_t peer_id)
 {
     Tox_Err_Group_Peer_Query err;
     size_t length = tox_group_peer_get_ip_address_size(tox, groupnumber, peer_id, &err);
@@ -276,7 +276,7 @@ static void group_announce_test(AutoTox *autotoxes)
     Tox *tox0 = autotoxes[0].tox;
     Tox *tox1 = autotoxes[1].tox;
     State *state0 = (State *)autotoxes[0].state;
-    State *state1 = (State *)autotoxes[1].state;
+    const State *state1 = (const State *)autotoxes[1].state;
 
     tox_events_callback_group_peer_join(autotoxes[0].dispatch, group_peer_join_handler);
     tox_events_callback_group_peer_join(autotoxes[1].dispatch, group_peer_join_handler);

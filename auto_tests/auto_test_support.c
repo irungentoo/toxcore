@@ -335,7 +335,7 @@ static void initialise_friend_graph(Graph_Type graph, uint32_t num_toxes, AutoTo
     }
 }
 
-static void bootstrap_autotoxes(struct Tox_Options *options, uint32_t tox_count, const Run_Auto_Options *autotest_opts,
+static void bootstrap_autotoxes(const Tox_Options *options, uint32_t tox_count, const Run_Auto_Options *autotest_opts,
                                 AutoTox *autotoxes)
 {
     const bool udp_enabled = options != nullptr ? tox_options_get_udp_enabled(options) : true;
@@ -363,7 +363,9 @@ static void bootstrap_autotoxes(struct Tox_Options *options, uint32_t tox_count,
     }
 }
 
-void run_auto_test(struct Tox_Options *options, uint32_t tox_count, void test(AutoTox *autotoxes),
+typedef void autotox_test_cb(AutoTox *autotoxes);
+
+void run_auto_test(struct Tox_Options *options, uint32_t tox_count, autotox_test_cb *test,
                    uint32_t state_size, Run_Auto_Options *autotest_opts)
 {
     printf("initialising %u toxes\n", tox_count);

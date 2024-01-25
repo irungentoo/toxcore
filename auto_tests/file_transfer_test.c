@@ -63,7 +63,7 @@ static void tox_file_receive(Tox *tox, const Tox_Event_File_Recv *event, void *u
 
     ck_assert_msg(memcmp(file_id, file_cmp_id, TOX_FILE_ID_LENGTH) == 0, "bad file_id");
 
-    uint8_t empty[TOX_FILE_ID_LENGTH] = {0};
+    const uint8_t empty[TOX_FILE_ID_LENGTH] = {0};
 
     ck_assert_msg(memcmp(empty, file_cmp_id, TOX_FILE_ID_LENGTH) != 0, "empty file_id");
 
@@ -175,7 +175,7 @@ static void write_file(Tox *tox, const Tox_Event_File_Recv_Chunk *event, void *u
     size_recv += length;
 }
 
-static void iterate_and_dispatch(Tox_Dispatch *dispatch, Tox *tox)
+static void iterate_and_dispatch(const Tox_Dispatch *dispatch, Tox *tox)
 {
     Tox_Err_Events_Iterate err;
     Tox_Events *events;

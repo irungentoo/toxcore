@@ -47,8 +47,8 @@ static void test_forwarded_request_cb(void *object, const IP_Port *forwarder,
                                       const uint8_t *sendback, uint16_t sendback_length,
                                       const uint8_t *data, uint16_t length, void *userdata)
 {
-    Test_Data *test_data = (Test_Data *)object;
-    uint8_t *index = (uint8_t *)userdata;
+    const Test_Data *test_data = (const Test_Data *)object;
+    const uint8_t *index = (const uint8_t *)userdata;
 
     if (length != 12 || memcmp("hello:  ", data, 8) != 0) {
         printf("[%u] got unexpected data of length %d\n", *index, length);
@@ -66,7 +66,7 @@ static void test_forwarded_response_cb(void *object,
                                        const uint8_t *data, uint16_t length, void *userdata)
 {
     Test_Data *test_data = (Test_Data *)object;
-    uint8_t *index = (uint8_t *)userdata;
+    const uint8_t *index = (const uint8_t *)userdata;
 
     if (length != 12 || memcmp("reply:  ", data, 8) != 0) {
         printf("[%u] got unexpected data of length %d\n", *index, length);

@@ -37,7 +37,7 @@ static void do_onion(Mono_Time *mono_time, Onion *onion)
 static int handled_test_1;
 static int handle_test_1(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = (Onion *)object;
+    const Onion *onion = (const Onion *)object;
 
     const char req_message[] = "Install Gentoo";
     uint8_t req_packet[1 + sizeof(req_message)];
@@ -99,7 +99,7 @@ static uint8_t test_3_pub_key[CRYPTO_PUBLIC_KEY_SIZE];
 static uint8_t test_3_ping_id[CRYPTO_SHA256_SIZE];
 static int handle_test_3(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = (Onion *)object;
+    const Onion *onion = (const Onion *)object;
 
     if (length < ONION_ANNOUNCE_RESPONSE_MIN_SIZE || length > ONION_ANNOUNCE_RESPONSE_MAX_SIZE) {
         return 1;
@@ -135,7 +135,7 @@ static int handle_test_3(void *object, const IP_Port *source, const uint8_t *pac
 static int handle_test_3_old(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
                              void *userdata)
 {
-    Onion *onion = (Onion *)object;
+    const Onion *onion = (const Onion *)object;
 
     if (length < ONION_ANNOUNCE_RESPONSE_MIN_SIZE || length > ONION_ANNOUNCE_RESPONSE_MAX_SIZE) {
         return 1;
@@ -171,7 +171,7 @@ static uint8_t nonce[CRYPTO_NONCE_SIZE];
 static int handled_test_4;
 static int handle_test_4(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = (Onion *)object;
+    const Onion *onion = (const Onion *)object;
 
     if (length != (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + sizeof("Install gentoo") +
                    CRYPTO_MAC_SIZE)) {
@@ -288,7 +288,7 @@ static void test_basic(void)
     networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_test_3, onion1);
     networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE_OLD, &handle_test_3_old, onion1);
     ck_assert_msg((onion1_a != nullptr) && (onion2_a != nullptr), "Onion_Announce failed initializing.");
-    uint8_t zeroes[64] = {0};
+    const uint8_t zeroes[64] = {0};
     random_bytes(rng, sb_data, sizeof(sb_data));
     uint64_t s;
     memcpy(&s, sb_data, sizeof(uint64_t));

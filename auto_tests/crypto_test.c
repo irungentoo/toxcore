@@ -274,7 +274,7 @@ static void test_very_large_data(void)
     const Random *rng = os_random();
     ck_assert(rng != nullptr);
 
-    uint8_t nonce[CRYPTO_NONCE_SIZE] = {0};
+    const uint8_t nonce[CRYPTO_NONCE_SIZE] = {0};
     uint8_t pk[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t sk[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(rng, pk, sk);

@@ -40,7 +40,7 @@ static void handle_conference_connected(
     state->connected = true;
 }
 
-static void wait_connected(AutoTox *autotoxes, AutoTox *autotox, uint32_t friendnumber)
+static void wait_connected(AutoTox *autotoxes, const AutoTox *autotox, uint32_t friendnumber)
 {
     do {
         iterate_all_wait(autotoxes, NUM_INVITE_MERGE_TOX, ITERATION_INTERVAL);

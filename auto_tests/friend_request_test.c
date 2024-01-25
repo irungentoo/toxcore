@@ -26,7 +26,7 @@ static void accept_friend_request(Tox *tox, const Tox_Event_Friend_Request *even
     tox_friend_add_norequest(tox, public_key, nullptr);
 }
 
-static void iterate2_wait(Tox_Dispatch *dispatch, Tox *tox1, Tox *tox2)
+static void iterate2_wait(const Tox_Dispatch *dispatch, Tox *tox1, Tox *tox2)
 {
     Tox_Err_Events_Iterate err;
     Tox_Events *events;

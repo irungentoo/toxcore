@@ -53,7 +53,7 @@ typedef struct State {
 static bool all_peers_connected(AutoTox *autotoxes)
 {
     for (size_t i = 0; i < NUM_GROUP_TOXES; ++i) {
-        State *state = (State *)autotoxes[i].state;
+        const State *state = (const State *)autotoxes[i].state;
 
         if (state->num_peers != NUM_GROUP_TOXES - 1) {
             return false;
@@ -146,7 +146,7 @@ static size_t get_state_index_by_nick(const AutoTox *autotoxes, size_t num_peers
     ck_assert(name != nullptr && name_length <= TOX_MAX_NAME_LENGTH);
 
     for (size_t i = 0; i < num_peers; ++i) {
-        State *state = (State *)autotoxes[i].state;
+        const State *state = (const State *)autotoxes[i].state;
 
         if (memcmp(state->self_name, name, name_length) == 0) {
             return i;
@@ -319,7 +319,7 @@ static void check_self_role(AutoTox *autotoxes, uint32_t peer_id, Tox_Group_Role
     Tox_Err_Group_Self_Query sq_err;
 
     for (size_t i = 0; i < NUM_GROUP_TOXES; ++i) {
-        State *state = (State *)autotoxes[i].state;
+        const State *state = (const State *)autotoxes[i].state;
 
         uint32_t self_peer_id = tox_group_self_get_peer_id(autotoxes[i].tox, state->group_number, &sq_err);
         ck_assert(sq_err == TOX_ERR_GROUP_SELF_QUERY_OK);
@@ -517,7 +517,7 @@ static void group_moderation_test(AutoTox *autotoxes)
 
     /* all peers should be user role except founder */
     for (size_t i = 1; i < NUM_GROUP_TOXES; ++i) {
-        State *state = (State *)autotoxes[i].state;
+        const State *state = (const State *)autotoxes[i].state;
         self_role = tox_group_self_get_role(autotoxes[i].tox, state->group_number, &sq_err);
         ck_assert(sq_err == TOX_ERR_GROUP_SELF_QUERY_OK);
         ck_assert(self_role == TOX_GROUP_ROLE_USER);
@@ -615,7 +615,7 @@ static void group_moderation_test(AutoTox *autotoxes)
     /* the moderator about to be kicked changes the topic to trigger the founder to
      * re-sign and redistribute it after the kick.
      */
-    State *state_x = (State *)autotoxes[idx].state;
+    const State *state_x = (const State *)autotoxes[idx].state;
     Tox *tox_x = autotoxes[idx].tox;
     Tox_Err_Group_Topic_Set topic_err;
     tox_group_set_topic(tox_x, state_x->group_number, nullptr, 0, &topic_err);

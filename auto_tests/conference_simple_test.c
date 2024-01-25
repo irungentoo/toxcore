@@ -116,7 +116,7 @@ static void handle_conference_connected(Tox *tox, const Tox_Event_Conference_Con
 }
 
 static void iterate_one(
-    Tox *tox, State *state, Tox_Dispatch *dispatch)
+    Tox *tox, State *state, const Tox_Dispatch *dispatch)
 {
     Tox_Err_Events_Iterate err;
     Tox_Events *events = tox_events_iterate(tox, true, &err);
@@ -129,7 +129,7 @@ static void iterate3_wait(
     Tox *tox1, State *state1,
     Tox *tox2, State *state2,
     Tox *tox3, State *state3,
-    Tox_Dispatch *dispatch, int interval)
+    const Tox_Dispatch *dispatch, int interval)
 {
     iterate_one(tox1, state1, dispatch);
     iterate_one(tox2, state2, dispatch);
