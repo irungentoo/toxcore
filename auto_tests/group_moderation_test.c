@@ -19,13 +19,13 @@
 #define GROUP_NAME_LEN (sizeof(GROUP_NAME) - 1)
 
 typedef struct Peer {
-    char name[TOX_MAX_NAME_LENGTH];
+    char name[TOX_MAX_NAME_LENGTH + 1];
     size_t name_length;
     uint32_t peer_id;
 } Peer;
 
 typedef struct State {
-    char self_name[TOX_MAX_NAME_LENGTH];
+    char self_name[TOX_MAX_NAME_LENGTH + 1];
     size_t self_name_length;
 
     uint32_t group_number;
