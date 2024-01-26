@@ -161,6 +161,11 @@ uint64_t min_u64(uint64_t a, uint64_t b)
     return a < b ? a : b;
 }
 
+int cmp_uint(uint64_t a, uint64_t b)
+{
+    return (a > b ? 1 : 0) - (a < b ? 1 : 0);
+}
+
 uint32_t jenkins_one_at_a_time_hash(const uint8_t *key, size_t len)
 {
     uint32_t hash = 0;

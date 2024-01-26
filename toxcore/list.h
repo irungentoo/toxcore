@@ -12,6 +12,7 @@
 #define C_TOXCORE_TOXCORE_LIST_H
 
 #include <stdbool.h>
+#include <stddef.h>  // size_t
 #include <stdint.h>
 
 #include "attributes.h"
@@ -20,12 +21,15 @@
 extern "C" {
 #endif
 
+typedef int bs_list_cmp_cb(const void *a, const void *b, size_t size);
+
 typedef struct BS_List {
     uint32_t n; // number of elements
     uint32_t capacity; // number of elements memory is allocated for
     uint32_t element_size; // size of the elements
     uint8_t *data; // array of elements
     int *ids; // array of element ids
+    bs_list_cmp_cb *cmp_callback;
 } BS_List;
 
 /** @brief Initialize a list.
@@ -37,7 +41,7 @@ typedef struct BS_List {
  * @retval 0 failure
  */
 non_null()
-int bs_list_init(BS_List *list, uint32_t element_size, uint32_t initial_capacity);
+int bs_list_init(BS_List *list, uint32_t element_size, uint32_t initial_capacity, bs_list_cmp_cb *cmp_callback);
 
 /** Free a list initiated with list_init */
 nullable(1)

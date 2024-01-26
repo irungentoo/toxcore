@@ -337,7 +337,7 @@ non_null()
 bool addr_parse_ip(const char *address, IP *to);
 
 /**
- * Compares two IPAny structures.
+ * Compares two IP structures.
  *
  * Unset means unequal.
  *
@@ -347,7 +347,7 @@ nullable(1, 2)
 bool ip_equal(const IP *a, const IP *b);
 
 /**
- * Compares two IPAny_Port structures.
+ * Compares two IP_Port structures.
  *
  * Unset means unequal.
  *
@@ -355,6 +355,18 @@ bool ip_equal(const IP *a, const IP *b);
  */
 nullable(1, 2)
 bool ipport_equal(const IP_Port *a, const IP_Port *b);
+
+/**
+ * @brief IP_Port comparison function with `memcmp` signature.
+ *
+ * Casts the void pointers to `IP_Port *` for comparison.
+ *
+ * @retval -1 if `a < b`
+ * @retval 0 if `a == b`
+ * @retval 1 if `a > b`
+ */
+non_null()
+int ipport_cmp_handler(const void *a, const void *b, size_t size);
 
 /** nulls out ip */
 non_null()

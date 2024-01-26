@@ -60,7 +60,7 @@ static int find(const BS_List *list, const uint8_t *data)
     // closest match is found if we move back to where we have already been
 
     while (true) {
-        const int r = memcmp(data, list->data + list->element_size * i, list->element_size);
+        const int r = list->cmp_callback(data, list->data + list->element_size * i, list->element_size);
 
         if (r == 0) {
             return i;
@@ -135,7 +135,7 @@ static bool resize(BS_List *list, uint32_t new_size)
 }
 
 
-int bs_list_init(BS_List *list, uint32_t element_size, uint32_t initial_capacity)
+int bs_list_init(BS_List *list, uint32_t element_size, uint32_t initial_capacity, bs_list_cmp_cb *cmp_callback)
 {
     // set initial values
     list->n = 0;
@@ -143,6 +143,7 @@ int bs_list_init(BS_List *list, uint32_t element_size, uint32_t initial_capacity
     list->capacity = 0;
     list->data = nullptr;
     list->ids = nullptr;
+    list->cmp_callback = cmp_callback;
 
     if (initial_capacity != 0) {
         if (!resize(list, initial_capacity)) {

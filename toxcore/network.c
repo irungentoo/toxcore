@@ -1435,6 +1435,61 @@ bool ipport_equal(const IP_Port *a, const IP_Port *b)
     return ip_equal(&a->ip, &b->ip);
 }
 
+non_null()
+static int ip4_cmp(const IP4 *a, const IP4 *b)
+{
+    return cmp_uint(a->uint32, b->uint32);
+}
+
+non_null()
+static int ip6_cmp(const IP6 *a, const IP6 *b)
+{
+    const int res = cmp_uint(a->uint64[0], b->uint64[0]);
+    if (res != 0) {
+        return res;
+    }
+    return cmp_uint(a->uint64[1], b->uint64[1]);
+}
+
+non_null()
+static int ip_cmp(const IP *a, const IP *b)
+{
+    const int res = cmp_uint(a->family.value, b->family.value);
+    if (res != 0) {
+        return res;
+    }
+    switch (a->family.value) {
+        case TOX_AF_UNSPEC:
+            return 0;
+        case TOX_AF_INET:
+        case TCP_INET:
+        case TOX_TCP_INET:
+            return ip4_cmp(&a->ip.v4, &b->ip.v4);
+        case TOX_AF_INET6:
+        case TCP_INET6:
+        case TOX_TCP_INET6:
+        case TCP_SERVER_FAMILY:  // these happen to be ipv6 according to TCP_server.c.
+        case TCP_CLIENT_FAMILY:
+            return ip6_cmp(&a->ip.v6, &b->ip.v6);
+    }
+    // Invalid, we don't compare any further and consider them equal.
+    return 0;
+}
+
+int ipport_cmp_handler(const void *a, const void *b, size_t size)
+{
+    const IP_Port *ipp_a = (const IP_Port *)a;
+    const IP_Port *ipp_b = (const IP_Port *)b;
+    assert(size == sizeof(IP_Port));
+
+    const int ip_res = ip_cmp(&ipp_a->ip, &ipp_b->ip);
+    if (ip_res != 0) {
+        return ip_res;
+    }
+
+    return cmp_uint(ipp_a->port, ipp_b->port);
+}
+
 /** nulls out ip */
 void ip_reset(IP *ip)
 {
@@ -1508,7 +1563,14 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
         return;
     }
 
-    *target = *source;
+    // Write to a temporary object first, so that padding bytes are
+    // uninitialised and msan can catch mistakes in downstream code.
+    IP_Port tmp;
+    tmp.ip.family = source->ip.family;
+    tmp.ip.ip = source->ip.ip;
+    tmp.port = source->port;
+
+    *target = tmp;
 }
 
 const char *net_ip_ntoa(const IP *ip, Ip_Ntoa *ip_str)

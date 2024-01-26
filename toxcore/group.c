@@ -956,11 +956,6 @@ static bool delpeer(Group_Chats *g_c, uint32_t groupnumber, int peer_index, void
     return true;
 }
 
-static int cmp_u64(uint64_t a, uint64_t b)
-{
-    return (a > b ? 1 : 0) - (a < b ? 1 : 0);
-}
-
 /** Order peers with friends first and with more recently active earlier */
 non_null()
 static int cmp_frozen(const void *a, const void *b)
@@ -972,7 +967,7 @@ static int cmp_frozen(const void *a, const void *b)
         return pa->is_friend ? -1 : 1;
     }
 
-    return cmp_u64(pb->last_active, pa->last_active);
+    return cmp_uint(pb->last_active, pa->last_active);
 }
 
 /** @brief Delete frozen peers as necessary to ensure at most `g->maxfrozen` remain.

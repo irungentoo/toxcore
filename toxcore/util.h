@@ -79,6 +79,9 @@ uint16_t min_u16(uint16_t a, uint16_t b);
 uint32_t min_u32(uint32_t a, uint32_t b);
 uint64_t min_u64(uint64_t a, uint64_t b);
 
+// Comparison function: return -1 if a<b, 0 if a==b, 1 if a>b.
+int cmp_uint(uint64_t a, uint64_t b);
+
 /** @brief Returns a 32-bit hash of key of size len */
 non_null()
 uint32_t jenkins_one_at_a_time_hash(const uint8_t *key, size_t len);
