@@ -142,7 +142,7 @@ static Broadcast_Info *fetch_broadcast_info(const Network *ns)
     }
 
     /* Configure ifconf for the ioctl call. */
-    struct ifreq i_faces[MAX_INTERFACES] = {{0}};
+    struct ifreq i_faces[MAX_INTERFACES] = {{{0}}};
 
     struct ifconf ifc;
     ifc.ifc_buf = (char *)i_faces;

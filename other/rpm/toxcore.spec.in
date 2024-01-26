@@ -1,7 +1,7 @@
 %define full_name c-@PROJECT_NAME@
 %define commit 0
 %if "${commit}" != "0"
-%define shortcommit %(c=%{commit}; echo ${c:0:7})
+%define shortcommit %(c=%{commit}; echo ${c:0:9})
 %endif
 
 Name:           @PROJECT_NAME@
@@ -18,10 +18,12 @@ Source0:        https://github.com/TokTok/%{full_name}/archive/%{commit}/%{full_
 %endif
 
 BuildRequires:  cmake
+BuildRequires:  g++
+BuildRequires:  gcc
+BuildRequires:  libconfig-devel
+BuildRequires:  libsodium-devel
 BuildRequires:  libvpx-devel
 BuildRequires:  opus-devel
-BuildRequires:  libsodium-devel
-BuildRequires:  libconfig-devel
 BuildRequires:  systemd-units
 
 %description
@@ -63,10 +65,10 @@ Tox DHT bootstrap daemon.
 
 %build
 %cmake
-%{__make} %{?_smp_mflags}
+%{__make} -C redhat-linux-build %{?_smp_mflags}
 
 %install
-%make_install
+%make_install -C redhat-linux-build
 mkdir -p %{buildroot}%{_unitdir}
 install -m 0644 other/rpm/tox-bootstrapd.service %{buildroot}%{_unitdir}/tox-bootstrapd.service
 install -d "%{buildroot}%{_sharedstatedir}/tox-bootstrapd"
@@ -74,7 +76,7 @@ mkdir -p %{buildroot}%{_sysconfdir}
 install -m 0644 other/bootstrap_daemon/tox-bootstrapd.conf %{buildroot}%{_sysconfdir}/tox-bootstrapd.conf
 
 %check
-%{__make} %{?_smp_mflags} test
+%{__make} -C redhat-linux-build %{?_smp_mflags} test
 
 %pre -n tox-bootstrapd
 getent group tox-bootstrapd >/dev/null || groupadd -r tox-bootstrapd
@@ -97,7 +99,7 @@ getent passwd tox-bootstrapd >/dev/null || \
 
 %files
 %defattr(-, root, root)
-%doc LICENSE.md README.md CHANGELOG.md
+%doc LICENSE README.md CHANGELOG.md
 %{_libdir}/libtoxcore.so*
 
 %files devel
@@ -111,9 +113,10 @@ getent passwd tox-bootstrapd >/dev/null || \
 
 %files -n tox-bootstrapd
 %defattr(-, root, root)
+%{_bindir}/DHT_bootstrap
 %{_bindir}/tox-bootstrapd
 %{_unitdir}/tox-bootstrapd.service
-%{_sharedstatedir}/tox-bootstrapd
+%{_datadir}/bash-completion/completions/tox-bootstrapd
 %attr(-,tox-bootstrapd,tox-bootstrapd) %{_sharedstatedir}/tox-bootstrapd/
 %config(noreplace) %{_sysconfdir}/tox-bootstrapd.conf
 

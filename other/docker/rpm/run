@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -eux
+PROJECT_VERSION="$(git describe | sed -e 's/^v//' -e 's/-/_/g')"
+PROJECT_COMMIT_ID="$(git rev-parse HEAD)"
+PROJECT_COMMIT_ID_SHORT="$(git rev-parse --short HEAD)"
+
+BUILD=rpm
+other/docker/sources/build
+docker build -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/$BUILD.Dockerfile" . \
+  --build-arg="PROJECT_VERSION=$PROJECT_VERSION" \
+  --build-arg="PROJECT_COMMIT_ID=$PROJECT_COMMIT_ID" \
+  --build-arg="PROJECT_COMMIT_ID_SHORT=$PROJECT_COMMIT_ID_SHORT"

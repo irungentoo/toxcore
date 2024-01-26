@@ -1260,7 +1260,7 @@ Networking_Core *new_networking_ex(
 
 #ifndef ESP_PLATFORM
         /* multicast local nodes */
-        struct ipv6_mreq mreq = {{0}};
+        struct ipv6_mreq mreq = {{{{0}}}};
         mreq.ipv6mr_multiaddr.s6_addr[ 0] = 0xFF;
         mreq.ipv6mr_multiaddr.s6_addr[ 1] = 0x02;
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
