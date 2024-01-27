@@ -321,6 +321,8 @@ typedef struct GC_Chat {
 
     uint8_t     m_group_public_key[CRYPTO_PUBLIC_KEY_SIZE];  // public key for group's messenger friend connection
     int         friend_connection_id;  // identifier for group's messenger friend connection
+
+    bool        flag_exit;  // true if the group will be deleted after the next do_gc() iteration
 } GC_Chat;
 
 #ifndef MESSENGER_DEFINED

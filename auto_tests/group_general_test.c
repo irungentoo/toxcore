@@ -441,10 +441,13 @@ static void group_announce_test(AutoTox *autotoxes)
     tox_group_leave(tox1, groupnumber, nullptr, 0, &err_exit);
     ck_assert(err_exit == TOX_ERR_GROUP_LEAVE_OK);
 
-    num_groups1 = tox_group_get_number_groups(tox0);
-    num_groups2 = tox_group_get_number_groups(tox1);
+    while (num_groups1 != 0 || num_groups2 != 0) {
+        num_groups1 = tox_group_get_number_groups(tox0);
+        num_groups2 = tox_group_get_number_groups(tox1);
 
-    ck_assert(num_groups1 == num_groups2 && num_groups2 == 0);
+        iterate_all_wait(autotoxes, NUM_GROUP_TOXES, ITERATION_INTERVAL);
+    }
+
 
     printf("All tests passed!\n");
 }
