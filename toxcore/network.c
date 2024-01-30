@@ -81,6 +81,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bin_pack.h"
 #include "ccompat.h"
 #include "logger.h"
 #include "mem.h"
@@ -1571,6 +1572,143 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
     tmp.port = source->port;
 
     *target = tmp;
+}
+
+/** @brief Packs an IP structure.
+ *
+ * It's the caller's responsibility to make sure `is_ipv4` tells the truth. This
+ * function is an implementation detail of @ref bin_pack_ip_port.
+ *
+ * @param is_ipv4 whether this IP is an IP4 or IP6.
+ *
+ * @retval true on success.
+ */
+non_null()
+static bool bin_pack_ip(Bin_Pack *bp, const IP *ip, bool is_ipv4)
+{
+    if (is_ipv4) {
+        return bin_pack_bin_b(bp, ip->ip.v4.uint8, SIZE_IP4);
+    } else {
+        return bin_pack_bin_b(bp, ip->ip.v6.uint8, SIZE_IP6);
+    }
+}
+
+/** @brief Packs an IP_Port structure.
+ *
+ * @retval true on success.
+ */
+bool bin_pack_ip_port(Bin_Pack *bp, const Logger *logger, const IP_Port *ip_port)
+{
+    bool is_ipv4;
+    uint8_t family;
+
+    if (net_family_is_ipv4(ip_port->ip.family)) {
+        // TODO(irungentoo): use functions to convert endianness
+        is_ipv4 = true;
+        family = TOX_AF_INET;
+    } else if (net_family_is_tcp_ipv4(ip_port->ip.family)) {
+        is_ipv4 = true;
+        family = TOX_TCP_INET;
+    } else if (net_family_is_ipv6(ip_port->ip.family)) {
+        is_ipv4 = false;
+        family = TOX_AF_INET6;
+    } else if (net_family_is_tcp_ipv6(ip_port->ip.family)) {
+        is_ipv4 = false;
+        family = TOX_TCP_INET6;
+    } else {
+        Ip_Ntoa ip_str;
+        // TODO(iphydf): Find out why we're trying to pack invalid IPs, stop
+        // doing that, and turn this into an error.
+        LOGGER_TRACE(logger, "cannot pack invalid IP: %s", net_ip_ntoa(&ip_port->ip, &ip_str));
+        return false;
+    }
+
+    return bin_pack_u08_b(bp, family)
+           && bin_pack_ip(bp, &ip_port->ip, is_ipv4)
+           && bin_pack_u16_b(bp, net_ntohs(ip_port->port));
+}
+
+non_null()
+static bool bin_pack_ip_port_handler(const void *obj, const Logger *logger, Bin_Pack *bp)
+{
+    const IP_Port *ip_port = (const IP_Port *)obj;
+    return bin_pack_ip_port(bp, logger, ip_port);
+}
+
+int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_Port *ip_port)
+{
+    const uint32_t size = bin_pack_obj_size(bin_pack_ip_port_handler, ip_port, logger);
+
+    if (size > length) {
+        return -1;
+    }
+
+    if (!bin_pack_obj(bin_pack_ip_port_handler, ip_port, logger, data, length)) {
+        return -1;
+    }
+
+    assert(size < INT_MAX);
+    return (int)size;
+}
+
+int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool tcp_enabled)
+{
+    if (data == nullptr) {
+        return -1;
+    }
+
+    bool is_ipv4;
+    Family host_family;
+
+    if (data[0] == TOX_AF_INET) {
+        is_ipv4 = true;
+        host_family = net_family_ipv4();
+    } else if (data[0] == TOX_TCP_INET) {
+        if (!tcp_enabled) {
+            return -1;
+        }
+
+        is_ipv4 = true;
+        host_family = net_family_tcp_ipv4();
+    } else if (data[0] == TOX_AF_INET6) {
+        is_ipv4 = false;
+        host_family = net_family_ipv6();
+    } else if (data[0] == TOX_TCP_INET6) {
+        if (!tcp_enabled) {
+            return -1;
+        }
+
+        is_ipv4 = false;
+        host_family = net_family_tcp_ipv6();
+    } else {
+        return -1;
+    }
+
+    ipport_reset(ip_port);
+
+    if (is_ipv4) {
+        const uint32_t size = 1 + SIZE_IP4 + sizeof(uint16_t);
+
+        if (size > length) {
+            return -1;
+        }
+
+        ip_port->ip.family = host_family;
+        memcpy(&ip_port->ip.ip.v4, data + 1, SIZE_IP4);
+        memcpy(&ip_port->port, data + 1 + SIZE_IP4, sizeof(uint16_t));
+        return size;
+    } else {
+        const uint32_t size = 1 + SIZE_IP6 + sizeof(uint16_t);
+
+        if (size > length) {
+            return -1;
+        }
+
+        ip_port->ip.family = host_family;
+        memcpy(&ip_port->ip.ip.v6, data + 1, SIZE_IP6);
+        memcpy(&ip_port->port, data + 1 + SIZE_IP6, sizeof(uint16_t));
+        return size;
+    }
 }
 
 const char *net_ip_ntoa(const IP *ip, Ip_Ntoa *ip_str)

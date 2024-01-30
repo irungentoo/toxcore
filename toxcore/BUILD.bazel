@@ -292,6 +292,7 @@ cc_library(
         "//c-toxcore/toxav:__pkg__",
     ],
     deps = [
+        ":bin_pack",
         ":ccompat",
         ":crypto_core",
         ":logger",

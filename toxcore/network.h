@@ -13,6 +13,7 @@
 #include <stddef.h>     // size_t
 #include <stdint.h>     // uint*_t
 
+#include "bin_pack.h"
 #include "logger.h"
 #include "mem.h"
 
@@ -517,6 +518,29 @@ int32_t net_getipport(const Memory *mem, const char *node, IP_Port **res, int to
 /** Deallocates memory allocated by net_getipport */
 non_null(1) nullable(2)
 void net_freeipport(const Memory *mem, IP_Port *ip_ports);
+
+non_null()
+bool bin_pack_ip_port(Bin_Pack *bp, const Logger *logger, const IP_Port *ip_port);
+
+/** @brief Pack an IP_Port structure into data of max size length.
+ *
+ * Packed_length is the offset of data currently packed.
+ *
+ * @return size of packed IP_Port data on success.
+ * @retval -1 on failure.
+ */
+non_null()
+int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_Port *ip_port);
+
+/** @brief Unpack IP_Port structure from data of max size length into ip_port.
+ *
+ * len_processed is the offset of data currently unpacked.
+ *
+ * @return size of unpacked ip_port on success.
+ * @retval -1 on failure.
+ */
+non_null()
+int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool tcp_enabled);
 
 /**
  * @return true on success, false on failure.

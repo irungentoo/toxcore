@@ -18,7 +18,6 @@
 #include <unistd.h>
 #endif /* TCP_SERVER_USE_EPOLL */
 
-#include "DHT.h"
 #include "TCP_common.h"
 #include "ccompat.h"
 #include "crypto_core.h"

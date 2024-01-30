@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "DHT.h"
 #include "TCP_common.h"
 #include "ccompat.h"
 #include "crypto_core.h"
