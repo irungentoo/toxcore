@@ -4,6 +4,7 @@
 #include <iosfwd>
 
 #include "DHT.h"
+#include "crypto_core.h"
 #include "test_util.hh"
 
 template <>

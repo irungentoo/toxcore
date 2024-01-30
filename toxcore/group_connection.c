@@ -16,6 +16,7 @@
 
 #include "DHT.h"
 #include "TCP_connection.h"
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "group_chats.h"

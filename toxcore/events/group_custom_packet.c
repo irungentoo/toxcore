@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../attributes.h"
 #include "../bin_pack.h"
 #include "../bin_unpack.h"
 #include "../ccompat.h"

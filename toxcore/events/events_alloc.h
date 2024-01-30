@@ -8,7 +8,11 @@
 #include "../attributes.h"
 #include "../bin_pack.h"
 #include "../bin_unpack.h"
+#include "../mem.h"
+#include "../tox.h"
 #include "../tox_event.h"
+#include "../tox_events.h"
+#include "../tox_private.h"
 
 #ifdef __cplusplus
 extern "C" {

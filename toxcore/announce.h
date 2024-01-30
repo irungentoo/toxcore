@@ -5,7 +5,14 @@
 #ifndef C_TOXCORE_TOXCORE_ANNOUNCE_H
 #define C_TOXCORE_TOXCORE_ANNOUNCE_H
 
+#include <stdint.h>
+
+#include "attributes.h"
+#include "crypto_core.h"
 #include "forwarding.h"
+#include "logger.h"
+#include "mem.h"
+#include "mono_time.h"
 
 #define MAX_ANNOUNCEMENT_SIZE 512
 

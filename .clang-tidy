@@ -41,7 +41,5 @@ CheckOptions:
     value:           true
   - key:             concurrency-mt-unsafe.FunctionSet
     value:           posix
-  - key:             misc-include-cleaner.IgnoreHeaders
-    value:           "pthread.h;stdbool.h;stddef.h;stdint.;stdint.h;stdint...;cstdint;sodium.*;sys/.*;unistd.h;opus.*;vpx.*;attributes.h;tox_struct.h"
   - key:             readability-function-cognitive-complexity.Threshold
     value:           153  # TODO(iphydf): Decrease. tox_new is the highest at the moment.

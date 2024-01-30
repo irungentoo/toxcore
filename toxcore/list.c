@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "attributes.h"
 #include "ccompat.h"
 
 /**

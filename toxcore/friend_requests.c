@@ -11,9 +11,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "friend_connection.h"
+#include "network.h"
+#include "onion.h"
+#include "onion_announce.h"
 #include "onion_client.h"
 
 /**

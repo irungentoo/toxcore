@@ -10,8 +10,12 @@
 #define C_TOXCORE_TOXCORE_ONION_H
 
 #include "DHT.h"
+#include "attributes.h"
+#include "crypto_core.h"
 #include "logger.h"
+#include "mem.h"
 #include "mono_time.h"
+#include "network.h"
 #include "shared_key_cache.h"
 
 typedef int onion_recv_1_cb(void *object, const IP_Port *dest, const uint8_t *data, uint16_t length);

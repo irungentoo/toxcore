@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 
+#include "attributes.h"
 #include "ccompat.h"
 
 nullable(1)

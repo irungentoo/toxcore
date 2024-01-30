@@ -172,6 +172,7 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
     }
     f << R"(
 
+#include "../attributes.h"
 #include "../bin_pack.h"
 #include "../bin_unpack.h"
 #include "../ccompat.h"

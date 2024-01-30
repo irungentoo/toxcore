@@ -9,6 +9,7 @@
 #ifndef C_TOXCORE_TOXCORE_LAN_DISCOVERY_H
 #define C_TOXCORE_TOXCORE_LAN_DISCOVERY_H
 
+#include "attributes.h"
 #include "network.h"
 
 /**

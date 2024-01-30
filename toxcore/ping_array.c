@@ -10,6 +10,7 @@
 
 #include <string.h>
 
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "mem.h"

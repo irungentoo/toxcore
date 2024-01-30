@@ -16,6 +16,7 @@
 #include "LAN_discovery.h"
 #include "TCP_client.h"
 #include "TCP_connection.h"
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "list.h"

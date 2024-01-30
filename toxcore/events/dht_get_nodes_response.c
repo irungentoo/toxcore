@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include "../attributes.h"
 #include "../bin_pack.h"
 #include "../bin_unpack.h"
 #include "../ccompat.h"
@@ -86,7 +87,7 @@ non_null()
 static void tox_event_dht_get_nodes_response_construct(Tox_Event_Dht_Get_Nodes_Response *dht_get_nodes_response)
 {
     *dht_get_nodes_response = (Tox_Event_Dht_Get_Nodes_Response) {
-        0
+        {0}
     };
 }
 non_null()

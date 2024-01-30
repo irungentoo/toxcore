@@ -9,9 +9,15 @@
 #ifndef C_TOXCORE_TOXCORE_FRIEND_CONNECTION_H
 #define C_TOXCORE_TOXCORE_FRIEND_CONNECTION_H
 
+#include <stdint.h>
+
 #include "DHT.h"
 #include "LAN_discovery.h"
+#include "attributes.h"
+#include "logger.h"
+#include "mono_time.h"
 #include "net_crypto.h"
+#include "network.h"
 #include "onion_client.h"
 
 #define MAX_FRIEND_CONNECTION_CALLBACKS 2

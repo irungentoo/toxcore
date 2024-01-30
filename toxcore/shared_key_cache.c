@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <string.h>     // memcpy(...)
 
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "logger.h"

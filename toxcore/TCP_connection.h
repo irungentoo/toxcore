@@ -10,10 +10,18 @@
 #define C_TOXCORE_TOXCORE_TCP_CONNECTION_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "DHT.h"  // for Node_format
 #include "TCP_client.h"
 #include "TCP_common.h"
+#include "attributes.h"
+#include "crypto_core.h"
+#include "forwarding.h"
+#include "logger.h"
+#include "mem.h"
+#include "mono_time.h"
+#include "network.h"
 
 #define TCP_CONN_NONE 0
 #define TCP_CONN_VALID 1

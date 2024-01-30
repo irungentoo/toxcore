@@ -17,6 +17,7 @@
 #ifndef C_TOXCORE_TOXCORE_STATE_H
 #define C_TOXCORE_TOXCORE_STATE_H
 
+#include "attributes.h"
 #include "logger.h"
 
 #ifdef __cplusplus

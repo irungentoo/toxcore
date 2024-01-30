@@ -10,15 +10,25 @@
 #ifndef C_TOXCORE_TOXCORE_MESSENGER_H
 #define C_TOXCORE_TOXCORE_MESSENGER_H
 
+#include "DHT.h"
+#include "TCP_client.h"
 #include "TCP_server.h"
 #include "announce.h"
+#include "attributes.h"
+#include "crypto_core.h"
 #include "forwarding.h"
 #include "friend_connection.h"
 #include "friend_requests.h"
 #include "group_announce.h"
 #include "group_common.h"
 #include "logger.h"
+#include "mem.h"
+#include "mono_time.h"
 #include "net_crypto.h"
+#include "network.h"
+#include "onion.h"
+#include "onion_announce.h"
+#include "onion_client.h"
 #include "state.h"
 
 #define MAX_NAME_LENGTH 128

@@ -12,7 +12,14 @@
 
 #include <stdbool.h>
 
+#include "DHT.h"
+#include "attributes.h"
+#include "crypto_core.h"
+#include "logger.h"
+#include "mem.h"
+#include "mono_time.h"
 #include "net_crypto.h"
+#include "network.h"
 #include "onion_announce.h"
 #include "ping_array.h"
 

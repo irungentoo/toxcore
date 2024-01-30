@@ -14,12 +14,15 @@
 #include <stdint.h>
 
 #include "TCP_connection.h"
+#include "attributes.h"
 #include "bin_pack.h"
 #include "bin_unpack.h"
+#include "crypto_core.h"
 #include "group_announce.h"
 #include "group_common.h"
 #include "group_connection.h"
 #include "logger.h"
+#include "network.h"
 
 #define GC_PING_TIMEOUT 12
 #define GC_SEND_IP_PORT_INTERVAL (GC_PING_TIMEOUT * 5)

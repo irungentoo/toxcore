@@ -19,6 +19,7 @@
 #endif /* TCP_SERVER_USE_EPOLL */
 
 #include "TCP_common.h"
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "forwarding.h"

@@ -18,6 +18,7 @@
 #include "DHT.h"
 #include "Messenger.h"
 #include "TCP_connection.h"
+#include "attributes.h"
 #include "bin_pack.h"
 #include "bin_unpack.h"
 #include "ccompat.h"

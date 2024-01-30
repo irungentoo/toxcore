@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 
+#include "attributes.h"
 #include "bin_unpack.h"
 #include "tox.h"
 

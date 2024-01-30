@@ -9,7 +9,14 @@
 #ifndef C_TOXCORE_TOXCORE_GROUP_H
 #define C_TOXCORE_TOXCORE_GROUP_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include "Messenger.h"
+#include "attributes.h"
+#include "crypto_core.h"
+#include "mono_time.h"
+#include "state.h"
 
 typedef enum Groupchat_Type {
     GROUPCHAT_TYPE_TEXT,

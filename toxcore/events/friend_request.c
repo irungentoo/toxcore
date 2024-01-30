@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include "../attributes.h"
 #include "../bin_pack.h"
 #include "../bin_unpack.h"
 #include "../ccompat.h"
@@ -81,7 +82,7 @@ non_null()
 static void tox_event_friend_request_construct(Tox_Event_Friend_Request *friend_request)
 {
     *friend_request = (Tox_Event_Friend_Request) {
-        0
+        {0}
     };
 }
 non_null()

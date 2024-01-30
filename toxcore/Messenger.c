@@ -18,6 +18,7 @@
 #include "TCP_connection.h"
 #include "TCP_server.h"
 #include "announce.h"
+#include "attributes.h"
 #include "bin_pack.h"
 #include "bin_unpack.h"
 #include "ccompat.h"

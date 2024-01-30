@@ -16,8 +16,10 @@
 #include "DHT.h"
 #include "LAN_discovery.h"
 #include "TCP_connection.h"
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
+#include "group_announce.h"
 #include "group_onion_announce.h"
 #include "logger.h"
 #include "mem.h"
@@ -27,6 +29,7 @@
 #include "onion.h"
 #include "onion_announce.h"
 #include "ping_array.h"
+#include "timed_auth.h"
 #include "util.h"
 
 /** @brief defines for the array size and timeout for onion announce packets. */

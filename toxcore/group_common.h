@@ -14,7 +14,13 @@
 
 #include "DHT.h"
 #include "TCP_connection.h"
+#include "attributes.h"
+#include "crypto_core.h"
 #include "group_moderation.h"
+#include "logger.h"
+#include "mem.h"
+#include "mono_time.h"
+#include "network.h"
 
 #define MAX_GC_PART_MESSAGE_SIZE 128
 #define MAX_GC_NICK_SIZE 128

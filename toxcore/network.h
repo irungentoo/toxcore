@@ -13,6 +13,7 @@
 #include <stddef.h>     // size_t
 #include <stdint.h>     // uint*_t
 
+#include "attributes.h"
 #include "bin_pack.h"
 #include "logger.h"
 #include "mem.h"

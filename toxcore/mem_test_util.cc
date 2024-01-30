@@ -2,6 +2,9 @@
 
 #include <cstdlib>
 
+#include "mem.h"
+#include "test_util.hh"
+
 Memory_Funcs const Memory_Class::vtable = {
     Method<mem_malloc_cb, Memory_Class>::invoke<&Memory_Class::malloc>,
     Method<mem_calloc_cb, Memory_Class>::invoke<&Memory_Class::calloc>,

@@ -6,6 +6,8 @@
 #ifndef C_TOXCORE_TOXCORE_GROUP_ONION_ANNOUNCE_H
 #define C_TOXCORE_TOXCORE_GROUP_ONION_ANNOUNCE_H
 
+#include "attributes.h"
+#include "crypto_core.h"
 #include "group_announce.h"
 #include "onion_announce.h"
 

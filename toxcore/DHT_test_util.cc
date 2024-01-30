@@ -3,7 +3,10 @@
 #include <cstring>
 #include <iomanip>
 
+#include "DHT.h"
+#include "crypto_core.h"
 #include "crypto_core_test_util.hh"
+#include "network.h"
 #include "network_test_util.hh"
 
 Node_format random_node_format(const Random *rng)

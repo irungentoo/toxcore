@@ -32,6 +32,7 @@
 #include <pthread.h>
 #include <time.h>
 
+#include "attributes.h"
 #include "ccompat.h"
 #include "mem.h"
 #include "util.h"

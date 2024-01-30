@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 
+#include "attributes.h"
 #include "ccompat.h"
 #include "events/events_alloc.h" // IWYU pragma: keep
 #include "tox.h"

@@ -16,6 +16,7 @@
 
 #include <sodium.h>
 
+#include "attributes.h"
 #include "ccompat.h"
 #include "util.h"
 

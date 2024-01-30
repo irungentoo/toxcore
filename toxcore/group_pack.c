@@ -14,12 +14,15 @@
 #include <string.h>
 
 #include "DHT.h"
+#include "attributes.h"
 #include "bin_pack.h"
 #include "bin_unpack.h"
 #include "ccompat.h"
+#include "crypto_core.h"
 #include "group_common.h"
 #include "group_moderation.h"
 #include "logger.h"
+#include "network.h"
 #include "util.h"
 
 bool group_privacy_state_from_int(uint8_t value, Group_Privacy_State *out)

@@ -6,8 +6,11 @@
 #ifndef C_TOXCORE_TOXCORE_TOX_STRUCT_H
 #define C_TOXCORE_TOXCORE_TOX_STRUCT_H
 
+#include <pthread.h>
+
 #include "Messenger.h"
 #include "mem.h"
+#include "mono_time.h"
 #include "tox.h"
 #include "tox_private.h"
 

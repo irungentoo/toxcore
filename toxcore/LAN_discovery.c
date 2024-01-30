@@ -38,6 +38,7 @@
 #include <net/if.h>
 #endif /* BSD */
 
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "network.h"

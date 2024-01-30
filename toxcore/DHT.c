@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "LAN_discovery.h"
+#include "attributes.h"
 #include "bin_pack.h"
 #include "ccompat.h"
 #include "crypto_core.h"

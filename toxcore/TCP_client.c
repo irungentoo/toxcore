@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "TCP_common.h"
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "forwarding.h"

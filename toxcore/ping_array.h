@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "attributes.h"
 #include "crypto_core.h"
 #include "mem.h"
 #include "mono_time.h"

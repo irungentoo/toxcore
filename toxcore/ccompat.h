@@ -73,12 +73,6 @@
 #endif /* !static_assert */
 #endif /* !__cplusplus */
 
-#ifdef __GNUC__
-#define GNU_PRINTF(f, a) __attribute__((__format__(__printf__, f, a)))
-#else
-#define GNU_PRINTF(f, a)
-#endif
-
 //!TOKSTYLE+
 
 #endif /* C_TOXCORE_TOXCORE_CCOMPAT_H */

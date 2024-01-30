@@ -14,6 +14,7 @@
 
 #include "DHT.h"
 #include "Messenger.h"
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "friend_connection.h"

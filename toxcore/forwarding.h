@@ -6,6 +6,10 @@
 #define C_TOXCORE_TOXCORE_FORWARDING_H
 
 #include "DHT.h"
+#include "attributes.h"
+#include "crypto_core.h"
+#include "logger.h"
+#include "mono_time.h"
 #include "network.h"
 
 #ifdef __cplusplus

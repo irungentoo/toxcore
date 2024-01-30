@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "../third_party/cmp/cmp.h"
+#include "attributes.h"
 #include "ccompat.h"
 
 struct Bin_Unpack {

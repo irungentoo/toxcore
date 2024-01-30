@@ -9,7 +9,9 @@
 #include <string.h>
 
 #include "DHT.h"
+#include "attributes.h"
 #include "ccompat.h"
+#include "crypto_core.h"
 #include "logger.h"
 #include "mono_time.h"
 #include "network.h"

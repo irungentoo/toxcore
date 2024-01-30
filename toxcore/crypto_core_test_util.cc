@@ -3,6 +3,9 @@
 #include <cstring>
 #include <iomanip>
 
+#include "crypto_core.h"
+#include "test_util.hh"
+
 Random_Funcs const Random_Class::vtable = {
     Method<crypto_random_bytes_cb, Random_Class>::invoke<&Random_Class::random_bytes>,
     Method<crypto_random_uniform_cb, Random_Class>::invoke<&Random_Class::random_uniform>,

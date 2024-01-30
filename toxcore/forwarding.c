@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "DHT.h"
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "logger.h"

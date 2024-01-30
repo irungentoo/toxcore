@@ -139,6 +139,10 @@ CHECKS="$CHECKS,-cert-dcl03-c"
 CHECKS="$CHECKS,-hicpp-static-assert"
 CHECKS="$CHECKS,-misc-static-assert"
 
+# Doesn't consider use of preprocessor macros as needing a header, breaking
+# struct definitions that depend on size macros from e.g. crypto_core.h.
+CHECKS="$CHECKS,-misc-include-cleaner"
+
 set -eux
 
 # TODO(iphydf): Add toxav.
@@ -154,7 +158,7 @@ copy_files() {
   find "${DIRS[@]}" \
     -maxdepth 1 -type d -exec mkdir -p "$1/{}" \;
   find "${DIRS[@]}" \
-    -maxdepth 1 -name "*.c" -exec cp "{}" "$1/{}" \;
+    -maxdepth 1 -name "*.[ch]" -exec cp "{}" "$1/{}" \;
 }
 
 run() {
@@ -166,7 +170,7 @@ run() {
   ls .clang-tidy
   copy_files a
   if ! find "${DIRS[@]}" \
-    -maxdepth 1 -name "*.c" -print0 \
+    -maxdepth 1 -name "*.[ch]" -print0 \
     | xargs -0 -n15 -P"$(nproc)" clang-tidy \
       -p="$PWD/_build" \
       --extra-arg=-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE \

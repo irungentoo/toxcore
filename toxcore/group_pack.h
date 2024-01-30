@@ -12,6 +12,7 @@
 
 #include <stdbool.h>
 
+#include "attributes.h"
 #include "bin_pack.h"
 #include "bin_unpack.h"
 #include "group_common.h"

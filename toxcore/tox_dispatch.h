@@ -5,6 +5,7 @@
 #ifndef C_TOXCORE_TOXCORE_TOX_DISPATCH_H
 #define C_TOXCORE_TOXCORE_TOX_DISPATCH_H
 
+#include "tox.h"
 #include "tox_events.h"
 
 #ifdef __cplusplus

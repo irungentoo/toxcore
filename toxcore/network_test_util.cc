@@ -2,6 +2,10 @@
 
 #include <iomanip>
 
+#include "crypto_core.h"
+#include "network.h"
+#include "test_util.hh"
+
 Network_Funcs const Network_Class::vtable = {
     Method<net_close_cb, Network_Class>::invoke<&Network_Class::close>,
     Method<net_accept_cb, Network_Class>::invoke<&Network_Class::accept>,

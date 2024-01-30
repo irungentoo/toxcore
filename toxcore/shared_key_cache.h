@@ -7,6 +7,7 @@
 
 #include <stdint.h>     // uint*_t
 
+#include "attributes.h"
 #include "crypto_core.h"
 #include "logger.h"
 #include "mem.h"

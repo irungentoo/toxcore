@@ -9,7 +9,13 @@
 #ifndef C_TOXCORE_TOXCORE_ONION_ANNOUNCE_H
 #define C_TOXCORE_TOXCORE_ONION_ANNOUNCE_H
 
+#include "DHT.h"
+#include "attributes.h"
+#include "crypto_core.h"
 #include "logger.h"
+#include "mem.h"
+#include "mono_time.h"
+#include "network.h"
 #include "onion.h"
 #include "timed_auth.h"
 

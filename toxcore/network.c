@@ -81,6 +81,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "attributes.h"
 #include "bin_pack.h"
 #include "ccompat.h"
 #include "logger.h"
