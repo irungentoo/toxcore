@@ -36,7 +36,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          file: other/docker/coverage/Dockerfile
+          file: other/docker/coverage/coverage.Dockerfile
           push: ${{ github.event_name == 'push' }}
           tags: toxchat/c-toxcore:coverage
           cache-from: type=registry,ref=toxchat/c-toxcore:coverage
