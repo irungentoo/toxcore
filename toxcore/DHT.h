@@ -418,12 +418,12 @@ bool dht_bootstrap(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key);
  * @param ipv6enabled if false, the resolving sticks STRICTLY to IPv4 addresses.
  *   Otherwise, the resolving looks for IPv6 addresses first, then IPv4 addresses.
  *
- * @retval 1 if the address could be converted into an IP address
- * @retval 0 otherwise
+ * @retval true if the address could be converted into an IP address
+ * @retval false otherwise
  */
 non_null()
-int dht_bootstrap_from_address(DHT *dht, const char *address, bool ipv6enabled,
-                               uint16_t port, const uint8_t *public_key);
+bool dht_bootstrap_from_address(DHT *dht, const char *address, bool ipv6enabled,
+                                uint16_t port, const uint8_t *public_key);
 
 /** @brief Start sending packets after DHT loaded_friends_list and loaded_clients_list are set.
  *

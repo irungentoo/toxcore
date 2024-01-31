@@ -1840,8 +1840,8 @@ bool dht_bootstrap(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key)
     return dht_getnodes(dht, ip_port, public_key, dht->self_public_key);
 }
 
-int dht_bootstrap_from_address(DHT *dht, const char *address, bool ipv6enabled,
-                               uint16_t port, const uint8_t *public_key)
+bool dht_bootstrap_from_address(DHT *dht, const char *address, bool ipv6enabled,
+                                uint16_t port, const uint8_t *public_key)
 {
     IP_Port ip_port_v64;
     IP *ip_extra = nullptr;
@@ -1864,10 +1864,10 @@ int dht_bootstrap_from_address(DHT *dht, const char *address, bool ipv6enabled,
             dht_bootstrap(dht, &ip_port_v4, public_key);
         }
 
-        return 1;
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 int route_packet(const DHT *dht, const uint8_t *public_key, const uint8_t *packet, uint16_t length)
@@ -2658,21 +2658,21 @@ uint32_t dht_size(const DHT *dht)
     uint32_t numv6 = 0;
 
     for (uint32_t i = 0; i < dht->loaded_num_nodes; ++i) {
-        numv4 += net_family_is_ipv4(dht->loaded_nodes_list[i].ip_port.ip.family);
-        numv6 += net_family_is_ipv6(dht->loaded_nodes_list[i].ip_port.ip.family);
+        numv4 += net_family_is_ipv4(dht->loaded_nodes_list[i].ip_port.ip.family) ? 1 : 0;
+        numv6 += net_family_is_ipv6(dht->loaded_nodes_list[i].ip_port.ip.family) ? 1 : 0;
     }
 
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
-        numv4 += dht->close_clientlist[i].assoc4.timestamp != 0;
-        numv6 += dht->close_clientlist[i].assoc6.timestamp != 0;
+        numv4 += dht->close_clientlist[i].assoc4.timestamp != 0 ? 1 : 0;
+        numv6 += dht->close_clientlist[i].assoc6.timestamp != 0 ? 1 : 0;
     }
 
     for (uint32_t i = 0; i < DHT_FAKE_FRIEND_NUMBER && i < dht->num_friends; ++i) {
         const DHT_Friend *const fr = &dht->friends_list[i];
 
         for (uint32_t j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
-            numv4 += fr->client_list[j].assoc4.timestamp != 0;
-            numv6 += fr->client_list[j].assoc6.timestamp != 0;
+            numv4 += fr->client_list[j].assoc4.timestamp != 0 ? 1 : 0;
+            numv6 += fr->client_list[j].assoc6.timestamp != 0 ? 1 : 0;
         }
     }
 

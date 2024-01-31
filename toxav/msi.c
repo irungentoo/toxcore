@@ -64,7 +64,7 @@ static bool invoke_callback(MSICall *call, MSICallbackID cb);
 static MSICall *get_call(MSISession *session, uint32_t friend_number);
 static MSICall *new_call(MSISession *session, uint32_t friend_number);
 static void kill_call(MSICall *call);
-static void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t connection_status, void *user_data);
+static void on_peer_status(Messenger *m, uint32_t friend_number, bool is_online, void *user_data);
 static void handle_init(MSICall *call, const MSIMessage *msg);
 static void handle_push(MSICall *call, const MSIMessage *msg);
 static void handle_pop(MSICall *call, const MSIMessage *msg);
@@ -648,11 +648,11 @@ CLEAR_CONTAINER:
     free(call);
     session->calls = nullptr;
 }
-static void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t connection_status, void *user_data)
+static void on_peer_status(Messenger *m, uint32_t friend_number, bool is_online, void *user_data)
 {
     MSISession *session = (MSISession *)user_data;
 
-    if (connection_status != 0) {
+    if (is_online) {
         // Friend is online.
         return;
     }

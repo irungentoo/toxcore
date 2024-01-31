@@ -749,7 +749,7 @@ int set_tcp_connection_to_status(const TCP_Connections *tcp_c, int connections_n
                 }
 
                 if (tcp_con->status == TCP_CONN_SLEEPING) {
-                    tcp_con->unsleep = 1;
+                    tcp_con->unsleep = true;
                 }
             }
         }
@@ -945,14 +945,14 @@ static int reconnect_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connec
 
     if (tcp_con->onion) {
         --tcp_c->onion_num_conns;
-        tcp_con->onion = 0;
+        tcp_con->onion = false;
     }
 
     tcp_con->lock_count = 0;
     tcp_con->sleep_count = 0;
     tcp_con->connected_time = 0;
     tcp_con->status = TCP_CONN_VALID;
-    tcp_con->unsleep = 0;
+    tcp_con->unsleep = false;
 
     return 0;
 }
@@ -990,14 +990,14 @@ static int sleep_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connection
 
     if (tcp_con->onion) {
         --tcp_c->onion_num_conns;
-        tcp_con->onion = 0;
+        tcp_con->onion = false;
     }
 
     tcp_con->lock_count = 0;
     tcp_con->sleep_count = 0;
     tcp_con->connected_time = 0;
     tcp_con->status = TCP_CONN_SLEEPING;
-    tcp_con->unsleep = 0;
+    tcp_con->unsleep = false;
 
     return 0;
 }
@@ -1028,7 +1028,7 @@ static int unsleep_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connecti
     tcp_con->sleep_count = 0;
     tcp_con->connected_time = 0;
     tcp_con->status = TCP_CONN_VALID;
-    tcp_con->unsleep = 0;
+    tcp_con->unsleep = false;
 
     return 0;
 }
@@ -1283,7 +1283,7 @@ static int tcp_relay_on_online(TCP_Connections *tcp_c, int tcp_connections_numbe
     }
 
     if (tcp_c->onion_status && tcp_c->onion_num_conns < NUM_ONION_TCP_CONNECTIONS) {
-        tcp_con->onion = 1;
+        tcp_con->onion = true;
         ++tcp_c->onion_num_conns;
     }
 
@@ -1369,7 +1369,7 @@ int add_tcp_number_relay_connection(const TCP_Connections *tcp_c, int connection
     }
 
     if (con_to->status != TCP_CONN_SLEEPING && tcp_con->status == TCP_CONN_SLEEPING) {
-        tcp_con->unsleep = 1;
+        tcp_con->unsleep = true;
     }
 
     if (add_tcp_connection_to_conn(con_to, tcp_connections_number) == -1) {
@@ -1537,7 +1537,7 @@ int set_tcp_onion_status(TCP_Connections *tcp_c, bool status)
             if (tcp_con != nullptr) {
                 if (tcp_con->status == TCP_CONN_CONNECTED && !tcp_con->onion) {
                     ++tcp_c->onion_num_conns;
-                    tcp_con->onion = 1;
+                    tcp_con->onion = true;
                 }
             }
 
@@ -1554,7 +1554,7 @@ int set_tcp_onion_status(TCP_Connections *tcp_c, bool status)
 
                 if (tcp_con != nullptr) {
                     if (tcp_con->status == TCP_CONN_SLEEPING) {
-                        tcp_con->unsleep = 1;
+                        tcp_con->unsleep = true;
                     }
                 }
 
@@ -1564,7 +1564,7 @@ int set_tcp_onion_status(TCP_Connections *tcp_c, bool status)
             }
         }
 
-        tcp_c->onion_status = 1;
+        tcp_c->onion_status = true;
     } else {
         for (uint32_t i = 0; i < tcp_c->tcp_connections_length; ++i) {
             TCP_con *tcp_con = get_tcp_connection(tcp_c, i);
@@ -1572,12 +1572,12 @@ int set_tcp_onion_status(TCP_Connections *tcp_c, bool status)
             if (tcp_con != nullptr) {
                 if (tcp_con->onion) {
                     --tcp_c->onion_num_conns;
-                    tcp_con->onion = 0;
+                    tcp_con->onion = false;
                 }
             }
         }
 
-        tcp_c->onion_status = 0;
+        tcp_c->onion_status = false;
     }
 
     return 0;

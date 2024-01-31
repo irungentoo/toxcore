@@ -125,7 +125,7 @@ static void print_log(void *context, Logger_Level level, const char *file, int l
 
 int main(int argc, char *argv[])
 {
-    if (argc == 2 && !tox_strncasecmp(argv[1], "-h", 3)) {
+    if (argc == 2 && tox_strncasecmp(argv[1], "-h", 3) == 0) {
         printf("Usage (connected)  : %s [--ipv4|--ipv6] IP PORT KEY\n", argv[0]);
         printf("Usage (unconnected): %s [--ipv4|--ipv6]\n", argv[0]);
         return 0;
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
     bootstrap_set_callbacks(dht_get_net(dht), (uint32_t)DAEMON_VERSION_NUMBER, (const uint8_t *) motd_str, strlen(motd_str) + 1);
 #endif
 
-    if (!(onion && forwarding && onion_a)) {
+    if (onion == nullptr || forwarding == nullptr || onion_a == nullptr) {
         printf("Something failed to initialize.\n");
         // cppcheck-suppress resourceLeak
         return 1;
@@ -229,8 +229,8 @@ int main(int argc, char *argv[])
         const uint16_t port = net_htons((uint16_t)port_conv);
 
         uint8_t *bootstrap_key = hex_string_to_bin(argv[argvoffset + 3]);
-        int res = dht_bootstrap_from_address(dht, argv[argvoffset + 1],
-                                             ipv6enabled, port, bootstrap_key);
+        const bool res = dht_bootstrap_from_address(dht, argv[argvoffset + 1],
+                         ipv6enabled, port, bootstrap_key);
         free(bootstrap_key);
 
         if (!res) {
@@ -239,17 +239,17 @@ int main(int argc, char *argv[])
         }
     }
 
-    int is_waiting_for_dht_connection = 1;
+    bool is_waiting_for_dht_connection = true;
 
     uint64_t last_lan_discovery = 0;
     const Broadcast_Info *broadcast = lan_discovery_init(ns);
 
-    while (1) {
+    while (true) {
         mono_time_update(mono_time);
 
         if (is_waiting_for_dht_connection && dht_isconnected(dht)) {
             printf("Connected to other bootstrap node successfully.\n");
-            is_waiting_for_dht_connection = 0;
+            is_waiting_for_dht_connection = false;
         }
 
         do_dht(dht);

@@ -2014,7 +2014,7 @@ int32_t net_getipport(const Memory *mem, const char *node, IP_Port **res, int to
     size_t count = 0;
 
     for (struct addrinfo *cur = infos; count < max_count && cur != nullptr; cur = cur->ai_next) {
-        if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
+        if (cur->ai_socktype != 0 && type > 0 && cur->ai_socktype != type) {
             continue;
         }
 
@@ -2043,7 +2043,7 @@ int32_t net_getipport(const Memory *mem, const char *node, IP_Port **res, int to
     *res = ip_port;
 
     for (struct addrinfo *cur = infos; cur != nullptr; cur = cur->ai_next) {
-        if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
+        if (cur->ai_socktype != 0 && type > 0 && cur->ai_socktype != type) {
             continue;
         }
 

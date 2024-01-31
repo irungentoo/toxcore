@@ -246,7 +246,7 @@ static int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, cons
         if (!net_family_is_unspec(friend_con->dht_ip_port.ip.family)) {
             ipp_copy.ip = friend_con->dht_ip_port.ip;
         } else {
-            friend_con->hosting_tcp_relay = 0;
+            friend_con->hosting_tcp_relay = false;
         }
     }
 
@@ -370,7 +370,7 @@ static void dht_ip_callback(void *object, int32_t number, const IP_Port *ip_port
 
     if (friend_con->hosting_tcp_relay) {
         friend_add_tcp_relay(fr_c, number, ip_port, friend_con->dht_temp_pk);
-        friend_con->hosting_tcp_relay = 0;
+        friend_con->hosting_tcp_relay = false;
     }
 }
 
@@ -424,7 +424,7 @@ static int handle_status(void *object, int id, bool status, void *userdata)
 
         friend_con->status = FRIENDCONN_STATUS_CONNECTING;
         friend_con->crypt_connection_id = -1;
-        friend_con->hosting_tcp_relay = 0;
+        friend_con->hosting_tcp_relay = false;
     }
 
     if (status_changed) {

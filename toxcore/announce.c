@@ -354,7 +354,7 @@ static int create_reply_plain_data_search_request(Announcements *announce,
                         to_auth, to_auth_length, p);
     p += TIMED_AUTH_SIZE;
 
-    *p = would_accept_store_request(announce, data_public_key);
+    *p = would_accept_store_request(announce, data_public_key) ? 1 : 0;
     ++p;
 
     Node_format nodes_list[MAX_SENT_NODES];

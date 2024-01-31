@@ -120,8 +120,8 @@ int main(int argc, char *argv[])
 
         const uint16_t port = net_htons((uint16_t)port_conv);
         uint8_t *bootstrap_key = hex_string_to_bin(argv[argvoffset + 3]);
-        int res = dht_bootstrap_from_address(m->dht, argv[argvoffset + 1],
-                                             ipv6enabled, port, bootstrap_key);
+        bool res = dht_bootstrap_from_address(m->dht, argv[argvoffset + 1],
+                                              ipv6enabled, port, bootstrap_key);
         free(bootstrap_key);
 
         if (!res) {

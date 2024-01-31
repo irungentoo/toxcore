@@ -60,10 +60,10 @@ static void sleep_milliseconds(uint32_t ms)
 
 // Uses the already existing key or creates one if it didn't exist
 //
-// returns 1 on success
-//         0 on failure - no keys were read or stored
+// returns true on success
+//         false on failure - no keys were read or stored
 
-static int manage_keys(DHT *dht, const char *keys_file_path)
+static bool manage_keys(DHT *dht, const char *keys_file_path)
 {
     enum { KEYS_SIZE = CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE };
     uint8_t keys[KEYS_SIZE];
@@ -76,7 +76,7 @@ static int manage_keys(DHT *dht, const char *keys_file_path)
 
         if (read_size != KEYS_SIZE) {
             fclose(keys_file);
-            return 0;
+            return false;
         }
 
         dht_set_self_public_key(dht, keys);
@@ -88,21 +88,21 @@ static int manage_keys(DHT *dht, const char *keys_file_path)
 
         keys_file = fopen(keys_file_path, "wb");
 
-        if (!keys_file) {
-            return 0;
+        if (keys_file == nullptr) {
+            return false;
         }
 
         const size_t write_size = fwrite(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
 
         if (write_size != KEYS_SIZE) {
             fclose(keys_file);
-            return 0;
+            return false;
         }
     }
 
     fclose(keys_file);
 
-    return 1;
+    return true;
 }
 
 // Prints public key
@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
     bool run_in_foreground = false;
 
     // Choose backend for printing command line argument parsing output based on whether the daemon is being run from a terminal
-    LOG_BACKEND log_backend = isatty(STDOUT_FILENO) ? LOG_BACKEND_STDOUT : LOG_BACKEND_SYSLOG;
+    LOG_BACKEND log_backend = isatty(STDOUT_FILENO) != 0 ? LOG_BACKEND_STDOUT : LOG_BACKEND_SYSLOG;
 
     log_open(log_backend);
     switch (handle_command_line_arguments(argc, argv, &cfg_file_path, &log_backend, &run_in_foreground)) {
@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
     free(pid_file_path);
 
     IP ip;
-    ip_init(&ip, enable_ipv6);
+    ip_init(&ip, enable_ipv6 != 0);
 
     Logger *logger = logger_new();
 
@@ -296,10 +296,10 @@ int main(int argc, char *argv[])
     Networking_Core *net = new_networking_ex(logger, mem, ns, &ip, start_port, end_port, nullptr);
 
     if (net == nullptr) {
-        if (enable_ipv6 && enable_ipv4_fallback) {
+        if (enable_ipv6 != 0 && enable_ipv4_fallback != 0) {
             log_write(LOG_LEVEL_WARNING, "Couldn't initialize IPv6 networking. Falling back to using IPv4.\n");
             enable_ipv6 = 0;
-            ip_init(&ip, enable_ipv6);
+            ip_init(&ip, enable_ipv6 != 0);
             net = new_networking_ex(logger, mem, ns, &ip, start_port, end_port, nullptr);
 
             if (net == nullptr) {
@@ -334,7 +334,7 @@ int main(int argc, char *argv[])
 
     mono_time_update(mono_time);
 
-    DHT *const dht = new_dht(logger, mem, rng, ns, mono_time, net, true, enable_lan_discovery);
+    DHT *const dht = new_dht(logger, mem, rng, ns, mono_time, net, true, enable_lan_discovery != 0);
 
     if (dht == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
@@ -394,7 +394,7 @@ int main(int argc, char *argv[])
 
     Onion *onion = new_onion(logger, mem, mono_time, rng, dht);
 
-    if (!onion) {
+    if (onion == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion. Exiting.\n");
         kill_gca(group_announce);
         kill_announcements(announce);
@@ -411,7 +411,7 @@ int main(int argc, char *argv[])
 
     Onion_Announce *onion_a = new_onion_announce(logger, mem, rng, mono_time, dht);
 
-    if (!onion_a) {
+    if (onion_a == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion Announce. Exiting.\n");
         kill_gca(group_announce);
         kill_onion(onion);
@@ -429,7 +429,7 @@ int main(int argc, char *argv[])
 
     gca_onion_init(group_announce, onion_a);
 
-    if (enable_motd) {
+    if (enable_motd != 0) {
         if (bootstrap_set_callbacks(dht_get_net(dht), DAEMON_VERSION_NUMBER, (uint8_t *)motd, strlen(motd) + 1) == 0) {
             log_write(LOG_LEVEL_INFO, "Set MOTD successfully.\n");
             free(motd);
@@ -472,7 +472,7 @@ int main(int argc, char *argv[])
 
     TCP_Server *tcp_server = nullptr;
 
-    if (enable_tcp_relay) {
+    if (enable_tcp_relay != 0) {
         if (tcp_relay_port_count == 0) {
             log_write(LOG_LEVEL_ERROR, "No TCP relay ports read. Exiting.\n");
             kill_onion_announce(onion_a);
@@ -488,7 +488,7 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        tcp_server = new_tcp_server(logger, mem, rng, ns, enable_ipv6,
+        tcp_server = new_tcp_server(logger, mem, rng, ns, enable_ipv6 != 0,
                                     tcp_relay_port_count, tcp_relay_ports,
                                     dht_get_self_secret_key(dht), onion, forwarding);
 
@@ -504,7 +504,7 @@ int main(int argc, char *argv[])
 
             assert(rlim_suggested >= rlim_min);
 
-            if (!getrlimit(RLIMIT_NOFILE, &limit)) {
+            if (getrlimit(RLIMIT_NOFILE, &limit) == 0) {
                 if (limit.rlim_cur < limit.rlim_max) {
                     // Some systems have a hard limit of over 1000000 open file descriptors, so let's cap it at something reasonable
                     // so that we don't set it to an unreasonably high number.
@@ -513,7 +513,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            if (!getrlimit(RLIMIT_NOFILE, &limit) && limit.rlim_cur < rlim_min) {
+            if (getrlimit(RLIMIT_NOFILE, &limit) == 0 && limit.rlim_cur < rlim_min) {
                 log_write(LOG_LEVEL_WARNING,
                           "Current limit on the number of files this process can open (%ju) is rather low for the proper functioning of the TCP server. "
                           "Consider raising the limit to at least %ju or the recommended %ju. "
@@ -535,7 +535,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (bootstrap_from_config(cfg_file_path, dht, enable_ipv6)) {
+    if (bootstrap_from_config(cfg_file_path, dht, enable_ipv6 != 0)) {
         log_write(LOG_LEVEL_INFO, "List of bootstrap nodes read successfully.\n");
     } else {
         log_write(LOG_LEVEL_ERROR, "Couldn't read list of bootstrap nodes in %s. Exiting.\n", cfg_file_path);
@@ -557,11 +557,11 @@ int main(int argc, char *argv[])
     uint64_t last_lan_discovery = 0;
     const uint16_t net_htons_port = net_htons(start_port);
 
-    int waiting_for_dht_connection = 1;
+    bool waiting_for_dht_connection = true;
 
     Broadcast_Info *broadcast = nullptr;
 
-    if (enable_lan_discovery) {
+    if (enable_lan_discovery != 0) {
         broadcast = lan_discovery_init(ns);
         log_write(LOG_LEVEL_INFO, "Initialized LAN discovery successfully.\n");
     }
@@ -576,25 +576,25 @@ int main(int argc, char *argv[])
     // Prevent the signal handler from being called again before it returns
     sigfillset(&sa.sa_mask);
 
-    if (sigaction(SIGINT, &sa, nullptr)) {
+    if (sigaction(SIGINT, &sa, nullptr) != 0) {
         log_write(LOG_LEVEL_WARNING, "Couldn't set signal handler for SIGINT. Continuing without the signal handler set.\n");
     }
 
-    if (sigaction(SIGTERM, &sa, nullptr)) {
+    if (sigaction(SIGTERM, &sa, nullptr) != 0) {
         log_write(LOG_LEVEL_WARNING, "Couldn't set signal handler for SIGTERM. Continuing without the signal handler set.\n");
     }
 
-    while (!caught_signal) {
+    while (caught_signal == 0) {
         mono_time_update(mono_time);
 
         do_dht(dht);
 
-        if (enable_lan_discovery && mono_time_is_timeout(mono_time, last_lan_discovery, LAN_DISCOVERY_INTERVAL)) {
+        if (enable_lan_discovery != 0 && mono_time_is_timeout(mono_time, last_lan_discovery, LAN_DISCOVERY_INTERVAL)) {
             lan_discovery_send(dht_get_net(dht), broadcast, dht_get_self_public_key(dht), net_htons_port);
             last_lan_discovery = mono_time_get(mono_time);
         }
 
-        if (enable_tcp_relay) {
+        if (enable_tcp_relay != 0) {
             do_tcp_server(tcp_server, mono_time);
         }
 
@@ -602,7 +602,7 @@ int main(int argc, char *argv[])
 
         if (waiting_for_dht_connection && dht_isconnected(dht)) {
             log_write(LOG_LEVEL_INFO, "Connected to another bootstrap node successfully.\n");
-            waiting_for_dht_connection = 0;
+            waiting_for_dht_connection = false;
         }
 
         sleep_milliseconds(30);

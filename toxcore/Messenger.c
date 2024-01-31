@@ -473,7 +473,7 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     }
 
     if (m->friend_connectionstatuschange_internal != nullptr) {
-        m->friend_connectionstatuschange_internal(m, friendnumber, 0, m->friend_connectionstatuschange_internal_userdata);
+        m->friend_connectionstatuschange_internal(m, friendnumber, false, m->friend_connectionstatuschange_internal_userdata);
     }
 
     clear_receipts(m, friendnumber);
@@ -2588,7 +2588,7 @@ static bool self_announce_group(const Messenger *m, GC_Chat *chat, Onion_Friend 
     }
 
     announce.base_announce.tcp_relays_count = (uint8_t)tcp_num;
-    announce.base_announce.ip_port_is_set = (uint8_t)(ip_port_is_set ? 1 : 0);
+    announce.base_announce.ip_port_is_set = ip_port_is_set;
 
     if (ip_port_is_set) {
         memcpy(&announce.base_announce.ip_port, &chat->self_ip_port, sizeof(IP_Port));

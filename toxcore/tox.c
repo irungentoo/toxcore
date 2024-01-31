@@ -670,7 +670,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         return nullptr;
     }
 
-    Messenger_Options m_options = {0};
+    Messenger_Options m_options = {false};
 
     bool load_savedata_sk = false;
     bool load_savedata_tox = false;

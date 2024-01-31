@@ -288,7 +288,7 @@ void tox_options_set_savedata_data(Tox_Options *options, const uint8_t *savedata
 void tox_options_default(Tox_Options *options)
 {
     if (options != nullptr) {
-        const Tox_Options default_options = {0};
+        const Tox_Options default_options = {false};
         *options = default_options;
         tox_options_set_ipv6_enabled(options, true);
         tox_options_set_udp_enabled(options, true);

@@ -200,7 +200,7 @@ typedef void m_friend_lossy_packet_cb(Messenger *m, uint32_t friend_number, uint
 typedef void m_friend_lossless_packet_cb(Messenger *m, uint32_t friend_number, uint8_t packet_id, const uint8_t *data,
         size_t length, void *user_data);
 typedef void m_friend_connectionstatuschange_internal_cb(Messenger *m, uint32_t friend_number,
-        uint8_t connection_status, void *user_data);
+        bool is_online, void *user_data);
 typedef void m_conference_invite_cb(Messenger *m, uint32_t friend_number, const uint8_t *cookie, uint16_t length,
                                     void *user_data);
 typedef void m_group_invite_cb(const Messenger *m, uint32_t friend_number, const uint8_t *invite_data, size_t length,
