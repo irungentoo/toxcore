@@ -36,10 +36,14 @@ CheckOptions:
     value:           lower_case
 
   - key:             llvmlibc-restrict-system-libc-headers.Includes
-    value:           "arpa/inet.h,assert.h,ctype.h,errno.h,fcntl.h,getopt.h,libconfig.h,limits.h,linux/if.h,math.h,netdb.h,netinet/in.h,opus.h,pthread.h,signal.h,sodium/crypto_scalarmult_curve25519.h,sodium.h,sodium/randombytes.h,stdarg.h,stdbool.h,stddef.h,stdint.h,stdio.h,stdlib.h,string.h,sys/ioctl.h,syslog.h,sys/resource.h,sys/socket.h,sys/stat.h,sys/time.h,sys/types.h,time.h,unistd.h,vpx/vp8cx.h,vpx/vp8dx.h,vpx/vpx_decoder.h,vpx/vpx_encoder.h,vpx/vpx_image.h"
+    value:           "alloca.h,arpa/inet.h,assert.h,ctype.h,errno.h,fcntl.h,getopt.h,libconfig.h,limits.h,linux/if.h,math.h,netdb.h,netinet/in.h,opus.h,pthread.h,signal.h,sodium/crypto_scalarmult_curve25519.h,sodium.h,sodium/randombytes.h,stdarg.h,stdbool.h,stddef.h,stdint.h,stdio.h,stdlib.h,string.h,sys/ioctl.h,syslog.h,sys/resource.h,sys/socket.h,sys/stat.h,sys/time.h,sys/types.h,time.h,unistd.h,vpx/vp8cx.h,vpx/vp8dx.h,vpx/vpx_decoder.h,vpx/vpx_encoder.h,vpx/vpx_image.h"
   - key:             hicpp-signed-bitwise.IgnorePositiveIntegerLiterals
     value:           true
   - key:             concurrency-mt-unsafe.FunctionSet
     value:           posix
   - key:             readability-function-cognitive-complexity.Threshold
     value:           153  # TODO(iphydf): Decrease. tox_new is the highest at the moment.
+  - key:             cppcoreguidelines-avoid-do-while.IgnoreMacros
+    value:           true
+  - key:             readability-simplify-boolean-expr.SimplifyDeMorgan
+    value:           false

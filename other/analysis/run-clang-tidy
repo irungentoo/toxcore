@@ -3,17 +3,20 @@
 CHECKS="*"
 ERRORS="*"
 
+# Can't fix this, because winsock has different HANDLE type than posix.
+# Still good to occasionally look at.
+ERRORS="$ERRORS,-google-readability-casting"
+
 # Need to investigate or disable and document these.
 # =========================================================
 
 # TODO(iphydf): Fix these.
 ERRORS="$ERRORS,-cert-err34-c"
 ERRORS="$ERRORS,-readability-suspicious-call-argument"
+CHECKS="$CHECKS,-cppcoreguidelines-avoid-goto,-hicpp-avoid-goto"
+CHECKS="$CHECKS,-bugprone-incorrect-roundings"
 
-# TODO(iphydf): Fix once cimple 0.0.19 is released.
-CHECKS="$CHECKS,-google-readability-casting"
-
-# TODO(iphydf): Fix these.
+# TODO(iphydf): Fix this by making more functions set error code enums.
 CHECKS="$CHECKS,-bugprone-switch-missing-default-case"
 
 # TODO(iphydf): We might want some of these. For the ones we don't want, add a
@@ -30,16 +33,21 @@ CHECKS="$CHECKS,-misc-no-recursion"
 CHECKS="$CHECKS,-cppcoreguidelines-avoid-non-const-global-variables"
 
 # TODO(iphydf): Probably fix these.
-CHECKS="$CHECKS,-cert-err33-c"
-CHECKS="$CHECKS,-cppcoreguidelines-avoid-magic-numbers"
-CHECKS="$CHECKS,-readability-magic-numbers"
-
-# TODO(iphydf): We're using a lot of macros for constants. Should we convert
-# all of them to enum?
-CHECKS="$CHECKS,-modernize-macro-to-enum"
+CHECKS="$CHECKS,-cert-err33-c,-cppcoreguidelines-avoid-magic-numbers,-readability-magic-numbers"
 
 # Documented disabled checks. We don't want these for sure.
 # =========================================================
+
+# We want to decay many arrays to pointers. In C, we do that all the time.
+CHECKS="$CHECKS,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-hicpp-no-array-decay"
+
+# enum{} breaks comparisons and arithmetic in C++.
+CHECKS="$CHECKS,-modernize-macro-to-enum"
+
+# For most things, we do want this, but for some we want to ensure (with msan)
+# that struct members are actually initialised with useful non-zero values.
+# Initialising them by default takes away that validation.
+CHECKS="$CHECKS,-cppcoreguidelines-pro-type-member-init,-hicpp-member-init"
 
 # https://stackoverflow.com/questions/58672959/why-does-clang-tidy-say-vsnprintf-has-an-uninitialized-va-list-argument
 CHECKS="$CHECKS,-clang-analyzer-valist.Uninitialized"
@@ -115,8 +123,7 @@ CHECKS="$CHECKS,-readability-redundant-control-flow"
 #                                      ^
 # Trip the checker, which is true, because of integer promotion, but also not
 # very helpful as a diagnostic.
-CHECKS="$CHECKS,-bugprone-narrowing-conversions"
-CHECKS="$CHECKS,-cppcoreguidelines-narrowing-conversions"
+CHECKS="$CHECKS,-bugprone-narrowing-conversions,-cppcoreguidelines-narrowing-conversions"
 
 # Mistakenly thinks that
 #   const int a = 0, b = 1;
@@ -135,13 +142,51 @@ CHECKS="$CHECKS,-cppcoreguidelines-narrowing-conversions"
 # - Turning 'a' and 'b' into pre-processor macros is the only option left, but
 #   #defines and #undefs in the middle of a function hurt the readability and
 #   are less idiomatic than simply using 'const int'.
-CHECKS="$CHECKS,-cert-dcl03-c"
-CHECKS="$CHECKS,-hicpp-static-assert"
-CHECKS="$CHECKS,-misc-static-assert"
+CHECKS="$CHECKS,-cert-dcl03-c,-hicpp-static-assert,-misc-static-assert"
 
 # Doesn't consider use of preprocessor macros as needing a header, breaking
 # struct definitions that depend on size macros from e.g. crypto_core.h.
 CHECKS="$CHECKS,-misc-include-cleaner"
+
+# A bunch of checks only valid for C++, we turn off for C.
+# =========================================================
+
+# We don't use Google's int typedefs.
+CHECKS="$CHECKS,-google-runtime-int"
+# We write C code, so we use C arrays.
+CHECKS="$CHECKS,-cppcoreguidelines-avoid-c-arrays,-hicpp-avoid-c-arrays,-modernize-avoid-c-arrays"
+# C loops are ok. This one tells us to use range-for.
+CHECKS="$CHECKS,-modernize-loop-convert"
+# No auto in C.
+CHECKS="$CHECKS,-hicpp-use-auto,-modernize-use-auto"
+# Only C style casts in C.
+CHECKS="$CHECKS,-cppcoreguidelines-pro-type-cstyle-cast"
+# We use malloc (for now), and MISRA checks this too.
+CHECKS="$CHECKS,-cppcoreguidelines-no-malloc,-hicpp-no-malloc"
+# No owning_ptr<> in C.
+CHECKS="$CHECKS,-cppcoreguidelines-owning-memory"
+# void foo(void) is good in C.
+CHECKS="$CHECKS,-modernize-redundant-void-arg"
+# No using-typedefs in C.
+CHECKS="$CHECKS,-modernize-use-using"
+# No namespaces in C.
+CHECKS="$CHECKS,-misc-use-anonymous-namespace"
+# No trailing return type in C.
+CHECKS="$CHECKS,-modernize-use-trailing-return-type"
+# No <cstdint> and friends in C.
+CHECKS="$CHECKS,-hicpp-deprecated-headers,-modernize-deprecated-headers"
+# We use varargs for logging (we could reconsider, but right now we do).
+CHECKS="$CHECKS,-cppcoreguidelines-pro-type-vararg,-hicpp-vararg,-cert-dcl50-cpp"
+# We do want to use the array index operator, even when the index is non-constant.
+CHECKS="$CHECKS,-cppcoreguidelines-pro-bounds-constant-array-index"
+# We don't want to use pointer arithmetic, but this one includes array index
+# operators, which we do want to use.
+CHECKS="$CHECKS,-cppcoreguidelines-pro-bounds-pointer-arithmetic"
+# Can't use constexpr, yet. C will have it eventually, but it'll be years
+# until we can use it across all the compilers.
+CHECKS="$CHECKS,-cppcoreguidelines-macro-usage"
+# These are all very C++ and/or LLVM specific.
+CHECKS="$CHECKS,-llvmlibc-*"
 
 set -eux
 
@@ -188,5 +233,6 @@ run() {
 }
 
 cmake . -B_build -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+sed -i -e 's/-std=c11/-xc++/' _build/compile_commands.json
 
 . other/analysis/variants.sh
