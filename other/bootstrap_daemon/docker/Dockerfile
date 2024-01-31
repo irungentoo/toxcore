@@ -48,8 +48,9 @@ RUN CC=clang cmake -B_build -H. \
 # Verify checksum from dev-built binary, so we can be sure Docker Hub doesn't
 # mess with your binaries.
 COPY other/bootstrap_daemon/docker/tox-bootstrapd.sha256 other/bootstrap_daemon/docker/
-RUN SHA256="$(sha256sum /usr/local/bin/tox-bootstrapd)" && \
-    (sha256sum -c other/bootstrap_daemon/docker/tox-bootstrapd.sha256 || \
+ARG CHECK=sha256sum
+RUN SHA256="$("$CHECK" /usr/local/bin/tox-bootstrapd)" && \
+    ("$CHECK" -c other/bootstrap_daemon/docker/tox-bootstrapd.sha256 || \
     (echo "::error file=other/bootstrap_daemon/docker/tox-bootstrapd.sha256,line=1::$SHA256" && \
      false))
 

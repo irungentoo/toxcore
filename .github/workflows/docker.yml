@@ -25,7 +25,9 @@ jobs:
         with:
           submodules: recursive
       - name: Docker Build
-        run: .github/scripts/tox-bootstrapd-docker local
+        run: .github/scripts/tox-bootstrapd-docker local "$CHECK"
+        env:
+          CHECK: "${{ contains(github.event.pull_request.title, 'chore: Release ') && 'sha256sum' || 'echo' }}"
       - name: Push latest image to DockerHub
         if: ${{ github.event_name == 'push' }}
         run: docker push toxchat/bootstrap-node:latest
