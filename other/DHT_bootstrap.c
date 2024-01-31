@@ -61,7 +61,7 @@ static bool manage_keys(DHT *dht)
     if (keys_file != nullptr) {
         /* If file was opened successfully -- load keys,
            otherwise save new keys */
-        size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
+        const size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
 
         if (read_size != KEYS_SIZE) {
             printf("Error while reading the key file\nExiting.\n");
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 
     /* let user override default by cmdline */
     bool ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
-    int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
+    const int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
 
     if (argvoffset < 0) {
         return 1;

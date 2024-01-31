@@ -769,7 +769,7 @@ int set_tcp_connection_to_status(const TCP_Connections *tcp_c, int connections_n
 
     for (uint32_t i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
         if (con_to->connections[i].tcp_connection > 0) {
-            unsigned int tcp_connections_number = con_to->connections[i].tcp_connection - 1;
+            const unsigned int tcp_connections_number = con_to->connections[i].tcp_connection - 1;
             TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 
             if (tcp_con == nullptr) {
@@ -928,7 +928,7 @@ static int reconnect_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connec
         return -1;
     }
 
-    IP_Port ip_port = tcp_con_ip_port(tcp_con->connection);
+    const IP_Port ip_port = tcp_con_ip_port(tcp_con->connection);
     uint8_t relay_pk[CRYPTO_PUBLIC_KEY_SIZE];
     memcpy(relay_pk, tcp_con_public_key(tcp_con->connection), CRYPTO_PUBLIC_KEY_SIZE);
     kill_tcp_connection(tcp_con->connection);

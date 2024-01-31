@@ -489,7 +489,7 @@ static bool add_to_closest(Group_c *g, const uint8_t *real_pk, const uint8_t *te
         comp_val = calculate_comp_value(real_pk, g->real_pk);
 
         for (unsigned int i = DESIRED_CLOSEST / 2; i < DESIRED_CLOSEST; ++i) {
-            uint64_t comp = calculate_comp_value(g->closest_peers[i].real_pk, g->real_pk);
+            const uint64_t comp = calculate_comp_value(g->closest_peers[i].real_pk, g->real_pk);
 
             if (comp > comp_val && comp > comp_d) {
                 index = i;

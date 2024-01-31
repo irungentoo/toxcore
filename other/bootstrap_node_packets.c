@@ -35,7 +35,7 @@ static int handle_info_request(void *object, const IP_Port *source, const uint8_
     uint8_t data[1 + sizeof(bootstrap_version) + MAX_MOTD_LENGTH];
     data[0] = BOOTSTRAP_INFO_PACKET_ID;
     memcpy(data + 1, &bootstrap_version, sizeof(bootstrap_version));
-    uint16_t len = 1 + sizeof(bootstrap_version) + bootstrap_motd_length;
+    const uint16_t len = 1 + sizeof(bootstrap_version) + bootstrap_motd_length;
     memcpy(data + 1 + sizeof(bootstrap_version), bootstrap_motd, bootstrap_motd_length);
 
     if (sendpacket(nc, source, data, len) == len) {

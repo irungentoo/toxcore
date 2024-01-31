@@ -51,7 +51,7 @@ void log_backend_syslog_write(LOG_LEVEL level, const char *format, va_list args)
     va_list args2;
 
     va_copy(args2, args);
-    int size = vsnprintf(nullptr, 0, format, args2);
+    const int size = vsnprintf(nullptr, 0, format, args2);
     va_end(args2);
 
     assert(size >= 0);

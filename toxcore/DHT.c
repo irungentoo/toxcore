@@ -1163,7 +1163,7 @@ static bool ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_key, cons
  */
 uint32_t addto_lists(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key)
 {
-    IP_Port ipp_copy = ip_port_normalize(ip_port);
+    const IP_Port ipp_copy = ip_port_normalize(ip_port);
 
     uint32_t used = 0;
 
@@ -1249,7 +1249,7 @@ static bool update_client_data(const Mono_Time *mono_time, Client_data *array, s
 non_null()
 static void returnedip_ports(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, const uint8_t *nodepublic_key)
 {
-    IP_Port ipp_copy = ip_port_normalize(ip_port);
+    const IP_Port ipp_copy = ip_port_normalize(ip_port);
 
     if (pk_equal(public_key, dht->self_public_key)) {
         update_client_data(dht->mono_time, dht->close_clientlist, LCLIENT_LIST, &ipp_copy, nodepublic_key, true);
@@ -2293,7 +2293,7 @@ static void punch_holes(DHT *dht, const IP *ip, const uint16_t *port_list, uint1
 
         uint16_t i;
         for (i = 0; i < MAX_PUNCHING_PORTS; ++i) {
-            uint32_t it = i + dht->friends_list[friend_num].nat.punching_index2;
+            const uint32_t it = i + dht->friends_list[friend_num].nat.punching_index2;
             const uint16_t port = 1024;
             pinging.port = net_htons(port + it);
             ping_send_request(dht->ping, &pinging, dht->friends_list[friend_num].public_key);

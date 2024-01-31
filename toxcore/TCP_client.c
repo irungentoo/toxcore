@@ -285,7 +285,7 @@ static int proxy_socks5_read_connection_response(const Logger *logger, const TCP
     } else {
         uint8_t data[4 + sizeof(IP6) + sizeof(uint16_t)];
         const TCP_Connection *con = &tcp_conn->con;
-        int ret = read_tcp_packet(logger, con->mem, con->ns, con->sock, data, sizeof(data), &con->ip_port);
+        const int ret = read_tcp_packet(logger, con->mem, con->ns, con->sock, data, sizeof(data), &con->ip_port);
 
         if (ret == -1) {
             return 0;
@@ -952,7 +952,7 @@ void do_tcp_connection(const Logger *logger, const Mono_Time *mono_time,
 
     if (tcp_connection->status == TCP_CLIENT_PROXY_SOCKS5_CONNECTING) {
         if (send_pending_data(logger, &tcp_connection->con) == 0) {
-            int ret = socks5_read_handshake_response(logger, tcp_connection);
+            const int ret = socks5_read_handshake_response(logger, tcp_connection);
 
             if (ret == -1) {
                 tcp_connection->kill_at = 0;
@@ -968,7 +968,7 @@ void do_tcp_connection(const Logger *logger, const Mono_Time *mono_time,
 
     if (tcp_connection->status == TCP_CLIENT_PROXY_SOCKS5_UNCONFIRMED) {
         if (send_pending_data(logger, &tcp_connection->con) == 0) {
-            int ret = proxy_socks5_read_connection_response(logger, tcp_connection);
+            const int ret = proxy_socks5_read_connection_response(logger, tcp_connection);
 
             if (ret == -1) {
                 tcp_connection->kill_at = 0;

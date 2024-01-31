@@ -695,7 +695,7 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
     bool direct_send_attempt = false;
 
     pthread_mutex_lock(conn->mutex);
-    IP_Port ip_port = return_ip_port_connection(c, crypt_connection_id);
+    const IP_Port ip_port = return_ip_port_connection(c, crypt_connection_id);
 
     // TODO(irungentoo): on bad networks, direct connections might not last indefinitely.
     if (!net_family_is_unspec(ip_port.ip.family)) {
@@ -1508,9 +1508,9 @@ static int send_kill_packet(Net_Crypto *c, int crypt_connection_id)
         return -1;
     }
 
-    uint8_t kill_packet = PACKET_ID_KILL;
+    const uint8_t kill_packet[1] = {PACKET_ID_KILL};
     return send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, conn->send_array.buffer_end,
-                                   &kill_packet, sizeof(kill_packet));
+                                   kill_packet, sizeof(kill_packet));
 }
 
 non_null(1) nullable(3)
@@ -1677,7 +1677,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
     }
 
     if (rtt_calc_time != 0) {
-        uint64_t rtt_time = current_time_monotonic(c->mono_time) - rtt_calc_time;
+        const uint64_t rtt_time = current_time_monotonic(c->mono_time) - rtt_calc_time;
 
         if (rtt_time < conn->rtt_time) {
             conn->rtt_time = rtt_time;
@@ -2817,8 +2817,8 @@ static void send_crypto_packets(Net_Crypto *c)
                                        1000.0);
                     n_packets += conn->last_packets_left_requested_rem;
 
-                    uint32_t num_packets = n_packets;
-                    double rem = n_packets - (double)num_packets;
+                    const uint32_t num_packets = n_packets;
+                    const double rem = n_packets - (double)num_packets;
                     conn->packets_left_requested = num_packets;
 
                     conn->last_packets_left_requested_set = temp_time;

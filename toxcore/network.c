@@ -1270,7 +1270,7 @@ Networking_Core *new_networking_ex(
 
         const int res = net_setsockopt(ns, temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
 
-        int neterror = net_error();
+        const int neterror = net_error();
         char *strerror = net_new_strerror(neterror);
 
         if (res < 0) {
@@ -1336,7 +1336,7 @@ Networking_Core *new_networking_ex(
     }
 
     Ip_Ntoa ip_str;
-    int neterror = net_error();
+    const int neterror = net_error();
     char *strerror = net_new_strerror(neterror);
     LOGGER_ERROR(log, "failed to bind socket: %d, %s IP: %s port_from: %u port_to: %u",
                  neterror, strerror, net_ip_ntoa(ip, &ip_str), port_from, port_to);

@@ -44,7 +44,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
         log_write(LOG_LEVEL_WARNING, "No '%s' setting in the configuration file.\n", NAME_TCP_RELAY_PORTS);
         log_write(LOG_LEVEL_WARNING, "Using default '%s':\n", NAME_TCP_RELAY_PORTS);
 
-        uint16_t default_ports[] = {DEFAULT_TCP_RELAY_PORTS};
+        const uint16_t default_ports[] = {DEFAULT_TCP_RELAY_PORTS};
 
         // Check to avoid calling malloc(0) later on
         // NOLINTNEXTLINE, clang-tidy: error: suspicious comparison of 'sizeof(expr)' to a constant [bugprone-sizeof-expression,-warnings-as-errors]
@@ -90,7 +90,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
         return;
     }
 
-    int config_port_count = config_setting_length(ports_array);
+    const int config_port_count = config_setting_length(ports_array);
 
     if (config_port_count == 0) {
         log_write(LOG_LEVEL_ERROR, "'%s' is empty.\n", NAME_TCP_RELAY_PORTS);
@@ -247,8 +247,8 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
             tmp_motd = DEFAULT_MOTD;
         }
 
-        size_t tmp_motd_length = strlen(tmp_motd) + 1;
-        size_t motd_length = tmp_motd_length > MAX_MOTD_LENGTH ? MAX_MOTD_LENGTH : tmp_motd_length;
+        const size_t tmp_motd_length = strlen(tmp_motd) + 1;
+        const size_t motd_length = tmp_motd_length > MAX_MOTD_LENGTH ? MAX_MOTD_LENGTH : tmp_motd_length;
         *motd = (char *)malloc(motd_length);
         snprintf(*motd, motd_length, "%s", tmp_motd);
     }
@@ -302,7 +302,7 @@ static uint8_t *bootstrap_hex_string_to_bin(const char *hex_string)
         return nullptr;
     }
 
-    size_t len = strlen(hex_string) / 2;
+    const size_t len = strlen(hex_string) / 2;
     uint8_t *ret = (uint8_t *)malloc(len);
 
     const char *pos = hex_string;

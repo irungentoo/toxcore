@@ -139,16 +139,16 @@ void getaddress(const Messenger *m, uint8_t *address)
 non_null()
 static bool send_online_packet(Messenger *m, int friendcon_id)
 {
-    uint8_t packet = PACKET_ID_ONLINE;
-    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, friendcon_id), &packet,
+    const uint8_t packet[1] = {PACKET_ID_ONLINE};
+    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, friendcon_id), packet,
                              sizeof(packet), false) != -1;
 }
 
 non_null()
 static bool send_offline_packet(Messenger *m, int friendcon_id)
 {
-    uint8_t packet = PACKET_ID_OFFLINE;
-    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, friendcon_id), &packet,
+    const uint8_t packet[1] = {PACKET_ID_OFFLINE};
+    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, friendcon_id), packet,
                              sizeof(packet), false) != -1;
 }
 

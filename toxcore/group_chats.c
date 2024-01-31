@@ -2978,7 +2978,7 @@ static int handle_gc_shared_state(const GC_Session *c, GC_Chat *chat, GC_Connect
         return 0;
     }
 
-    GC_SharedState old_shared_state = chat->shared_state;
+    const GC_SharedState old_shared_state = chat->shared_state;
     GC_SharedState new_shared_state;
 
     if (unpack_gc_shared_state(&new_shared_state, ss_data, ss_length) == 0) {
