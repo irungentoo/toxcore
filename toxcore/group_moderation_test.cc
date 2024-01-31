@@ -6,6 +6,7 @@
 #include <array>
 #include <vector>
 
+#include "DHT.h"
 #include "crypto_core.h"
 #include "crypto_core_test_util.hh"
 #include "logger.h"

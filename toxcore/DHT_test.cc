@@ -11,8 +11,12 @@
 #include "DHT_test_util.hh"
 #include "crypto_core.h"
 #include "crypto_core_test_util.hh"
+#include "logger.h"
 #include "mem_test_util.hh"
+#include "mono_time.h"
+#include "network.h"
 #include "network_test_util.hh"
+#include "test_util.hh"
 
 namespace {
 

@@ -5,6 +5,7 @@
 
 #include <array>
 
+#include "crypto_core.h"
 #include "crypto_core_test_util.hh"
 
 namespace {

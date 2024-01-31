@@ -2,8 +2,12 @@
 
 #include <gtest/gtest.h>
 
+#include "DHT.h"
+#include "crypto_core.h"
+#include "logger.h"
 #include "mem_test_util.hh"
 #include "mono_time.h"
+#include "network.h"
 
 namespace {
 

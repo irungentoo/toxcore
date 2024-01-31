@@ -4,6 +4,7 @@ FROM alpine:3.19.0
 RUN ["apk", "add", "--no-cache", \
  "bash", \
  "clang", \
+ "gtest-dev", \
  "libconfig-dev", \
  "libsodium-dev", \
  "libvpx-dev", \

@@ -4,6 +4,7 @@
 
 #include <memory>
 
+#include "crypto_core_test_util.hh"
 #include "mem_test_util.hh"
 #include "mono_time.h"
 
@@ -23,7 +24,7 @@ struct Mono_Time_Deleter {
     void operator()(Mono_Time *arr) { mono_time_free(mem_, arr); }
 
 private:
-    const Memory *mem_;
+    const Test_Memory &mem_;
 };
 
 using Mono_Time_Ptr = std::unique_ptr<Mono_Time, Mono_Time_Deleter>;
@@ -61,12 +62,11 @@ TEST(PingArray, ArraySizeMustBePowerOfTwo)
 TEST(PingArray, StoredDataCanBeRetrieved)
 {
     Test_Memory mem;
+    Test_Random rng;
 
     Ping_Array_Ptr const arr(ping_array_new(mem, 2, 1));
     Mono_Time_Ptr const mono_time(mono_time_new(mem, nullptr, nullptr), mem);
     ASSERT_NE(mono_time, nullptr);
-    const Random *rng = os_random();
-    ASSERT_NE(rng, nullptr);
 
     uint64_t const ping_id = ping_array_add(
         arr.get(), mono_time.get(), rng, std::vector<uint8_t>{1, 2, 3, 4}.data(), 4);
@@ -80,12 +80,11 @@ TEST(PingArray, StoredDataCanBeRetrieved)
 TEST(PingArray, RetrievingDataWithTooSmallOutputBufferHasNoEffect)
 {
     Test_Memory mem;
+    Test_Random rng;
 
     Ping_Array_Ptr const arr(ping_array_new(mem, 2, 1));
     Mono_Time_Ptr const mono_time(mono_time_new(mem, nullptr, nullptr), mem);
     ASSERT_NE(mono_time, nullptr);
-    const Random *rng = os_random();
-    ASSERT_NE(rng, nullptr);
 
     uint64_t const ping_id = ping_array_add(
         arr.get(), mono_time.get(), rng, (std::vector<uint8_t>{1, 2, 3, 4}).data(), 4);
@@ -103,12 +102,11 @@ TEST(PingArray, RetrievingDataWithTooSmallOutputBufferHasNoEffect)
 TEST(PingArray, ZeroLengthDataCanBeAdded)
 {
     Test_Memory mem;
+    Test_Random rng;
 
     Ping_Array_Ptr const arr(ping_array_new(mem, 2, 1));
     Mono_Time_Ptr const mono_time(mono_time_new(mem, nullptr, nullptr), mem);
     ASSERT_NE(mono_time, nullptr);
-    const Random *rng = os_random();
-    ASSERT_NE(rng, nullptr);
 
     uint8_t c = 0;
     uint64_t const ping_id = ping_array_add(arr.get(), mono_time.get(), rng, &c, sizeof(c));
@@ -133,12 +131,11 @@ TEST(PingArray, PingId0IsInvalid)
 TEST(PingArray, DataCanOnlyBeRetrievedOnce)
 {
     Test_Memory mem;
+    Test_Random rng;
 
     Ping_Array_Ptr const arr(ping_array_new(mem, 2, 1));
     Mono_Time_Ptr const mono_time(mono_time_new(mem, nullptr, nullptr), mem);
     ASSERT_NE(mono_time, nullptr);
-    const Random *rng = os_random();
-    ASSERT_NE(rng, nullptr);
 
     uint8_t c = 0;
     uint64_t const ping_id = ping_array_add(arr.get(), mono_time.get(), rng, &c, sizeof(c));
@@ -151,12 +148,11 @@ TEST(PingArray, DataCanOnlyBeRetrievedOnce)
 TEST(PingArray, PingIdMustMatchOnCheck)
 {
     Test_Memory mem;
+    Test_Random rng;
 
     Ping_Array_Ptr const arr(ping_array_new(mem, 1, 1));
     Mono_Time_Ptr const mono_time(mono_time_new(mem, nullptr, nullptr), mem);
     ASSERT_NE(mono_time, nullptr);
-    const Random *rng = os_random();
-    ASSERT_NE(rng, nullptr);
 
     uint8_t c = 0;
     uint64_t const ping_id = ping_array_add(arr.get(), mono_time.get(), rng, &c, sizeof(c));

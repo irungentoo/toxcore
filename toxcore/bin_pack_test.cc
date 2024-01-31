@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "bin_unpack.h"
+#include "logger.h"
 
 namespace {
 

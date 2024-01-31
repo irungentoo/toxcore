@@ -1,88 +1,220 @@
 #!/usr/bin/env python3
-import glob as py_glob
+import glob
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
+from typing import Iterable
 from typing import Optional
 
 LIBS = {}
+MODS = {}
+STD_MODULE = """module std [system] {
+  textual header "/usr/include/alloca.h"
+  textual header "/usr/include/assert.h"
+  textual header "/usr/include/c++/13.2.1/algorithm"
+  textual header "/usr/include/c++/13.2.1/array"
+  textual header "/usr/include/c++/13.2.1/chrono"
+  textual header "/usr/include/c++/13.2.1/cstddef"
+  textual header "/usr/include/c++/13.2.1/cstdint"
+  textual header "/usr/include/c++/13.2.1/cstdio"
+  textual header "/usr/include/c++/13.2.1/cstdlib"
+  textual header "/usr/include/c++/13.2.1/cstring"
+  textual header "/usr/include/c++/13.2.1/iomanip"
+  textual header "/usr/include/c++/13.2.1/iosfwd"
+  textual header "/usr/include/c++/13.2.1/limits"
+  textual header "/usr/include/c++/13.2.1/memory"
+  textual header "/usr/include/c++/13.2.1/ostream"
+  textual header "/usr/include/c++/13.2.1/random"
+  textual header "/usr/include/c++/13.2.1/stdlib.h"
+  textual header "/usr/include/c++/13.2.1/thread"
+  textual header "/usr/include/c++/13.2.1/type_traits"
+  textual header "/usr/include/c++/13.2.1/vector"
+  textual header "/usr/include/errno.h"
+  textual header "/usr/include/fortify/stdio.h"
+  textual header "/usr/include/fortify/string.h"
+  textual header "/usr/include/fortify/unistd.h"
+  textual header "/usr/include/limits.h"
+  textual header "/usr/include/stdarg.h"
+  textual header "/usr/include/stdbool.h"
+  textual header "/usr/include/stddef.h"
+  textual header "/usr/include/stdint.h"
+  textual header "/usr/include/sys/time.h"
+  textual header "/usr/include/sys/types.h"
+  textual header "/usr/include/time.h"
+}
+module "//c-toxcore/third_party:cmp" {
+  header "third_party/cmp/cmp.h"
+  use std
+}
+module "//c-toxcore/toxencryptsave:defines" {
+  header "toxencryptsave/defines.h"
+}
+module "@com_google_googletest//:gtest" {
+  textual header "/usr/include/gmock/gmock.h"
+  textual header "/usr/include/gtest/gtest.h"
+  use std
+}
+module "@libsodium" {
+  textual header "/usr/include/sodium.h"
+}
+module "@pthread" {
+  textual header "/usr/include/pthread.h"
+}
+module "@psocket" {
+  textual header "/usr/include/arpa/inet.h"
+  textual header "/usr/include/fcntl.h"
+  textual header "/usr/include/fortify/sys/socket.h"
+  textual header "/usr/include/linux/if.h"
+  textual header "/usr/include/netdb.h"
+  textual header "/usr/include/netinet/in.h"
+  textual header "/usr/include/sys/epoll.h"
+  textual header "/usr/include/sys/ioctl.h"
+}
+"""
 
 
-def load(bzl: str, *syms: str) -> None:
-    pass
+@dataclass
+class Context:
+    pkg: str
+    pkg_prefix: str
 
+    def bzl_load(self, bzl: str, *syms: str) -> None:
+        pass
 
-def exports_files(srcs: list[str],
-                  visibility: Optional[list[str]] = None) -> None:
-    pass
+    def bzl_exports_files(
+            self,
+            srcs: list[str],
+            visibility: Optional[list[str]] = None,
+    ) -> None:
+        pass
 
+    def bzl_cc_library(
+            self,
+            name: str,
+            srcs: Iterable[str] = tuple(),
+            hdrs: Iterable[str] = tuple(),
+            deps: Iterable[str] = tuple(),
+            visibility: Iterable[str] = tuple(),
+            testonly: bool = False,
+            copts: Iterable[str] = tuple(),
+    ) -> None:
+        LIBS[name] = {
+            "srcs":
+            srcs,
+            "deps": [
+                f"{self.pkg_prefix}{dep}" if dep[0] == ":" else dep
+                for dep in deps
+            ],
+            "hdrs":
+            hdrs,
+        }
 
-def cc_library(name: str, **kwargs: list[str]) -> None:
-    LIBS[name] = kwargs
+    def bzl_cc_test(
+            self,
+            name: str,
+            srcs: Iterable[str] = tuple(),
+            hdrs: Iterable[str] = tuple(),
+            deps: Iterable[str] = tuple(),
+            **kwargs: list[str],
+    ) -> None:
+        LIBS[name] = {
+            "srcs":
+            srcs,
+            "deps": [
+                f"{self.pkg_prefix}{dep}" if dep[0] == ":" else dep
+                for dep in deps
+            ],
+            "hdrs":
+            hdrs,
+        }
 
+    def bzl_cc_fuzz_test(self, name: str, **kwargs: list[str]) -> None:
+        pass
 
-def cc_test(name: str, **kwargs: list[str]) -> None:
-    pass
+    def bzl_select(self, selector: dict[str, list[str]]) -> list[str]:
+        return selector["//tools/config:linux"]
 
+    def bzl_glob(self, include: list[str]) -> list[str]:
+        return [
+            f[len(self.pkg) + 1:] for p in include
+            for f in glob.glob(os.path.join(self.pkg, p))
+        ]
 
-def cc_fuzz_test(name: str, **kwargs: list[str]) -> None:
-    pass
+    def bzl_alias(self, name: str, actual: str, visibility: list[str]) -> None:
+        pass
 
-
-def select(selector: dict[str, list[str]]) -> list[str]:
-    return selector["//tools/config:linux"]
-
-
-def glob(include: list[str]) -> list[str]:
-    return [
-        f[len("toxcore/"):] for p in include
-        for f in py_glob.glob(os.path.join("toxcore", p))
-    ]
-
-
-def alias(name: str, actual: str, visibility: list[str]) -> None:
-    pass
-
-
-def sh_library(name: str, **kwargs: list[str]) -> None:
-    pass
+    def bzl_sh_library(self, name: str, **kwargs: list[str]) -> None:
+        pass
 
 
 def main() -> None:
-    with open("toxcore/BUILD.bazel", "r") as fh:
-        exec(fh.read())
+    srcs: list[str] = []
+    for pkg in ("toxcore", ):
+        # TODO(iphydf): Why does this break everything?
+        # ctx = Context(pkg, "//c-toxcore/{pkg}")
+        ctx = Context(pkg, "")
+        with open(os.path.join(pkg, "BUILD.bazel"), "r") as fh:
+            exec(
+                fh.read(),
+                {
+                    "load": ctx.bzl_load,
+                    "exports_files": ctx.bzl_exports_files,
+                    "cc_library": ctx.bzl_cc_library,
+                    "cc_test": ctx.bzl_cc_test,
+                    "cc_fuzz_test": ctx.bzl_cc_fuzz_test,
+                    "select": ctx.bzl_select,
+                    "glob": ctx.bzl_glob,
+                    "alias": ctx.bzl_alias,
+                    "sh_library": ctx.bzl_sh_library,
+                },
+            )
 
-    with open("module.modulemap", "w") as fh:
+        with open("module.modulemap", "w") as fh:
+            fh.write(STD_MODULE)
+            for name, lib in LIBS.items():
+                fh.write(f'module "{ctx.pkg_prefix}:{name}"' + " {\n")
+                for hdr in lib["hdrs"]:
+                    fh.write(f'  header "{pkg}/{hdr}"\n')
+                fh.write(f"  use std\n")
+                for dep in lib.get("deps", []):
+                    fh.write(f'  use "{dep}"\n')
+                fh.write("}\n")
+
         for name, lib in LIBS.items():
-            fh.write("module " + name + " {\n")
-            for hdr in lib["hdrs"]:
-                fh.write(f'  header "toxcore/{hdr}"\n')
-            for dep in lib.get("deps", []):
-                if dep[0] == ":":
-                    fh.write(f"  use {dep[1:]}\n")
-            fh.write("}\n")
-
-    srcs = sorted(
-        set(
-            os.path.join("toxcore", src) for lib in LIBS.values()
-            for src in lib.get("srcs", [])))
-    for src in srcs:
+            for src in lib.get("srcs", []):
+                MODS[os.path.join(pkg, src)] = name
+        srcs.extend(
+            os.path.join(pkg, src)  # just within a package for now
+            for lib in LIBS.values() for src in lib.get("srcs", []))
+    # subprocess.run(["cat", "module.modulemap"], check=True)
+    for src in sorted(
+            set(srcs) - set([
+                # TODO(iphydf): Figure out what's wrong here.
+                "toxcore/crypto_core_test.cc",
+                "toxcore/group_announce_test.cc",
+                "toxcore/group_moderation_test.cc",
+                "toxcore/mono_time_test.cc",
+                "toxcore/network_test.cc",
+                "toxcore/ping_array_test.cc",
+                "toxcore/util_test.cc",
+            ])):
         print(f"Validating {src}", file=sys.stderr)
         subprocess.run(
             [
                 "clang",
-                "-xc++",
                 "-fsyntax-only",
+                "-xc++",
                 "-Wall",
                 "-Werror",
                 "-Wno-missing-braces",
+                "-DTCP_SERVER_USE_EPOLL",
                 "-std=c++23",
                 "-fdiagnostics-color=always",
                 "-fmodules",
-                # TODO(iphydf): Fix all the other errors.
-                # "-fmodules-strict-decluse",
-                "-fmodules-decluse",
+                "-fmodules-strict-decluse",
                 "-fmodule-map-file=module.modulemap",
+                f"-fmodule-name={ctx.pkg_prefix}:{MODS[src]}",
                 src,
             ],
             check=True,
