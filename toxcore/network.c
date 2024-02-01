@@ -335,8 +335,6 @@ static void fill_addr6(const IP6 *ip, struct in6_addr *addr)
 #define INADDR_LOOPBACK 0x7f000001
 #endif /* !defined(INADDR_LOOPBACK) */
 
-static const IP empty_ip = {{0}};
-
 IP4 get_ip4_broadcast(void)
 {
     const IP4 ip4_broadcast = { INADDR_BROADCAST };
@@ -361,7 +359,7 @@ IP4 get_ip4_loopback(void)
 IP6 get_ip6_loopback(void)
 {
     /* in6addr_loopback isn't available everywhere, so we do it ourselves. */
-    IP6 loopback = empty_ip.ip.v6;
+    IP6 loopback = {{0}};
     loopback.uint8[15] = 1;
     return loopback;
 }
@@ -1492,6 +1490,8 @@ int ipport_cmp_handler(const void *a, const void *b, size_t size)
     return cmp_uint(ipp_a->port, ipp_b->port);
 }
 
+static const IP empty_ip = {{0}};
+
 /** nulls out ip */
 void ip_reset(IP *ip)
 {
@@ -1502,6 +1502,8 @@ void ip_reset(IP *ip)
     *ip = empty_ip;
 }
 
+static const IP_Port empty_ip_port = {{{0}}};
+
 /** nulls out ip_port */
 void ipport_reset(IP_Port *ipport)
 {
@@ -1509,7 +1511,6 @@ void ipport_reset(IP_Port *ipport)
         return;
     }
 
-    const IP_Port empty_ip_port = {{{0}}};
     *ipport = empty_ip_port;
 }
 
@@ -1520,7 +1521,7 @@ void ip_init(IP *ip, bool ipv6enabled)
         return;
     }
 
-    *ip = empty_ip;
+    ip_reset(ip);
     ip->family = ipv6enabled ? net_family_ipv6() : net_family_ipv4();
 }
 
