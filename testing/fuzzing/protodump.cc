@@ -33,7 +33,7 @@
 #include "../../toxcore/tox_private.h"
 #include "../../toxcore/tox_struct.h"
 #include "../../toxcore/util.h"
-#include "fuzz_support.h"
+#include "fuzz_support.hh"
 
 namespace {
 

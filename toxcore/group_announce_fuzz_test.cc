@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#include "../testing/fuzzing/fuzz_support.h"
+#include "../testing/fuzzing/fuzz_support.hh"
 #include "mem_test_util.hh"
 
 namespace {

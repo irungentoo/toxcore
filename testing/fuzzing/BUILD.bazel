@@ -4,10 +4,10 @@ load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
 cc_library(
     name = "fuzz_support",
     srcs = [
-        "func_conversion.h",
+        "func_conversion.hh",
         "fuzz_support.cc",
     ],
-    hdrs = ["fuzz_support.h"],
+    hdrs = ["fuzz_support.hh"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         "//c-toxcore/toxcore:crypto_core",
@@ -18,7 +18,7 @@ cc_library(
 
 cc_library(
     name = "fuzz_tox",
-    hdrs = ["fuzz_tox.h"],
+    hdrs = ["fuzz_tox.hh"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [":fuzz_support"],
 )

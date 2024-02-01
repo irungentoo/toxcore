@@ -5,8 +5,8 @@
 #include <memory>
 #include <optional>
 
-#include "../testing/fuzzing/fuzz_support.h"
-#include "../testing/fuzzing/fuzz_tox.h"
+#include "../testing/fuzzing/fuzz_support.hh"
+#include "../testing/fuzzing/fuzz_tox.hh"
 
 namespace {
 

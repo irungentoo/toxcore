@@ -4,8 +4,8 @@
 #include "../../toxcore/tox.h"
 #include "../../toxcore/tox_dispatch.h"
 #include "../../toxcore/tox_events.h"
-#include "fuzz_support.h"
-#include "fuzz_tox.h"
+#include "fuzz_support.hh"
+#include "fuzz_tox.hh"
 
 namespace {
 

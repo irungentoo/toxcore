@@ -19,7 +19,7 @@
 
 struct Fuzz_Data {
     static constexpr bool DEBUG = false;
-    static constexpr std::size_t TRACE_TRAP = -1; // 579;
+    static constexpr std::size_t TRACE_TRAP = -1;  // 579;
 
 private:
     const uint8_t *data_;
@@ -303,7 +303,8 @@ struct Record_System : System {
             if (recording_.size() == Fuzz_Data::TRACE_TRAP) {
                 __asm__("int $3");
             }
-            std::printf("%s: produce@%zu(bool %s)\n", name_, recording_.size(), byte ? "true" : "false");
+            std::printf(
+                "%s: produce@%zu(bool %s)\n", name_, recording_.size(), byte ? "true" : "false");
         }
         recording_.push_back(byte);
     }

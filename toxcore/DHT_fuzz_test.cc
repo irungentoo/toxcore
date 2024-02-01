@@ -5,7 +5,7 @@
 #include <cstring>
 #include <vector>
 
-#include "../testing/fuzzing/fuzz_support.h"
+#include "../testing/fuzzing/fuzz_support.hh"
 
 namespace {
 

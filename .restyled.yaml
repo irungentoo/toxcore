@@ -1,20 +1,21 @@
 ---
 exclude:
-  - "**/*.api.h"
-    # shfmt doesn't support this file
+  # shfmt doesn't support this file
   - "other/analysis/run-clang-tidy"
 
 restylers:
   - astyle:
       arguments: ["--options=other/astyle/astylerc"]
       include:
-        - "!**/*.cc"
+        - "**/*.c"
+        - "**/*.h"
   - autopep8
   - black
   - clang-format:
       image: restyled/restyler-clang-format:13.0.1
       include:
         - "**/*.cc"
+        - "**/*.hh"
   - prettier-yaml
   - reorder-python-imports
   - shellharden
