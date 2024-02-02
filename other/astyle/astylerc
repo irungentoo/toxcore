@@ -11,11 +11,13 @@
 # Padding Options
 --pad-header
 --pad-oper
+# Not supported in restyled's astyle.
 #--unpad-brackets
 --unpad-paren
 --align-pointer=name
 --align-reference=name
-#--squeeze-lines=1
+# Disabled because it causes very large changes and it's unclear whether we
+# want all of those.
 #--squeeze-ws
 
 # Formatting Options
