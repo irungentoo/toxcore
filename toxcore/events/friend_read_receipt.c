@@ -14,13 +14,11 @@
 #include "../tox.h"
 #include "../tox_events.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Friend_Read_Receipt {
     uint32_t friend_number;
@@ -86,7 +84,6 @@ static bool tox_event_friend_read_receipt_unpack_into(
     return bin_unpack_u32(bu, &event->friend_number)
            && bin_unpack_u32(bu, &event->message_id);
 }
-
 
 /*****************************************************
  *
@@ -171,16 +168,15 @@ static Tox_Event_Friend_Read_Receipt *tox_event_friend_read_receipt_alloc(void *
     return friend_read_receipt;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_friend_read_receipt(Tox *tox, uint32_t friend_number, uint32_t message_id,
-        void *user_data)
+void tox_events_handle_friend_read_receipt(
+    Tox *tox, uint32_t friend_number, uint32_t message_id,
+    void *user_data)
 {
     Tox_Event_Friend_Read_Receipt *friend_read_receipt = tox_event_friend_read_receipt_alloc(user_data);
 

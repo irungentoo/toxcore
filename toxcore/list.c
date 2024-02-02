@@ -30,8 +30,7 @@
  * - some considerations since the array size is never perfect
  */
 
-static int32_t
-list_index(uint32_t i)
+static int32_t list_index(uint32_t i)
 {
     return ~i;
 }
@@ -134,7 +133,6 @@ static bool resize(BS_List *list, uint32_t new_size)
 
     return true;
 }
-
 
 int bs_list_init(BS_List *list, uint32_t element_size, uint32_t initial_capacity, bs_list_cmp_cb *cmp_callback)
 {

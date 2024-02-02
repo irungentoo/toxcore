@@ -150,7 +150,6 @@ static void tox_file_chunk_request(Tox *tox, const Tox_Event_File_Chunk_Request 
     sending_pos += length;
 }
 
-
 static uint8_t num;
 static bool file_recv;
 static void write_file(Tox *tox, const Tox_Event_File_Recv_Chunk *event, void *user_data)

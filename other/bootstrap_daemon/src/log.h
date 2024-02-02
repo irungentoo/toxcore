@@ -47,5 +47,4 @@ bool log_close(void);
  */
 bool log_write(LOG_LEVEL level, const char *format, ...) GNU_PRINTF(2, 3);
 
-
 #endif // C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_LOG_H

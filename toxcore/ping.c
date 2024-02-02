@@ -28,7 +28,6 @@
 /** Ping newly announced nodes to ping per TIME_TO_PING seconds*/
 #define TIME_TO_PING 2
 
-
 struct Ping {
     const Mono_Time *mono_time;
     const Random *rng;
@@ -38,7 +37,6 @@ struct Ping {
     Node_format to_ping[MAX_TO_PING];
     uint64_t    last_to_ping;
 };
-
 
 #define PING_PLAIN_SIZE (1 + sizeof(uint64_t))
 #define DHT_PING_SIZE (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + PING_PLAIN_SIZE + CRYPTO_MAC_SIZE)
@@ -53,7 +51,6 @@ void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key
     if (pk_equal(public_key, dht_get_self_public_key(ping->dht))) {
         return;
     }
-
 
     // generate key to encrypt ping_id with recipient privkey
     const uint8_t *shared_key = dht_get_shared_key_sent(ping->dht, public_key);
@@ -74,7 +71,6 @@ void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key
     pk[0] = NET_PACKET_PING_REQUEST;
     pk_copy(pk + 1, dht_get_self_public_key(ping->dht));     // Our pubkey
     random_nonce(ping->rng, pk + 1 + CRYPTO_PUBLIC_KEY_SIZE); // Generate new nonce
-
 
     rc = encrypt_data_symmetric(shared_key,
                                 pk + 1 + CRYPTO_PUBLIC_KEY_SIZE,
@@ -302,7 +298,6 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, const IP_Port *ip_port)
     return -1;
 }
 
-
 /** @brief Ping all the valid nodes in the to_ping list every TIME_TO_PING seconds.
  * This function must be run at least once every TIME_TO_PING seconds.
  */
@@ -335,7 +330,6 @@ void ping_iterate(Ping *ping)
         ping->last_to_ping = mono_time_get(ping->mono_time);
     }
 }
-
 
 Ping *ping_new(const Memory *mem, const Mono_Time *mono_time, const Random *rng, DHT *dht)
 {

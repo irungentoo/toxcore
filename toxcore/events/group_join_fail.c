@@ -16,13 +16,11 @@
 #include "../tox_pack.h"
 #include "../tox_unpack.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Group_Join_Fail {
     uint32_t group_number;
@@ -88,7 +86,6 @@ static bool tox_event_group_join_fail_unpack_into(
     return bin_unpack_u32(bu, &event->group_number)
            && tox_group_join_fail_unpack(&event->fail_type, bu);
 }
-
 
 /*****************************************************
  *
@@ -173,16 +170,15 @@ static Tox_Event_Group_Join_Fail *tox_event_group_join_fail_alloc(void *user_dat
     return group_join_fail;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_group_join_fail(Tox *tox, uint32_t group_number, Tox_Group_Join_Fail fail_type,
-        void *user_data)
+void tox_events_handle_group_join_fail(
+    Tox *tox, uint32_t group_number, Tox_Group_Join_Fail fail_type,
+    void *user_data)
 {
     Tox_Event_Group_Join_Fail *group_join_fail = tox_event_group_join_fail_alloc(user_data);
 

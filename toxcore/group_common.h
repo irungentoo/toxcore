@@ -343,7 +343,7 @@ typedef void gc_private_message_cb(const Messenger *m, uint32_t group_number, ui
 typedef void gc_custom_packet_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id, const uint8_t *data,
                                  size_t length, void *user_data);
 typedef void gc_custom_private_packet_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id,
-                                         const uint8_t *data, size_t length, void *user_data);
+        const uint8_t *data, size_t length, void *user_data);
 typedef void gc_moderation_cb(const Messenger *m, uint32_t group_number, uint32_t source_peer_number,
                               uint32_t target_peer_number, unsigned int mod_type, void *user_data);
 typedef void gc_nick_change_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id, const uint8_t *name,

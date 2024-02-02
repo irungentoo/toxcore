@@ -23,7 +23,6 @@
 #define TEST_STOP_RESUME_PAYLOAD 1
 #define TEST_PAUSE_RESUME_SEND 1
 
-
 #define ck_assert_call_control(a, b, c) do { \
     Toxav_Err_Call_Control cc_err; \
     bool ok = toxav_call_control(a, b, c, &cc_err); \
@@ -33,7 +32,6 @@
     ck_assert(ok); \
     ck_assert(cc_err == TOXAV_ERR_CALL_CONTROL_OK); \
 } while (0)
-
 
 typedef struct {
     bool incoming;
@@ -45,7 +43,6 @@ static void clear_call_control(CallControl *cc)
     const CallControl empty = {0};
     *cc = empty;
 }
-
 
 /**
  * Callbacks
@@ -88,7 +85,6 @@ static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const 
         ck_assert(tox_friend_add_norequest(m, public_key, nullptr) != (uint32_t) -1);
     }
 }
-
 
 /**
  * Iterate helper
@@ -206,7 +202,6 @@ static void test_av_flows(void)
 
         c_sleep(20);
     }
-
 
     {
         Toxav_Err_New error;

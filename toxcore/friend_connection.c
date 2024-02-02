@@ -67,7 +67,6 @@ struct Friend_Conn {
 
 static const Friend_Conn empty_friend_conn = {0};
 
-
 struct Friend_Connections {
     const Mono_Time *mono_time;
     const Logger *logger;
@@ -106,7 +105,6 @@ const IP_Port *friend_conn_get_dht_ip_port(const Friend_Conn *fc)
     return &fc->dht_ip_port;
 }
 
-
 /**
  * @retval true if the friendcon_id is valid.
  * @retval false if the friendcon_id is not valid.
@@ -118,7 +116,6 @@ static bool friendconn_id_valid(const Friend_Connections *fr_c, int friendcon_id
            fr_c->conns != nullptr &&
            fr_c->conns[friendcon_id].status != FRIENDCONN_STATUS_NONE;
 }
-
 
 /** @brief Set the size of the friend connections list to num.
  *
@@ -858,7 +855,6 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
     return wipe_friend_conn(fr_c, friendcon_id);
 }
 
-
 /** @brief Set friend request callback.
  *
  * This function will be called every time a friend request packet is received.
@@ -912,8 +908,8 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
 
 /** Create new friend_connections instance. */
 Friend_Connections *new_friend_connections(
-        const Logger *logger, const Mono_Time *mono_time, const Network *ns,
-        Onion_Client *onion_c, bool local_discovery_enabled)
+    const Logger *logger, const Mono_Time *mono_time, const Network *ns,
+    Onion_Client *onion_c, bool local_discovery_enabled)
 {
     if (onion_c == nullptr) {
         return nullptr;

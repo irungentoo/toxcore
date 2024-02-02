@@ -58,16 +58,13 @@ struct TCP_Connections {
     uint16_t onion_num_conns;
 };
 
-
 static const TCP_Connection_to empty_tcp_connection_to = {0};
 static const TCP_con empty_tcp_con = {0};
-
 
 const uint8_t *tcp_connections_public_key(const TCP_Connections *tcp_c)
 {
     return tcp_c->self_public_key;
 }
-
 
 uint32_t tcp_connections_count(const TCP_Connections *tcp_c)
 {
@@ -119,7 +116,6 @@ static int realloc_tcp_con(const Memory *mem, TCP_con **array, size_t num)
 
     return 0;
 }
-
 
 /**
  * Return true if the connections_number is valid.
@@ -1020,8 +1016,8 @@ static int unsleep_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connecti
     }
 
     tcp_con->connection = new_tcp_connection(
-            tcp_c->logger, tcp_c->mem, tcp_c->mono_time, tcp_c->rng, tcp_c->ns, &tcp_con->ip_port,
-            tcp_con->relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key, &tcp_c->proxy_info);
+                              tcp_c->logger, tcp_c->mem, tcp_c->mono_time, tcp_c->rng, tcp_c->ns, &tcp_con->ip_port,
+                              tcp_con->relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key, &tcp_c->proxy_info);
 
     if (tcp_con->connection == nullptr) {
         kill_tcp_relay_connection(tcp_c, tcp_connections_number);
@@ -1318,8 +1314,8 @@ static int add_tcp_relay_instance(TCP_Connections *tcp_c, const IP_Port *ip_port
     TCP_con *tcp_con = &tcp_c->tcp_connections[tcp_connections_number];
 
     tcp_con->connection = new_tcp_connection(
-            tcp_c->logger, tcp_c->mem, tcp_c->mono_time, tcp_c->rng, tcp_c->ns, &ipp_copy,
-            relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key, &tcp_c->proxy_info);
+                              tcp_c->logger, tcp_c->mem, tcp_c->mono_time, tcp_c->rng, tcp_c->ns, &ipp_copy,
+                              relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key, &tcp_c->proxy_info);
 
     if (tcp_con->connection == nullptr) {
         return -1;

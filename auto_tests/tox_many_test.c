@@ -24,7 +24,6 @@ static void accept_friend_request(Tox *m, const Tox_Event_Friend_Request *event,
     }
 }
 
-
 #define TCP_TEST_NUM_TOXES 90
 #define TCP_TEST_NUM_FRIENDS 50
 

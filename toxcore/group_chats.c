@@ -1810,7 +1810,6 @@ non_null() static bool send_peer_mod_list(const GC_Chat *chat, GC_Connection *gc
 non_null() static bool send_peer_sanctions_list(const GC_Chat *chat, GC_Connection *gconn);
 non_null() static bool send_peer_topic(const GC_Chat *chat, GC_Connection *gconn);
 
-
 /** @brief Creates a sync announce for peer designated by `gconn` and puts it in `announce`, which
  * must be zeroed by the caller.
  *
@@ -2023,7 +2022,6 @@ static int handle_gc_sync_request(GC_Chat *chat, uint32_t peer_number, const uin
 
 non_null() static void copy_self(const GC_Chat *chat, GC_Peer *peer);
 non_null() static bool send_gc_peer_info_request(const GC_Chat *chat, GC_Connection *gconn);
-
 
 /** @brief Shares our TCP relays with peer and adds shared relays to our connection with them.
  *
@@ -4398,7 +4396,6 @@ static int handle_gc_set_observer(const GC_Session *c, GC_Chat *chat, uint32_t p
         return -2;
     }
 
-
     if (ret == 1) {
         return 0;
     }
@@ -5053,8 +5050,6 @@ int gc_send_custom_private_packet(const GC_Chat *chat, bool lossless, uint32_t p
 
     return ret ? 0 : -5;
 }
-
-
 
 /** @brief Handles a custom private packet.
  *
@@ -7333,7 +7328,7 @@ static int get_new_group_index(GC_Session *c)
 
     c->chats[new_index] = empty_gc_chat;
 
-    for (size_t i = 0; i < sizeof(c->chats[new_index].saved_invites)/sizeof(*c->chats[new_index].saved_invites); ++i) {
+    for (size_t i = 0; i < sizeof(c->chats[new_index].saved_invites) / sizeof(*c->chats[new_index].saved_invites); ++i) {
         c->chats[new_index].saved_invites[i] = -1;
     }
 
@@ -7849,7 +7844,6 @@ int gc_invite_friend(const GC_Session *c, GC_Chat *chat, int32_t friend_number,
 
     memcpy(packet + length, chat->self_public_key, ENC_PUBLIC_KEY_SIZE);
     length += ENC_PUBLIC_KEY_SIZE;
-
 
     memcpy(packet + length, chat->shared_state.group_name, group_name_length);
     length += group_name_length;

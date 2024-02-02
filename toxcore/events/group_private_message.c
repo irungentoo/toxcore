@@ -18,13 +18,11 @@
 #include "../tox_pack.h"
 #include "../tox_unpack.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Group_Private_Message {
     uint32_t group_number;
@@ -150,7 +148,6 @@ static bool tox_event_group_private_message_unpack_into(
            && bin_unpack_bin(bu, &event->message, &event->message_length);
 }
 
-
 /*****************************************************
  *
  * :: new/free/add/get/size/unpack
@@ -234,16 +231,15 @@ static Tox_Event_Group_Private_Message *tox_event_group_private_message_alloc(vo
     return group_private_message;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_group_private_message(Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Message_Type type, const uint8_t *message, size_t length,
-        void *user_data)
+void tox_events_handle_group_private_message(
+    Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Message_Type type, const uint8_t *message, size_t length,
+    void *user_data)
 {
     Tox_Event_Group_Private_Message *group_private_message = tox_event_group_private_message_alloc(user_data);
 

@@ -33,7 +33,6 @@
 
 #define KEY_REFRESH_INTERVAL (2 * 60 * 60)
 
-
 // Settings for the shared key cache
 #define MAX_KEYS_PER_SLOT 4
 #define KEYS_TIMEOUT 600
@@ -80,8 +79,8 @@ static int ip_unpack_from_bytes(IP *target, const uint8_t *data, unsigned int da
     }
 
     const bool valid = disable_family_check ||
-                 net_family_is_ipv4(target->family) ||
-                 net_family_is_ipv6(target->family);
+                       net_family_is_ipv4(target->family) ||
+                       net_family_is_ipv6(target->family);
 
     return valid ? 0 : -1;
 }
@@ -108,7 +107,6 @@ static int ipport_unpack(IP_Port *target, const uint8_t *data, unsigned int data
     memcpy(&target->port, data + SIZE_IP, SIZE_PORT);
     return 0;
 }
-
 
 /** @brief Create a new onion path.
  *
@@ -357,7 +355,7 @@ static int handle_send_initial(void *object, const IP_Port *source, const uint8_
     }
 
     const int len = decrypt_data_symmetric(
-            shared_key, &packet[nonce_start], &packet[ciphertext_start], ciphertext_length, plain);
+                        shared_key, &packet[nonce_start], &packet[ciphertext_start], ciphertext_length, plain);
 
     if (len != plaintext_length) {
         LOGGER_TRACE(onion->log, "decrypt failed: %d != %d", len, plaintext_length);
@@ -553,7 +551,6 @@ static int handle_send_2(void *object, const IP_Port *source, const uint8_t *pac
     return 0;
 }
 
-
 non_null()
 static int handle_recv_3(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
@@ -578,7 +575,7 @@ static int handle_recv_3(void *object, const IP_Port *source, const uint8_t *pac
 
     uint8_t plain[SIZE_IPPORT + RETURN_2];
     const int len = decrypt_data_symmetric(onion->secret_symmetric_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE,
-                                     SIZE_IPPORT + RETURN_2 + CRYPTO_MAC_SIZE, plain);
+                                           SIZE_IPPORT + RETURN_2 + CRYPTO_MAC_SIZE, plain);
 
     if ((uint32_t)len != sizeof(plain)) {
         return 1;
@@ -631,7 +628,7 @@ static int handle_recv_2(void *object, const IP_Port *source, const uint8_t *pac
 
     uint8_t plain[SIZE_IPPORT + RETURN_1];
     const int len = decrypt_data_symmetric(onion->secret_symmetric_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE,
-                                     SIZE_IPPORT + RETURN_1 + CRYPTO_MAC_SIZE, plain);
+                                           SIZE_IPPORT + RETURN_1 + CRYPTO_MAC_SIZE, plain);
 
     if ((uint32_t)len != sizeof(plain)) {
         return 1;
@@ -683,7 +680,7 @@ static int handle_recv_1(void *object, const IP_Port *source, const uint8_t *pac
 
     uint8_t plain[SIZE_IPPORT];
     const int len = decrypt_data_symmetric(onion->secret_symmetric_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE,
-                                     SIZE_IPPORT + CRYPTO_MAC_SIZE, plain);
+                                           SIZE_IPPORT + CRYPTO_MAC_SIZE, plain);
 
     if ((uint32_t)len != SIZE_IPPORT) {
         return 1;
@@ -744,13 +741,12 @@ Onion *new_onion(const Logger *log, const Memory *mem, const Mono_Time *mono_tim
     onion->shared_keys_3 = shared_key_cache_new(log, mono_time, mem, secret_key, KEYS_TIMEOUT, MAX_KEYS_PER_SLOT);
 
     if (onion->shared_keys_1 == nullptr ||
-        onion->shared_keys_2 == nullptr ||
-        onion->shared_keys_3 == nullptr) {
+            onion->shared_keys_2 == nullptr ||
+            onion->shared_keys_3 == nullptr) {
         // cppcheck-suppress mismatchAllocDealloc
         kill_onion(onion);
         return nullptr;
     }
-
 
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_INITIAL, &handle_send_initial, onion);
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_1, &handle_send_1, onion);

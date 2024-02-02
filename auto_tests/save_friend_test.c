@@ -75,7 +75,7 @@ int main(void)
     ck_assert(tox2 != nullptr);
 
     tox_events_init(tox1);
-    Tox_Dispatch* dispatch1 = tox_dispatch_new(nullptr);
+    Tox_Dispatch *dispatch1 = tox_dispatch_new(nullptr);
     ck_assert(dispatch1 != nullptr);
 
     printf("bootstrapping tox2 off tox1\n");

@@ -168,7 +168,7 @@ bool bin_unpack_u16_b(Bin_Unpack *bu, uint16_t *val)
     uint8_t hi = 0;
     uint8_t lo = 0;
     if (!(bin_unpack_u08_b(bu, &hi)
-          && bin_unpack_u08_b(bu, &lo))) {
+            && bin_unpack_u08_b(bu, &lo))) {
         return false;
     }
     *val = ((uint16_t)hi << 8) | lo;
@@ -180,7 +180,7 @@ bool bin_unpack_u32_b(Bin_Unpack *bu, uint32_t *val)
     uint16_t hi = 0;
     uint16_t lo = 0;
     if (!(bin_unpack_u16_b(bu, &hi)
-          && bin_unpack_u16_b(bu, &lo))) {
+            && bin_unpack_u16_b(bu, &lo))) {
         return false;
     }
     *val = ((uint32_t)hi << 16) | lo;
@@ -192,7 +192,7 @@ bool bin_unpack_u64_b(Bin_Unpack *bu, uint64_t *val)
     uint32_t hi = 0;
     uint32_t lo = 0;
     if (!(bin_unpack_u32_b(bu, &hi)
-          && bin_unpack_u32_b(bu, &lo))) {
+            && bin_unpack_u32_b(bu, &lo))) {
         return false;
     }
     *val = ((uint64_t)hi << 32) | lo;

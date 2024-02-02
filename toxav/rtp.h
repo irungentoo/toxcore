@@ -52,7 +52,6 @@ typedef enum RTPFlags {
     RTP_KEY_FRAME = 1 << 1,
 } RTPFlags;
 
-
 struct RTPHeader {
     /* Standard RTP header */
     unsigned ve: 2; /* Version has only 2 bits! */
@@ -99,7 +98,6 @@ struct RTPHeader {
      */
     uint16_t data_length_lower;
 };
-
 
 struct RTPMessage {
     /**
@@ -166,7 +164,6 @@ typedef struct RTPSession {
     void *cs;
     rtp_m_cb *mcb;
 } RTPSession;
-
 
 /**
  * Serialise an RTPHeader to bytes to be sent over the network.

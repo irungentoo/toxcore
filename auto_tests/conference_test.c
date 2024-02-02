@@ -174,7 +174,6 @@ static bool names_propagated(uint32_t tox_count, AutoTox *autotoxes)
     return true;
 }
 
-
 /**
  * returns a random index at which a list of booleans is false
  * (some such index is required to exist)
@@ -356,7 +355,6 @@ static void test_many_group(AutoTox *autotoxes)
     ck_assert_msg(tox_conference_set_title(autotoxes[0].tox, 0, (const uint8_t *)"Gentoo", sizeof("Gentoo") - 1,
                                            nullptr) != 0,
                   "failed to set group title");
-
 
     printf("waiting for invitations to be made\n");
     uint32_t invited_count = 0;

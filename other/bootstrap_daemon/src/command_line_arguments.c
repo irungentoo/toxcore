@@ -18,7 +18,6 @@
 
 #include <string.h>
 
-
 /**
  * Prints --help message
  */
@@ -48,8 +47,8 @@ static void print_help(void)
 }
 
 Cli_Status handle_command_line_arguments(
-        int argc, char *argv[], char **cfg_file_path, LOG_BACKEND *log_backend,
-        bool *run_in_foreground)
+    int argc, char *argv[], char **cfg_file_path, LOG_BACKEND *log_backend,
+    bool *run_in_foreground)
 {
     if (argc < 2) {
         log_write(LOG_LEVEL_ERROR, "Error: No arguments provided.\n\n");

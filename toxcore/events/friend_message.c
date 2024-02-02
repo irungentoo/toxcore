@@ -18,13 +18,11 @@
 #include "../tox_pack.h"
 #include "../tox_unpack.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Friend_Message {
     uint32_t friend_number;
@@ -134,7 +132,6 @@ static bool tox_event_friend_message_unpack_into(
            && bin_unpack_bin(bu, &event->message, &event->message_length);
 }
 
-
 /*****************************************************
  *
  * :: new/free/add/get/size/unpack
@@ -218,16 +215,15 @@ static Tox_Event_Friend_Message *tox_event_friend_message_alloc(void *user_data)
     return friend_message;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_friend_message(Tox *tox, uint32_t friend_number, Tox_Message_Type type, const uint8_t *message, size_t length,
-        void *user_data)
+void tox_events_handle_friend_message(
+    Tox *tox, uint32_t friend_number, Tox_Message_Type type, const uint8_t *message, size_t length,
+    void *user_data)
 {
     Tox_Event_Friend_Message *friend_message = tox_event_friend_message_alloc(user_data);
 

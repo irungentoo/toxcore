@@ -136,12 +136,18 @@ uint32_t tox_dht_node_public_key_size(void)
     return TOX_DHT_NODE_PUBLIC_KEY_SIZE;
 }
 
-bool tox_options_get_ipv6_enabled(const Tox_Options *options) { return options->ipv6_enabled; }
+bool tox_options_get_ipv6_enabled(const Tox_Options *options)
+{
+    return options->ipv6_enabled;
+}
 void tox_options_set_ipv6_enabled(Tox_Options *options, bool ipv6_enabled)
 {
     options->ipv6_enabled = ipv6_enabled;
 }
-bool tox_options_get_udp_enabled(const Tox_Options *options) { return options->udp_enabled; }
+bool tox_options_get_udp_enabled(const Tox_Options *options)
+{
+    return options->udp_enabled;
+}
 void tox_options_set_udp_enabled(Tox_Options *options, bool udp_enabled)
 {
     options->udp_enabled = udp_enabled;
@@ -154,27 +160,42 @@ void tox_options_set_proxy_type(Tox_Options *options, Tox_Proxy_Type proxy_type)
 {
     options->proxy_type = proxy_type;
 }
-const char *tox_options_get_proxy_host(const Tox_Options *options) { return options->proxy_host; }
+const char *tox_options_get_proxy_host(const Tox_Options *options)
+{
+    return options->proxy_host;
+}
 void tox_options_set_proxy_host(Tox_Options *options, const char *proxy_host)
 {
     options->proxy_host = proxy_host;
 }
-uint16_t tox_options_get_proxy_port(const Tox_Options *options) { return options->proxy_port; }
+uint16_t tox_options_get_proxy_port(const Tox_Options *options)
+{
+    return options->proxy_port;
+}
 void tox_options_set_proxy_port(Tox_Options *options, uint16_t proxy_port)
 {
     options->proxy_port = proxy_port;
 }
-uint16_t tox_options_get_start_port(const Tox_Options *options) { return options->start_port; }
+uint16_t tox_options_get_start_port(const Tox_Options *options)
+{
+    return options->start_port;
+}
 void tox_options_set_start_port(Tox_Options *options, uint16_t start_port)
 {
     options->start_port = start_port;
 }
-uint16_t tox_options_get_end_port(const Tox_Options *options) { return options->end_port; }
+uint16_t tox_options_get_end_port(const Tox_Options *options)
+{
+    return options->end_port;
+}
 void tox_options_set_end_port(Tox_Options *options, uint16_t end_port)
 {
     options->end_port = end_port;
 }
-uint16_t tox_options_get_tcp_port(const Tox_Options *options) { return options->tcp_port; }
+uint16_t tox_options_get_tcp_port(const Tox_Options *options)
+{
+    return options->tcp_port;
+}
 void tox_options_set_tcp_port(Tox_Options *options, uint16_t tcp_port)
 {
     options->tcp_port = tcp_port;
@@ -211,7 +232,10 @@ void tox_options_set_log_callback(Tox_Options *options, tox_log_cb *log_callback
 {
     options->log_callback = log_callback;
 }
-void *tox_options_get_log_user_data(const Tox_Options *options) { return options->log_user_data; }
+void *tox_options_get_log_user_data(const Tox_Options *options)
+{
+    return options->log_user_data;
+}
 void tox_options_set_log_user_data(Tox_Options *options, void *log_user_data)
 {
     options->log_user_data = log_user_data;

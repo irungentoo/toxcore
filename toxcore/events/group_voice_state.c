@@ -16,13 +16,11 @@
 #include "../tox_pack.h"
 #include "../tox_unpack.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Group_Voice_State {
     uint32_t group_number;
@@ -88,7 +86,6 @@ static bool tox_event_group_voice_state_unpack_into(
     return bin_unpack_u32(bu, &event->group_number)
            && tox_group_voice_state_unpack(&event->voice_state, bu);
 }
-
 
 /*****************************************************
  *
@@ -173,16 +170,15 @@ static Tox_Event_Group_Voice_State *tox_event_group_voice_state_alloc(void *user
     return group_voice_state;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_group_voice_state(Tox *tox, uint32_t group_number, Tox_Group_Voice_State voice_state,
-        void *user_data)
+void tox_events_handle_group_voice_state(
+    Tox *tox, uint32_t group_number, Tox_Group_Voice_State voice_state,
+    void *user_data)
 {
     Tox_Event_Group_Voice_State *group_voice_state = tox_event_group_voice_state_alloc(user_data);
 

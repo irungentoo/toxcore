@@ -16,13 +16,11 @@
 #include "../tox.h"
 #include "../tox_events.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Group_Invite {
     uint32_t friend_number;
@@ -160,7 +158,6 @@ static bool tox_event_group_invite_unpack_into(
            && bin_unpack_bin(bu, &event->group_name, &event->group_name_length);
 }
 
-
 /*****************************************************
  *
  * :: new/free/add/get/size/unpack
@@ -244,16 +241,15 @@ static Tox_Event_Group_Invite *tox_event_group_invite_alloc(void *user_data)
     return group_invite;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_group_invite(Tox *tox, uint32_t friend_number, const uint8_t *invite_data, size_t length, const uint8_t *group_name, size_t group_name_length,
-        void *user_data)
+void tox_events_handle_group_invite(
+    Tox *tox, uint32_t friend_number, const uint8_t *invite_data, size_t length, const uint8_t *group_name, size_t group_name_length,
+    void *user_data)
 {
     Tox_Event_Group_Invite *group_invite = tox_event_group_invite_alloc(user_data);
 

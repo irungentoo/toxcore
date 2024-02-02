@@ -38,7 +38,6 @@ typedef struct State {
     char mod_name1[TOX_MAX_NAME_LENGTH];
     char mod_name2[TOX_MAX_NAME_LENGTH];
 
-
     bool observer_check;
     size_t observer_event_count;
     char observer_name1[TOX_MAX_NAME_LENGTH];

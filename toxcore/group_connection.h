@@ -173,7 +173,6 @@ non_null()
 bool gcc_send_lossless_packet_fragments(const GC_Chat *chat, GC_Connection *gconn, const uint8_t *data,
                                         uint16_t length, uint8_t packet_type);
 
-
 /** @brief Encrypts `data` of `length` bytes, designated by `message_id`, using the shared key
  * associated with `gconn` and sends lossless packet over the wire.
  *
@@ -185,7 +184,7 @@ bool gcc_send_lossless_packet_fragments(const GC_Chat *chat, GC_Connection *gcon
  */
 non_null(1, 2) nullable(3)
 int gcc_encrypt_and_send_lossless_packet(const GC_Chat *chat, const GC_Connection *gconn, const uint8_t *data,
-       uint16_t length, uint64_t message_id, uint8_t packet_type);
+        uint16_t length, uint64_t message_id, uint8_t packet_type);
 
 /** @brief Called when a peer leaves the group. */
 non_null()

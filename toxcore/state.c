@@ -18,7 +18,6 @@ int state_load(const Logger *log, state_load_cb *state_load_callback, void *oute
         return -1;
     }
 
-
     const uint32_t size_head = sizeof(uint32_t) * 2;
 
     while (length >= size_head) {

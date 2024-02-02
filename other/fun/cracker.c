@@ -198,7 +198,6 @@ int main(int argc, char *argv[])
     randombytes(priv_key, KEY_LEN);
     uint32_t longest_match = 0;
 
-
     // Finishes a batch every ~10s on my PC
     const uint64_t batch_size = (UINT64_C(1) << 18) * NUM_THREADS();
 
@@ -219,7 +218,6 @@ int main(int argc, char *argv[])
         printf("Found matching prefix, exiting...\n");
         return 0;
     }
-
 
     for (uint64_t tries = 0; tries < rem_start; tries += batch_size) {
         cracker_core(tries, tries + batch_size, 0, priv_key_shadow, &longest_match, hex_prefix, prefix_chars_len);

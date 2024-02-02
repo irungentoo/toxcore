@@ -52,11 +52,14 @@ class Test_Network : public Network_Class {
     int recv(void *obj, int sock, uint8_t *buf, size_t len) override;
     int recvfrom(void *obj, int sock, uint8_t *buf, size_t len, Network_Addr *addr) override;
     int send(void *obj, int sock, const uint8_t *buf, size_t len) override;
-    int sendto(void *obj, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) override;
+    int sendto(
+        void *obj, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) override;
     int socket(void *obj, int domain, int type, int proto) override;
     int socket_nonblock(void *obj, int sock, bool nonblock) override;
-    int getsockopt(void *obj, int sock, int level, int optname, void *optval, size_t *optlen) override;
-    int setsockopt(void *obj, int sock, int level, int optname, const void *optval, size_t optlen) override;
+    int getsockopt(
+        void *obj, int sock, int level, int optname, void *optval, size_t *optlen) override;
+    int setsockopt(
+        void *obj, int sock, int level, int optname, const void *optval, size_t optlen) override;
     int getaddrinfo(void *obj, int family, Network_Addr **addrs) override;
     int freeaddrinfo(void *obj, Network_Addr *addrs) override;
 };

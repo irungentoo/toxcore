@@ -34,7 +34,6 @@ int add_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_c
 int join_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t peer_number, const uint8_t *data,
                       uint16_t length, audio_data_cb *audio_callback, void *userdata);
 
-
 /** @brief Send audio to the conference.
  *
  * @retval 0 on success.

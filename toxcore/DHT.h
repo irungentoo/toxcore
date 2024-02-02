@@ -36,7 +36,6 @@ extern "C" {
 #define EXT_SECRET_KEY_SIZE (ENC_SECRET_KEY_SIZE + SIG_SECRET_KEY_SIZE)
 #define EXT_PUBLIC_KEY_SIZE (ENC_PUBLIC_KEY_SIZE + SIG_PUBLIC_KEY_SIZE)
 
-
 /* Maximum size of a signature (may be smaller) */
 #define SIGNATURE_SIZE CRYPTO_SIGNATURE_SIZE
 /** Maximum number of clients stored per friend. */
@@ -350,8 +349,8 @@ unsigned int bit_by_bit_cmp(const uint8_t *pk1, const uint8_t *pk2);
  */
 non_null()
 bool add_to_list(
-        Node_format *nodes_list, uint32_t length, const uint8_t pk[CRYPTO_PUBLIC_KEY_SIZE],
-        const IP_Port *ip_port, const uint8_t cmp_pk[CRYPTO_PUBLIC_KEY_SIZE]);
+    Node_format *nodes_list, uint32_t length, const uint8_t pk[CRYPTO_PUBLIC_KEY_SIZE],
+    const IP_Port *ip_port, const uint8_t cmp_pk[CRYPTO_PUBLIC_KEY_SIZE]);
 
 /** Return 1 if node can be added to close list, 0 if it can't. */
 non_null()
@@ -375,10 +374,9 @@ void set_announce_node(DHT *dht, const uint8_t *public_key);
  */
 non_null()
 int get_close_nodes(
-        const DHT *dht, const uint8_t *public_key,
-        Node_format nodes_list[MAX_SENT_NODES], Family sa_family,
-        bool is_lan, bool want_announce);
-
+    const DHT *dht, const uint8_t *public_key,
+    Node_format nodes_list[MAX_SENT_NODES], Family sa_family,
+    bool is_lan, bool want_announce);
 
 /** @brief Put up to max_num nodes in nodes from the random friends.
  *

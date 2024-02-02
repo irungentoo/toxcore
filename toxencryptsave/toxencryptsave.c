@@ -80,8 +80,8 @@ void tox_pass_key_free(Tox_Pass_Key *key)
  * @return true on success.
  */
 bool tox_get_salt(
-        const uint8_t ciphertext[TOX_PASS_ENCRYPTION_EXTRA_LENGTH],
-        uint8_t salt[TOX_PASS_SALT_LENGTH], Tox_Err_Get_Salt *error)
+    const uint8_t ciphertext[TOX_PASS_ENCRYPTION_EXTRA_LENGTH],
+    uint8_t salt[TOX_PASS_SALT_LENGTH], Tox_Err_Get_Salt *error)
 {
     if (ciphertext == nullptr || salt == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_SALT_NULL);
@@ -115,8 +115,8 @@ bool tox_get_salt(
  * @return new symmetric key on success, NULL on failure.
  */
 Tox_Pass_Key *tox_pass_key_derive(
-        const uint8_t passphrase[], size_t passphrase_len,
-        Tox_Err_Key_Derivation *error)
+    const uint8_t passphrase[], size_t passphrase_len,
+    Tox_Err_Key_Derivation *error)
 {
     const Random *rng = os_random();
 
@@ -140,8 +140,8 @@ Tox_Pass_Key *tox_pass_key_derive(
  * @return new symmetric key on success, NULL on failure.
  */
 Tox_Pass_Key *tox_pass_key_derive_with_salt(
-        const uint8_t passphrase[], size_t passphrase_len,
-        const uint8_t salt[TOX_PASS_SALT_LENGTH], Tox_Err_Key_Derivation *error)
+    const uint8_t passphrase[], size_t passphrase_len,
+    const uint8_t salt[TOX_PASS_SALT_LENGTH], Tox_Err_Key_Derivation *error)
 {
     if (salt == nullptr || (passphrase == nullptr && passphrase_len != 0)) {
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_NULL);

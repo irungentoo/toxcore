@@ -27,13 +27,11 @@ typedef enum MSIHeaderID {
     ID_CAPABILITIES,
 } MSIHeaderID;
 
-
 typedef enum MSIRequest {
     REQU_INIT,
     REQU_PUSH,
     REQU_POP,
 } MSIRequest;
-
 
 typedef struct MSIHeaderRequest {
     MSIRequest value;
@@ -50,13 +48,11 @@ typedef struct MSIHeaderCapabilities {
     bool exists;
 } MSIHeaderCapabilities;
 
-
 typedef struct MSIMessage {
     MSIHeaderRequest      request;
     MSIHeaderError        error;
     MSIHeaderCapabilities capabilities;
 } MSIMessage;
-
 
 static void msg_init(MSIMessage *dest, MSIRequest request);
 static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t length);
@@ -73,7 +69,6 @@ static void handle_init(MSICall *call, const MSIMessage *msg);
 static void handle_push(MSICall *call, const MSIMessage *msg);
 static void handle_pop(MSICall *call, const MSIMessage *msg);
 static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *user_data);
-
 
 /*
  * Public functions
@@ -318,7 +313,6 @@ int msi_change_capabilities(MSICall *call, uint8_t capabilities)
     return 0;
 }
 
-
 /**
  * Private functions
  */
@@ -356,7 +350,6 @@ static bool check_enum_high(const Logger *log, const uint8_t *bytes, uint8_t enu
 
     return true;
 }
-
 
 static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t length)
 {
@@ -449,7 +442,7 @@ static int send_message(const Messenger *m, uint32_t friend_number, const MSIMes
     /* Parse and send message */
     assert(m != nullptr);
 
-    uint8_t parsed [MSI_MAXMSG_SIZE];
+    uint8_t parsed[MSI_MAXMSG_SIZE];
 
     uint8_t *it = parsed;
     uint16_t size = 0;
@@ -587,7 +580,7 @@ static MSICall *new_call(MSISession *session, uint32_t friend_number)
         session->calls_tail = friend_number;
         session->calls_head = friend_number;
     } else if (session->calls_tail < friend_number) { /* Appending */
-        MSICall **tmp = (MSICall **)realloc(session->calls,  (friend_number + 1) * sizeof(MSICall *));
+        MSICall **tmp = (MSICall **)realloc(session->calls, (friend_number + 1) * sizeof(MSICall *));
 
         if (tmp == nullptr) {
             free(rc);

@@ -1082,6 +1082,6 @@ static bool tox_event_data_unpack(Tox_Event_Type type, Tox_Event_Data *data, Bin
 bool tox_event_unpack_into(Tox_Event *event, Bin_Unpack *bu, const Memory *mem)
 {
     return bin_unpack_array_fixed(bu, 2, nullptr)  //
-        && tox_event_type_unpack(&event->type, bu)  //
-        && tox_event_data_unpack(event->type, &event->data, bu, mem);
+           && tox_event_type_unpack(&event->type, bu)  //
+           && tox_event_data_unpack(event->type, &event->data, bu, mem);
 }

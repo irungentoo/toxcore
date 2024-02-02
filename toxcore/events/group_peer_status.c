@@ -16,13 +16,11 @@
 #include "../tox_pack.h"
 #include "../tox_unpack.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Group_Peer_Status {
     uint32_t group_number;
@@ -104,7 +102,6 @@ static bool tox_event_group_peer_status_unpack_into(
            && bin_unpack_u32(bu, &event->peer_id)
            && tox_user_status_unpack(&event->status, bu);
 }
-
 
 /*****************************************************
  *
@@ -189,16 +186,15 @@ static Tox_Event_Group_Peer_Status *tox_event_group_peer_status_alloc(void *user
     return group_peer_status;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_group_peer_status(Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_User_Status status,
-        void *user_data)
+void tox_events_handle_group_peer_status(
+    Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_User_Status status,
+    void *user_data)
 {
     Tox_Event_Group_Peer_Status *group_peer_status = tox_event_group_peer_status_alloc(user_data);
 

@@ -74,7 +74,6 @@ static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const 
     }
 }
 
-
 /**
  * Iterate helper
  */
@@ -298,7 +297,6 @@ static void test_av_three_calls(void)
             ck_assert(0);
         }
     }
-
 
     do {
         tox_iterate(bootstrap, nullptr);

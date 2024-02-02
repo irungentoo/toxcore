@@ -9,26 +9,26 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk)
     return 0;
 }
 int crypto_sign_ed25519_pk_to_curve25519(unsigned char *curve25519_pk,
-                                         const unsigned char *ed25519_pk)
+        const unsigned char *ed25519_pk)
 {
     memset(curve25519_pk, 0, 32);
     return 0;
 }
 int crypto_sign_ed25519_sk_to_curve25519(unsigned char *curve25519_sk,
-                                         const unsigned char *ed25519_sk)
+        const unsigned char *ed25519_sk)
 {
     memset(curve25519_sk, 0, 32);
     return 0;
 }
-void sodium_memzero(void * const pnt, const size_t len)
+void sodium_memzero(void *const pnt, const size_t len)
 {
     memset(pnt, 0, len);
 }
-int sodium_mlock(void * const addr, const size_t len)
+int sodium_mlock(void *const addr, const size_t len)
 {
     return 0;
 }
-int sodium_munlock(void * const addr, const size_t len)
+int sodium_munlock(void *const addr, const size_t len)
 {
     return 0;
 }
@@ -98,7 +98,7 @@ int crypto_hash_sha512(unsigned char *out, const unsigned char *in,
 {
     return 0;
 }
-void randombytes(unsigned char * const buf, const unsigned long long buf_len)
+void randombytes(unsigned char *const buf, const unsigned long long buf_len)
 {
     memset(buf, 0, buf_len);
 }

@@ -138,7 +138,6 @@ int cmdline_parsefor_ipv46(int argc, char **argv, bool *ipv6enabled)
     return argvoffset;
 }
 
-
 static const char *test_rng_name(void)
 {
     return "test_rng";

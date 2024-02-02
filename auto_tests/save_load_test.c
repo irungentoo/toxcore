@@ -154,7 +154,7 @@ static void test_few_clients(void)
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "Failed to create tox instance: %d", t_n_error);
     tox_options_free(opts1);
     tox_events_init(tox1);
-    Tox_Dispatch* dispatch1 = tox_dispatch_new(nullptr);
+    Tox_Dispatch *dispatch1 = tox_dispatch_new(nullptr);
     ck_assert(dispatch1 != nullptr);
 
     struct Tox_Options *opts2 = tox_options_new(nullptr);
@@ -164,7 +164,7 @@ static void test_few_clients(void)
     Tox *tox2 = tox_new_log(opts2, &t_n_error, &index[1]);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "Failed to create tox instance: %d", t_n_error);
     tox_events_init(tox2);
-    Tox_Dispatch* dispatch2 = tox_dispatch_new(nullptr);
+    Tox_Dispatch *dispatch2 = tox_dispatch_new(nullptr);
     ck_assert(dispatch2 != nullptr);
 
     struct Tox_Options *opts3 = tox_options_new(nullptr);
@@ -174,7 +174,6 @@ static void test_few_clients(void)
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "Failed to create tox instance: %d", t_n_error);
 
     ck_assert_msg(tox1 && tox2 && tox3, "Failed to create 3 tox instances");
-
 
     Time_Data time_data;
     ck_assert_msg(pthread_mutex_init(&time_data.lock, nullptr) == 0, "Failed to init time_data mutex");

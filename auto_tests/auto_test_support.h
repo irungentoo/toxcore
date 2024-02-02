@@ -61,7 +61,7 @@ void print_debug_log(Tox *m, Tox_Log_Level level, const char *file, uint32_t lin
 
 // Use this function when setting the log callback on a Logger object
 void print_debug_logger(void *context, Logger_Level level, const char *file, int line,
-                      const char *func, const char *message, void *userdata);
+                        const char *func, const char *message, void *userdata);
 
 Tox *tox_new_log(struct Tox_Options *options, Tox_Err_New *err, void *log_user_data);
 Tox *tox_new_log_lan(struct Tox_Options *options, Tox_Err_New *err, void *log_user_data, bool lan_discovery);

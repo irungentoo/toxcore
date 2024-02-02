@@ -22,7 +22,7 @@ typedef struct Shared_Key {
 
 struct Shared_Key_Cache {
     Shared_Key *keys;
-    const uint8_t* self_secret_key;
+    const uint8_t *self_secret_key;
     uint64_t timeout; /** After this time (in seconds), a key is erased on the next housekeeping cycle */
     const Mono_Time *mono_time;
     const Memory *mem;
@@ -31,7 +31,8 @@ struct Shared_Key_Cache {
 };
 
 non_null()
-static bool shared_key_is_empty(const Logger *log, const Shared_Key *k) {
+static bool shared_key_is_empty(const Logger *log, const Shared_Key *k)
+{
     LOGGER_ASSERT(log, k != nullptr, "shared key must not be NULL");
     /*
      * Since time can never be 0, we use that to determine if a key slot is empty.
@@ -41,8 +42,9 @@ static bool shared_key_is_empty(const Logger *log, const Shared_Key *k) {
 }
 
 non_null()
-static void shared_key_set_empty(const Logger *log, Shared_Key *k) {
-    crypto_memzero(k, sizeof (Shared_Key));
+static void shared_key_set_empty(const Logger *log, Shared_Key *k)
+{
+    crypto_memzero(k, sizeof(Shared_Key));
     LOGGER_ASSERT(log, shared_key_is_empty(log, k), "shared key must be empty after clearing it");
 }
 
@@ -94,8 +96,8 @@ void shared_key_cache_free(Shared_Key_Cache *cache)
 
     const size_t cache_size = 256 * cache->keys_per_slot;
     // Don't leave key material in memory
-    crypto_memzero(cache->keys, cache_size * sizeof (Shared_Key));
-    crypto_memunlock(cache->keys, cache_size * sizeof (Shared_Key));
+    crypto_memzero(cache->keys, cache_size * sizeof(Shared_Key));
+    crypto_memunlock(cache->keys, cache_size * sizeof(Shared_Key));
     mem_delete(cache->mem, cache->keys);
     mem_delete(cache->mem, cache);
 }
@@ -107,12 +109,12 @@ const uint8_t *shared_key_cache_lookup(Shared_Key_Cache *cache, const uint8_t pu
     const uint64_t cur_time = mono_time_get(cache->mono_time);
     // We can't use the first and last bytes because they are masked in curve25519. Selected 8 for good alignment.
     const uint8_t bucket_idx = public_key[8];
-    Shared_Key* bucket_start = &cache->keys[bucket_idx*cache->keys_per_slot];
+    Shared_Key *bucket_start = &cache->keys[bucket_idx * cache->keys_per_slot];
 
-    const uint8_t* found = nullptr;
+    const uint8_t *found = nullptr;
 
     // Perform lookup
-    for(size_t i = 0; i < cache->keys_per_slot; ++i) {
+    for (size_t i = 0; i < cache->keys_per_slot; ++i) {
         if (shared_key_is_empty(cache->log, &bucket_start[i])) {
             continue;
         }

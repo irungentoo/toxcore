@@ -313,7 +313,7 @@ static int generate_handshake(TCP_Client_Connection *tcp_conn)
     memcpy(tcp_conn->con.last_packet, tcp_conn->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     random_nonce(tcp_conn->con.rng, tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE);
     const int len = encrypt_data_symmetric(tcp_conn->con.shared_key, tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE, plain,
-                                     sizeof(plain), tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
+                                           sizeof(plain), tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
 
     if (len != sizeof(plain) + CRYPTO_MAC_SIZE) {
         return -1;
@@ -335,7 +335,7 @@ static int handle_handshake(TCP_Client_Connection *tcp_conn, const uint8_t *data
 {
     uint8_t plain[CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE];
     const int len = decrypt_data_symmetric(tcp_conn->con.shared_key, data, data + CRYPTO_NONCE_SIZE,
-                                     TCP_SERVER_HANDSHAKE_SIZE - CRYPTO_NONCE_SIZE, plain);
+                                           TCP_SERVER_HANDSHAKE_SIZE - CRYPTO_NONCE_SIZE, plain);
 
     if (len != sizeof(plain)) {
         return -1;
@@ -420,7 +420,6 @@ int send_oob_packet(const Logger *logger, TCP_Client_Connection *con, const uint
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, data, length);
     return write_packet_tcp_secure_connection(logger, &con->con, packet, packet_size, false);
 }
-
 
 /** @brief Set the number that will be used as an argument in the callbacks related to con_id.
  *
@@ -581,9 +580,9 @@ void forwarding_handler(TCP_Client_Connection *con, forwarded_response_cb *forwa
 
 /** Create new TCP connection to ip_port/public_key */
 TCP_Client_Connection *new_tcp_connection(
-        const Logger *logger, const Memory *mem, const Mono_Time *mono_time, const Random *rng, const Network *ns,
-        const IP_Port *ip_port, const uint8_t *public_key, const uint8_t *self_public_key, const uint8_t *self_secret_key,
-        const TCP_Proxy_Info *proxy_info)
+    const Logger *logger, const Memory *mem, const Mono_Time *mono_time, const Random *rng, const Network *ns,
+    const IP_Port *ip_port, const uint8_t *public_key, const uint8_t *self_public_key, const uint8_t *self_secret_key,
+    const TCP_Proxy_Info *proxy_info)
 {
     assert(logger != nullptr);
     assert(mem != nullptr);
@@ -874,7 +873,8 @@ non_null(1, 2) nullable(3)
 static bool tcp_process_packet(const Logger *logger, TCP_Client_Connection *conn, void *userdata)
 {
     uint8_t packet[MAX_PACKET_SIZE];
-    const int len = read_packet_tcp_secure_connection(logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->ip_port);
+    const int len = read_packet_tcp_secure_connection(logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet),
+                    &conn->ip_port);
 
     if (len == 0) {
         return false;

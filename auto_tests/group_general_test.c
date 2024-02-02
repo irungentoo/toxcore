@@ -448,7 +448,6 @@ static void group_announce_test(AutoTox *autotoxes)
         iterate_all_wait(autotoxes, NUM_GROUP_TOXES, ITERATION_INTERVAL);
     }
 
-
     printf("All tests passed!\n");
 }
 

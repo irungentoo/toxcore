@@ -50,7 +50,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
         // NOLINTNEXTLINE, clang-tidy: error: suspicious comparison of 'sizeof(expr)' to a constant [bugprone-sizeof-expression,-warnings-as-errors]
         static_assert(sizeof(default_ports) > 0, "At least one default TCP relay port should be provided");
 
-        const size_t default_ports_count = sizeof(default_ports)/sizeof(*default_ports);
+        const size_t default_ports_count = sizeof(default_ports) / sizeof(*default_ports);
 
         for (size_t i = 0; i < default_ports_count; ++i) {
             log_write(LOG_LEVEL_INFO, "Port #%zu: %u\n", i, default_ports[i]);

@@ -23,7 +23,6 @@
  */
 #define VIDEO_KEEP_KEYFRAME_IN_BUFFER_FOR_MS 15
 
-
 /**
  * return -1 on failure, 0 on success
  *

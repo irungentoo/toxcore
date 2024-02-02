@@ -58,7 +58,6 @@ bool log_close(void)
     return true;
 }
 
-
 bool log_write(LOG_LEVEL level, const char *format, ...)
 {
     if (current_backend == INVALID_BACKEND) {

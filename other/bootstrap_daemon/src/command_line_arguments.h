@@ -32,7 +32,7 @@ typedef enum Cli_Status {
  * @param run_in_foreground Sets to the provided by the user foreground option.
  */
 Cli_Status handle_command_line_arguments(
-        int argc, char *argv[], char **cfg_file_path, LOG_BACKEND *log_backend,
-        bool *run_in_foreground);
+    int argc, char *argv[], char **cfg_file_path, LOG_BACKEND *log_backend,
+    bool *run_in_foreground);
 
 #endif // C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_COMMAND_LINE_ARGUMENTS_H

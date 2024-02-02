@@ -65,7 +65,6 @@ typedef struct ToxAVCall {
     struct ToxAVCall *next;
 } ToxAVCall;
 
-
 /** Decode time statistics */
 typedef struct DecodeTimeStats {
     /** Measure count */
@@ -857,7 +856,7 @@ bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pc
         sampling_rate = net_htonl(sampling_rate);
         memcpy(dest, &sampling_rate, sizeof(sampling_rate));
         const int vrc = opus_encode(call->audio->encoder, pcm, sample_count,
-                              dest + sizeof(sampling_rate), dest_size - sizeof(sampling_rate));
+                                    dest + sizeof(sampling_rate), dest_size - sizeof(sampling_rate));
 
         if (vrc < 0) {
             LOGGER_WARNING(av->m->log, "Failed to encode frame %s", opus_strerror(vrc));
@@ -1004,7 +1003,7 @@ bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, u
         memcpy(img.planes[VPX_PLANE_V], v, (width / 2) * (height / 2));
 
         const vpx_codec_err_t vrc = vpx_codec_encode(call->video->encoder, &img,
-                                               call->video->frame_counter, 1, vpx_encode_flags, MAX_ENCODE_TIME_US);
+                                    call->video->frame_counter, 1, vpx_encode_flags, MAX_ENCODE_TIME_US);
 
         vpx_img_free(&img);
 

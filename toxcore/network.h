@@ -148,7 +148,6 @@ typedef enum Net_Packet_Type {
     NET_PACKET_MAX                  = 0xff, /* This type must remain within a single uint8. */
 } Net_Packet_Type;
 
-
 #define TOX_PORTRANGE_FROM 33445
 #define TOX_PORTRANGE_TO   33545
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
@@ -590,8 +589,8 @@ void net_kill_strerror(char *strerror);
  */
 non_null(1, 2, 3, 4) nullable(7)
 Networking_Core *new_networking_ex(
-        const Logger *log, const Memory *mem, const Network *ns, const IP *ip,
-        uint16_t port_from, uint16_t port_to, unsigned int *error);
+    const Logger *log, const Memory *mem, const Network *ns, const IP *ip,
+    uint16_t port_from, uint16_t port_to, unsigned int *error);
 
 non_null()
 Networking_Core *new_networking_no_udp(const Logger *log, const Memory *mem, const Network *ns);

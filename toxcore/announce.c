@@ -165,7 +165,6 @@ static const Announce_Entry *get_stored_const(const Announcements *announce, con
     return nullptr;
 }
 
-
 bool announce_on_stored(const Announcements *announce, const uint8_t *data_public_key,
                         announce_on_retrieve_cb *on_retrieve_callback, void *object)
 {
@@ -388,11 +387,11 @@ static int create_reply_plain_data_search_request(Announcements *announce,
 
 non_null()
 static int create_reply_plain_data_retrieve_request(
-        const Announcements *announce,
-        const IP_Port *source,
-        const uint8_t *data, uint16_t length,
-        uint8_t *reply, uint16_t reply_max_length,
-        const uint8_t *to_auth, uint16_t to_auth_length)
+    const Announcements *announce,
+    const IP_Port *source,
+    const uint8_t *data, uint16_t length,
+    uint8_t *reply, uint16_t reply_max_length,
+    const uint8_t *to_auth, uint16_t to_auth_length)
 {
     if (length != CRYPTO_PUBLIC_KEY_SIZE + 1 + TIMED_AUTH_SIZE) {
         return -1;
@@ -447,7 +446,7 @@ static int create_reply_plain_store_announce_request(Announcements *announce,
 
     VLA(uint8_t, plain, plain_len);
 
-    const uint8_t* shared_key = shared_key_cache_lookup(announce->shared_keys, data_public_key);
+    const uint8_t *shared_key = shared_key_cache_lookup(announce->shared_keys, data_public_key);
 
     if (shared_key == nullptr) {
         /* Error looking up/deriving the shared key */

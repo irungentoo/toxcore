@@ -181,7 +181,6 @@ static void group_save_test(AutoTox *autotoxes)
     tox_group_self_get_public_key(tox0, group_number, founder_pk, &sq_err);
     ck_assert(sq_err == TOX_ERR_GROUP_SELF_QUERY_OK);
 
-
     Tox_Err_Group_Invite_Friend err_invite;
     tox_group_invite_friend(tox0, group_number, 0, &err_invite);
 

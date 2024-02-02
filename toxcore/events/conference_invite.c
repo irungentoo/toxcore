@@ -18,13 +18,11 @@
 #include "../tox_pack.h"
 #include "../tox_unpack.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Conference_Invite {
     uint32_t friend_number;
@@ -134,7 +132,6 @@ static bool tox_event_conference_invite_unpack_into(
            && bin_unpack_bin(bu, &event->cookie, &event->cookie_length);
 }
 
-
 /*****************************************************
  *
  * :: new/free/add/get/size/unpack
@@ -218,16 +215,15 @@ static Tox_Event_Conference_Invite *tox_event_conference_invite_alloc(void *user
     return conference_invite;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_conference_invite(Tox *tox, uint32_t friend_number, Tox_Conference_Type type, const uint8_t *cookie, size_t length,
-        void *user_data)
+void tox_events_handle_conference_invite(
+    Tox *tox, uint32_t friend_number, Tox_Conference_Type type, const uint8_t *cookie, size_t length,
+    void *user_data)
 {
     Tox_Event_Conference_Invite *conference_invite = tox_event_conference_invite_alloc(user_data);
 

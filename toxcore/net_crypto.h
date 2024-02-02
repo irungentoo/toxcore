@@ -205,7 +205,6 @@ non_null()
 int connection_data_handler(const Net_Crypto *c, int crypt_connection_id,
                             connection_data_cb *connection_data_callback, void *object, int id);
 
-
 /** @brief Set function to be called when connection with crypt_connection_id receives a lossy data packet of length.
  *
  * The set function should return -1 on failure and 0 on success.

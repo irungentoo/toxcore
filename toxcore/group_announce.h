@@ -83,7 +83,6 @@ struct GC_Announces_List {
     uint64_t last_timeout_check;
 };
 
-
 /** @brief Returns a new group announces list.
  *
  * The caller is responsible for freeing the memory with `kill_gca`.

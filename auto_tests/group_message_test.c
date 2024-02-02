@@ -425,8 +425,8 @@ static void group_message_test(AutoTox *autotoxes)
 
         if (state1->peer_joined && !state1->message_sent) {
             state1->pseudo_msg_id = tox_group_send_message(
-                    tox1, group_number, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)TEST_MESSAGE,
-                    TEST_MESSAGE_LEN, &err_send);
+                                        tox1, group_number, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)TEST_MESSAGE,
+                                        TEST_MESSAGE_LEN, &err_send);
             ck_assert(err_send == TOX_ERR_GROUP_SEND_MESSAGE_OK);
             state1->message_sent = true;
         }

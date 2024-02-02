@@ -70,7 +70,6 @@ void logger_write(
 /* @brief Terminate the program with a signal. */
 void logger_abort(void);
 
-
 #define LOGGER_WRITE(log, level, ...)                                            \
     do {                                                                         \
         if (level >= MIN_LOGGER_LEVEL) {                                         \

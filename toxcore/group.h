@@ -79,7 +79,6 @@ void g_callback_group_connected(Group_Chats *g_c, g_conference_connected_cb *fun
 non_null()
 void g_callback_group_message(Group_Chats *g_c, g_conference_message_cb *function);
 
-
 /** Set callback function for title changes. */
 non_null()
 void g_callback_group_title(Group_Chats *g_c, title_cb *function);
@@ -223,7 +222,6 @@ int group_action_send(const Group_Chats *g_c, uint32_t groupnumber, const uint8_
  */
 non_null()
 int group_title_send(const Group_Chats *g_c, uint32_t groupnumber, const uint8_t *title, uint8_t title_len);
-
 
 /** @brief return the group's title size.
  * @retval -1 of groupnumber is invalid.

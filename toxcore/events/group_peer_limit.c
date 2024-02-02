@@ -14,13 +14,11 @@
 #include "../tox.h"
 #include "../tox_events.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Group_Peer_Limit {
     uint32_t group_number;
@@ -86,7 +84,6 @@ static bool tox_event_group_peer_limit_unpack_into(
     return bin_unpack_u32(bu, &event->group_number)
            && bin_unpack_u32(bu, &event->peer_limit);
 }
-
 
 /*****************************************************
  *
@@ -171,16 +168,15 @@ static Tox_Event_Group_Peer_Limit *tox_event_group_peer_limit_alloc(void *user_d
     return group_peer_limit;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_group_peer_limit(Tox *tox, uint32_t group_number, uint32_t peer_limit,
-        void *user_data)
+void tox_events_handle_group_peer_limit(
+    Tox *tox, uint32_t group_number, uint32_t peer_limit,
+    void *user_data)
 {
     Tox_Event_Group_Peer_Limit *group_peer_limit = tox_event_group_peer_limit_alloc(user_data);
 

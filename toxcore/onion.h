@@ -109,7 +109,6 @@ int create_onion_packet(const Random *rng, uint8_t *packet, uint16_t max_packet_
                         const Onion_Path *path, const IP_Port *dest,
                         const uint8_t *data, uint16_t length);
 
-
 /** @brief Create a onion packet to be sent over tcp.
  *
  * Use Onion_Path path to create packet for data of length to dest.
@@ -157,6 +156,5 @@ Onion *new_onion(const Logger *log, const Memory *mem, const Mono_Time *mono_tim
 
 nullable(1)
 void kill_onion(Onion *onion);
-
 
 #endif /* C_TOXCORE_TOXCORE_ONION_H */

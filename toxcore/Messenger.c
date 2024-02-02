@@ -592,7 +592,7 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
     memcpy(packet + 1, message, length);
 
     const int64_t packet_num = write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                                           m->friendlist[friendnumber].friendcon_id), packet, length + 1, false);
+                               m->friendlist[friendnumber].friendcon_id), packet, length + 1, false);
 
     if (packet_num == -1) {
         return -4;
@@ -1098,7 +1098,6 @@ static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status
 
 /*** CONFERENCES */
 
-
 /** @brief Set the callback for conference invites. */
 void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function)
 {
@@ -1121,7 +1120,6 @@ bool send_conference_invite_packet(const Messenger *m, int32_t friendnumber, con
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_CONFERENCE, data, length, false);
 }
 
-
 /** @brief Send a group invite packet.
  *
  * @retval true if success
@@ -1131,9 +1129,7 @@ bool send_group_invite_packet(const Messenger *m, uint32_t friendnumber, const u
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, packet, length, false);
 }
 
-
 /*** FILE SENDING */
-
 
 /** @brief Set the callback for file send requests. */
 void callback_file_sendrequest(Messenger *m, m_file_recv_cb *function)
@@ -1196,8 +1192,8 @@ int file_get_id(const Messenger *m, int32_t friendnumber, uint32_t filenumber, u
     file_number = temp_filenum;
 
     const struct File_Transfers *const ft = inbound
-        ? &m->friendlist[friendnumber].file_receiving[file_number]
-        : &m->friendlist[friendnumber].file_sending[file_number];
+                                                ? &m->friendlist[friendnumber].file_receiving[file_number]
+                                                : &m->friendlist[friendnumber].file_sending[file_number];
 
     if (ft->status == FILESTATUS_NONE) {
         return -2;
@@ -1716,7 +1712,6 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdat
     }
 }
 
-
 /** @brief Run this when the friend disconnects.
  * Kill all current file transfers.
  */
@@ -1924,7 +1919,6 @@ int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, m_lo
     m->friendlist[friendnumber].lossy_rtp_packethandlers[byte % PACKET_ID_RANGE_LOSSY_AV_SIZE].object = object;
     return 0;
 }
-
 
 /** @brief High level function to send custom lossy packets.
  *
@@ -2465,8 +2459,8 @@ static void do_friends(Messenger *m, void *userdata)
     for (uint32_t i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
             const int fr = send_friend_request_packet(m->fr_c, m->friendlist[i].friendcon_id, m->friendlist[i].friendrequest_nospam,
-                                                m->friendlist[i].info,
-                                                m->friendlist[i].info_size);
+                           m->friendlist[i].info,
+                           m->friendlist[i].info_size);
 
             if (fr >= 0) {
                 set_friend_status(m, i, FRIEND_REQUESTED, userdata);
@@ -2531,7 +2525,6 @@ static void m_connection_status_callback(Messenger *m, void *userdata)
         m->last_connection_status = conn_status;
     }
 }
-
 
 #define DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS 60UL
 
@@ -2725,7 +2718,6 @@ void do_messenger(Messenger *m, void *userdata)
             }
         }
 
-
         /* dht contains additional "friends" (requests) */
         const uint32_t num_dhtfriends = dht_get_num_friends(m->dht);
         VLA(int32_t, m2dht, num_dhtfriends);
@@ -2893,7 +2885,6 @@ static uint8_t *friend_save(const struct Saved_Friend *temp, uint8_t *data)
     return data;
 }
 
-
 non_null()
 static const uint8_t *friend_load(struct Saved_Friend *temp, const uint8_t *data)
 {
@@ -2931,7 +2922,6 @@ static const uint8_t *friend_load(struct Saved_Friend *temp, const uint8_t *data
     return data;
 }
 
-
 non_null()
 static uint32_t m_state_plugins_size(const Messenger *m)
 {
@@ -2960,7 +2950,7 @@ bool m_register_state_plugin(Messenger *m, State_Type type, m_state_size_cb *siz
 {
     const uint32_t new_length = m->options.state_plugins_length + 1;
     Messenger_State_Plugin *temp = (Messenger_State_Plugin *)mem_vrealloc(
-            m->mem, m->options.state_plugins, new_length, sizeof(Messenger_State_Plugin));
+                                       m->mem, m->options.state_plugins, new_length, sizeof(Messenger_State_Plugin));
 
     if (temp == nullptr) {
         return false;

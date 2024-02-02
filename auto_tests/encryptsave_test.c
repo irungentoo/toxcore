@@ -184,7 +184,6 @@ static void test_keys(void)
     free(in_plaintext2a);
     free(out_plaintext2a);
 
-
     uint8_t encrypted2[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
     ret = tox_pass_encrypt(string, 44, key_char, 12, encrypted2, &encerr);
     ck_assert_msg(ret, "generic failure 3: %d", encerr);

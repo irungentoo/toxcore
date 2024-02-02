@@ -426,7 +426,6 @@ static void test_groupav(AutoTox *autotoxes)
     ck_assert_msg(tox_conference_invite(autotoxes[0].tox, 0, 0, nullptr) != 0, "failed to invite friend");
     ((State *)autotoxes[0].state)->invited_next = true;
 
-
     printf("waiting for invitations to be made\n");
     uint32_t invited_count = 0;
 

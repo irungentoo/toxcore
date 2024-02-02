@@ -50,7 +50,6 @@ static const char *motd_str = ""; //Change this to anything within 256 bytes(but
 
 #define PORT 33445
 
-
 static bool manage_keys(DHT *dht)
 {
     enum { KEYS_SIZE = CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE };
@@ -165,7 +164,7 @@ int main(int argc, char *argv[])
     Onion_Announce *onion_a = new_onion_announce(logger, mem, rng, mono_time, dht);
 
 #ifdef DHT_NODE_EXTRA_PACKETS
-    bootstrap_set_callbacks(dht_get_net(dht), (uint32_t)DAEMON_VERSION_NUMBER, (const uint8_t *) motd_str, strlen(motd_str)+1);
+    bootstrap_set_callbacks(dht_get_net(dht), (uint32_t)DAEMON_VERSION_NUMBER, (const uint8_t *) motd_str, strlen(motd_str) + 1);
 #endif
 
     if (!(onion && forwarding && onion_a)) {

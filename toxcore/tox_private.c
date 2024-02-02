@@ -156,7 +156,8 @@ bool tox_dht_get_nodes(const Tox *tox, const uint8_t *public_key, const char *ip
     return true;
 }
 
-uint16_t tox_dht_get_num_closelist(const Tox *tox) {
+uint16_t tox_dht_get_num_closelist(const Tox *tox)
+{
     tox_lock(tox);
     const uint16_t num_total = dht_get_num_closelist(tox->m->dht);
     tox_unlock(tox);
@@ -164,7 +165,8 @@ uint16_t tox_dht_get_num_closelist(const Tox *tox) {
     return num_total;
 }
 
-uint16_t tox_dht_get_num_closelist_announce_capable(const Tox *tox){
+uint16_t tox_dht_get_num_closelist_announce_capable(const Tox *tox)
+{
     tox_lock(tox);
     const uint16_t num_cap = dht_get_num_closelist_announce_capable(tox->m->dht);
     tox_unlock(tox);
@@ -173,7 +175,7 @@ uint16_t tox_dht_get_num_closelist_announce_capable(const Tox *tox){
 }
 
 size_t tox_group_peer_get_ip_address_size(const Tox *tox, uint32_t group_number, uint32_t peer_id,
-                                          Tox_Err_Group_Peer_Query *error)
+        Tox_Err_Group_Peer_Query *error)
 {
     assert(tox != nullptr);
 
@@ -199,7 +201,7 @@ size_t tox_group_peer_get_ip_address_size(const Tox *tox, uint32_t group_number,
 }
 
 bool tox_group_peer_get_ip_address(const Tox *tox, uint32_t group_number, uint32_t peer_id, uint8_t *ip_addr,
-                               Tox_Err_Group_Peer_Query *error)
+                                   Tox_Err_Group_Peer_Query *error)
 {
     assert(tox != nullptr);
 

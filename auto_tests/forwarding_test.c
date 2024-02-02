@@ -317,14 +317,12 @@ static void test_forwarding(void)
         }
     }
 
-
     for (uint32_t i = 0; i < NUM_FORWARDER; ++i) {
         kill_forwarding_subtox(mem, subtoxes[i]);
     }
 
     tox_kill(relay);
 }
-
 
 int main(void)
 {

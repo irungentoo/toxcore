@@ -110,7 +110,6 @@ static uint64_t current_time_monotonic_default(void *user_data)
 #endif /* !__APPLE__ */
 #endif /* !OS_WIN32 */
 
-
 Mono_Time *mono_time_new(const Memory *mem, mono_time_current_time_cb *current_time_callback, void *user_data)
 {
     Mono_Time *mono_time = (Mono_Time *)mem_alloc(mem, sizeof(Mono_Time));

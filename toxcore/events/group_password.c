@@ -16,13 +16,11 @@
 #include "../tox.h"
 #include "../tox_events.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Group_Password {
     uint32_t group_number;
@@ -116,7 +114,6 @@ static bool tox_event_group_password_unpack_into(
            && bin_unpack_bin(bu, &event->password, &event->password_length);
 }
 
-
 /*****************************************************
  *
  * :: new/free/add/get/size/unpack
@@ -200,16 +197,15 @@ static Tox_Event_Group_Password *tox_event_group_password_alloc(void *user_data)
     return group_password;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_group_password(Tox *tox, uint32_t group_number, const uint8_t *password, size_t length,
-        void *user_data)
+void tox_events_handle_group_password(
+    Tox *tox, uint32_t group_number, const uint8_t *password, size_t length,
+    void *user_data)
 {
     Tox_Event_Group_Password *group_password = tox_event_group_password_alloc(user_data);
 

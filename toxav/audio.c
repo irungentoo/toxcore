@@ -25,8 +25,6 @@ static bool reconfigure_audio_encoder(const Logger *log, OpusEncoder **e, uint32
                                       uint8_t new_ch, uint32_t *old_br, uint32_t *old_sr, uint8_t *old_ch);
 static bool reconfigure_audio_decoder(ACSession *ac, uint32_t sampling_rate, uint8_t channels);
 
-
-
 ACSession *ac_new(Mono_Time *mono_time, const Logger *log, ToxAV *av, uint32_t friend_number,
                   toxav_audio_receive_frame_cb *cb, void *cb_data)
 {
@@ -242,8 +240,6 @@ int ac_reconfigure_encoder(ACSession *ac, uint32_t bit_rate, uint32_t sampling_r
     return 0;
 }
 
-
-
 struct JitterBuffer {
     struct RTPMessage **queue;
     uint32_t size;
@@ -365,7 +361,6 @@ static OpusEncoder *create_audio_encoder(const Logger *log, uint32_t bit_rate, u
         return nullptr;
     }
 
-
     /*
      * Rates from 500 to 512000 bits per second are meaningful as well as the special
      * values OPUS_BITRATE_AUTO and OPUS_BITRATE_MAX. The value OPUS_BITRATE_MAX can
@@ -382,7 +377,6 @@ static OpusEncoder *create_audio_encoder(const Logger *log, uint32_t bit_rate, u
         goto FAILURE;
     }
 
-
     /*
      * Configures the encoder's use of inband forward error correction.
      * Note:
@@ -397,7 +391,6 @@ static OpusEncoder *create_audio_encoder(const Logger *log, uint32_t bit_rate, u
         LOGGER_ERROR(log, "Error while setting encoder ctl: %s", opus_strerror(status));
         goto FAILURE;
     }
-
 
     /*
      * Configures the encoder's expected packet loss percentage.
@@ -417,7 +410,6 @@ static OpusEncoder *create_audio_encoder(const Logger *log, uint32_t bit_rate, u
         LOGGER_ERROR(log, "Error while setting encoder ctl: %s", opus_strerror(status));
         goto FAILURE;
     }
-
 
     /*
      * Configures the encoder's computational complexity.

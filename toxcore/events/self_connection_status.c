@@ -16,13 +16,11 @@
 #include "../tox_pack.h"
 #include "../tox_unpack.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Self_Connection_Status {
     Tox_Connection connection_status;
@@ -67,7 +65,6 @@ static bool tox_event_self_connection_status_unpack_into(
     assert(event != nullptr);
     return tox_connection_unpack(&event->connection_status, bu);
 }
-
 
 /*****************************************************
  *
@@ -152,16 +149,15 @@ static Tox_Event_Self_Connection_Status *tox_event_self_connection_status_alloc(
     return self_connection_status;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_self_connection_status(Tox *tox, Tox_Connection connection_status,
-        void *user_data)
+void tox_events_handle_self_connection_status(
+    Tox *tox, Tox_Connection connection_status,
+    void *user_data)
 {
     Tox_Event_Self_Connection_Status *self_connection_status = tox_event_self_connection_status_alloc(user_data);
 

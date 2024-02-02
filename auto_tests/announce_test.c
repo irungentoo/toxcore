@@ -120,7 +120,6 @@ static void basic_announce_tests(void)
     test_store_data();
 }
 
-
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);

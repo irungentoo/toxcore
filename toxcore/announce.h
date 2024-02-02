@@ -41,7 +41,6 @@ void announce_set_synch_offset(Announcements *announce, int32_t synch_offset);
 nullable(1)
 void kill_announcements(Announcements *announce);
 
-
 /* The declarations below are not public, they are exposed only for tests. */
 
 /** @private

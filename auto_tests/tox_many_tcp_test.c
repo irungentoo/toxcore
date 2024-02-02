@@ -269,7 +269,6 @@ loop_top:
     printf("test_many_clients_tcp_b succeeded, took %llu seconds\n", time(nullptr) - cur_time);
 }
 
-
 static void tox_suite(void)
 {
     /* Each tox connects to a single tox TCP    */

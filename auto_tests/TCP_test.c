@@ -655,7 +655,7 @@ static void test_client_invalid(void)
     ip_port_tcp_s.port = net_htons(ports[random_u32(rng) % NUM_PORTS]);
     ip_port_tcp_s.ip = get_loopback();
     TCP_Client_Connection *conn = new_tcp_connection(logger, mem, mono_time, rng, ns, &ip_port_tcp_s,
-                                                     self_public_key, f_public_key, f_secret_key, nullptr);
+                                  self_public_key, f_public_key, f_secret_key, nullptr);
 
     // Run the client's main loop but not the server.
     mono_time_update(mono_time);
@@ -708,7 +708,6 @@ static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t
     tcp_data_callback_called = 1;
     return 0;
 }
-
 
 static void test_tcp_connection(void)
 {

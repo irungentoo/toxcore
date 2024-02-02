@@ -14,13 +14,11 @@
 #include "../tox.h"
 #include "../tox_events.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Group_Peer_Join {
     uint32_t group_number;
@@ -86,7 +84,6 @@ static bool tox_event_group_peer_join_unpack_into(
     return bin_unpack_u32(bu, &event->group_number)
            && bin_unpack_u32(bu, &event->peer_id);
 }
-
 
 /*****************************************************
  *
@@ -171,16 +168,15 @@ static Tox_Event_Group_Peer_Join *tox_event_group_peer_join_alloc(void *user_dat
     return group_peer_join;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_group_peer_join(Tox *tox, uint32_t group_number, uint32_t peer_id,
-        void *user_data)
+void tox_events_handle_group_peer_join(
+    Tox *tox, uint32_t group_number, uint32_t peer_id,
+    void *user_data)
 {
     Tox_Event_Group_Peer_Join *group_peer_join = tox_event_group_peer_join_alloc(user_data);
 

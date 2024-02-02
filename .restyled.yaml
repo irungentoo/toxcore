@@ -5,6 +5,7 @@ exclude:
 
 restylers:
   - astyle:
+      image: restyled/restyler-astyle:d7967bcb8b622a98524b7df1da1b02652114cf9a
       arguments: ["--options=other/astyle/astylerc"]
       include:
         - "**/*.c"
@@ -12,7 +13,7 @@ restylers:
   - autopep8
   - black
   - clang-format:
-      image: restyled/restyler-clang-format:13.0.1
+      image: restyled/restyler-clang-format:v16.0.6
       include:
         - "**/*.cc"
         - "**/*.hh"

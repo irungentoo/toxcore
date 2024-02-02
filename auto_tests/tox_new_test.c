@@ -2,7 +2,8 @@
 
 #include "../toxcore/ccompat.h"
 
-int main(void) {
+int main(void)
+{
     tox_kill(tox_new(nullptr, nullptr));
     return 0;
 }

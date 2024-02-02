@@ -1714,7 +1714,6 @@ int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_p
     return dht_getfriendip(onion_c->dht, dht_public_key, ip_port);
 }
 
-
 /** @brief Set if friend is online or not.
  *
  * NOTE: This function is there and should be used so that we don't send
@@ -1887,7 +1886,6 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
     }
 }
 
-
 /** Function to call when onion data packet with contents beginning with byte is received. */
 void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_handler_cb *cb, void *object)
 {
@@ -1941,7 +1939,6 @@ static void do_announce(Onion_Client *onion_c)
         if (node_list[i].pings_since_last_response >= ONION_NODE_MAX_PINGS) {
             continue;
         }
-
 
         unsigned int interval = ANNOUNCE_INTERVAL_NOT_ANNOUNCED;
 
@@ -2029,7 +2026,7 @@ static void do_announce(Onion_Client *onion_c)
             } else {
                 Ip_Ntoa ip_str;
                 LOGGER_TRACE(onion_c->logger, "not sending repeated announce request to %s:%d",
-                        net_ip_ntoa(&target->ip_port.ip, &ip_str), net_ntohs(target->ip_port.port));
+                             net_ip_ntoa(&target->ip_port.ip, &ip_str), net_ntohs(target->ip_port.port));
             }
         }
     }

@@ -62,7 +62,6 @@ typedef struct TCP_Secure_Connection {
 
 static const TCP_Secure_Connection empty_tcp_secure_connection = {{nullptr}};
 
-
 struct TCP_Server {
     const Logger *logger;
     const Memory *mem;
@@ -187,7 +186,6 @@ static int get_tcp_connection_index(const TCP_Server *tcp_server, const uint8_t 
 {
     return bs_list_find(&tcp_server->accepted_key_list, public_key);
 }
-
 
 non_null()
 static int kill_accepted(TCP_Server *tcp_server, int index);
@@ -850,7 +848,6 @@ static int handle_tcp_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
     return 0;
 }
 
-
 non_null()
 static int confirm_tcp_connection(TCP_Server *tcp_server, const Mono_Time *mono_time, TCP_Secure_Connection *con,
                                   const uint8_t *data, uint16_t length)
@@ -1115,7 +1112,8 @@ static int do_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_time, ui
     LOGGER_TRACE(tcp_server->logger, "handling unconfirmed TCP connection %d", i);
 
     uint8_t packet[MAX_PACKET_SIZE];
-    const int len = read_packet_tcp_secure_connection(tcp_server->logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
+    const int len = read_packet_tcp_secure_connection(tcp_server->logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet,
+                    sizeof(packet), &conn->con.ip_port);
 
     if (len == 0) {
         return -1;
@@ -1135,7 +1133,8 @@ static bool tcp_process_secure_packet(TCP_Server *tcp_server, uint32_t i)
     TCP_Secure_Connection *const conn = &tcp_server->accepted_connection_array[i];
 
     uint8_t packet[MAX_PACKET_SIZE];
-    const int len = read_packet_tcp_secure_connection(tcp_server->logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
+    const int len = read_packet_tcp_secure_connection(tcp_server->logger, conn->con.mem, conn->con.ns, conn->con.sock, &conn->next_packet_length, conn->con.shared_key, conn->recv_nonce, packet,
+                    sizeof(packet), &conn->con.ip_port);
     LOGGER_TRACE(tcp_server->logger, "processing packet for %d: %d", i, len);
 
     if (len == 0) {
@@ -1282,7 +1281,6 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
 
             continue;
         }
-
 
         if ((events[n].events & EPOLLIN) == 0) {
             continue;

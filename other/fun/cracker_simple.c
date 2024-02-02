@@ -30,7 +30,6 @@ static void print_key(const uint8_t *client_id)
     }
 }
 
-
 int main(int argc, char *argv[])
 {
     if (argc < 2) {

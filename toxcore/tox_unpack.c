@@ -167,20 +167,20 @@ bool tox_user_status_unpack(Tox_User_Status *val, Bin_Unpack *bu)
 non_null()
 static bool tox_group_privacy_state_from_int(uint32_t value, Tox_Group_Privacy_State *out)
 {
-  switch (value) {
-    case TOX_GROUP_PRIVACY_STATE_PUBLIC: {
-      *out = TOX_GROUP_PRIVACY_STATE_PUBLIC;
-      return true;
+    switch (value) {
+        case TOX_GROUP_PRIVACY_STATE_PUBLIC: {
+            *out = TOX_GROUP_PRIVACY_STATE_PUBLIC;
+            return true;
+        }
+        case TOX_GROUP_PRIVACY_STATE_PRIVATE: {
+            *out = TOX_GROUP_PRIVACY_STATE_PRIVATE;
+            return true;
+        }
+        default: {
+            *out = TOX_GROUP_PRIVACY_STATE_PUBLIC;
+            return false;
+        }
     }
-    case TOX_GROUP_PRIVACY_STATE_PRIVATE: {
-      *out = TOX_GROUP_PRIVACY_STATE_PRIVATE;
-      return true;
-    }
-    default: {
-      *out = TOX_GROUP_PRIVACY_STATE_PUBLIC;
-      return false;
-    }
-  }
 }
 bool tox_group_privacy_state_unpack(Tox_Group_Privacy_State *val, Bin_Unpack *bu)
 {
@@ -191,24 +191,24 @@ bool tox_group_privacy_state_unpack(Tox_Group_Privacy_State *val, Bin_Unpack *bu
 non_null()
 static bool tox_group_voice_state_from_int(uint32_t value, Tox_Group_Voice_State *out)
 {
-  switch (value) {
-    case TOX_GROUP_VOICE_STATE_ALL: {
-      *out = TOX_GROUP_VOICE_STATE_ALL;
-      return true;
+    switch (value) {
+        case TOX_GROUP_VOICE_STATE_ALL: {
+            *out = TOX_GROUP_VOICE_STATE_ALL;
+            return true;
+        }
+        case TOX_GROUP_VOICE_STATE_MODERATOR: {
+            *out = TOX_GROUP_VOICE_STATE_MODERATOR;
+            return true;
+        }
+        case TOX_GROUP_VOICE_STATE_FOUNDER: {
+            *out = TOX_GROUP_VOICE_STATE_FOUNDER;
+            return true;
+        }
+        default: {
+            *out = TOX_GROUP_VOICE_STATE_ALL;
+            return false;
+        }
     }
-    case TOX_GROUP_VOICE_STATE_MODERATOR: {
-      *out = TOX_GROUP_VOICE_STATE_MODERATOR;
-      return true;
-    }
-    case TOX_GROUP_VOICE_STATE_FOUNDER: {
-      *out = TOX_GROUP_VOICE_STATE_FOUNDER;
-      return true;
-    }
-    default: {
-      *out = TOX_GROUP_VOICE_STATE_ALL;
-      return false;
-    }
-  }
 }
 bool tox_group_voice_state_unpack(Tox_Group_Voice_State *val, Bin_Unpack *bu)
 {
@@ -220,20 +220,20 @@ bool tox_group_voice_state_unpack(Tox_Group_Voice_State *val, Bin_Unpack *bu)
 non_null()
 static bool tox_group_topic_lock_from_int(uint32_t value, Tox_Group_Topic_Lock *out)
 {
-  switch (value) {
-    case TOX_GROUP_TOPIC_LOCK_ENABLED: {
-      *out = TOX_GROUP_TOPIC_LOCK_ENABLED;
-      return true;
+    switch (value) {
+        case TOX_GROUP_TOPIC_LOCK_ENABLED: {
+            *out = TOX_GROUP_TOPIC_LOCK_ENABLED;
+            return true;
+        }
+        case TOX_GROUP_TOPIC_LOCK_DISABLED: {
+            *out = TOX_GROUP_TOPIC_LOCK_DISABLED;
+            return true;
+        }
+        default: {
+            *out = TOX_GROUP_TOPIC_LOCK_ENABLED;
+            return false;
+        }
     }
-    case TOX_GROUP_TOPIC_LOCK_DISABLED: {
-      *out = TOX_GROUP_TOPIC_LOCK_DISABLED;
-      return true;
-    }
-    default: {
-      *out = TOX_GROUP_TOPIC_LOCK_ENABLED;
-      return false;
-    }
-  }
 }
 bool tox_group_topic_lock_unpack(Tox_Group_Topic_Lock *val, Bin_Unpack *bu)
 {
@@ -245,24 +245,24 @@ bool tox_group_topic_lock_unpack(Tox_Group_Topic_Lock *val, Bin_Unpack *bu)
 non_null()
 static bool tox_group_join_fail_from_int(uint32_t value, Tox_Group_Join_Fail *out)
 {
-  switch (value) {
-    case TOX_GROUP_JOIN_FAIL_PEER_LIMIT: {
-      *out = TOX_GROUP_JOIN_FAIL_PEER_LIMIT;
-      return true;
+    switch (value) {
+        case TOX_GROUP_JOIN_FAIL_PEER_LIMIT: {
+            *out = TOX_GROUP_JOIN_FAIL_PEER_LIMIT;
+            return true;
+        }
+        case TOX_GROUP_JOIN_FAIL_INVALID_PASSWORD: {
+            *out = TOX_GROUP_JOIN_FAIL_INVALID_PASSWORD;
+            return true;
+        }
+        case TOX_GROUP_JOIN_FAIL_UNKNOWN: {
+            *out = TOX_GROUP_JOIN_FAIL_UNKNOWN;
+            return true;
+        }
+        default: {
+            *out = TOX_GROUP_JOIN_FAIL_PEER_LIMIT;
+            return false;
+        }
     }
-    case TOX_GROUP_JOIN_FAIL_INVALID_PASSWORD: {
-      *out = TOX_GROUP_JOIN_FAIL_INVALID_PASSWORD;
-      return true;
-    }
-    case TOX_GROUP_JOIN_FAIL_UNKNOWN: {
-      *out = TOX_GROUP_JOIN_FAIL_UNKNOWN;
-      return true;
-    }
-    default: {
-      *out = TOX_GROUP_JOIN_FAIL_PEER_LIMIT;
-      return false;
-    }
-  }
 }
 bool tox_group_join_fail_unpack(Tox_Group_Join_Fail *val, Bin_Unpack *bu)
 {
@@ -274,28 +274,28 @@ bool tox_group_join_fail_unpack(Tox_Group_Join_Fail *val, Bin_Unpack *bu)
 non_null()
 static bool tox_group_mod_event_from_int(uint32_t value, Tox_Group_Mod_Event *out)
 {
-  switch (value) {
-    case TOX_GROUP_MOD_EVENT_KICK: {
-      *out = TOX_GROUP_MOD_EVENT_KICK;
-      return true;
+    switch (value) {
+        case TOX_GROUP_MOD_EVENT_KICK: {
+            *out = TOX_GROUP_MOD_EVENT_KICK;
+            return true;
+        }
+        case TOX_GROUP_MOD_EVENT_OBSERVER: {
+            *out = TOX_GROUP_MOD_EVENT_OBSERVER;
+            return true;
+        }
+        case TOX_GROUP_MOD_EVENT_USER: {
+            *out = TOX_GROUP_MOD_EVENT_USER;
+            return true;
+        }
+        case TOX_GROUP_MOD_EVENT_MODERATOR: {
+            *out = TOX_GROUP_MOD_EVENT_MODERATOR;
+            return true;
+        }
+        default: {
+            *out = TOX_GROUP_MOD_EVENT_KICK;
+            return false;
+        }
     }
-    case TOX_GROUP_MOD_EVENT_OBSERVER: {
-      *out = TOX_GROUP_MOD_EVENT_OBSERVER;
-      return true;
-    }
-    case TOX_GROUP_MOD_EVENT_USER: {
-      *out = TOX_GROUP_MOD_EVENT_USER;
-      return true;
-    }
-    case TOX_GROUP_MOD_EVENT_MODERATOR: {
-      *out = TOX_GROUP_MOD_EVENT_MODERATOR;
-      return true;
-    }
-    default: {
-      *out = TOX_GROUP_MOD_EVENT_KICK;
-      return false;
-    }
-  }
 }
 bool tox_group_mod_event_unpack(Tox_Group_Mod_Event *val, Bin_Unpack *bu)
 {
@@ -307,36 +307,36 @@ bool tox_group_mod_event_unpack(Tox_Group_Mod_Event *val, Bin_Unpack *bu)
 non_null()
 static bool tox_group_exit_type_from_int(uint32_t value, Tox_Group_Exit_Type *out)
 {
-  switch (value) {
-    case TOX_GROUP_EXIT_TYPE_QUIT: {
-      *out = TOX_GROUP_EXIT_TYPE_QUIT;
-      return true;
+    switch (value) {
+        case TOX_GROUP_EXIT_TYPE_QUIT: {
+            *out = TOX_GROUP_EXIT_TYPE_QUIT;
+            return true;
+        }
+        case TOX_GROUP_EXIT_TYPE_TIMEOUT: {
+            *out = TOX_GROUP_EXIT_TYPE_TIMEOUT;
+            return true;
+        }
+        case TOX_GROUP_EXIT_TYPE_DISCONNECTED: {
+            *out = TOX_GROUP_EXIT_TYPE_DISCONNECTED;
+            return true;
+        }
+        case TOX_GROUP_EXIT_TYPE_SELF_DISCONNECTED: {
+            *out = TOX_GROUP_EXIT_TYPE_SELF_DISCONNECTED;
+            return true;
+        }
+        case TOX_GROUP_EXIT_TYPE_KICK: {
+            *out = TOX_GROUP_EXIT_TYPE_KICK;
+            return true;
+        }
+        case TOX_GROUP_EXIT_TYPE_SYNC_ERROR: {
+            *out = TOX_GROUP_EXIT_TYPE_SYNC_ERROR;
+            return true;
+        }
+        default: {
+            *out = TOX_GROUP_EXIT_TYPE_QUIT;
+            return false;
+        }
     }
-    case TOX_GROUP_EXIT_TYPE_TIMEOUT: {
-      *out = TOX_GROUP_EXIT_TYPE_TIMEOUT;
-      return true;
-    }
-    case TOX_GROUP_EXIT_TYPE_DISCONNECTED: {
-      *out = TOX_GROUP_EXIT_TYPE_DISCONNECTED;
-      return true;
-    }
-    case TOX_GROUP_EXIT_TYPE_SELF_DISCONNECTED: {
-      *out = TOX_GROUP_EXIT_TYPE_SELF_DISCONNECTED;
-      return true;
-    }
-    case TOX_GROUP_EXIT_TYPE_KICK: {
-      *out = TOX_GROUP_EXIT_TYPE_KICK;
-      return true;
-    }
-    case TOX_GROUP_EXIT_TYPE_SYNC_ERROR: {
-      *out = TOX_GROUP_EXIT_TYPE_SYNC_ERROR;
-      return true;
-    }
-    default: {
-      *out = TOX_GROUP_EXIT_TYPE_QUIT;
-      return false;
-    }
-  }
 }
 bool tox_group_exit_type_unpack(Tox_Group_Exit_Type *val, Bin_Unpack *bu)
 {

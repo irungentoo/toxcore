@@ -220,7 +220,6 @@ Onion_Client *new_onion_client(const Logger *logger, const Memory *mem, const Ra
 nullable(1)
 void kill_onion_client(Onion_Client *onion_c);
 
-
 typedef enum Onion_Connection_Status {
     /** We are not connected to the network. */
     ONION_CONNECTION_STATUS_NONE = 0,

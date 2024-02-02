@@ -30,9 +30,9 @@ typedef struct Shared_Key_Cache Shared_Key_Cache;
  */
 non_null()
 Shared_Key_Cache *shared_key_cache_new(
-        const Logger *log, const Mono_Time *mono_time, const Memory *mem,
-        const uint8_t *self_secret_key,
-        uint64_t timeout, uint8_t keys_per_slot);
+    const Logger *log, const Mono_Time *mono_time, const Memory *mem,
+    const uint8_t *self_secret_key,
+    uint64_t timeout, uint8_t keys_per_slot);
 
 /**
  * @brief Deletes the cache and frees all resources.
@@ -50,6 +50,6 @@ void shared_key_cache_free(Shared_Key_Cache *cache);
  * @return nullptr on error.
  */
 non_null()
-const uint8_t* shared_key_cache_lookup(Shared_Key_Cache *cache, const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]);
+const uint8_t *shared_key_cache_lookup(Shared_Key_Cache *cache, const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]);
 
 #endif /* C_TOXCORE_TOXCORE_SHARED_KEY_CACHE_H */

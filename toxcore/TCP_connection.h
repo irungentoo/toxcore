@@ -186,7 +186,6 @@ void set_forwarding_packet_tcp_connection_callback(TCP_Connections *tcp_c,
         forwarded_response_cb *tcp_forwarded_response_callback,
         void *object);
 
-
 typedef int tcp_oob_cb(void *object, const uint8_t *public_key, unsigned int tcp_connections_number,
                        const uint8_t *packet, uint16_t length, void *userdata);
 

@@ -24,10 +24,10 @@ static bool try_bootstrap(Tox *tox1, Tox *tox2, Tox *tox3, Tox *tox4)
                 tox_self_get_connection_status(tox3) != TOX_CONNECTION_NONE &&
                 tox_self_get_connection_status(tox4) != TOX_CONNECTION_NONE) {
             printf("%d %d %d %d\n",
-                    tox_self_get_connection_status(tox1),
-                    tox_self_get_connection_status(tox2),
-                    tox_self_get_connection_status(tox3),
-                    tox_self_get_connection_status(tox4));
+                   tox_self_get_connection_status(tox1),
+                   tox_self_get_connection_status(tox2),
+                   tox_self_get_connection_status(tox3),
+                   tox_self_get_connection_status(tox4));
             return true;
         }
 
@@ -38,10 +38,10 @@ static bool try_bootstrap(Tox *tox1, Tox *tox2, Tox *tox3, Tox *tox4)
 
         if (i % 10 == 0) {
             printf("%d %d %d %d\n",
-                    tox_self_get_connection_status(tox1),
-                    tox_self_get_connection_status(tox2),
-                    tox_self_get_connection_status(tox3),
-                    tox_self_get_connection_status(tox4));
+                   tox_self_get_connection_status(tox1),
+                   tox_self_get_connection_status(tox2),
+                   tox_self_get_connection_status(tox3),
+                   tox_self_get_connection_status(tox4));
         }
 
         c_sleep(tox_iteration_interval(tox1));

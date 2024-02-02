@@ -178,7 +178,6 @@ static void group_tcp_test(AutoTox *autotoxes)
     printf("%d peers successfully joined. Waiting for code...\n", NUM_GROUP_TOXES);
     printf("Tox 0 sending secret code to all peers\n");
 
-
     for (size_t i = 0; i < NUM_GROUP_TOXES - 1; ++i) {
 
         Tox_Err_Group_Send_Private_Message perr;

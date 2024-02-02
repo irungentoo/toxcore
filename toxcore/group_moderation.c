@@ -396,7 +396,6 @@ int sanctions_list_unpack(Mod_Sanction *sanctions, Mod_Sanction_Creds *creds, ui
     return num;
 }
 
-
 /** @brief Creates a new sanction list hash and puts it in hash.
  *
  * The hash is derived from the signature of all entries plus the version number.

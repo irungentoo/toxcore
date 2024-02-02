@@ -16,13 +16,11 @@
 #include "../tox.h"
 #include "../tox_events.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_File_Recv {
     uint32_t friend_number;
@@ -164,7 +162,6 @@ static bool tox_event_file_recv_unpack_into(
            && bin_unpack_bin(bu, &event->filename, &event->filename_length);
 }
 
-
 /*****************************************************
  *
  * :: new/free/add/get/size/unpack
@@ -248,16 +245,15 @@ static Tox_Event_File_Recv *tox_event_file_recv_alloc(void *user_data)
     return file_recv;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_file_recv(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t kind, uint64_t file_size, const uint8_t *filename, size_t filename_length,
-        void *user_data)
+void tox_events_handle_file_recv(
+    Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t kind, uint64_t file_size, const uint8_t *filename, size_t filename_length,
+    void *user_data)
 {
     Tox_Event_File_Recv *file_recv = tox_event_file_recv_alloc(user_data);
 

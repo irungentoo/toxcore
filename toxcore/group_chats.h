@@ -572,7 +572,6 @@ int gc_kick_peer(const Messenger *m, int group_number, uint32_t peer_id);
 non_null(1) nullable(2)
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);
 
-
 /** Group callbacks */
 non_null(1) nullable(2) void gc_callback_message(const Messenger *m, gc_message_cb *function);
 non_null(1) nullable(2) void gc_callback_private_message(const Messenger *m, gc_private_message_cb *function);

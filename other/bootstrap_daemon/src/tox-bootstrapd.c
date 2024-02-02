@@ -50,7 +50,6 @@
 #include "global.h"
 #include "log.h"
 
-
 static void sleep_milliseconds(uint32_t ms)
 {
     struct timespec req;
@@ -163,7 +162,6 @@ static Cli_Status daemonize(LOG_BACKEND log_backend, char *pid_file_path)
         log_write(LOG_LEVEL_ERROR, "SID creation failure. Exiting.\n");
         return CLI_STATUS_ERROR;
     }
-
 
     // Change the current working directory
     if ((chdir("/")) < 0) {

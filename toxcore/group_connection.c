@@ -94,7 +94,7 @@ void gcc_set_recv_message_id(GC_Connection *gconn, uint64_t id)
  */
 non_null(1, 2, 3) nullable(4)
 static bool create_array_entry(const Logger *log, const Mono_Time *mono_time, GC_Message_Array_Entry *array_entry,
-        const uint8_t *data, uint16_t length, uint8_t packet_type, uint64_t message_id)
+                               const uint8_t *data, uint16_t length, uint8_t packet_type, uint64_t message_id)
 {
     if (!array_entry_is_empty(array_entry)) {
         LOGGER_WARNING(log, "Failed to create array entry; entry is not empty.");
@@ -182,7 +182,6 @@ int gcc_send_lossless_packet(const GC_Chat *chat, GC_Connection *gconn, const ui
 
     return 0;
 }
-
 
 bool gcc_send_lossless_packet_fragments(const GC_Chat *chat, GC_Connection *gconn, const uint8_t *data,
                                         uint16_t length, uint8_t packet_type)

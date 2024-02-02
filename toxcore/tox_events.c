@@ -19,13 +19,11 @@
 #include "tox_private.h"
 #include "tox_struct.h"
 
-
 /*****************************************************
  *
  * :: Set up event handlers.
  *
  *****************************************************/
-
 
 void tox_events_init(Tox *tox)
 {

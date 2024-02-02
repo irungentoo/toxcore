@@ -118,7 +118,6 @@ static int handle_test_3(void *object, const IP_Port *source, const uint8_t *pac
         return 1;
     }
 
-
     if (memcmp(packet + 1, sb_data, ONION_ANNOUNCE_SENDBACK_DATA_LENGTH) != 0) {
         return 1;
     }
@@ -153,7 +152,6 @@ static int handle_test_3_old(void *object, const IP_Port *source, const uint8_t 
     if (len == -1) {
         return 1;
     }
-
 
     if (memcmp(packet + 1, sb_data, ONION_ANNOUNCE_SENDBACK_DATA_LENGTH) != 0) {
         return 1;

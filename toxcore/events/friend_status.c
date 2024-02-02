@@ -16,13 +16,11 @@
 #include "../tox_pack.h"
 #include "../tox_unpack.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Friend_Status {
     uint32_t friend_number;
@@ -88,7 +86,6 @@ static bool tox_event_friend_status_unpack_into(
     return bin_unpack_u32(bu, &event->friend_number)
            && tox_user_status_unpack(&event->status, bu);
 }
-
 
 /*****************************************************
  *
@@ -173,16 +170,15 @@ static Tox_Event_Friend_Status *tox_event_friend_status_alloc(void *user_data)
     return friend_status;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_friend_status(Tox *tox, uint32_t friend_number, Tox_User_Status status,
-        void *user_data)
+void tox_events_handle_friend_status(
+    Tox *tox, uint32_t friend_number, Tox_User_Status status,
+    void *user_data)
 {
     Tox_Event_Friend_Status *friend_status = tox_event_friend_status_alloc(user_data);
 

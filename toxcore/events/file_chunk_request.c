@@ -14,13 +14,11 @@
 #include "../tox.h"
 #include "../tox_events.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_File_Chunk_Request {
     uint32_t friend_number;
@@ -119,7 +117,6 @@ static bool tox_event_file_chunk_request_unpack_into(
            && bin_unpack_u16(bu, &event->length);
 }
 
-
 /*****************************************************
  *
  * :: new/free/add/get/size/unpack
@@ -203,16 +200,15 @@ static Tox_Event_File_Chunk_Request *tox_event_file_chunk_request_alloc(void *us
     return file_chunk_request;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
-        void *user_data)
+void tox_events_handle_file_chunk_request(
+    Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
+    void *user_data)
 {
     Tox_Event_File_Chunk_Request *file_chunk_request = tox_event_file_chunk_request_alloc(user_data);
 

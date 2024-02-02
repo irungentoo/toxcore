@@ -18,7 +18,7 @@
 static void nickchange_callback(Tox *tox, const Tox_Event_Friend_Name *event, void *user_data)
 {
     //const uint32_t friend_number = tox_event_friend_name_get_friend_number(event);
-    const uint8_t* name = tox_event_friend_name_get_name(event);
+    const uint8_t *name = tox_event_friend_name_get_name(event);
     const uint32_t name_length = tox_event_friend_name_get_name_length(event);
 
     ck_assert_msg(name_length == sizeof(NICKNAME), "Name length not correct: %d != %d", (uint16_t)name_length,

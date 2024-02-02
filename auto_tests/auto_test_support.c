@@ -444,7 +444,6 @@ void print_debug_log(Tox *m, Tox_Log_Level level, const char *file, uint32_t lin
     }
 }
 
-
 void print_debug_logger(void *context, Logger_Level level, const char *file, int line, const char *func, const char *message, void *userdata)
 {
     print_debug_log(nullptr, (Tox_Log_Level) level, file, (uint32_t) line, func, message, userdata);

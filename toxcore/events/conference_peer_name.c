@@ -16,13 +16,11 @@
 #include "../tox.h"
 #include "../tox_events.h"
 
-
 /*****************************************************
  *
  * :: struct and accessors
  *
  *****************************************************/
-
 
 struct Tox_Event_Conference_Peer_Name {
     uint32_t conference_number;
@@ -132,7 +130,6 @@ static bool tox_event_conference_peer_name_unpack_into(
            && bin_unpack_bin(bu, &event->name, &event->name_length);
 }
 
-
 /*****************************************************
  *
  * :: new/free/add/get/size/unpack
@@ -216,16 +213,15 @@ static Tox_Event_Conference_Peer_Name *tox_event_conference_peer_name_alloc(void
     return conference_peer_name;
 }
 
-
 /*****************************************************
  *
  * :: event handler
  *
  *****************************************************/
 
-
-void tox_events_handle_conference_peer_name(Tox *tox, uint32_t conference_number, uint32_t peer_number, const uint8_t *name, size_t length,
-        void *user_data)
+void tox_events_handle_conference_peer_name(
+    Tox *tox, uint32_t conference_number, uint32_t peer_number, const uint8_t *name, size_t length,
+    void *user_data)
 {
     Tox_Event_Conference_Peer_Name *conference_peer_name = tox_event_conference_peer_name_alloc(user_data);
 
