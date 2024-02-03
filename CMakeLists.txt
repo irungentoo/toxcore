@@ -527,7 +527,7 @@ endfunction()
 
 # The actual unit tests follow.
 #
-if(GTEST_FOUND)
+if(TARGET GTest::gtest AND TARGET GTest::gmock)
   unit_test(toxav ring_buffer)
   unit_test(toxav rtp)
   unit_test(toxcore DHT)
