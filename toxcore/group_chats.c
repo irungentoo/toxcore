@@ -177,6 +177,35 @@ non_null() static bool saved_peer_is_valid(const GC_SavedPeerInfo *saved_peer);
 
 static const GC_Chat empty_gc_chat = {nullptr};
 
+#define GC_INVALID_PEER_ID_VALUE ((force GC_Peer_Id_Value)-1)
+
+static GC_Peer_Id gc_invalid_peer_id(void)
+{
+    const GC_Peer_Id invalid = {GC_INVALID_PEER_ID_VALUE};
+    return invalid;
+}
+
+static bool gc_peer_id_is_valid(GC_Peer_Id peer_id)
+{
+    return peer_id.value != GC_INVALID_PEER_ID_VALUE;
+}
+
+GC_Peer_Id gc_peer_id_from_int(uint32_t value)
+{
+    const GC_Peer_Id peer_id = {(force GC_Peer_Id_Value)value};
+    return peer_id;
+}
+
+uint32_t gc_peer_id_to_int(GC_Peer_Id peer_id)
+{
+    return (force uint32_t)peer_id.value;
+}
+
+static GC_Peer_Id gc_unknown_peer_id(void)
+{
+    return gc_peer_id_from_int(0);
+}
+
 non_null()
 static void kill_group_friend_connection(const GC_Session *c, const GC_Chat *chat)
 {
@@ -329,7 +358,7 @@ static void self_gc_set_status(const GC_Chat *chat, Group_Peer_Status status)
     LOGGER_WARNING(chat->log, "Attempting to set user status with invalid status: %u", (uint8_t)status);
 }
 
-uint32_t gc_get_self_peer_id(const GC_Chat *chat)
+GC_Peer_Id gc_get_self_peer_id(const GC_Chat *chat)
 {
     const GC_Peer *peer = get_gc_peer(chat, 0);
     assert(peer != nullptr);
@@ -689,10 +718,10 @@ static GC_Connection *random_gc_connection(const GC_Chat *chat)
  * Returns -1 if peer_id is invalid.
  */
 non_null()
-static int get_peer_number_of_peer_id(const GC_Chat *chat, uint32_t peer_id)
+static int get_peer_number_of_peer_id(const GC_Chat *chat, GC_Peer_Id peer_id)
 {
     for (uint32_t i = 0; i < chat->numpeers; ++i) {
-        if (chat->group[i].peer_id == peer_id) {
+        if (chat->group[i].peer_id.value == peer_id.value) {
             return i;
         }
     }
@@ -707,15 +736,16 @@ static int get_peer_number_of_peer_id(const GC_Chat *chat, uint32_t peer_id)
  * considered arbitrary values.
  */
 non_null()
-static uint32_t get_new_peer_id(const GC_Chat *chat)
+static GC_Peer_Id get_new_peer_id(const GC_Chat *chat)
 {
     for (uint32_t i = 0; i < UINT32_MAX - 1; ++i) {
-        if (get_peer_number_of_peer_id(chat, i) == -1) {
-            return i;
+        const GC_Peer_Id peer_id = gc_peer_id_from_int(i);
+        if (get_peer_number_of_peer_id(chat, peer_id) == -1) {
+            return peer_id;
         }
     }
 
-    return UINT32_MAX;
+    return gc_invalid_peer_id();
 }
 
 /** @brief Sets the password for the group (locally only).
@@ -2553,7 +2583,7 @@ static int handle_gc_status(const GC_Session *c, const GC_Chat *chat, GC_Peer *p
     return 0;
 }
 
-uint8_t gc_get_status(const GC_Chat *chat, uint32_t peer_id)
+uint8_t gc_get_status(const GC_Chat *chat, GC_Peer_Id peer_id)
 {
     const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
 
@@ -2566,7 +2596,7 @@ uint8_t gc_get_status(const GC_Chat *chat, uint32_t peer_id)
     return peer->status;
 }
 
-uint8_t gc_get_role(const GC_Chat *chat, uint32_t peer_id)
+uint8_t gc_get_role(const GC_Chat *chat, GC_Peer_Id peer_id)
 {
     const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
 
@@ -3069,7 +3099,7 @@ static int handle_gc_mod_list(const GC_Session *c, GC_Chat *chat, const uint8_t 
         update_gc_peer_roles(chat);
 
         if (chat->connection_state == CS_CONNECTED && c->moderation != nullptr) {
-            c->moderation(c->messenger, chat->group_number, (uint32_t) -1, (uint32_t) -1, MV_MOD, userdata);
+            c->moderation(c->messenger, chat->group_number, gc_invalid_peer_id(), gc_invalid_peer_id(), MV_MOD, userdata);
         }
 
         return 0;
@@ -3190,7 +3220,7 @@ static int handle_gc_sanctions_list(const GC_Session *c, GC_Chat *chat, const ui
 
     if (chat->connection_state == CS_CONNECTED) {
         if (c->moderation != nullptr) {
-            c->moderation(c->messenger, chat->group_number, (uint32_t) -1, (uint32_t) -1, MV_OBSERVER, userdata);
+            c->moderation(c->messenger, chat->group_number, gc_invalid_peer_id(), gc_invalid_peer_id(), MV_OBSERVER, userdata);
         }
     }
 
@@ -3451,7 +3481,7 @@ int gc_set_self_nick(const Messenger *m, int group_number, const uint8_t *nick, 
     return 0;
 }
 
-bool gc_get_peer_nick(const GC_Chat *chat, uint32_t peer_id, uint8_t *name)
+bool gc_get_peer_nick(const GC_Chat *chat, GC_Peer_Id peer_id, uint8_t *name)
 {
     const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
 
@@ -3468,7 +3498,7 @@ bool gc_get_peer_nick(const GC_Chat *chat, uint32_t peer_id, uint8_t *name)
     return true;
 }
 
-int gc_get_peer_nick_size(const GC_Chat *chat, uint32_t peer_id)
+int gc_get_peer_nick_size(const GC_Chat *chat, GC_Peer_Id peer_id)
 {
     const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
 
@@ -3532,7 +3562,7 @@ static int get_gc_peer_public_key(const GC_Chat *chat, uint32_t peer_number, uin
     return 0;
 }
 
-int gc_get_peer_public_key_by_peer_id(const GC_Chat *chat, uint32_t peer_id, uint8_t *public_key)
+int gc_get_peer_public_key_by_peer_id(const GC_Chat *chat, GC_Peer_Id peer_id, uint8_t *public_key)
 {
     const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
 
@@ -3567,7 +3597,7 @@ static void get_gc_ip_ntoa(const IP_Port *ip_port, Ip_Ntoa *ip_str)
     }
 }
 
-int gc_get_peer_ip_address_size(const GC_Chat *chat, uint32_t peer_id)
+int gc_get_peer_ip_address_size(const GC_Chat *chat, GC_Peer_Id peer_id)
 {
     const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
     const GC_Connection *gconn = get_gc_connection(chat, peer_number);
@@ -3584,7 +3614,7 @@ int gc_get_peer_ip_address_size(const GC_Chat *chat, uint32_t peer_id)
     return ip_str.length;
 }
 
-int gc_get_peer_ip_address(const GC_Chat *chat, uint32_t peer_id, uint8_t *ip_addr)
+int gc_get_peer_ip_address(const GC_Chat *chat, GC_Peer_Id peer_id, uint8_t *ip_addr)
 {
     const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
     const GC_Connection *gconn = get_gc_connection(chat, peer_number);
@@ -3608,7 +3638,7 @@ int gc_get_peer_ip_address(const GC_Chat *chat, uint32_t peer_id, uint8_t *ip_ad
     return 0;
 }
 
-unsigned int gc_get_peer_connection_status(const GC_Chat *chat, uint32_t peer_id)
+unsigned int gc_get_peer_connection_status(const GC_Chat *chat, GC_Peer_Id peer_id)
 {
     const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
 
@@ -3970,7 +4000,7 @@ static int handle_gc_topic(const GC_Session *c, GC_Chat *chat, const GC_Peer *pe
 
     if (!skip_callback && chat->connection_state == CS_CONNECTED && c->topic_change != nullptr) {
         const int setter_peer_number = get_peer_number_of_sig_pk(chat, topic_info.public_sig_key);
-        const uint32_t peer_id = setter_peer_number >= 0 ? chat->group[setter_peer_number].peer_id : 0;
+        const GC_Peer_Id peer_id = setter_peer_number >= 0 ? chat->group[setter_peer_number].peer_id : gc_unknown_peer_id();
 
         c->topic_change(c->messenger, chat->group_number, peer_id, topic_info.topic, topic_info.length, userdata);
     }
@@ -4590,7 +4620,7 @@ static bool apply_new_gc_role(GC_Chat *chat, uint32_t peer_number, Group_Role cu
     return true;
 }
 
-int gc_set_peer_role(const Messenger *m, int group_number, uint32_t peer_id, Group_Role new_role)
+int gc_set_peer_role(const Messenger *m, int group_number, GC_Peer_Id peer_id, Group_Role new_role)
 {
     const GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, group_number);
@@ -4919,7 +4949,7 @@ static int handle_gc_message(const GC_Session *c, const GC_Chat *chat, const GC_
     return 0;
 }
 
-int gc_send_private_message(const GC_Chat *chat, uint32_t peer_id, uint8_t type, const uint8_t *message,
+int gc_send_private_message(const GC_Chat *chat, GC_Peer_Id peer_id, uint8_t type, const uint8_t *message,
                             uint16_t length)
 {
     if (length > MAX_GC_MESSAGE_SIZE) {
@@ -5013,7 +5043,7 @@ static bool custom_gc_packet_length_is_valid(uint16_t length, bool lossless)
     return length <= (lossless ? MAX_GC_CUSTOM_LOSSLESS_PACKET_SIZE : MAX_GC_CUSTOM_LOSSY_PACKET_SIZE);
 }
 
-int gc_send_custom_private_packet(const GC_Chat *chat, bool lossless, uint32_t peer_id, const uint8_t *message,
+int gc_send_custom_private_packet(const GC_Chat *chat, bool lossless, GC_Peer_Id peer_id, const uint8_t *message,
                                   uint16_t length)
 {
     if (!custom_gc_packet_length_is_valid(length, lossless)) {
@@ -5202,7 +5232,7 @@ static bool send_gc_kick_peer(const GC_Chat *chat, const GC_Connection *gconn)
     return send_gc_broadcast_message(chat, packet, ENC_PUBLIC_KEY_SIZE, GM_KICK_PEER);
 }
 
-int gc_kick_peer(const Messenger *m, int group_number, uint32_t peer_id)
+int gc_kick_peer(const Messenger *m, int group_number, GC_Peer_Id peer_id)
 {
     const GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, group_number);
@@ -5354,7 +5384,7 @@ static int handle_gc_hs_response_ack(const GC_Chat *chat, GC_Connection *gconn)
     return 0;
 }
 
-int gc_set_ignore(const GC_Chat *chat, uint32_t peer_id, bool ignore)
+int gc_set_ignore(const GC_Chat *chat, GC_Peer_Id peer_id, bool ignore)
 {
     const int peer_number = get_peer_number_of_peer_id(chat, peer_id);
 
@@ -6678,7 +6708,7 @@ static bool peer_delete(const GC_Session *c, GC_Chat *chat, uint32_t peer_number
 
     // We need to save some peer info for the callback before deleting it
     const bool peer_confirmed = peer->gconn.confirmed;
-    const uint32_t peer_id = peer->peer_id;
+    const GC_Peer_Id peer_id = peer->peer_id;
     uint8_t nick[MAX_GC_NICK_SIZE];
     const uint16_t nick_length = peer->nick_length;
     const GC_Exit_Info exit_info = peer->gconn.exit_info;
@@ -6756,9 +6786,9 @@ int peer_add(GC_Chat *chat, const IP_Port *ipp, const uint8_t *public_key)
         return -2;
     }
 
-    const uint32_t peer_id = get_new_peer_id(chat);
+    const GC_Peer_Id peer_id = get_new_peer_id(chat);
 
-    if (peer_id == UINT32_MAX) {
+    if (!gc_peer_id_is_valid(peer_id)) {
         LOGGER_WARNING(chat->log, "Failed to add peer: all peer ID's are taken?");
         return -1;
     }

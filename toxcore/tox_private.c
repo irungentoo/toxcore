@@ -11,6 +11,7 @@
 #include <assert.h>
 
 #include "DHT.h"
+#include "attributes.h"
 #include "ccompat.h"
 #include "crypto_core.h"
 #include "group_chats.h"
@@ -188,7 +189,7 @@ size_t tox_group_peer_get_ip_address_size(const Tox *tox, uint32_t group_number,
         return -1;
     }
 
-    const int ret = gc_get_peer_ip_address_size(chat, peer_id);
+    const int ret = gc_get_peer_ip_address_size(chat, gc_peer_id_from_int(peer_id));
     tox_unlock(tox);
 
     if (ret == -1) {
@@ -214,7 +215,7 @@ bool tox_group_peer_get_ip_address(const Tox *tox, uint32_t group_number, uint32
         return false;
     }
 
-    const int ret = gc_get_peer_ip_address(chat, peer_id, ip_addr);
+    const int ret = gc_get_peer_ip_address(chat, gc_peer_id_from_int(peer_id), ip_addr);
     tox_unlock(tox);
 
     if (ret == -1) {

@@ -217,6 +217,15 @@ typedef struct GC_TimedOutPeer {
     uint64_t    last_reconn_try;  // the last time we tried to establish a new connection
 } GC_TimedOutPeer;
 
+typedef bitwise uint32_t GC_Peer_Id_Value;
+
+typedef struct GC_Peer_Id {
+    GC_Peer_Id_Value value;
+} GC_Peer_Id;
+
+GC_Peer_Id gc_peer_id_from_int(uint32_t value);
+uint32_t gc_peer_id_to_int(GC_Peer_Id peer_id);
+
 typedef struct GC_Peer {
     /* Below state is sent to other peers in peer info exchange */
     uint8_t       nick[MAX_GC_NICK_SIZE];
@@ -225,7 +234,7 @@ typedef struct GC_Peer {
 
     /* Below state is local only */
     Group_Role    role;
-    uint32_t      peer_id;    // permanent ID (used for the public API)
+    GC_Peer_Id    peer_id;    // permanent ID (used for the public API)
     bool          ignore;
 
     GC_Connection gconn;
@@ -336,21 +345,21 @@ typedef struct GC_Chat {
 typedef struct Messenger Messenger;
 #endif /* MESSENGER_DEFINED */
 
-typedef void gc_message_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id, unsigned int type,
+typedef void gc_message_cb(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id, unsigned int type,
                            const uint8_t *message, size_t length, uint32_t message_id, void *user_data);
-typedef void gc_private_message_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id, unsigned int type,
+typedef void gc_private_message_cb(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id, unsigned int type,
                                    const uint8_t *message, size_t length, void *user_data);
-typedef void gc_custom_packet_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id, const uint8_t *data,
+typedef void gc_custom_packet_cb(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id, const uint8_t *data,
                                  size_t length, void *user_data);
-typedef void gc_custom_private_packet_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id,
+typedef void gc_custom_private_packet_cb(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id,
         const uint8_t *data, size_t length, void *user_data);
-typedef void gc_moderation_cb(const Messenger *m, uint32_t group_number, uint32_t source_peer_number,
-                              uint32_t target_peer_number, unsigned int mod_type, void *user_data);
-typedef void gc_nick_change_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id, const uint8_t *name,
+typedef void gc_moderation_cb(const Messenger *m, uint32_t group_number, GC_Peer_Id source_peer_number,
+                              GC_Peer_Id target_peer_number, unsigned int mod_type, void *user_data);
+typedef void gc_nick_change_cb(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id, const uint8_t *name,
                                size_t length, void *user_data);
-typedef void gc_status_change_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id, unsigned int status,
+typedef void gc_status_change_cb(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id, unsigned int status,
                                  void *user_data);
-typedef void gc_topic_change_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id, const uint8_t *topic,
+typedef void gc_topic_change_cb(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id, const uint8_t *topic,
                                 size_t length, void *user_data);
 typedef void gc_topic_lock_cb(const Messenger *m, uint32_t group_number, unsigned int topic_lock, void *user_data);
 typedef void gc_voice_state_cb(const Messenger *m, uint32_t group_number, unsigned int voice_state, void *user_data);
@@ -358,8 +367,8 @@ typedef void gc_peer_limit_cb(const Messenger *m, uint32_t group_number, uint32_
 typedef void gc_privacy_state_cb(const Messenger *m, uint32_t group_number, unsigned int privacy_state, void *user_data);
 typedef void gc_password_cb(const Messenger *m, uint32_t group_number, const uint8_t *password, size_t length,
                             void *user_data);
-typedef void gc_peer_join_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id, void *user_data);
-typedef void gc_peer_exit_cb(const Messenger *m, uint32_t group_number, uint32_t peer_id, unsigned int exit_type,
+typedef void gc_peer_join_cb(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id, void *user_data);
+typedef void gc_peer_exit_cb(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id, unsigned int exit_type,
                              const uint8_t *name, size_t name_length, const uint8_t *part_message, size_t length,
                              void *user_data);
 typedef void gc_self_join_cb(const Messenger *m, uint32_t group_number, void *user_data);
