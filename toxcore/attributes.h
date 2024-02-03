@@ -26,6 +26,14 @@
 
 #define nullable(...)
 
+#ifdef SPARSE
+#define bitwise __attribute__((bitwise))
+#define force __attribute__((force))
+#else
+#define bitwise
+#define force
+#endif
+
 //!TOKSTYLE+
 
 #endif /* C_TOXCORE_TOXCORE_ATTRIBUTES_H */

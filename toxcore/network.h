@@ -27,19 +27,27 @@ extern "C" {
  */
 typedef struct Network_Addr Network_Addr;
 
-typedef int net_close_cb(void *obj, int sock);
-typedef int net_accept_cb(void *obj, int sock);
-typedef int net_bind_cb(void *obj, int sock, const Network_Addr *addr);
-typedef int net_listen_cb(void *obj, int sock, int backlog);
-typedef int net_recvbuf_cb(void *obj, int sock);
-typedef int net_recv_cb(void *obj, int sock, uint8_t *buf, size_t len);
-typedef int net_recvfrom_cb(void *obj, int sock, uint8_t *buf, size_t len, Network_Addr *addr);
-typedef int net_send_cb(void *obj, int sock, const uint8_t *buf, size_t len);
-typedef int net_sendto_cb(void *obj, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr);
-typedef int net_socket_cb(void *obj, int domain, int type, int proto);
-typedef int net_socket_nonblock_cb(void *obj, int sock, bool nonblock);
-typedef int net_getsockopt_cb(void *obj, int sock, int level, int optname, void *optval, size_t *optlen);
-typedef int net_setsockopt_cb(void *obj, int sock, int level, int optname, const void *optval, size_t optlen);
+typedef bitwise int Socket_Value;
+typedef struct Socket {
+    Socket_Value value;
+} Socket;
+
+int net_socket_to_native(Socket sock);
+Socket net_socket_from_native(int sock);
+
+typedef int net_close_cb(void *obj, Socket sock);
+typedef Socket net_accept_cb(void *obj, Socket sock);
+typedef int net_bind_cb(void *obj, Socket sock, const Network_Addr *addr);
+typedef int net_listen_cb(void *obj, Socket sock, int backlog);
+typedef int net_recvbuf_cb(void *obj, Socket sock);
+typedef int net_recv_cb(void *obj, Socket sock, uint8_t *buf, size_t len);
+typedef int net_recvfrom_cb(void *obj, Socket sock, uint8_t *buf, size_t len, Network_Addr *addr);
+typedef int net_send_cb(void *obj, Socket sock, const uint8_t *buf, size_t len);
+typedef int net_sendto_cb(void *obj, Socket sock, const uint8_t *buf, size_t len, const Network_Addr *addr);
+typedef Socket net_socket_cb(void *obj, int domain, int type, int proto);
+typedef int net_socket_nonblock_cb(void *obj, Socket sock, bool nonblock);
+typedef int net_getsockopt_cb(void *obj, Socket sock, int level, int optname, void *optval, size_t *optlen);
+typedef int net_setsockopt_cb(void *obj, Socket sock, int level, int optname, const void *optval, size_t optlen);
 typedef int net_getaddrinfo_cb(void *obj, int family, Network_Addr **addrs);
 typedef int net_freeaddrinfo_cb(void *obj, Network_Addr *addrs);
 
@@ -210,10 +218,6 @@ typedef struct IP_Port {
     IP ip;
     uint16_t port;
 } IP_Port;
-
-typedef struct Socket {
-    int sock;
-} Socket;
 
 non_null()
 Socket net_socket(const Network *ns, Family domain, int type, int protocol);

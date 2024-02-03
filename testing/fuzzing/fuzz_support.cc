@@ -107,25 +107,25 @@ static constexpr Memory_Funcs fuzz_memory_funcs = {
 };
 
 static constexpr Network_Funcs fuzz_network_funcs = {
-    /* .close = */ ![](Fuzz_System *self, int sock) { return 0; },
-    /* .accept = */ ![](Fuzz_System *self, int sock) { return 1337; },
-    /* .bind = */ ![](Fuzz_System *self, int sock, const Network_Addr *addr) { return 0; },
-    /* .listen = */ ![](Fuzz_System *self, int sock, int backlog) { return 0; },
+    /* .close = */ ![](Fuzz_System *self, Socket sock) { return 0; },
+    /* .accept = */ ![](Fuzz_System *self, Socket sock) { return Socket{1337}; },
+    /* .bind = */ ![](Fuzz_System *self, Socket sock, const Network_Addr *addr) { return 0; },
+    /* .listen = */ ![](Fuzz_System *self, Socket sock, int backlog) { return 0; },
     /* .recvbuf = */
-    ![](Fuzz_System *self, int sock) {
-        assert(sock == 42 || sock == 1337);
+    ![](Fuzz_System *self, Socket sock) {
+        assert(sock.value == 42 || sock.value == 1337);
         const size_t count = random_u16(self->rng.get());
         return static_cast<int>(std::min(count, self->data.size()));
     },
     /* .recv = */
-    ![](Fuzz_System *self, int sock, uint8_t *buf, size_t len) {
-        assert(sock == 42 || sock == 1337);
+    ![](Fuzz_System *self, Socket sock, uint8_t *buf, size_t len) {
+        assert(sock.value == 42 || sock.value == 1337);
         // Receive data from the fuzzer.
         return recv_common(self->data, buf, len);
     },
     /* .recvfrom = */
-    ![](Fuzz_System *self, int sock, uint8_t *buf, size_t len, Network_Addr *addr) {
-        assert(sock == 42 || sock == 1337);
+    ![](Fuzz_System *self, Socket sock, uint8_t *buf, size_t len, Network_Addr *addr) {
+        assert(sock.value == 42 || sock.value == 1337);
 
         addr->addr = sockaddr_storage{};
         // Dummy Addr
@@ -140,26 +140,26 @@ static constexpr Network_Funcs fuzz_network_funcs = {
         return recv_common(self->data, buf, len);
     },
     /* .send = */
-    ![](Fuzz_System *self, int sock, const uint8_t *buf, size_t len) {
-        assert(sock == 42 || sock == 1337);
+    ![](Fuzz_System *self, Socket sock, const uint8_t *buf, size_t len) {
+        assert(sock.value == 42 || sock.value == 1337);
         // Always succeed.
         return static_cast<int>(len);
     },
     /* .sendto = */
-    ![](Fuzz_System *self, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
-        assert(sock == 42 || sock == 1337);
+    ![](Fuzz_System *self, Socket sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
+        assert(sock.value == 42 || sock.value == 1337);
         // Always succeed.
         return static_cast<int>(len);
     },
-    /* .socket = */ ![](Fuzz_System *self, int domain, int type, int proto) { return 42; },
-    /* .socket_nonblock = */ ![](Fuzz_System *self, int sock, bool nonblock) { return 0; },
+    /* .socket = */ ![](Fuzz_System *self, int domain, int type, int proto) { return Socket{42}; },
+    /* .socket_nonblock = */ ![](Fuzz_System *self, Socket sock, bool nonblock) { return 0; },
     /* .getsockopt = */
-    ![](Fuzz_System *self, int sock, int level, int optname, void *optval, size_t *optlen) {
+    ![](Fuzz_System *self, Socket sock, int level, int optname, void *optval, size_t *optlen) {
         std::memset(optval, 0, *optlen);
         return 0;
     },
     /* .setsockopt = */
-    ![](Fuzz_System *self, int sock, int level, int optname, const void *optval, size_t optlen) {
+    ![](Fuzz_System *self, Socket sock, int level, int optname, const void *optval, size_t optlen) {
         return 0;
     },
 };
@@ -221,42 +221,42 @@ static constexpr Memory_Funcs null_memory_funcs = {
 };
 
 static constexpr Network_Funcs null_network_funcs = {
-    /* .close = */ ![](Null_System *self, int sock) { return 0; },
-    /* .accept = */ ![](Null_System *self, int sock) { return 1337; },
-    /* .bind = */ ![](Null_System *self, int sock, const Network_Addr *addr) { return 0; },
-    /* .listen = */ ![](Null_System *self, int sock, int backlog) { return 0; },
-    /* .recvbuf = */ ![](Null_System *self, int sock) { return 0; },
+    /* .close = */ ![](Null_System *self, Socket sock) { return 0; },
+    /* .accept = */ ![](Null_System *self, Socket sock) { return Socket{1337}; },
+    /* .bind = */ ![](Null_System *self, Socket sock, const Network_Addr *addr) { return 0; },
+    /* .listen = */ ![](Null_System *self, Socket sock, int backlog) { return 0; },
+    /* .recvbuf = */ ![](Null_System *self, Socket sock) { return 0; },
     /* .recv = */
-    ![](Null_System *self, int sock, uint8_t *buf, size_t len) {
+    ![](Null_System *self, Socket sock, uint8_t *buf, size_t len) {
         // Always fail.
         errno = ENOMEM;
         return -1;
     },
     /* .recvfrom = */
-    ![](Null_System *self, int sock, uint8_t *buf, size_t len, Network_Addr *addr) {
+    ![](Null_System *self, Socket sock, uint8_t *buf, size_t len, Network_Addr *addr) {
         // Always fail.
         errno = ENOMEM;
         return -1;
     },
     /* .send = */
-    ![](Null_System *self, int sock, const uint8_t *buf, size_t len) {
+    ![](Null_System *self, Socket sock, const uint8_t *buf, size_t len) {
         // Always succeed.
         return static_cast<int>(len);
     },
     /* .sendto = */
-    ![](Null_System *self, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
+    ![](Null_System *self, Socket sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
         // Always succeed.
         return static_cast<int>(len);
     },
-    /* .socket = */ ![](Null_System *self, int domain, int type, int proto) { return 42; },
-    /* .socket_nonblock = */ ![](Null_System *self, int sock, bool nonblock) { return 0; },
+    /* .socket = */ ![](Null_System *self, int domain, int type, int proto) { return Socket{42}; },
+    /* .socket_nonblock = */ ![](Null_System *self, Socket sock, bool nonblock) { return 0; },
     /* .getsockopt = */
-    ![](Null_System *self, int sock, int level, int optname, void *optval, size_t *optlen) {
+    ![](Null_System *self, Socket sock, int level, int optname, void *optval, size_t *optlen) {
         std::memset(optval, 0, *optlen);
         return 0;
     },
     /* .setsockopt = */
-    ![](Null_System *self, int sock, int level, int optname, const void *optval, size_t optlen) {
+    ![](Null_System *self, Socket sock, int level, int optname, const void *optval, size_t optlen) {
         return 0;
     },
 };
@@ -327,10 +327,10 @@ static constexpr Memory_Funcs record_memory_funcs = {
 };
 
 static constexpr Network_Funcs record_network_funcs = {
-    /* .close = */ ![](Record_System *self, int sock) { return 0; },
-    /* .accept = */ ![](Record_System *self, int sock) { return 2; },
+    /* .close = */ ![](Record_System *self, Socket sock) { return 0; },
+    /* .accept = */ ![](Record_System *self, Socket sock) { return Socket{2}; },
     /* .bind = */
-    ![](Record_System *self, int sock, const Network_Addr *addr) {
+    ![](Record_System *self, Socket sock, const Network_Addr *addr) {
         const uint16_t port = get_port(addr);
         if (self->global_.bound.find(port) != self->global_.bound.end()) {
             errno = EADDRINUSE;
@@ -340,17 +340,17 @@ static constexpr Network_Funcs record_network_funcs = {
         self->port = port;
         return 0;
     },
-    /* .listen = */ ![](Record_System *self, int sock, int backlog) { return 0; },
-    /* .recvbuf = */ ![](Record_System *self, int sock) { return 0; },
+    /* .listen = */ ![](Record_System *self, Socket sock, int backlog) { return 0; },
+    /* .recvbuf = */ ![](Record_System *self, Socket sock) { return 0; },
     /* .recv = */
-    ![](Record_System *self, int sock, uint8_t *buf, size_t len) {
+    ![](Record_System *self, Socket sock, uint8_t *buf, size_t len) {
         // Always fail.
         errno = ENOMEM;
         return -1;
     },
     /* .recvfrom = */
-    ![](Record_System *self, int sock, uint8_t *buf, size_t len, Network_Addr *addr) {
-        assert(sock == 42);
+    ![](Record_System *self, Socket sock, uint8_t *buf, size_t len, Network_Addr *addr) {
+        assert(sock.value == 42);
         if (self->recvq.empty()) {
             self->push("\xff\xff");
             errno = EWOULDBLOCK;
@@ -385,29 +385,30 @@ static constexpr Network_Funcs record_network_funcs = {
         return static_cast<int>(recvlen);
     },
     /* .send = */
-    ![](Record_System *self, int sock, const uint8_t *buf, size_t len) {
+    ![](Record_System *self, Socket sock, const uint8_t *buf, size_t len) {
         // Always succeed.
         return static_cast<int>(len);
     },
     /* .sendto = */
-    ![](Record_System *self, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) {
-        assert(sock == 42);
+    ![](Record_System *self, Socket sock, const uint8_t *buf, size_t len,
+         const Network_Addr *addr) {
+        assert(sock.value == 42);
         auto backend = self->global_.bound.find(get_port(addr));
         assert(backend != self->global_.bound.end());
         backend->second->receive(self->port, buf, len);
         return static_cast<int>(len);
     },
-    /* .socket = */ ![](Record_System *self, int domain, int type, int proto) { return 42; },
-    /* .socket_nonblock = */ ![](Record_System *self, int sock, bool nonblock) { return 0; },
+    /* .socket = */
+    ![](Record_System *self, int domain, int type, int proto) { return Socket{42}; },
+    /* .socket_nonblock = */ ![](Record_System *self, Socket sock, bool nonblock) { return 0; },
     /* .getsockopt = */
-    ![](Record_System *self, int sock, int level, int optname, void *optval, size_t *optlen) {
+    ![](Record_System *self, Socket sock, int level, int optname, void *optval, size_t *optlen) {
         std::memset(optval, 0, *optlen);
         return 0;
     },
     /* .setsockopt = */
-    ![](Record_System *self, int sock, int level, int optname, const void *optval, size_t optlen) {
-        return 0;
-    },
+    ![](Record_System *self, Socket sock, int level, int optname, const void *optval,
+         size_t optlen) { return 0; },
 };
 
 static constexpr Random_Funcs record_random_funcs = {

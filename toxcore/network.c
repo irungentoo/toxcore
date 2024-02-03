@@ -368,10 +368,20 @@ IP6 get_ip6_loopback(void)
 #define INVALID_SOCKET (-1)
 #endif /* OS_WIN32 */
 
+int net_socket_to_native(Socket sock)
+{
+    return (force int)sock.value;
+}
+
+Socket net_socket_from_native(int sock)
+{
+    const Socket res = {(force Socket_Value)sock};
+    return res;
+}
+
 Socket net_invalid_socket(void)
 {
-    const Socket invalid_socket = { (int)INVALID_SOCKET };
-    return invalid_socket;
+    return net_socket_from_native(INVALID_SOCKET);
 }
 
 Family net_family_unspec(void)
@@ -467,7 +477,7 @@ bool net_family_is_tox_tcp_ipv6(Family family)
 bool sock_valid(Socket sock)
 {
     const Socket invalid_socket = net_invalid_socket();
-    return sock.sock != invalid_socket.sock;
+    return sock.value != invalid_socket.value;
 }
 
 struct Network_Addr {
@@ -476,104 +486,104 @@ struct Network_Addr {
 };
 
 non_null()
-static int sys_close(void *obj, int sock)
+static int sys_close(void *obj, Socket sock)
 {
 #if defined(OS_WIN32)
-    return closesocket(sock);
+    return closesocket(net_socket_to_native(sock));
 #else  // !OS_WIN32
-    return close(sock);
+    return close(net_socket_to_native(sock));
 #endif /* OS_WIN32 */
 }
 
 non_null()
-static int sys_accept(void *obj, int sock)
+static Socket sys_accept(void *obj, Socket sock)
 {
-    return accept(sock, nullptr, nullptr);
+    return net_socket_from_native(accept(net_socket_to_native(sock), nullptr, nullptr));
 }
 
 non_null()
-static int sys_bind(void *obj, int sock, const Network_Addr *addr)
+static int sys_bind(void *obj, Socket sock, const Network_Addr *addr)
 {
-    return bind(sock, (const struct sockaddr *)&addr->addr, addr->size);
+    return bind(net_socket_to_native(sock), (const struct sockaddr *)&addr->addr, addr->size);
 }
 
 non_null()
-static int sys_listen(void *obj, int sock, int backlog)
+static int sys_listen(void *obj, Socket sock, int backlog)
 {
-    return listen(sock, backlog);
+    return listen(net_socket_to_native(sock), backlog);
 }
 
 non_null()
-static int sys_recvbuf(void *obj, int sock)
+static int sys_recvbuf(void *obj, Socket sock)
 {
 #ifdef OS_WIN32
     u_long count = 0;
-    ioctlsocket(sock, FIONREAD, &count);
+    ioctlsocket(net_socket_to_native(sock), FIONREAD, &count);
 #else
     int count = 0;
-    ioctl(sock, FIONREAD, &count);
+    ioctl(net_socket_to_native(sock), FIONREAD, &count);
 #endif /* OS_WIN32 */
 
     return count;
 }
 
 non_null()
-static int sys_recv(void *obj, int sock, uint8_t *buf, size_t len)
+static int sys_recv(void *obj, Socket sock, uint8_t *buf, size_t len)
 {
-    return recv(sock, (char *)buf, len, MSG_NOSIGNAL);
+    return recv(net_socket_to_native(sock), (char *)buf, len, MSG_NOSIGNAL);
 }
 
 non_null()
-static int sys_send(void *obj, int sock, const uint8_t *buf, size_t len)
+static int sys_send(void *obj, Socket sock, const uint8_t *buf, size_t len)
 {
-    return send(sock, (const char *)buf, len, MSG_NOSIGNAL);
+    return send(net_socket_to_native(sock), (const char *)buf, len, MSG_NOSIGNAL);
 }
 
 non_null()
-static int sys_sendto(void *obj, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr)
+static int sys_sendto(void *obj, Socket sock, const uint8_t *buf, size_t len, const Network_Addr *addr)
 {
-    return sendto(sock, (const char *)buf, len, 0, (const struct sockaddr *)&addr->addr, addr->size);
+    return sendto(net_socket_to_native(sock), (const char *)buf, len, 0, (const struct sockaddr *)&addr->addr, addr->size);
 }
 
 non_null()
-static int sys_recvfrom(void *obj, int sock, uint8_t *buf, size_t len, Network_Addr *addr)
+static int sys_recvfrom(void *obj, Socket sock, uint8_t *buf, size_t len, Network_Addr *addr)
 {
     socklen_t size = addr->size;
-    const int ret = recvfrom(sock, (char *)buf, len, 0, (struct sockaddr *)&addr->addr, &size);
+    const int ret = recvfrom(net_socket_to_native(sock), (char *)buf, len, 0, (struct sockaddr *)&addr->addr, &size);
     addr->size = size;
     return ret;
 }
 
 non_null()
-static int sys_socket(void *obj, int domain, int type, int proto)
+static Socket sys_socket(void *obj, int domain, int type, int proto)
 {
-    return (int)socket(domain, type, proto);
+    return net_socket_from_native(socket(domain, type, proto));
 }
 
 non_null()
-static int sys_socket_nonblock(void *obj, int sock, bool nonblock)
+static int sys_socket_nonblock(void *obj, Socket sock, bool nonblock)
 {
 #ifdef OS_WIN32
     u_long mode = nonblock ? 1 : 0;
-    return ioctlsocket(sock, FIONBIO, &mode);
+    return ioctlsocket(net_socket_to_native(sock), FIONBIO, &mode);
 #else
-    return fcntl(sock, F_SETFL, O_NONBLOCK, nonblock ? 1 : 0);
+    return fcntl(net_socket_to_native(sock), F_SETFL, O_NONBLOCK, nonblock ? 1 : 0);
 #endif /* OS_WIN32 */
 }
 
 non_null()
-static int sys_getsockopt(void *obj, int sock, int level, int optname, void *optval, size_t *optlen)
+static int sys_getsockopt(void *obj, Socket sock, int level, int optname, void *optval, size_t *optlen)
 {
     socklen_t len = *optlen;
-    const int ret = getsockopt(sock, level, optname, (char *)optval, &len);
+    const int ret = getsockopt(net_socket_to_native(sock), level, optname, (char *)optval, &len);
     *optlen = len;
     return ret;
 }
 
 non_null()
-static int sys_setsockopt(void *obj, int sock, int level, int optname, const void *optval, size_t optlen)
+static int sys_setsockopt(void *obj, Socket sock, int level, int optname, const void *optval, size_t optlen)
 {
-    return setsockopt(sock, level, optname, (const char *)optval, optlen);
+    return setsockopt(net_socket_to_native(sock), level, optname, (const char *)optval, optlen);
 }
 
 static const Network_Funcs os_network_funcs = {
@@ -623,13 +633,13 @@ void os_network_deinit(const Network *ns)
 non_null()
 static int net_setsockopt(const Network *ns, Socket sock, int level, int optname, const void *optval, size_t optlen)
 {
-    return ns->funcs->setsockopt(ns->obj, sock.sock, level, optname, optval, optlen);
+    return ns->funcs->setsockopt(ns->obj, sock, level, optname, optval, optlen);
 }
 
 non_null()
 static int net_getsockopt(const Network *ns, Socket sock, int level, int optname, void *optval, size_t *optlen)
 {
-    return ns->funcs->getsockopt(ns->obj, sock.sock, level, optname, optval, optlen);
+    return ns->funcs->getsockopt(ns->obj, sock, level, optname, optval, optlen);
 }
 
 non_null()
@@ -804,7 +814,7 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
 int net_send(const Network *ns, const Logger *log,
              Socket sock, const uint8_t *buf, size_t len, const IP_Port *ip_port)
 {
-    const int res = ns->funcs->send(ns->obj, sock.sock, buf, len);
+    const int res = ns->funcs->send(ns->obj, sock, buf, len);
     loglogdata(log, "T=>", buf, len, ip_port, res);
     return res;
 }
@@ -814,13 +824,13 @@ static int net_sendto(
     const Network *ns,
     Socket sock, const uint8_t *buf, size_t len, const Network_Addr *addr, const IP_Port *ip_port)
 {
-    return ns->funcs->sendto(ns->obj, sock.sock, buf, len, addr);
+    return ns->funcs->sendto(ns->obj, sock, buf, len, addr);
 }
 
 int net_recv(const Network *ns, const Logger *log,
              Socket sock, uint8_t *buf, size_t len, const IP_Port *ip_port)
 {
-    const int res = ns->funcs->recv(ns->obj, sock.sock, buf, len);
+    const int res = ns->funcs->recv(ns->obj, sock, buf, len);
     loglogdata(log, "=>T", buf, len, ip_port, res);
     return res;
 }
@@ -829,35 +839,34 @@ non_null()
 static int net_recvfrom(const Network *ns,
                         Socket sock, uint8_t *buf, size_t len, Network_Addr *addr)
 {
-    return ns->funcs->recvfrom(ns->obj, sock.sock, buf, len, addr);
+    return ns->funcs->recvfrom(ns->obj, sock, buf, len, addr);
 }
 
 int net_listen(const Network *ns, Socket sock, int backlog)
 {
-    return ns->funcs->listen(ns->obj, sock.sock, backlog);
+    return ns->funcs->listen(ns->obj, sock, backlog);
 }
 
 non_null()
 static int net_bind(const Network *ns, Socket sock, const Network_Addr *addr)
 {
-    return ns->funcs->bind(ns->obj, sock.sock, addr);
+    return ns->funcs->bind(ns->obj, sock, addr);
 }
 
 Socket net_accept(const Network *ns, Socket sock)
 {
-    const Socket newsock = {ns->funcs->accept(ns->obj, sock.sock)};
-    return newsock;
+    return ns->funcs->accept(ns->obj, sock);
 }
 
 /** Close the socket. */
 void kill_sock(const Network *ns, Socket sock)
 {
-    ns->funcs->close(ns->obj, sock.sock);
+    ns->funcs->close(ns->obj, sock);
 }
 
 bool set_socket_nonblock(const Network *ns, Socket sock)
 {
-    return ns->funcs->socket_nonblock(ns->obj, sock.sock, true) == 0;
+    return ns->funcs->socket_nonblock(ns->obj, sock, true) == 0;
 }
 
 bool set_socket_nosigpipe(const Network *ns, Socket sock)
@@ -1946,10 +1955,10 @@ bool net_connect(const Memory *mem, const Logger *log, Socket sock, const IP_Por
 
     Ip_Ntoa ip_str;
     LOGGER_DEBUG(log, "connecting socket %d to %s:%d",
-                 (int)sock.sock, net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port));
+                 net_socket_to_native(sock), net_ip_ntoa(&ip_port->ip, &ip_str), net_ntohs(ip_port->port));
     errno = 0;
 
-    if (connect(sock.sock, (struct sockaddr *)&addr, addrsize) == -1) {
+    if (connect(net_socket_to_native(sock), (struct sockaddr *)&addr, addrsize) == -1) {
         const int error = net_error();
 
         // Non-blocking socket: "Operation in progress" means it's connecting.
@@ -2109,13 +2118,12 @@ Socket net_socket(const Network *ns, Family domain, int type, int protocol)
     const int platform_domain = make_family(domain);
     const int platform_type = make_socktype(type);
     const int platform_prot = make_proto(protocol);
-    const Socket sock = {ns->funcs->socket(ns->obj, platform_domain, platform_type, platform_prot)};
-    return sock;
+    return ns->funcs->socket(ns->obj, platform_domain, platform_type, platform_prot);
 }
 
 uint16_t net_socket_data_recv_buffer(const Network *ns, Socket sock)
 {
-    const int count = ns->funcs->recvbuf(ns->obj, sock.sock);
+    const int count = ns->funcs->recvbuf(ns->obj, sock);
     return (uint16_t)max_s32(0, min_s32(count, UINT16_MAX));
 }
 
