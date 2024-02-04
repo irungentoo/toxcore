@@ -1,13 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2016-2018 The TokTok team.
+ * Copyright © 2016-2024 The TokTok team.
  * Copyright © 2013 Tox project.
  */
 
-/**
- * Functions for the core crypto.
- *
- * NOTE: This code has to be perfect. We don't mess around with encryption.
- */
 #include "crypto_core.h"
 
 #include <assert.h>
@@ -19,14 +14,6 @@
 #include "attributes.h"
 #include "ccompat.h"
 #include "util.h"
-
-#ifndef crypto_box_MACBYTES
-#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
-#endif /* crypto_box_MACBYTES */
-
-// Need dht because of ENC_SECRET_KEY_SIZE and ENC_PUBLIC_KEY_SIZE
-#define ENC_PUBLIC_KEY_SIZE CRYPTO_PUBLIC_KEY_SIZE
-#define ENC_SECRET_KEY_SIZE CRYPTO_SECRET_KEY_SIZE
 
 static_assert(CRYPTO_PUBLIC_KEY_SIZE == crypto_box_PUBLICKEYBYTES,
               "CRYPTO_PUBLIC_KEY_SIZE should be equal to crypto_box_PUBLICKEYBYTES");
@@ -58,7 +45,7 @@ static_assert(CRYPTO_SIGN_PUBLIC_KEY_SIZE == crypto_sign_PUBLICKEYBYTES,
 static_assert(CRYPTO_SIGN_SECRET_KEY_SIZE == crypto_sign_SECRETKEYBYTES,
               "CRYPTO_SIGN_SECRET_KEY_SIZE should be equal to crypto_sign_SECRETKEYBYTES");
 
-bool create_extended_keypair(uint8_t *pk, uint8_t *sk)
+bool create_extended_keypair(uint8_t pk[EXT_PUBLIC_KEY_SIZE], uint8_t sk[EXT_SECRET_KEY_SIZE])
 {
     /* create signature key pair */
     crypto_sign_keypair(pk + ENC_PUBLIC_KEY_SIZE, sk + ENC_SECRET_KEY_SIZE);
@@ -165,7 +152,7 @@ void pk_copy(uint8_t dest[CRYPTO_PUBLIC_KEY_SIZE], const uint8_t src[CRYPTO_PUBL
     memcpy(dest, src, CRYPTO_PUBLIC_KEY_SIZE);
 }
 
-bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2)
+bool crypto_sha512_eq(const uint8_t cksum1[CRYPTO_SHA512_SIZE], const uint8_t cksum2[CRYPTO_SHA512_SIZE])
 {
 #if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
     // Hope that this is better for the fuzzer
@@ -175,7 +162,7 @@ bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2)
 #endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
-bool crypto_sha256_eq(const uint8_t *cksum1, const uint8_t *cksum2)
+bool crypto_sha256_eq(const uint8_t cksum1[CRYPTO_SHA256_SIZE], const uint8_t cksum2[CRYPTO_SHA256_SIZE])
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     // Hope that this is better for the fuzzer
@@ -218,26 +205,29 @@ uint32_t random_range_u32(const Random *rng, uint32_t upper_bound)
     return rng->funcs->random_uniform(rng->obj, upper_bound);
 }
 
-bool crypto_signature_create(uint8_t *signature, const uint8_t *message, uint64_t message_length,
-                             const uint8_t *secret_key)
+bool crypto_signature_create(uint8_t signature[CRYPTO_SIGNATURE_SIZE],
+                             const uint8_t *message, uint64_t message_length,
+                             const uint8_t secret_key[SIG_SECRET_KEY_SIZE])
 {
     return crypto_sign_detached(signature, nullptr, message, message_length, secret_key) == 0;
 }
 
-bool crypto_signature_verify(const uint8_t *signature, const uint8_t *message, uint64_t message_length,
-                             const uint8_t *public_key)
+bool crypto_signature_verify(const uint8_t signature[CRYPTO_SIGNATURE_SIZE],
+                             const uint8_t *message, uint64_t message_length,
+                             const uint8_t public_key[SIG_PUBLIC_KEY_SIZE])
 {
     return crypto_sign_verify_detached(signature, message, message_length, public_key) == 0;
 }
 
-bool public_key_valid(const uint8_t *public_key)
+bool public_key_valid(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE])
 {
     /* Last bit of key is always zero. */
     return public_key[31] < 128;
 }
 
-int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key,
-                           uint8_t *shared_key)
+int32_t encrypt_precompute(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
+                           const uint8_t secret_key[CRYPTO_SECRET_KEY_SIZE],
+                           uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE])
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     memcpy(shared_key, public_key, CRYPTO_SHARED_KEY_SIZE);
@@ -247,7 +237,8 @@ int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key,
 #endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
-int32_t encrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
+int32_t encrypt_data_symmetric(const uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE],
+                               const uint8_t nonce[CRYPTO_NONCE_SIZE],
                                const uint8_t *plain, size_t length, uint8_t *encrypted)
 {
     if (length == 0 || shared_key == nullptr || nonce == nullptr || plain == nullptr || encrypted == nullptr) {
@@ -299,7 +290,8 @@ int32_t encrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
     return (int32_t)(length + crypto_box_MACBYTES);
 }
 
-int32_t decrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
+int32_t decrypt_data_symmetric(const uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE],
+                               const uint8_t nonce[CRYPTO_NONCE_SIZE],
                                const uint8_t *encrypted, size_t length, uint8_t *plain)
 {
     if (length <= crypto_box_BOXZEROBYTES || shared_key == nullptr || nonce == nullptr || encrypted == nullptr
@@ -350,7 +342,9 @@ int32_t decrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
     return (int32_t)(length - crypto_box_MACBYTES);
 }
 
-int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
+int32_t encrypt_data(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
+                     const uint8_t secret_key[CRYPTO_SECRET_KEY_SIZE],
+                     const uint8_t nonce[CRYPTO_NONCE_SIZE],
                      const uint8_t *plain, size_t length, uint8_t *encrypted)
 {
     if (public_key == nullptr || secret_key == nullptr) {
@@ -364,7 +358,9 @@ int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
     return ret;
 }
 
-int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
+int32_t decrypt_data(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
+                     const uint8_t secret_key[CRYPTO_SECRET_KEY_SIZE],
+                     const uint8_t nonce[CRYPTO_NONCE_SIZE],
                      const uint8_t *encrypted, size_t length, uint8_t *plain)
 {
     if (public_key == nullptr || secret_key == nullptr) {
@@ -378,7 +374,7 @@ int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
     return ret;
 }
 
-void increment_nonce(uint8_t *nonce)
+void increment_nonce(uint8_t nonce[CRYPTO_NONCE_SIZE])
 {
     /* TODO(irungentoo): use `increment_nonce_number(nonce, 1)` or
      * sodium_increment (change to little endian).
@@ -397,7 +393,7 @@ void increment_nonce(uint8_t *nonce)
     }
 }
 
-void increment_nonce_number(uint8_t *nonce, uint32_t increment)
+void increment_nonce_number(uint8_t nonce[CRYPTO_NONCE_SIZE], uint32_t increment)
 {
     /* NOTE don't use breaks inside this loop
      * In particular, make sure, as far as possible,
@@ -419,17 +415,19 @@ void increment_nonce_number(uint8_t *nonce, uint32_t increment)
     }
 }
 
-void random_nonce(const Random *rng, uint8_t *nonce)
+void random_nonce(const Random *rng, uint8_t nonce[CRYPTO_NONCE_SIZE])
 {
     random_bytes(rng, nonce, crypto_box_NONCEBYTES);
 }
 
-void new_symmetric_key(const Random *rng, uint8_t *key)
+void new_symmetric_key(const Random *rng, uint8_t key[CRYPTO_SYMMETRIC_KEY_SIZE])
 {
     random_bytes(rng, key, CRYPTO_SYMMETRIC_KEY_SIZE);
 }
 
-int32_t crypto_new_keypair(const Random *rng, uint8_t *public_key, uint8_t *secret_key)
+int32_t crypto_new_keypair(const Random *rng,
+                           uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
+                           uint8_t secret_key[CRYPTO_SECRET_KEY_SIZE])
 {
     random_bytes(rng, secret_key, CRYPTO_SECRET_KEY_SIZE);
     memzero(public_key, CRYPTO_PUBLIC_KEY_SIZE);  // Make MSAN happy
@@ -437,7 +435,8 @@ int32_t crypto_new_keypair(const Random *rng, uint8_t *public_key, uint8_t *secr
     return 0;
 }
 
-void crypto_derive_public_key(uint8_t *public_key, const uint8_t *secret_key)
+void crypto_derive_public_key(uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
+                              const uint8_t secret_key[CRYPTO_SECRET_KEY_SIZE])
 {
     crypto_scalarmult_curve25519_base(public_key, secret_key);
 }
@@ -447,8 +446,8 @@ void new_hmac_key(const Random *rng, uint8_t key[CRYPTO_HMAC_KEY_SIZE])
     random_bytes(rng, key, CRYPTO_HMAC_KEY_SIZE);
 }
 
-void crypto_hmac(uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[CRYPTO_HMAC_KEY_SIZE], const uint8_t *data,
-                 size_t length)
+void crypto_hmac(uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[CRYPTO_HMAC_KEY_SIZE],
+                 const uint8_t *data, size_t length)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     memcpy(auth, key, 16);
@@ -468,7 +467,7 @@ bool crypto_hmac_verify(const uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[
 #endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
-void crypto_sha256(uint8_t *hash, const uint8_t *data, size_t length)
+void crypto_sha256(uint8_t hash[CRYPTO_SHA256_SIZE], const uint8_t *data, size_t length)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     memzero(hash, CRYPTO_SHA256_SIZE);
@@ -478,7 +477,7 @@ void crypto_sha256(uint8_t *hash, const uint8_t *data, size_t length)
 #endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
-void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length)
+void crypto_sha512(uint8_t hash[CRYPTO_SHA512_SIZE], const uint8_t *data, size_t length)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     memzero(hash, CRYPTO_SHA512_SIZE);
