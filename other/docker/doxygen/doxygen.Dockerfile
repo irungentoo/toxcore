@@ -1,19 +1,20 @@
-FROM toxchat/c-toxcore:sources AS sources
-FROM alpine:3.19.0 AS build
+FROM toxchat/doxygen:latest AS build
 
-ENV LANG=en_US.UTF-8 \
-    LANGUAGE=en_US.UTF-8 \
-    LC_CTYPE=en_US.UTF-8 \
-    LC_ALL=en_US.UTF-8
+RUN ["apk", "add", "--no-cache", \
+ "gtest-dev", \
+ "libconfig-dev", \
+ "libsodium-dev", \
+ "libvpx-dev", \
+ "opus-dev"]
 
-RUN apk add --no-cache doxygen git graphviz texlive \
- && git clone --depth=1 https://github.com/jothepro/doxygen-awesome-css.git /work/doxygen-awesome-css
-WORKDIR /work
-COPY --from=sources /src/ /work/
-COPY docs/Doxyfile /work/Doxyfile
-RUN echo "WARN_AS_ERROR = YES" >> Doxyfile \
+RUN git clone --depth=1 https://github.com/jothepro/doxygen-awesome-css.git /work/c-toxcore/doxygen-awesome-css
+
+WORKDIR /work/c-toxcore
+COPY . /work/c-toxcore/
+RUN cmake . -B_build -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+ && echo "WARN_AS_ERROR = YES" >> Doxyfile \
  && sed -i -e 's/^non_null([^)]*) *//;s/^nullable([^)]*) *//' $(find . -name "*.[ch]") \
- && doxygen Doxyfile
+ && doxygen docs/Doxyfile
 
 FROM nginx:alpine
-COPY --from=build /work/_docs/html/ /usr/share/nginx/html/
+COPY --from=build /work/c-toxcore/_docs/html/ /usr/share/nginx/html/
