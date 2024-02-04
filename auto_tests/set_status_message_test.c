@@ -15,7 +15,7 @@
 
 #define STATUS_MESSAGE "Installing Gentoo"
 
-static void status_callback(Tox *tox, const Tox_Event_Friend_Status_Message *event, void *user_data)
+static void status_callback(const Tox_Event_Friend_Status_Message *event, void *user_data)
 {
     //uint32_t friend_number = tox_event_friend_status_message_get_friend_number(event);
     const uint8_t *message = tox_event_friend_status_message_get_message(event);
@@ -64,7 +64,7 @@ static void test_set_status_message(void)
         Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
         Tox_Events *events = tox_events_iterate(tox2, true, &err);
         ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-        //tox_dispatch_invoke(dispatch2, events, tox2, nullptr);
+        //tox_dispatch_invoke(dispatch2, events, nullptr);
         tox_events_free(events);
 
         c_sleep(ITERATION_INTERVAL);
@@ -80,7 +80,7 @@ static void test_set_status_message(void)
         Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
         Tox_Events *events = tox_events_iterate(tox2, true, &err);
         ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-        //tox_dispatch_invoke(dispatch2, events, tox2, nullptr);
+        //tox_dispatch_invoke(dispatch2, events, nullptr);
         tox_events_free(events);
 
         c_sleep(ITERATION_INTERVAL);
@@ -103,7 +103,7 @@ static void test_set_status_message(void)
         Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
         Tox_Events *events = tox_events_iterate(tox2, true, &err);
         ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-        tox_dispatch_invoke(dispatch2, events, tox2, &status_updated);
+        tox_dispatch_invoke(dispatch2, events, &status_updated);
         tox_events_free(events);
 
         c_sleep(ITERATION_INTERVAL);

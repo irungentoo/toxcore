@@ -33,7 +33,7 @@ typedef struct State {
 
 static bool enable_broken_tests = false;
 
-static void accept_friend_request(Tox *m, const Tox_Event_Friend_Request *event, void *userdata)
+static void accept_friend_request(const Tox_Event_Friend_Request *event, void *userdata)
 {
     State *state = (State *)userdata;
 
@@ -151,7 +151,7 @@ loop_top:
             Tox_Events *events = tox_events_iterate(toxes[i], true, &err);
             ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
             State state = {to_comp, toxes[i]};
-            tox_dispatch_invoke(dispatch, events, toxes[i], &state);
+            tox_dispatch_invoke(dispatch, events, &state);
             tox_events_free(events);
         }
 
@@ -263,7 +263,7 @@ loop_top:
             Tox_Events *events = tox_events_iterate(toxes[i], true, &err);
             ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
             State state = {to_comp, toxes[i]};
-            tox_dispatch_invoke(dispatch, events, toxes[i], &state);
+            tox_dispatch_invoke(dispatch, events, &state);
             tox_events_free(events);
         }
 

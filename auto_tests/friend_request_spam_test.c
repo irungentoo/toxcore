@@ -22,7 +22,7 @@ typedef struct State {
     bool unused;
 } State;
 
-static void accept_friend_request(Tox *tox, const Tox_Event_Friend_Request *event,
+static void accept_friend_request(const Tox_Event_Friend_Request *event,
                                   void *userdata)
 {
     AutoTox *autotox = (AutoTox *)userdata;

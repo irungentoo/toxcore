@@ -15,7 +15,7 @@
 
 #define NICKNAME "Gentoo"
 
-static void nickchange_callback(Tox *tox, const Tox_Event_Friend_Name *event, void *user_data)
+static void nickchange_callback(const Tox_Event_Friend_Name *event, void *user_data)
 {
     //const uint32_t friend_number = tox_event_friend_name_get_friend_number(event);
     const uint8_t *name = tox_event_friend_name_get_name(event);
@@ -64,7 +64,7 @@ static void test_set_name(void)
         Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
         Tox_Events *events = tox_events_iterate(tox2, true, &err);
         ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-        //tox_dispatch_invoke(dispatch2, events, tox2, nullptr);
+        //tox_dispatch_invoke(dispatch2, events, nullptr);
         tox_events_free(events);
 
         c_sleep(ITERATION_INTERVAL);
@@ -80,7 +80,7 @@ static void test_set_name(void)
         Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
         Tox_Events *events = tox_events_iterate(tox2, true, &err);
         ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-        //tox_dispatch_invoke(dispatch2, events, tox2, nullptr);
+        //tox_dispatch_invoke(dispatch2, events, nullptr);
         tox_events_free(events);
 
         c_sleep(ITERATION_INTERVAL);
@@ -102,7 +102,7 @@ static void test_set_name(void)
         Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
         Tox_Events *events = tox_events_iterate(tox2, true, &err);
         ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-        tox_dispatch_invoke(dispatch2, events, tox2, &nickname_updated);
+        tox_dispatch_invoke(dispatch2, events, &nickname_updated);
         tox_events_free(events);
 
         c_sleep(ITERATION_INTERVAL);

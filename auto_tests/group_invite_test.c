@@ -51,7 +51,7 @@ static bool group_has_full_graph(const AutoTox *autotoxes, uint32_t group_number
     return true;
 }
 
-static void group_join_fail_handler(Tox *tox, const Tox_Event_Group_Join_Fail *event, void *user_data)
+static void group_join_fail_handler(const Tox_Event_Group_Join_Fail *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -81,7 +81,7 @@ static void group_join_fail_handler(Tox *tox, const Tox_Event_Group_Join_Fail *e
     }
 }
 
-static void group_self_join_handler(Tox *tox, const Tox_Event_Group_Self_Join *event, void *user_data)
+static void group_self_join_handler(const Tox_Event_Group_Self_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -91,7 +91,7 @@ static void group_self_join_handler(Tox *tox, const Tox_Event_Group_Self_Join *e
     state->connected = true;
 }
 
-static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
+static void group_peer_join_handler(const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);

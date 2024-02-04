@@ -32,7 +32,7 @@
 #endif
 #define TCP_RELAY_PORT 33431
 
-static void accept_friend_request(Tox *m, const Tox_Event_Friend_Request *event, void *userdata)
+static void accept_friend_request(const Tox_Event_Friend_Request *event, void *userdata)
 {
     Tox *tox = (Tox *)userdata;
 
@@ -46,7 +46,7 @@ static void accept_friend_request(Tox *m, const Tox_Event_Friend_Request *event,
 }
 
 static unsigned int connected_t1;
-static void tox_connection_status(Tox *tox, const Tox_Event_Self_Connection_Status *event, void *user_data)
+static void tox_connection_status(const Tox_Event_Self_Connection_Status *event, void *user_data)
 {
     const Tox_Connection connection_status = tox_event_self_connection_status_get_connection_status(event);
 
@@ -210,14 +210,14 @@ static void test_few_clients(void)
             Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
             Tox_Events *events = tox_events_iterate(tox1, true, &err);
             ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-            tox_dispatch_invoke(dispatch1, events, tox1, tox1);
+            tox_dispatch_invoke(dispatch1, events, tox1);
             tox_events_free(events);
         }
         {
             Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
             Tox_Events *events = tox_events_iterate(tox2, true, &err);
             ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-            tox_dispatch_invoke(dispatch2, events, tox2, tox2);
+            tox_dispatch_invoke(dispatch2, events, tox2);
             tox_events_free(events);
         }
         tox_iterate(tox3, nullptr);
@@ -261,14 +261,14 @@ static void test_few_clients(void)
             Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
             Tox_Events *events = tox_events_iterate(tox1, true, &err);
             ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-            tox_dispatch_invoke(dispatch1, events, tox1, tox1);
+            tox_dispatch_invoke(dispatch1, events, tox1);
             tox_events_free(events);
         }
         {
             Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
             Tox_Events *events = tox_events_iterate(tox2, true, &err);
             ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-            tox_dispatch_invoke(dispatch2, events, tox2, tox2);
+            tox_dispatch_invoke(dispatch2, events, tox2);
             tox_events_free(events);
         }
         tox_iterate(tox3, nullptr);

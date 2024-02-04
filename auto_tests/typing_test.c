@@ -17,7 +17,7 @@ typedef struct State {
 
 #include "auto_test_support.h"
 
-static void typing_callback(Tox *m, const Tox_Event_Friend_Typing *event, void *user_data)
+static void typing_callback(const Tox_Event_Friend_Typing *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
     State *state = (State *)autotox->state;

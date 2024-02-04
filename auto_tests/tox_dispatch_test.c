@@ -18,7 +18,7 @@
 // Set to true to produce an msgpack file at /tmp/test.mp.
 static const bool want_dump_events = false;
 
-static void handle_events_friend_message(Tox *tox, const Tox_Event_Friend_Message *event, void *user_data)
+static void handle_events_friend_message(const Tox_Event_Friend_Message *event, void *user_data)
 {
     bool *success = (bool *)user_data;
 
@@ -84,7 +84,7 @@ static bool await_message(Tox **toxes, const Tox_Dispatch *dispatch)
         }
 
         bool success = false;
-        tox_dispatch_invoke(dispatch, events, toxes[1], &success);
+        tox_dispatch_invoke(dispatch, events, &success);
         print_events(sys, events);
 
         if (success) {

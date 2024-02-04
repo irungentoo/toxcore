@@ -23,7 +23,7 @@ typedef struct State {
     uint32_t peers;
 } State;
 
-static void handle_self_connection_status(Tox *tox, const Tox_Event_Self_Connection_Status *event, void *user_data)
+static void handle_self_connection_status(const Tox_Event_Self_Connection_Status *event, void *user_data)
 {
     State *state = (State *)user_data;
 
@@ -32,7 +32,7 @@ static void handle_self_connection_status(Tox *tox, const Tox_Event_Self_Connect
     state->self_online = connection_status != TOX_CONNECTION_NONE;
 }
 
-static void handle_friend_connection_status(Tox *tox, const Tox_Event_Friend_Connection_Status *event,
+static void handle_friend_connection_status(const Tox_Event_Friend_Connection_Status *event,
         void *user_data)
 {
     State *state = (State *)user_data;
@@ -43,7 +43,7 @@ static void handle_friend_connection_status(Tox *tox, const Tox_Event_Friend_Con
     state->friend_online = connection_status != TOX_CONNECTION_NONE;
 }
 
-static void handle_conference_invite(Tox *tox, const Tox_Event_Conference_Invite *event, void *user_data)
+static void handle_conference_invite(const Tox_Event_Conference_Invite *event, void *user_data)
 {
     State *state = (State *)user_data;
 
@@ -64,7 +64,7 @@ static void handle_conference_invite(Tox *tox, const Tox_Event_Conference_Invite
     }
 }
 
-static void handle_conference_message(Tox *tox, const Tox_Event_Conference_Message *event, void *user_data)
+static void handle_conference_message(const Tox_Event_Conference_Message *event, void *user_data)
 {
     State *state = (State *)user_data;
 
@@ -81,7 +81,7 @@ static void handle_conference_message(Tox *tox, const Tox_Event_Conference_Messa
     state->received = true;
 }
 
-static void handle_conference_peer_list_changed(Tox *tox, const Tox_Event_Conference_Peer_List_Changed *event, void *user_data)
+static void handle_conference_peer_list_changed(const Tox_Event_Conference_Peer_List_Changed *event, void *user_data)
 {
     State *state = (State *)user_data;
 
@@ -101,7 +101,7 @@ static void handle_conference_peer_list_changed(Tox *tox, const Tox_Event_Confer
     state->peers = count;
 }
 
-static void handle_conference_connected(Tox *tox, const Tox_Event_Conference_Connected *event, void *user_data)
+static void handle_conference_connected(const Tox_Event_Conference_Connected *event, void *user_data)
 {
     State *state = (State *)user_data;
 
@@ -122,7 +122,7 @@ static void iterate_one(
     Tox_Err_Events_Iterate err;
     Tox_Events *events = tox_events_iterate(tox, true, &err);
     ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-    tox_dispatch_invoke(dispatch, events, tox, state);
+    tox_dispatch_invoke(dispatch, events, state);
     tox_events_free(events);
 }
 

@@ -47,91 +47,90 @@ void tox_dispatch_free(Tox_Dispatch *dispatch);
  *
  * @param dispatch The events dispatch table.
  * @param events The events object received from @ref tox_events_iterate.
- * @param tox The tox object to pass down to the callbacks.
  * @param user_data User data pointer to pass down to the callbacks.
  */
-void tox_dispatch_invoke(const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data);
+void tox_dispatch_invoke(const Tox_Dispatch *dispatch, const Tox_Events *events, void *user_data);
 
 typedef void tox_events_conference_connected_cb(
-    Tox *tox, const Tox_Event_Conference_Connected *event, void *user_data);
+    const Tox_Event_Conference_Connected *event, void *user_data);
 typedef void tox_events_conference_invite_cb(
-    Tox *tox, const Tox_Event_Conference_Invite *event, void *user_data);
+    const Tox_Event_Conference_Invite *event, void *user_data);
 typedef void tox_events_conference_message_cb(
-    Tox *tox, const Tox_Event_Conference_Message *event, void *user_data);
+    const Tox_Event_Conference_Message *event, void *user_data);
 typedef void tox_events_conference_peer_list_changed_cb(
-    Tox *tox, const Tox_Event_Conference_Peer_List_Changed *event, void *user_data);
+    const Tox_Event_Conference_Peer_List_Changed *event, void *user_data);
 typedef void tox_events_conference_peer_name_cb(
-    Tox *tox, const Tox_Event_Conference_Peer_Name *event, void *user_data);
+    const Tox_Event_Conference_Peer_Name *event, void *user_data);
 typedef void tox_events_conference_title_cb(
-    Tox *tox, const Tox_Event_Conference_Title *event, void *user_data);
+    const Tox_Event_Conference_Title *event, void *user_data);
 typedef void tox_events_file_chunk_request_cb(
-    Tox *tox, const Tox_Event_File_Chunk_Request *event, void *user_data);
+    const Tox_Event_File_Chunk_Request *event, void *user_data);
 typedef void tox_events_file_recv_cb(
-    Tox *tox, const Tox_Event_File_Recv *event, void *user_data);
+    const Tox_Event_File_Recv *event, void *user_data);
 typedef void tox_events_file_recv_chunk_cb(
-    Tox *tox, const Tox_Event_File_Recv_Chunk *event, void *user_data);
+    const Tox_Event_File_Recv_Chunk *event, void *user_data);
 typedef void tox_events_file_recv_control_cb(
-    Tox *tox, const Tox_Event_File_Recv_Control *event, void *user_data);
+    const Tox_Event_File_Recv_Control *event, void *user_data);
 typedef void tox_events_friend_connection_status_cb(
-    Tox *tox, const Tox_Event_Friend_Connection_Status *event, void *user_data);
+    const Tox_Event_Friend_Connection_Status *event, void *user_data);
 typedef void tox_events_friend_lossless_packet_cb(
-    Tox *tox, const Tox_Event_Friend_Lossless_Packet *event, void *user_data);
+    const Tox_Event_Friend_Lossless_Packet *event, void *user_data);
 typedef void tox_events_friend_lossy_packet_cb(
-    Tox *tox, const Tox_Event_Friend_Lossy_Packet *event, void *user_data);
+    const Tox_Event_Friend_Lossy_Packet *event, void *user_data);
 typedef void tox_events_friend_message_cb(
-    Tox *tox, const Tox_Event_Friend_Message *event, void *user_data);
+    const Tox_Event_Friend_Message *event, void *user_data);
 typedef void tox_events_friend_name_cb(
-    Tox *tox, const Tox_Event_Friend_Name *event, void *user_data);
+    const Tox_Event_Friend_Name *event, void *user_data);
 typedef void tox_events_friend_read_receipt_cb(
-    Tox *tox, const Tox_Event_Friend_Read_Receipt *event, void *user_data);
+    const Tox_Event_Friend_Read_Receipt *event, void *user_data);
 typedef void tox_events_friend_request_cb(
-    Tox *tox, const Tox_Event_Friend_Request *event, void *user_data);
+    const Tox_Event_Friend_Request *event, void *user_data);
 typedef void tox_events_friend_status_cb(
-    Tox *tox, const Tox_Event_Friend_Status *event, void *user_data);
+    const Tox_Event_Friend_Status *event, void *user_data);
 typedef void tox_events_friend_status_message_cb(
-    Tox *tox, const Tox_Event_Friend_Status_Message *event, void *user_data);
+    const Tox_Event_Friend_Status_Message *event, void *user_data);
 typedef void tox_events_friend_typing_cb(
-    Tox *tox, const Tox_Event_Friend_Typing *event, void *user_data);
+    const Tox_Event_Friend_Typing *event, void *user_data);
 typedef void tox_events_self_connection_status_cb(
-    Tox *tox, const Tox_Event_Self_Connection_Status *event, void *user_data);
+    const Tox_Event_Self_Connection_Status *event, void *user_data);
 typedef void tox_events_group_peer_name_cb(
-    Tox *tox, const Tox_Event_Group_Peer_Name *event, void *user_data);
+    const Tox_Event_Group_Peer_Name *event, void *user_data);
 typedef void tox_events_group_peer_status_cb(
-    Tox *tox, const Tox_Event_Group_Peer_Status *event, void *user_data);
+    const Tox_Event_Group_Peer_Status *event, void *user_data);
 typedef void tox_events_group_topic_cb(
-    Tox *tox, const Tox_Event_Group_Topic *event, void *user_data);
+    const Tox_Event_Group_Topic *event, void *user_data);
 typedef void tox_events_group_privacy_state_cb(
-    Tox *tox, const Tox_Event_Group_Privacy_State *event, void *user_data);
+    const Tox_Event_Group_Privacy_State *event, void *user_data);
 typedef void tox_events_group_voice_state_cb(
-    Tox *tox, const Tox_Event_Group_Voice_State *event, void *user_data);
+    const Tox_Event_Group_Voice_State *event, void *user_data);
 typedef void tox_events_group_topic_lock_cb(
-    Tox *tox, const Tox_Event_Group_Topic_Lock *event, void *user_data);
+    const Tox_Event_Group_Topic_Lock *event, void *user_data);
 typedef void tox_events_group_peer_limit_cb(
-    Tox *tox, const Tox_Event_Group_Peer_Limit *event, void *user_data);
+    const Tox_Event_Group_Peer_Limit *event, void *user_data);
 typedef void tox_events_group_password_cb(
-    Tox *tox, const Tox_Event_Group_Password *event, void *user_data);
+    const Tox_Event_Group_Password *event, void *user_data);
 typedef void tox_events_group_message_cb(
-    Tox *tox, const Tox_Event_Group_Message *event, void *user_data);
+    const Tox_Event_Group_Message *event, void *user_data);
 typedef void tox_events_group_private_message_cb(
-    Tox *tox, const Tox_Event_Group_Private_Message *event, void *user_data);
+    const Tox_Event_Group_Private_Message *event, void *user_data);
 typedef void tox_events_group_custom_packet_cb(
-    Tox *tox, const Tox_Event_Group_Custom_Packet *event, void *user_data);
+    const Tox_Event_Group_Custom_Packet *event, void *user_data);
 typedef void tox_events_group_custom_private_packet_cb(
-    Tox *tox, const Tox_Event_Group_Custom_Private_Packet *event, void *user_data);
+    const Tox_Event_Group_Custom_Private_Packet *event, void *user_data);
 typedef void tox_events_group_invite_cb(
-    Tox *tox, const Tox_Event_Group_Invite *event, void *user_data);
+    const Tox_Event_Group_Invite *event, void *user_data);
 typedef void tox_events_group_peer_join_cb(
-    Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data);
+    const Tox_Event_Group_Peer_Join *event, void *user_data);
 typedef void tox_events_group_peer_exit_cb(
-    Tox *tox, const Tox_Event_Group_Peer_Exit *event, void *user_data);
+    const Tox_Event_Group_Peer_Exit *event, void *user_data);
 typedef void tox_events_group_self_join_cb(
-    Tox *tox, const Tox_Event_Group_Self_Join *event, void *user_data);
+    const Tox_Event_Group_Self_Join *event, void *user_data);
 typedef void tox_events_group_join_fail_cb(
-    Tox *tox, const Tox_Event_Group_Join_Fail *event, void *user_data);
+    const Tox_Event_Group_Join_Fail *event, void *user_data);
 typedef void tox_events_group_moderation_cb(
-    Tox *tox, const Tox_Event_Group_Moderation *event, void *user_data);
+    const Tox_Event_Group_Moderation *event, void *user_data);
 typedef void tox_events_dht_get_nodes_response_cb(
-    Tox *tox, const Tox_Event_Dht_Get_Nodes_Response *event, void *user_data);
+    const Tox_Event_Dht_Get_Nodes_Response *event, void *user_data);
 
 void tox_events_callback_conference_connected(
     Tox_Dispatch *dispatch, tox_events_conference_connected_cb *callback);

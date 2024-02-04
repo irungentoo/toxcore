@@ -23,7 +23,7 @@ typedef struct State {
 } State;
 
 static void handle_self_connection_status(
-    Tox *tox, const Tox_Event_Self_Connection_Status *event, void *user_data)
+    const Tox_Event_Self_Connection_Status *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
 
@@ -36,7 +36,7 @@ static void handle_self_connection_status(
 }
 
 static void handle_friend_connection_status(
-    Tox *tox, const Tox_Event_Friend_Connection_Status *event, void *user_data)
+    const Tox_Event_Friend_Connection_Status *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
 
@@ -74,7 +74,7 @@ static void audio_callback(void *tox, uint32_t groupnumber, uint32_t peernumber,
 }
 
 static void handle_conference_invite(
-    Tox *tox, const Tox_Event_Conference_Invite *event, void *user_data)
+    const Tox_Event_Conference_Invite *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
 
@@ -90,7 +90,7 @@ static void handle_conference_invite(
 }
 
 static void handle_conference_connected(
-    Tox *tox, const Tox_Event_Conference_Connected *event, void *user_data)
+    const Tox_Event_Conference_Connected *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
     State *state = (State *)autotox->state;
@@ -149,7 +149,7 @@ static void disconnect_toxes(uint32_t tox_count, AutoTox *autotoxes,
                 if (!disconnect_now[i]) {
                     Tox_Err_Events_Iterate err;
                     Tox_Events *events = tox_events_iterate(autotoxes[i].tox, true, &err);
-                    tox_dispatch_invoke(autotoxes[i].dispatch, events, autotoxes[i].tox, &autotoxes[i]);
+                    tox_dispatch_invoke(autotoxes[i].dispatch, events, &autotoxes[i]);
                     tox_events_free(events);
                     autotoxes[i].clock += 1000;
                 }

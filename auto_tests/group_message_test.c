@@ -71,7 +71,7 @@ static uint16_t get_message_checksum(const uint8_t *message, uint16_t length)
     return sum;
 }
 
-static void group_invite_handler(Tox *tox, const Tox_Event_Group_Invite *event, void *user_data)
+static void group_invite_handler(const Tox_Event_Group_Invite *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -87,13 +87,13 @@ static void group_invite_handler(Tox *tox, const Tox_Event_Group_Invite *event, 
     ck_assert(err_accept == TOX_ERR_GROUP_INVITE_ACCEPT_OK);
 }
 
-static void group_join_fail_handler(Tox *tox, const Tox_Event_Group_Join_Fail *event, void *user_data)
+static void group_join_fail_handler(const Tox_Event_Group_Join_Fail *event, void *user_data)
 {
     const Tox_Group_Join_Fail fail_type = tox_event_group_join_fail_get_fail_type(event);
     printf("join failed: %d\n", fail_type);
 }
 
-static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
+static void group_peer_join_handler(const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -109,7 +109,7 @@ static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *e
     state->peer_id = peer_id;
 }
 
-static void group_custom_private_packet_handler(Tox *tox, const Tox_Event_Group_Custom_Private_Packet *event, void *user_data)
+static void group_custom_private_packet_handler(const Tox_Event_Group_Custom_Private_Packet *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -159,7 +159,7 @@ static void group_custom_private_packet_handler(Tox *tox, const Tox_Event_Group_
     ++state->custom_private_packets_received;
 }
 
-static void group_custom_packet_handler(Tox *tox, const Tox_Event_Group_Custom_Packet *event, void *user_data)
+static void group_custom_packet_handler(const Tox_Event_Group_Custom_Packet *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -208,7 +208,7 @@ static void group_custom_packet_handler(Tox *tox, const Tox_Event_Group_Custom_P
     ++state->custom_packets_received;
 }
 
-static void group_custom_packet_large_handler(Tox *tox, const Tox_Event_Group_Custom_Packet *event, void *user_data)
+static void group_custom_packet_large_handler(const Tox_Event_Group_Custom_Packet *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -225,7 +225,7 @@ static void group_custom_packet_large_handler(Tox *tox, const Tox_Event_Group_Cu
     ++state->custom_packets_received;
 }
 
-static void group_message_handler(Tox *tox, const Tox_Event_Group_Message *event, void *user_data)
+static void group_message_handler(const Tox_Event_Group_Message *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -278,7 +278,7 @@ static void group_message_handler(Tox *tox, const Tox_Event_Group_Message *event
     state->pseudo_msg_id = pseudo_msg_id;
 }
 
-static void group_private_message_handler(Tox *tox, const Tox_Event_Group_Private_Message *event, void *user_data)
+static void group_private_message_handler(const Tox_Event_Group_Private_Message *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -330,7 +330,7 @@ static void group_private_message_handler(Tox *tox, const Tox_Event_Group_Privat
     state->private_message_received = true;
 }
 
-static void group_message_handler_lossless_test(Tox *tox, const Tox_Event_Group_Message *event, void *user_data)
+static void group_message_handler_lossless_test(const Tox_Event_Group_Message *event, void *user_data)
 {
     const uint8_t *message = tox_event_group_message_get_message(event);
     const size_t length = tox_event_group_message_get_message_length(event);
@@ -356,7 +356,7 @@ static void group_message_handler_lossless_test(Tox *tox, const Tox_Event_Group_
         state->lossless_check = true;
     }
 }
-static void group_message_handler_wraparound_test(Tox *tox, const Tox_Event_Group_Message *event, void *user_data)
+static void group_message_handler_wraparound_test(const Tox_Event_Group_Message *event, void *user_data)
 {
     const uint8_t *message = tox_event_group_message_get_message(event);
     const size_t length = tox_event_group_message_get_message_length(event);

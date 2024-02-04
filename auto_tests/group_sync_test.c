@@ -96,7 +96,7 @@ static void peers_cleanup(Peers *peers)
     free(peers);
 }
 
-static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
+static void group_peer_join_handler(const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -109,7 +109,7 @@ static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *e
 
 }
 
-static void group_peer_exit_handler(Tox *tox, const Tox_Event_Group_Peer_Exit *event, void *user_data)
+static void group_peer_exit_handler(const Tox_Event_Group_Peer_Exit *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -122,7 +122,7 @@ static void group_peer_exit_handler(Tox *tox, const Tox_Event_Group_Peer_Exit *e
 
 }
 
-static void group_topic_handler(Tox *tox, const Tox_Event_Group_Topic *event, void *user_data)
+static void group_topic_handler(const Tox_Event_Group_Topic *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);

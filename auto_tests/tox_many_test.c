@@ -13,7 +13,7 @@
 #include "auto_test_support.h"
 #include "check_compat.h"
 
-static void accept_friend_request(Tox *m, const Tox_Event_Friend_Request *event, void *userdata)
+static void accept_friend_request(const Tox_Event_Friend_Request *event, void *userdata)
 {
     Tox *tox = (Tox *)userdata;
 
@@ -125,7 +125,7 @@ loop_top:
             Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
             Tox_Events *events = tox_events_iterate(toxes[i], true, &err);
             ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-            tox_dispatch_invoke(dispatch, events, toxes[i], toxes[i]);
+            tox_dispatch_invoke(dispatch, events, toxes[i]);
             tox_events_free(events);
         }
 

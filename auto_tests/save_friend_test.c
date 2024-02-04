@@ -43,7 +43,7 @@ static void set_string(uint8_t **to, const uint8_t *from, size_t length)
     memcpy(*to, from, length);
 }
 
-static void namechange_callback(Tox *tox, const Tox_Event_Friend_Name *event, void *user_data)
+static void namechange_callback(const Tox_Event_Friend_Name *event, void *user_data)
 {
     //const uint32_t friend_number = tox_event_friend_name_get_friend_number(event);
     const uint8_t *name = tox_event_friend_name_get_name(event);
@@ -54,7 +54,7 @@ static void namechange_callback(Tox *tox, const Tox_Event_Friend_Name *event, vo
     to_compare->received_name = true;
 }
 
-static void statuschange_callback(Tox *tox, const Tox_Event_Friend_Status_Message *event, void *user_data)
+static void statuschange_callback(const Tox_Event_Friend_Status_Message *event, void *user_data)
 {
     //const uint32_t friend_number = tox_event_friend_status_message_get_friend_number(event);
     const uint8_t *message = tox_event_friend_status_message_get_message(event);
@@ -122,7 +122,7 @@ int main(void)
         Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
         Tox_Events *events = tox_events_iterate(tox1, true, &err);
         ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-        tox_dispatch_invoke(dispatch1, events, tox1, &to_compare);
+        tox_dispatch_invoke(dispatch1, events, &to_compare);
         tox_events_free(events);
 
         tox_iterate(tox2, nullptr);
@@ -139,7 +139,7 @@ int main(void)
         Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
         Tox_Events *events = tox_events_iterate(tox1, true, &err);
         ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-        tox_dispatch_invoke(dispatch1, events, tox1, &to_compare);
+        tox_dispatch_invoke(dispatch1, events, &to_compare);
         tox_events_free(events);
 
         tox_iterate(tox2, nullptr);

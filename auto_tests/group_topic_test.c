@@ -55,7 +55,7 @@ static bool all_group_peers_connected(const AutoTox *autotoxes, uint32_t tox_cou
     return true;
 }
 
-static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
+static void group_peer_join_handler(const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     //const uint32_t group_number = tox_event_group_peer_join_get_group_number(event);
     const uint32_t peer_id = tox_event_group_peer_join_get_peer_id(event);
@@ -68,7 +68,7 @@ static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *e
     state->peer_id = peer_id;
 }
 
-static void group_topic_handler(Tox *tox, const Tox_Event_Group_Topic *event, void *user_data)
+static void group_topic_handler(const Tox_Event_Group_Topic *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -91,7 +91,7 @@ static void group_topic_handler(Tox *tox, const Tox_Event_Group_Topic *event, vo
                   "topic differs in callback: %s, %s", topic, topic2);
 }
 
-static void group_topic_lock_handler(Tox *tox, const Tox_Event_Group_Topic_Lock *event, void *user_data)
+static void group_topic_lock_handler(const Tox_Event_Group_Topic_Lock *event, void *user_data)
 {
     const AutoTox *autotox = (const AutoTox *)user_data;
     ck_assert(autotox != nullptr);

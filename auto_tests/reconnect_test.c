@@ -70,7 +70,7 @@ static void test_reconnect(AutoTox *autotoxes)
                 Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
                 Tox_Events *events = tox_events_iterate(autotoxes[i].tox, true, &err);
                 ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-                tox_dispatch_invoke(autotoxes[i].dispatch, events, autotoxes[i].tox, &autotoxes[i]);
+                tox_dispatch_invoke(autotoxes[i].dispatch, events, &autotoxes[i]);
                 tox_events_free(events);
 
                 autotoxes[i].clock += 1000;

@@ -32,7 +32,7 @@ void TestUnpack(Fuzz_Data data)
     Tox_Dispatch *dispatch = tox_dispatch_new(nullptr);
     assert(dispatch != nullptr);
 
-    auto ignore = [](Tox *tox, auto *event, void *user_data) {};
+    auto ignore = [](auto *event, void *user_data) {};
     tox_events_callback_conference_connected(dispatch, ignore);
     tox_events_callback_conference_invite(dispatch, ignore);
     tox_events_callback_conference_message(dispatch, ignore);
@@ -78,7 +78,7 @@ void TestUnpack(Fuzz_Data data)
         std::vector<uint8_t> packed(tox_events_bytes_size(events));
         tox_events_get_bytes(events, packed.data());
 
-        tox_dispatch_invoke(dispatch, events, nullptr, nullptr);
+        tox_dispatch_invoke(dispatch, events, nullptr);
     }
     tox_events_free(events);
     tox_dispatch_free(dispatch);

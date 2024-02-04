@@ -60,7 +60,7 @@ static bool all_group_peers_connected(const AutoTox *autotoxes, uint32_t tox_cou
     return true;
 }
 
-static void group_topic_lock_handler(Tox *tox, const Tox_Event_Group_Topic_Lock *event,
+static void group_topic_lock_handler(const Tox_Event_Group_Topic_Lock *event,
                                      void *user_data)
 {
     const AutoTox *autotox = (const AutoTox *)user_data;
@@ -77,7 +77,7 @@ static void group_topic_lock_handler(Tox *tox, const Tox_Event_Group_Topic_Lock 
                   topic_lock, current_topic_lock);
 }
 
-static void group_voice_state_handler(Tox *tox, const Tox_Event_Group_Voice_State *event,
+static void group_voice_state_handler(const Tox_Event_Group_Voice_State *event,
                                       void *user_data)
 {
     const AutoTox *autotox = (const AutoTox *)user_data;
@@ -94,7 +94,7 @@ static void group_voice_state_handler(Tox *tox, const Tox_Event_Group_Voice_Stat
                   voice_state, current_voice_state);
 }
 
-static void group_privacy_state_handler(Tox *tox, const Tox_Event_Group_Privacy_State *event,
+static void group_privacy_state_handler(const Tox_Event_Group_Privacy_State *event,
                                         void *user_data)
 {
     const AutoTox *autotox = (const AutoTox *)user_data;
@@ -110,7 +110,7 @@ static void group_privacy_state_handler(Tox *tox, const Tox_Event_Group_Privacy_
     ck_assert_msg(current_pstate == privacy_state, "privacy states don't match in callback");
 }
 
-static void group_peer_limit_handler(Tox *tox, const Tox_Event_Group_Peer_Limit *event, void *user_data)
+static void group_peer_limit_handler(const Tox_Event_Group_Peer_Limit *event, void *user_data)
 {
     const AutoTox *autotox = (const AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -126,7 +126,7 @@ static void group_peer_limit_handler(Tox *tox, const Tox_Event_Group_Peer_Limit 
                   "Peer limits don't match in callback: %u, %u\n", peer_limit, current_plimit);
 }
 
-static void group_password_handler(Tox *tox, const Tox_Event_Group_Password *event,
+static void group_password_handler(const Tox_Event_Group_Password *event,
                                    void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
@@ -150,7 +150,7 @@ static void group_password_handler(Tox *tox, const Tox_Event_Group_Password *eve
                   "Passwords don't match: %s, %s", password, current_password);
 }
 
-static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
+static void group_peer_join_handler(const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);

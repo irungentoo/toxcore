@@ -26,7 +26,7 @@
 #define TOX_LOCALHOST "127.0.0.1"
 #endif
 
-static void accept_friend_request(Tox *m, const Tox_Event_Friend_Request *event, void *userdata)
+static void accept_friend_request(const Tox_Event_Friend_Request *event, void *userdata)
 {
     Tox *tox = (Tox *)userdata;
 
@@ -45,7 +45,7 @@ static uint64_t sending_pos;
 static uint8_t file_cmp_id[TOX_FILE_ID_LENGTH];
 static uint32_t file_accepted;
 static uint64_t file_size;
-static void tox_file_receive(Tox *tox, const Tox_Event_File_Recv *event, void *userdata)
+static void tox_file_receive(const Tox_Event_File_Recv *event, void *userdata)
 {
     Tox *state_tox = (Tox *)userdata;
 
@@ -100,7 +100,7 @@ static void tox_file_receive(Tox *tox, const Tox_Event_File_Recv *event, void *u
 }
 
 static uint32_t sendf_ok;
-static void file_print_control(Tox *tox, const Tox_Event_File_Recv_Control *event,
+static void file_print_control(const Tox_Event_File_Recv_Control *event,
                                void *userdata)
 {
     const uint32_t file_number = tox_event_file_recv_control_get_file_number(event);
@@ -116,7 +116,7 @@ static uint64_t max_sending;
 static bool m_send_reached;
 static uint8_t sending_num;
 static bool file_sending_done;
-static void tox_file_chunk_request(Tox *tox, const Tox_Event_File_Chunk_Request *event, void *user_data)
+static void tox_file_chunk_request(const Tox_Event_File_Chunk_Request *event, void *user_data)
 {
     Tox *state_tox = (Tox *)user_data;
 
@@ -158,7 +158,7 @@ static void tox_file_chunk_request(Tox *tox, const Tox_Event_File_Chunk_Request 
 
 static uint8_t num;
 static bool file_recv;
-static void write_file(Tox *tox, const Tox_Event_File_Recv_Chunk *event, void *user_data)
+static void write_file(const Tox_Event_File_Recv_Chunk *event, void *user_data)
 {
     const uint64_t position = tox_event_file_recv_chunk_get_position(event);
     const uint8_t *data = tox_event_file_recv_chunk_get_data(event);
@@ -187,7 +187,7 @@ static void iterate_and_dispatch(const Tox_Dispatch *dispatch, Tox *tox)
 
     events = tox_events_iterate(tox, true, &err);
     ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-    tox_dispatch_invoke(dispatch, events, tox, tox);
+    tox_dispatch_invoke(dispatch, events, tox);
     tox_events_free(events);
 }
 

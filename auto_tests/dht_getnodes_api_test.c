@@ -72,7 +72,7 @@ static bool all_nodes_crawled(const AutoTox *autotoxes, uint32_t num_toxes, uint
     return true;
 }
 
-static void getnodes_response_cb(Tox *tox, const Tox_Event_Dht_Get_Nodes_Response *event, void *user_data)
+static void getnodes_response_cb(const Tox_Event_Dht_Get_Nodes_Response *event, void *user_data)
 {
     ck_assert(user_data != nullptr);
 

@@ -138,7 +138,7 @@ void iterate_all_wait(AutoTox *autotoxes, uint32_t tox_count, uint32_t wait)
                 Tox_Err_Events_Iterate err;
                 Tox_Events *events = tox_events_iterate(autotoxes[i].tox, true, &err);
                 ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-                tox_dispatch_invoke(autotoxes[i].dispatch, events, autotoxes[i].tox, &autotoxes[i]);
+                tox_dispatch_invoke(autotoxes[i].dispatch, events, &autotoxes[i]);
                 tox_events_free(events);
             } else {
                 tox_iterate(autotoxes[i].tox, &autotoxes[i]);

@@ -18,7 +18,7 @@ typedef struct State {
 
 #define LOSSLESS_PACKET_FILLER 160
 
-static void handle_lossless_packet(Tox *tox, const Tox_Event_Friend_Lossless_Packet *event, void *user_data)
+static void handle_lossless_packet(const Tox_Event_Friend_Lossless_Packet *event, void *user_data)
 {
     //const uint32_t friend_number = tox_event_friend_lossless_packet_get_friend_number(event);
     const uint8_t *data = tox_event_friend_lossless_packet_get_data(event);

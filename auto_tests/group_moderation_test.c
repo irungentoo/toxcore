@@ -155,13 +155,13 @@ static size_t get_state_index_by_nick(const AutoTox *autotoxes, size_t num_peers
     ck_assert_msg(0, "Failed to find index");
 }
 
-static void group_join_fail_handler(Tox *tox, const Tox_Event_Group_Join_Fail *event, void *user_data)
+static void group_join_fail_handler(const Tox_Event_Group_Join_Fail *event, void *user_data)
 {
     const Tox_Group_Join_Fail fail_type = tox_event_group_join_fail_get_fail_type(event);
     fprintf(stderr, "Failed to join group: %d", fail_type);
 }
 
-static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
+static void group_peer_join_handler(const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -246,7 +246,7 @@ static void handle_user(State *state, const char *peer_name, size_t peer_name_le
     state->user_check = true;
 }
 
-static void group_mod_event_handler(Tox *tox, const Tox_Event_Group_Moderation *event, void *user_data)
+static void group_mod_event_handler(const Tox_Event_Group_Moderation *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);

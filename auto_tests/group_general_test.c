@@ -81,7 +81,7 @@ static bool all_group_peers_connected(AutoTox *autotoxes, uint32_t tox_count, ui
     return true;
 }
 
-static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
+static void group_peer_join_handler(const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -146,7 +146,7 @@ static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *e
     ++state->peer_joined_count;
 }
 
-static void group_peer_self_join_handler(Tox *tox, const Tox_Event_Group_Self_Join *event, void *user_data)
+static void group_peer_self_join_handler(const Tox_Event_Group_Self_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -211,7 +211,7 @@ static void group_peer_self_join_handler(Tox *tox, const Tox_Event_Group_Self_Jo
     ++state->self_joined_count;
 }
 
-static void group_peer_exit_handler(Tox *tox, const Tox_Event_Group_Peer_Exit *event, void *user_data)
+static void group_peer_exit_handler(const Tox_Event_Group_Peer_Exit *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -230,7 +230,7 @@ static void group_peer_exit_handler(Tox *tox, const Tox_Event_Group_Peer_Exit *e
     }
 }
 
-static void group_peer_name_handler(Tox *tox, const Tox_Event_Group_Peer_Name *event, void *user_data)
+static void group_peer_name_handler(const Tox_Event_Group_Peer_Name *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -248,7 +248,7 @@ static void group_peer_name_handler(Tox *tox, const Tox_Event_Group_Peer_Name *e
     state->peer_nick = true;
 }
 
-static void group_peer_status_handler(Tox *tox, const Tox_Event_Group_Peer_Status *event,
+static void group_peer_status_handler(const Tox_Event_Group_Peer_Status *event,
                                       void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;

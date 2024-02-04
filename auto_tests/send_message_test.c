@@ -14,7 +14,7 @@ typedef struct State {
 #define MESSAGE_FILLER 'G'
 
 static void message_callback(
-    Tox *m, const Tox_Event_Friend_Message *event, void *user_data)
+    const Tox_Event_Friend_Message *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
     State *state = (State *)autotox->state;

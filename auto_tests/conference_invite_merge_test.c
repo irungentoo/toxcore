@@ -12,7 +12,7 @@ typedef struct State {
 #include "auto_test_support.h"
 
 static void handle_conference_invite(
-    Tox *tox, const Tox_Event_Conference_Invite *event, void *user_data)
+    const Tox_Event_Conference_Invite *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
     State *state = (State *)autotox->state;
@@ -31,7 +31,7 @@ static void handle_conference_invite(
 }
 
 static void handle_conference_connected(
-    Tox *tox, const Tox_Event_Conference_Connected *event, void *user_data)
+    const Tox_Event_Conference_Connected *event, void *user_data)
 {
     const AutoTox *autotox = (AutoTox *)user_data;
     State *state = (State *)autotox->state;

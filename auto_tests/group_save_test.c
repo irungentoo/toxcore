@@ -26,7 +26,7 @@ typedef struct State {
 #define PEER0_NICK_LEN (sizeof(PEER0_NICK) -1)
 #define NEW_USER_STATUS TOX_USER_STATUS_BUSY
 
-static void group_invite_handler(Tox *tox, const Tox_Event_Group_Invite *event, void *user_data)
+static void group_invite_handler(const Tox_Event_Group_Invite *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);
@@ -42,7 +42,7 @@ static void group_invite_handler(Tox *tox, const Tox_Event_Group_Invite *event, 
 
 }
 
-static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)
+static void group_peer_join_handler(const Tox_Event_Group_Peer_Join *event, void *user_data)
 {
     AutoTox *autotox = (AutoTox *)user_data;
     ck_assert(autotox != nullptr);

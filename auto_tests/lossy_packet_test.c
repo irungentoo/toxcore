@@ -18,7 +18,7 @@ typedef struct State {
 
 #define LOSSY_PACKET_FILLER 200
 
-static void handle_lossy_packet(Tox *tox, const Tox_Event_Friend_Lossy_Packet *event, void *user_data)
+static void handle_lossy_packet(const Tox_Event_Friend_Lossy_Packet *event, void *user_data)
 {
     //const uint32_t friend_number = tox_event_friend_lossy_packet_get_friend_number(event);
     const uint8_t *data = tox_event_friend_lossy_packet_get_data(event);

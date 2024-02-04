@@ -15,7 +15,7 @@
 
 #define FR_MESSAGE "Gentoo"
 
-static void accept_friend_request(Tox *tox, const Tox_Event_Friend_Request *event,
+static void accept_friend_request(const Tox_Event_Friend_Request *event,
                                   void *userdata)
 {
     Tox *state_tox = (Tox *)userdata;
@@ -36,12 +36,12 @@ static void iterate2_wait(const Tox_Dispatch *dispatch, Tox *tox1, Tox *tox2)
 
     events = tox_events_iterate(tox1, true, &err);
     ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-    tox_dispatch_invoke(dispatch, events, tox1, tox1);
+    tox_dispatch_invoke(dispatch, events, tox1);
     tox_events_free(events);
 
     events = tox_events_iterate(tox2, true, &err);
     ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-    tox_dispatch_invoke(dispatch, events, tox2, tox2);
+    tox_dispatch_invoke(dispatch, events, tox2);
     tox_events_free(events);
 
     c_sleep(ITERATION_INTERVAL);
