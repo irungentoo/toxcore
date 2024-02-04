@@ -28,12 +28,15 @@ typedef struct State {
 
 static void group_invite_handler(Tox *tox, const Tox_Event_Group_Invite *event, void *user_data)
 {
+    AutoTox *autotox = (AutoTox *)user_data;
+    ck_assert(autotox != nullptr);
+
     const uint32_t friend_number = tox_event_group_invite_get_friend_number(event);
     const uint8_t *invite_data = tox_event_group_invite_get_invite_data(event);
     const size_t length = tox_event_group_invite_get_invite_data_length(event);
 
     Tox_Err_Group_Invite_Accept err_accept;
-    tox_group_invite_accept(tox, friend_number, invite_data, length, (const uint8_t *)"test2", 5,
+    tox_group_invite_accept(autotox->tox, friend_number, invite_data, length, (const uint8_t *)"test2", 5,
                             nullptr, 0, &err_accept);
     ck_assert(err_accept == TOX_ERR_GROUP_INVITE_ACCEPT_OK);
 

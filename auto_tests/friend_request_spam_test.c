@@ -25,13 +25,15 @@ typedef struct State {
 static void accept_friend_request(Tox *tox, const Tox_Event_Friend_Request *event,
                                   void *userdata)
 {
+    AutoTox *autotox = (AutoTox *)userdata;
+
     const uint8_t *public_key = tox_event_friend_request_get_public_key(event);
     const uint8_t *data = tox_event_friend_request_get_message(event);
     const size_t length = tox_event_friend_request_get_message_length(event);
 
     ck_assert_msg(length == sizeof(FR_MESSAGE) && memcmp(FR_MESSAGE, data, sizeof(FR_MESSAGE)) == 0,
                   "unexpected friend request message");
-    tox_friend_add_norequest(tox, public_key, nullptr);
+    tox_friend_add_norequest(autotox->tox, public_key, nullptr);
 }
 
 static void test_friend_request(AutoTox *autotoxes)

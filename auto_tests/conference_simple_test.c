@@ -10,6 +10,7 @@
 
 typedef struct State {
     uint32_t id;
+    Tox *tox;
     bool self_online;
     bool friend_online;
     bool invited_next;
@@ -56,7 +57,7 @@ static void handle_conference_invite(Tox *tox, const Tox_Event_Conference_Invite
 
     {
         Tox_Err_Conference_Join err;
-        state->conference = tox_conference_join(tox, friend_number, cookie, length, &err);
+        state->conference = tox_conference_join(state->tox, friend_number, cookie, length, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_JOIN_OK, "failed to join a conference: err = %d", err);
         fprintf(stderr, "tox%u Joined conference %u\n", state->id, state->conference);
         state->joined = true;
@@ -89,7 +90,7 @@ static void handle_conference_peer_list_changed(Tox *tox, const Tox_Event_Confer
             state->id, conference_number);
 
     Tox_Err_Conference_Peer_Query err;
-    uint32_t count = tox_conference_peer_count(tox, conference_number, &err);
+    uint32_t count = tox_conference_peer_count(state->tox, conference_number, &err);
 
     if (err != TOX_ERR_CONFERENCE_PEER_QUERY_OK) {
         fprintf(stderr, "ERROR: %d\n", err);
@@ -107,7 +108,7 @@ static void handle_conference_connected(Tox *tox, const Tox_Event_Conference_Con
     // We're tox2, so now we invite tox3.
     if (state->id == 2 && !state->invited_next) {
         Tox_Err_Conference_Invite err;
-        tox_conference_invite(tox, 1, state->conference, &err);
+        tox_conference_invite(state->tox, 1, state->conference, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK, "tox2 failed to invite tox3: err = %d", err);
 
         state->invited_next = true;
@@ -126,14 +127,12 @@ static void iterate_one(
 }
 
 static void iterate3_wait(
-    Tox *tox1, State *state1,
-    Tox *tox2, State *state2,
-    Tox *tox3, State *state3,
+    State *state1, State *state2, State *state3,
     const Tox_Dispatch *dispatch, int interval)
 {
-    iterate_one(tox1, state1, dispatch);
-    iterate_one(tox2, state2, dispatch);
-    iterate_one(tox3, state3, dispatch);
+    iterate_one(state1->tox, state1, dispatch);
+    iterate_one(state2->tox, state2, dispatch);
+    iterate_one(state3->tox, state3, dispatch);
 
     c_sleep(interval);
 }
@@ -147,32 +146,32 @@ int main(void)
     State state3 = {3};
 
     // Create toxes.
-    Tox *tox1 = tox_new_log(nullptr, nullptr, &state1.id);
-    Tox *tox2 = tox_new_log(nullptr, nullptr, &state2.id);
-    Tox *tox3 = tox_new_log(nullptr, nullptr, &state3.id);
+    state1.tox = tox_new_log(nullptr, nullptr, &state1.id);
+    state2.tox = tox_new_log(nullptr, nullptr, &state2.id);
+    state3.tox = tox_new_log(nullptr, nullptr, &state3.id);
 
-    tox_events_init(tox1);
-    tox_events_init(tox2);
-    tox_events_init(tox3);
+    tox_events_init(state1.tox);
+    tox_events_init(state2.tox);
+    tox_events_init(state3.tox);
 
     // tox1 <-> tox2, tox2 <-> tox3
     uint8_t key[TOX_PUBLIC_KEY_SIZE];
-    tox_self_get_public_key(tox2, key);
-    tox_friend_add_norequest(tox1, key, nullptr);  // tox1 -> tox2
-    tox_self_get_public_key(tox1, key);
-    tox_friend_add_norequest(tox2, key, nullptr);  // tox2 -> tox1
-    tox_self_get_public_key(tox3, key);
-    tox_friend_add_norequest(tox2, key, nullptr);  // tox2 -> tox3
-    tox_self_get_public_key(tox2, key);
-    tox_friend_add_norequest(tox3, key, nullptr);  // tox3 -> tox2
+    tox_self_get_public_key(state2.tox, key);
+    tox_friend_add_norequest(state1.tox, key, nullptr);  // tox1 -> tox2
+    tox_self_get_public_key(state1.tox, key);
+    tox_friend_add_norequest(state2.tox, key, nullptr);  // tox2 -> tox1
+    tox_self_get_public_key(state3.tox, key);
+    tox_friend_add_norequest(state2.tox, key, nullptr);  // tox2 -> tox3
+    tox_self_get_public_key(state2.tox, key);
+    tox_friend_add_norequest(state3.tox, key, nullptr);  // tox3 -> tox2
 
     printf("bootstrapping tox2 and tox3 off tox1\n");
     uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
-    tox_self_get_dht_id(tox1, dht_key);
-    const uint16_t dht_port = tox_self_get_udp_port(tox1, nullptr);
+    tox_self_get_dht_id(state1.tox, dht_key);
+    const uint16_t dht_port = tox_self_get_udp_port(state1.tox, nullptr);
 
-    tox_bootstrap(tox2, "localhost", dht_port, dht_key, nullptr);
-    tox_bootstrap(tox3, "localhost", dht_port, dht_key, nullptr);
+    tox_bootstrap(state2.tox, "localhost", dht_port, dht_key, nullptr);
+    tox_bootstrap(state3.tox, "localhost", dht_port, dht_key, nullptr);
 
     Tox_Dispatch *dispatch = tox_dispatch_new(nullptr);
     ck_assert(dispatch != nullptr);
@@ -191,7 +190,7 @@ int main(void)
     fprintf(stderr, "Waiting for toxes to come online\n");
 
     do {
-        iterate3_wait(tox1, &state1, tox2, &state2, tox3, &state3, dispatch, 100);
+        iterate3_wait(&state1, &state2, &state3, dispatch, 100);
     } while (!state1.self_online || !state2.self_online || !state3.self_online);
 
     fprintf(stderr, "Toxes are online\n");
@@ -200,7 +199,7 @@ int main(void)
     fprintf(stderr, "Waiting for friends to connect\n");
 
     do {
-        iterate3_wait(tox1, &state1, tox2, &state2, tox3, &state3, dispatch, 100);
+        iterate3_wait(&state1, &state2, &state3, dispatch, 100);
     } while (!state1.friend_online || !state2.friend_online || !state3.friend_online);
 
     fprintf(stderr, "Friends are connected\n");
@@ -208,7 +207,7 @@ int main(void)
     {
         // Create new conference, tox1 is the founder.
         Tox_Err_Conference_New err;
-        state1.conference = tox_conference_new(tox1, &err);
+        state1.conference = tox_conference_new(state1.tox, &err);
         state1.joined = true;
         ck_assert_msg(err == TOX_ERR_CONFERENCE_NEW_OK, "failed to create a conference: err = %d", err);
         fprintf(stderr, "Created conference: id = %u\n", state1.conference);
@@ -217,7 +216,7 @@ int main(void)
     {
         // Invite friend.
         Tox_Err_Conference_Invite err;
-        tox_conference_invite(tox1, 0, state1.conference, &err);
+        tox_conference_invite(state1.tox, 0, state1.conference, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK, "failed to invite a friend: err = %d", err);
         state1.invited_next = true;
         fprintf(stderr, "tox1 invited tox2\n");
@@ -226,7 +225,7 @@ int main(void)
     fprintf(stderr, "Waiting for invitation to arrive\n");
 
     do {
-        iterate3_wait(tox1, &state1, tox2, &state2, tox3, &state3, dispatch, 100);
+        iterate3_wait(&state1, &state2, &state3, dispatch, 100);
     } while (!state1.joined || !state2.joined || !state3.joined);
 
     fprintf(stderr, "Invitations accepted\n");
@@ -234,7 +233,7 @@ int main(void)
     fprintf(stderr, "Waiting for peers to come online\n");
 
     do {
-        iterate3_wait(tox1, &state1, tox2, &state2, tox3, &state3, dispatch, 100);
+        iterate3_wait(&state1, &state2, &state3, dispatch, 100);
     } while (state1.peers == 0 || state2.peers == 0 || state3.peers == 0);
 
     fprintf(stderr, "All peers are online\n");
@@ -242,7 +241,7 @@ int main(void)
     {
         fprintf(stderr, "tox1 sends a message to the group: \"hello!\"\n");
         Tox_Err_Conference_Send_Message err;
-        tox_conference_send_message(tox1, state1.conference, TOX_MESSAGE_TYPE_NORMAL,
+        tox_conference_send_message(state1.tox, state1.conference, TOX_MESSAGE_TYPE_NORMAL,
                                     (const uint8_t *)"hello!", 7, &err);
 
         if (err != TOX_ERR_CONFERENCE_SEND_MESSAGE_OK) {
@@ -254,16 +253,16 @@ int main(void)
     fprintf(stderr, "Waiting for messages to arrive\n");
 
     do {
-        iterate3_wait(tox1, &state1, tox2, &state2, tox3, &state3, dispatch, 100);
+        iterate3_wait(&state1, &state2, &state3, dispatch, 100);
         c_sleep(100);
     } while (!state2.received || !state3.received);
 
     fprintf(stderr, "Messages received. Test complete.\n");
 
     tox_dispatch_free(dispatch);
-    tox_kill(tox3);
-    tox_kill(tox2);
-    tox_kill(tox1);
+    tox_kill(state3.tox);
+    tox_kill(state2.tox);
+    tox_kill(state1.tox);
 
     return 0;
 }

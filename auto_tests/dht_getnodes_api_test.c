@@ -76,8 +76,8 @@ static void getnodes_response_cb(Tox *tox, const Tox_Event_Dht_Get_Nodes_Respons
 {
     ck_assert(user_data != nullptr);
 
-    AutoTox *autotoxes = (AutoTox *)user_data;
-    State *state = (State *)autotoxes->state;
+    AutoTox *autotox = (AutoTox *)user_data;
+    State *state = (State *)autotox->state;
 
     const uint8_t *public_key = tox_event_dht_get_nodes_response_get_public_key(event);
     const char *ip = (const char *)tox_event_dht_get_nodes_response_get_ip(event);
@@ -101,7 +101,7 @@ static void getnodes_response_cb(Tox *tox, const Tox_Event_Dht_Get_Nodes_Respons
 
     // ask new node to give us their close nodes to every public key
     for (size_t i = 0; i < NUM_TOXES; ++i) {
-        tox_dht_get_nodes(tox, public_key, ip, port, state->public_key_list[i], nullptr);
+        tox_dht_get_nodes(autotox->tox, public_key, ip, port, state->public_key_list[i], nullptr);
     }
 }
 

@@ -28,7 +28,7 @@ static void handle_conference_invite(
     fprintf(stderr, "tox%u joining conference\n", autotox->index);
 
     Tox_Err_Conference_Join err;
-    state->conference = tox_conference_join(tox, friend_number, cookie, length, &err);
+    state->conference = tox_conference_join(autotox->tox, friend_number, cookie, length, &err);
     ck_assert_msg(err == TOX_ERR_CONFERENCE_JOIN_OK,
                   "attempting to join the conference returned with an error: %d", err);
     fprintf(stderr, "tox%u joined conference %u\n", autotox->index, state->conference);
@@ -45,7 +45,7 @@ static void handle_peer_list_changed(Tox *tox, const Tox_Event_Conference_Peer_L
             autotox->index, conference_number);
 
     Tox_Err_Conference_Peer_Query err;
-    uint32_t const count = tox_conference_peer_count(tox, conference_number, &err);
+    uint32_t const count = tox_conference_peer_count(autotox->tox, conference_number, &err);
     ck_assert_msg(err == TOX_ERR_CONFERENCE_PEER_QUERY_OK,
                   "failed to get conference peer count: err = %d", err);
     printf("tox%u has %u peers\n", autotox->index, count);

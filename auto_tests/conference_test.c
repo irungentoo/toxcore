@@ -56,13 +56,13 @@ static void handle_conference_invite(
     ck_assert_msg(type == TOX_CONFERENCE_TYPE_TEXT, "tox #%u: wrong conference type: %d", autotox->index, type);
 
     Tox_Err_Conference_Join err;
-    uint32_t g_num = tox_conference_join(tox, friendnumber, data, length, &err);
+    uint32_t g_num = tox_conference_join(autotox->tox, friendnumber, data, length, &err);
 
     ck_assert_msg(err == TOX_ERR_CONFERENCE_JOIN_OK, "tox #%u: error joining group: %d", autotox->index, err);
     ck_assert_msg(g_num == 0, "tox #%u: group number was not 0", autotox->index);
 
     // Try joining again. We should only be allowed to join once.
-    tox_conference_join(tox, friendnumber, data, length, &err);
+    tox_conference_join(autotox->tox, friendnumber, data, length, &err);
     ck_assert_msg(err != TOX_ERR_CONFERENCE_JOIN_OK,
                   "tox #%u: joining groupchat twice should be impossible.", autotox->index);
 }
@@ -73,12 +73,12 @@ static void handle_conference_connected(
     const AutoTox *autotox = (AutoTox *)user_data;
     State *state = (State *)autotox->state;
 
-    if (state->invited_next || tox_self_get_friend_list_size(tox) <= 1) {
+    if (state->invited_next || tox_self_get_friend_list_size(autotox->tox) <= 1) {
         return;
     }
 
     Tox_Err_Conference_Invite err;
-    tox_conference_invite(tox, 1, 0, &err);
+    tox_conference_invite(autotox->tox, 1, 0, &err);
     ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK, "tox #%u failed to invite next friend: err = %d", autotox->index,
                   err);
     printf("tox #%u: invited next friend\n", autotox->index);

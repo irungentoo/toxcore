@@ -176,12 +176,12 @@ static void group_peer_join_handler(Tox *tox, const Tox_Event_Group_Peer_Join *e
     char peer_name[TOX_MAX_NAME_LENGTH + 1];
 
     Tox_Err_Group_Peer_Query q_err;
-    size_t peer_name_len = tox_group_peer_get_name_size(tox, group_number, peer_id, &q_err);
+    size_t peer_name_len = tox_group_peer_get_name_size(autotox->tox, group_number, peer_id, &q_err);
 
     ck_assert(q_err == TOX_ERR_GROUP_PEER_QUERY_OK);
     ck_assert(peer_name_len <= TOX_MAX_NAME_LENGTH);
 
-    tox_group_peer_get_name(tox, group_number, peer_id, (uint8_t *) peer_name, &q_err);
+    tox_group_peer_get_name(autotox->tox, group_number, peer_id, (uint8_t *) peer_name, &q_err);
     peer_name[peer_name_len] = 0;
     ck_assert(q_err == TOX_ERR_GROUP_PEER_QUERY_OK);
 
@@ -262,7 +262,7 @@ static void group_mod_event_handler(Tox *tox, const Tox_Event_Group_Moderation *
     char peer_name[TOX_MAX_NAME_LENGTH + 1];
 
     Tox_Err_Group_Peer_Query q_err;
-    size_t peer_name_len = tox_group_peer_get_name_size(tox, group_number, target_peer_id, &q_err);
+    size_t peer_name_len = tox_group_peer_get_name_size(autotox->tox, group_number, target_peer_id, &q_err);
 
     if (q_err == TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND) {  // may occurr on sync attempts
         return;
@@ -271,11 +271,11 @@ static void group_mod_event_handler(Tox *tox, const Tox_Event_Group_Moderation *
     ck_assert_msg(q_err == TOX_ERR_GROUP_PEER_QUERY_OK, "error %d", q_err);
     ck_assert(peer_name_len <= TOX_MAX_NAME_LENGTH);
 
-    tox_group_peer_get_name(tox, group_number, target_peer_id, (uint8_t *) peer_name, &q_err);
+    tox_group_peer_get_name(autotox->tox, group_number, target_peer_id, (uint8_t *) peer_name, &q_err);
     peer_name[peer_name_len] = 0;
     ck_assert(q_err == TOX_ERR_GROUP_PEER_QUERY_OK);
 
-    Tox_Group_Role role = tox_group_peer_get_role(tox, group_number, target_peer_id, &q_err);
+    Tox_Group_Role role = tox_group_peer_get_role(autotox->tox, group_number, target_peer_id, &q_err);
     ck_assert(q_err == TOX_ERR_GROUP_PEER_QUERY_OK);
     ck_assert(role <= TOX_GROUP_ROLE_OBSERVER);
 

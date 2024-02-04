@@ -26,20 +26,27 @@
 #define TOX_LOCALHOST "127.0.0.1"
 #endif
 
+typedef struct State {
+    uint32_t to_comp;
+    Tox *tox;
+} State;
+
 static bool enable_broken_tests = false;
 
 static void accept_friend_request(Tox *m, const Tox_Event_Friend_Request *event, void *userdata)
 {
+    State *state = (State *)userdata;
+
     const uint8_t *public_key = tox_event_friend_request_get_public_key(event);
     const uint8_t *message = tox_event_friend_request_get_message(event);
     const uint32_t message_length = tox_event_friend_request_get_message_length(event);
 
-    if (*((uint32_t *)userdata) != 974536) {
+    if (state->to_comp != 974536) {
         return;
     }
 
     if (message_length == 7 && memcmp("Gentoo", message, 7) == 0) {
-        tox_friend_add_norequest(m, public_key, nullptr);
+        tox_friend_add_norequest(state->tox, public_key, nullptr);
     }
 }
 
@@ -143,7 +150,8 @@ loop_top:
             Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
             Tox_Events *events = tox_events_iterate(toxes[i], true, &err);
             ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-            tox_dispatch_invoke(dispatch, events, toxes[i], &to_comp);
+            State state = {to_comp, toxes[i]};
+            tox_dispatch_invoke(dispatch, events, toxes[i], &state);
             tox_events_free(events);
         }
 
@@ -254,7 +262,8 @@ loop_top:
             Tox_Err_Events_Iterate err = TOX_ERR_EVENTS_ITERATE_OK;
             Tox_Events *events = tox_events_iterate(toxes[i], true, &err);
             ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-            tox_dispatch_invoke(dispatch, events, toxes[i], &to_comp);
+            State state = {to_comp, toxes[i]};
+            tox_dispatch_invoke(dispatch, events, toxes[i], &state);
             tox_events_free(events);
         }
 

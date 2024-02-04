@@ -28,12 +28,14 @@
 
 static void accept_friend_request(Tox *m, const Tox_Event_Friend_Request *event, void *userdata)
 {
+    Tox *tox = (Tox *)userdata;
+
     const uint8_t *public_key = tox_event_friend_request_get_public_key(event);
     const uint8_t *data = tox_event_friend_request_get_message(event);
     const size_t length = tox_event_friend_request_get_message_length(event);
 
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
-        tox_friend_add_norequest(m, public_key, nullptr);
+        tox_friend_add_norequest(tox, public_key, nullptr);
     }
 }
 
@@ -45,6 +47,8 @@ static uint32_t file_accepted;
 static uint64_t file_size;
 static void tox_file_receive(Tox *tox, const Tox_Event_File_Recv *event, void *userdata)
 {
+    Tox *state_tox = (Tox *)userdata;
+
     const uint32_t friend_number = tox_event_file_recv_get_friend_number(event);
     const uint32_t file_number = tox_event_file_recv_get_file_number(event);
     const uint32_t kind = tox_event_file_recv_get_kind(event);
@@ -59,7 +63,7 @@ static void tox_file_receive(Tox *tox, const Tox_Event_File_Recv *event, void *u
 
     uint8_t file_id[TOX_FILE_ID_LENGTH];
 
-    ck_assert_msg(tox_file_get_file_id(tox, friend_number, file_number, file_id, nullptr), "tox_file_get_file_id error");
+    ck_assert_msg(tox_file_get_file_id(state_tox, friend_number, file_number, file_id, nullptr), "tox_file_get_file_id error");
 
     ck_assert_msg(memcmp(file_id, file_cmp_id, TOX_FILE_ID_LENGTH) == 0, "bad file_id");
 
@@ -74,7 +78,7 @@ static void tox_file_receive(Tox *tox, const Tox_Event_File_Recv *event, void *u
 
         Tox_Err_File_Seek err_s;
 
-        ck_assert_msg(tox_file_seek(tox, friend_number, file_number, 1337, &err_s), "tox_file_seek error");
+        ck_assert_msg(tox_file_seek(state_tox, friend_number, file_number, 1337, &err_s), "tox_file_seek error");
 
         ck_assert_msg(err_s == TOX_ERR_FILE_SEEK_OK, "tox_file_seek wrong error");
 
@@ -84,13 +88,13 @@ static void tox_file_receive(Tox *tox, const Tox_Event_File_Recv *event, void *u
 
     Tox_Err_File_Control error;
 
-    ck_assert_msg(tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error),
+    ck_assert_msg(tox_file_control(state_tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error),
                   "tox_file_control failed. %i", error);
     ++file_accepted;
 
     Tox_Err_File_Seek err_s;
 
-    ck_assert_msg(!tox_file_seek(tox, friend_number, file_number, 1234, &err_s), "tox_file_seek no error");
+    ck_assert_msg(!tox_file_seek(state_tox, friend_number, file_number, 1234, &err_s), "tox_file_seek no error");
 
     ck_assert_msg(err_s == TOX_ERR_FILE_SEEK_DENIED, "tox_file_seek wrong error");
 }
@@ -114,6 +118,8 @@ static uint8_t sending_num;
 static bool file_sending_done;
 static void tox_file_chunk_request(Tox *tox, const Tox_Event_File_Chunk_Request *event, void *user_data)
 {
+    Tox *state_tox = (Tox *)user_data;
+
     const uint32_t friend_number = tox_event_file_chunk_request_get_friend_number(event);
     const uint32_t file_number = tox_event_file_chunk_request_get_file_number(event);
     const uint64_t position = tox_event_file_chunk_request_get_position(event);
@@ -141,7 +147,7 @@ static void tox_file_chunk_request(Tox *tox, const Tox_Event_File_Chunk_Request 
     memset(f_data, sending_num, length);
 
     Tox_Err_File_Send_Chunk error;
-    tox_file_send_chunk(tox, friend_number, file_number, position, f_data, length, &error);
+    tox_file_send_chunk(state_tox, friend_number, file_number, position, f_data, length, &error);
 
     ck_assert_msg(error == TOX_ERR_FILE_SEND_CHUNK_OK,
                   "could not send chunk, error num=%d pos=%d len=%d", (int)error, (int)position, (int)length);
@@ -181,7 +187,7 @@ static void iterate_and_dispatch(const Tox_Dispatch *dispatch, Tox *tox)
 
     events = tox_events_iterate(tox, true, &err);
     ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-    tox_dispatch_invoke(dispatch, events, tox, nullptr);
+    tox_dispatch_invoke(dispatch, events, tox, tox);
     tox_events_free(events);
 }
 

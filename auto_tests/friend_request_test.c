@@ -18,12 +18,15 @@
 static void accept_friend_request(Tox *tox, const Tox_Event_Friend_Request *event,
                                   void *userdata)
 {
+    Tox *state_tox = (Tox *)userdata;
+
     const uint8_t *public_key = tox_event_friend_request_get_public_key(event);
     const uint8_t *data = tox_event_friend_request_get_message(event);
     const size_t length = tox_event_friend_request_get_message_length(event);
+
     ck_assert_msg(length == sizeof(FR_MESSAGE) && memcmp(FR_MESSAGE, data, sizeof(FR_MESSAGE)) == 0,
                   "unexpected friend request message");
-    tox_friend_add_norequest(tox, public_key, nullptr);
+    tox_friend_add_norequest(state_tox, public_key, nullptr);
 }
 
 static void iterate2_wait(const Tox_Dispatch *dispatch, Tox *tox1, Tox *tox2)
@@ -33,12 +36,12 @@ static void iterate2_wait(const Tox_Dispatch *dispatch, Tox *tox1, Tox *tox2)
 
     events = tox_events_iterate(tox1, true, &err);
     ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-    tox_dispatch_invoke(dispatch, events, tox1, nullptr);
+    tox_dispatch_invoke(dispatch, events, tox1, tox1);
     tox_events_free(events);
 
     events = tox_events_iterate(tox2, true, &err);
     ck_assert(err == TOX_ERR_EVENTS_ITERATE_OK);
-    tox_dispatch_invoke(dispatch, events, tox2, nullptr);
+    tox_dispatch_invoke(dispatch, events, tox2, tox2);
     tox_events_free(events);
 
     c_sleep(ITERATION_INTERVAL);
