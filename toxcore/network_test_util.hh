@@ -44,22 +44,22 @@ struct Network_Class {
 class Test_Network : public Network_Class {
     const Network *net = REQUIRE_NOT_NULL(os_network());
 
-    int close(void *obj, int sock) override;
-    int accept(void *obj, int sock) override;
-    int bind(void *obj, int sock, const Network_Addr *addr) override;
-    int listen(void *obj, int sock, int backlog) override;
-    int recvbuf(void *obj, int sock) override;
-    int recv(void *obj, int sock, uint8_t *buf, size_t len) override;
-    int recvfrom(void *obj, int sock, uint8_t *buf, size_t len, Network_Addr *addr) override;
-    int send(void *obj, int sock, const uint8_t *buf, size_t len) override;
+    int close(void *obj, Socket sock) override;
+    Socket accept(void *obj, Socket sock) override;
+    int bind(void *obj, Socket sock, const Network_Addr *addr) override;
+    int listen(void *obj, Socket sock, int backlog) override;
+    int recvbuf(void *obj, Socket sock) override;
+    int recv(void *obj, Socket sock, uint8_t *buf, size_t len) override;
+    int recvfrom(void *obj, Socket sock, uint8_t *buf, size_t len, Network_Addr *addr) override;
+    int send(void *obj, Socket sock, const uint8_t *buf, size_t len) override;
     int sendto(
-        void *obj, int sock, const uint8_t *buf, size_t len, const Network_Addr *addr) override;
-    int socket(void *obj, int domain, int type, int proto) override;
-    int socket_nonblock(void *obj, int sock, bool nonblock) override;
+        void *obj, Socket sock, const uint8_t *buf, size_t len, const Network_Addr *addr) override;
+    Socket socket(void *obj, int domain, int type, int proto) override;
+    int socket_nonblock(void *obj, Socket sock, bool nonblock) override;
     int getsockopt(
-        void *obj, int sock, int level, int optname, void *optval, size_t *optlen) override;
+        void *obj, Socket sock, int level, int optname, void *optval, size_t *optlen) override;
     int setsockopt(
-        void *obj, int sock, int level, int optname, const void *optval, size_t optlen) override;
+        void *obj, Socket sock, int level, int optname, const void *optval, size_t optlen) override;
     int getaddrinfo(void *obj, int family, Network_Addr **addrs) override;
     int freeaddrinfo(void *obj, Network_Addr *addrs) override;
 };
