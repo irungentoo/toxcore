@@ -111,7 +111,7 @@ static void crypto_free(uint8_t *ptr, size_t bytes)
 void crypto_memzero(void *data, size_t length)
 {
 #if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
-    memzero(data, length);
+    memzero((uint8_t *)data, length);
 #else
     sodium_memzero(data, length);
 #endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */

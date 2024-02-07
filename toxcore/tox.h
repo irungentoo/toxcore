@@ -492,6 +492,9 @@ const char *tox_log_level_to_string(Tox_Log_Level value);
  * any time. Thus, user code must make sure it is equipped to handle concurrent
  * execution, e.g. by employing appropriate mutex locking.
  *
+ * When using the experimental_thread_safety option, no Tox API functions can
+ * be called from within the log callback.
+ *
  * @param level The severity of the log message.
  * @param file The source file from which the message originated.
  * @param line The source line from which the message originated.
