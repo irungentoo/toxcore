@@ -21,10 +21,10 @@
 #define _XOPEN_SOURCE 700
 #endif /* _XOPEN_SOURCE */
 
-#if defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= _WIN32_WINNT_WINXP
+#if defined(_WIN32) && defined(_WIN32_WINNT) && defined(_WIN32_WINNT_WINXP) && _WIN32_WINNT >= _WIN32_WINNT_WINXP
 #undef _WIN32_WINNT
 #define _WIN32_WINNT  0x501
-#endif /* defined(_WIN32) && defined(_WIN32_WINNT) && _WIN32_WINNT >= _WIN32_WINNT_WINXP */
+#endif /* defined(_WIN32) && defined(_WIN32_WINNT) && defined(_WIN32_WINNT_WINXP) && _WIN32_WINNT >= _WIN32_WINNT_WINXP */
 
 #if !defined(OS_WIN32) && (defined(_WIN32) || defined(__WIN32__) || defined(WIN32))
 #define OS_WIN32
