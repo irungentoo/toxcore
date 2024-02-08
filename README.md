@@ -182,3 +182,24 @@ the API documentation in [toxcore/tox.h](toxcore/tox.h) for more information.
 
 - [Another echo bot](https://wiki.tox.chat/developers/client_examples/echo_bot)
 - [minitox](https://github.com/hqwrong/minitox) (A minimal tox client)
+
+## SAST Tools
+
+This project uses various tools supporting Static Application Security Testing:
+
+- [clang-tidy](https://clang.llvm.org/extra/clang-tidy/): A clang-based C++
+  "linter" tool.
+- [Coverity](https://scan.coverity.com/): A cloud-based static analyzer service
+  for Java, C/C++, C#, JavaScript, Ruby, or Python that is free for open source
+  projects.
+- [cppcheck](https://cppcheck.sourceforge.io/): A static analyzer for C/C++
+  code.
+- [cpplint](https://github.com/cpplint/cpplint): Static code checker for C++
+- [goblint](https://goblint.in.tum.de/): A static analyzer for multi-threaded C
+  programs, specializing in finding concurrency bugs.
+- [infer](https://github.com/facebook/infer): A static analyzer for Java, C,
+  C++, and Objective-C.
+- [PVS-Studio](https://pvs-studio.com/en/pvs-studio/?utm_source=website&utm_medium=github&utm_campaign=open_source):
+  A static analyzer for C, C++, C#, and Java code.
+- [tokstyle](https://github.com/TokTok/hs-tokstyle): A style checker for TokTok
+  C projects.
