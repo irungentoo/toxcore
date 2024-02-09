@@ -1086,42 +1086,15 @@ static bool prune_gc_mod_list(GC_Chat *chat)
            && update_gc_topic(chat, public_sig_key);
 }
 
-/** @brief Removes the first found offline sanctioned peer from the sanctions list and sends the
- * event to the rest of the group.
- *
- * @retval false on failure or if no presently sanctioned peer is offline.
- */
 non_null()
-static bool prune_gc_sanctions_list(GC_Chat *chat)
+static bool prune_gc_sanctions_list_inner(
+    GC_Chat *chat, const Mod_Sanction *sanction,
+    const uint8_t target_ext_pk[ENC_PUBLIC_KEY_SIZE + SIG_PUBLIC_KEY_SIZE])
 {
-    if (chat->moderation.num_sanctions == 0) {
-        return true;
-    }
-
-    const Mod_Sanction *sanction = nullptr;
-    uint8_t target_ext_pk[ENC_PUBLIC_KEY_SIZE + SIG_PUBLIC_KEY_SIZE];
-
-    for (uint16_t i = 0; i < chat->moderation.num_sanctions; ++i) {
-        const int peer_number = get_peer_number_of_enc_pk(chat, chat->moderation.sanctions[i].target_public_enc_key, true);
-
-        if (peer_number == -1) {
-            sanction = &chat->moderation.sanctions[i];
-            memcpy(target_ext_pk, sanction->target_public_enc_key, ENC_PUBLIC_KEY_SIZE);
-            memcpy(target_ext_pk + ENC_PUBLIC_KEY_SIZE, sanction->setter_public_sig_key, SIG_PUBLIC_KEY_SIZE);
-            break;
-        }
-    }
-
-    if (sanction == nullptr) {
-        return false;
-    }
-
     if (!sanctions_list_remove_observer(&chat->moderation, sanction->target_public_enc_key, nullptr)) {
         LOGGER_WARNING(chat->log, "Failed to remove entry from observer list");
         return false;
     }
-
-    sanction = nullptr;
 
     uint8_t data[MOD_SANCTIONS_CREDS_SIZE];
     const uint16_t length = sanctions_creds_pack(&chat->moderation.sanctions_creds, data);
@@ -1137,6 +1110,33 @@ static bool prune_gc_sanctions_list(GC_Chat *chat)
     }
 
     return true;
+}
+
+/** @brief Removes the first found offline sanctioned peer from the sanctions list and sends the
+ * event to the rest of the group.
+ *
+ * @retval false on failure or if no presently sanctioned peer is offline.
+ */
+non_null()
+static bool prune_gc_sanctions_list(GC_Chat *chat)
+{
+    if (chat->moderation.num_sanctions == 0) {
+        return true;
+    }
+
+    for (uint16_t i = 0; i < chat->moderation.num_sanctions; ++i) {
+        const int peer_number = get_peer_number_of_enc_pk(chat, chat->moderation.sanctions[i].target_public_enc_key, true);
+
+        if (peer_number == -1) {
+            const Mod_Sanction *sanction = &chat->moderation.sanctions[i];
+            uint8_t target_ext_pk[ENC_PUBLIC_KEY_SIZE + SIG_PUBLIC_KEY_SIZE];
+            memcpy(target_ext_pk, sanction->target_public_enc_key, ENC_PUBLIC_KEY_SIZE);
+            memcpy(target_ext_pk + ENC_PUBLIC_KEY_SIZE, sanction->setter_public_sig_key, SIG_PUBLIC_KEY_SIZE);
+            return prune_gc_sanctions_list_inner(chat, sanction, target_ext_pk);
+        }
+    }
+
+    return false;
 }
 
 /** @brief Size of peer data that we pack for transfer (nick length must be accounted for separately).
