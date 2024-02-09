@@ -1,7 +1,9 @@
 ---
 exclude:
-  # shfmt doesn't support this file
+  # shfmt doesn't support this file.
   - "other/analysis/run-clang-tidy"
+  # Generated file.
+  - "CHANGELOG.md"
 
 restylers:
   - astyle:
@@ -17,6 +19,7 @@ restylers:
       include:
         - "**/*.cc"
         - "**/*.hh"
+  - prettier-markdown
   - prettier-yaml
   - reorder-python-imports
   - shellharden

@@ -1,8 +1,14 @@
 # ![Project Tox](https://raw.github.com/TokTok/c-toxcore/master/other/tox.png "Project Tox")
 
-**Current Coverage:** [![coverage](https://codecov.io/gh/TokTok/c-toxcore/branch/master/graph/badge.svg?token=BRfCKo02De)](https://codecov.io/gh/TokTok/c-toxcore)
+**Current Coverage:**
+[![coverage](https://codecov.io/gh/TokTok/c-toxcore/branch/master/graph/badge.svg?token=BRfCKo02De)](https://codecov.io/gh/TokTok/c-toxcore)
 
-[**Website**](https://tox.chat) **|** [**Wiki**](https://wiki.tox.chat/) **|** [**Blog**](https://blog.tox.chat/) **|** [**FAQ**](https://wiki.tox.chat/doku.php?id=users:faq) **|** [**Binaries/Downloads**](https://tox.chat/download.html) **|** [**Clients**](https://wiki.tox.chat/doku.php?id=clients) **|** [**Compiling**](/INSTALL.md)
+[**Website**](https://tox.chat) **|** [**Wiki**](https://wiki.tox.chat/) **|**
+[**Blog**](https://blog.tox.chat/) **|**
+[**FAQ**](https://wiki.tox.chat/doku.php?id=users:faq) **|**
+[**Binaries/Downloads**](https://tox.chat/download.html) **|**
+[**Clients**](https://wiki.tox.chat/doku.php?id=clients) **|**
+[**Compiling**](/INSTALL.md)
 
 ## What is Tox
 
@@ -16,29 +22,33 @@ and privacy easy to obtain for regular users. It uses
 ### ![Danger: Experimental](other/tox-warning.png)
 
 This is an **experimental** cryptographic network library. It has not been
-formally audited by an independent third party that specializes in
-cryptography or cryptanalysis. **Use this library at your own risk.**
+formally audited by an independent third party that specializes in cryptography
+or cryptanalysis. **Use this library at your own risk.**
 
 The underlying crypto library [libsodium](https://doc.libsodium.org/) provides
 reliable encryption, but the security model has not yet been fully specified.
-See [issue 210](https://github.com/TokTok/c-toxcore/issues/210) for a
-discussion on developing a threat model. See other issues for known weaknesses
-(e.g. [issue 426](https://github.com/TokTok/c-toxcore/issues/426) describes
-what can happen if your secret key is stolen).
+See [issue 210](https://github.com/TokTok/c-toxcore/issues/210) for a discussion
+on developing a threat model. See other issues for known weaknesses (e.g.
+[issue 426](https://github.com/TokTok/c-toxcore/issues/426) describes what can
+happen if your secret key is stolen).
 
 ## Toxcore Development Roadmap
 
-The roadmap and changelog are generated from GitHub issues. You may view them
-on the website, where they are updated at least once every 24 hours:
+The roadmap and changelog are generated from GitHub issues. You may view them on
+the website, where they are updated at least once every 24 hours:
 
--   Changelog: https://toktok.ltd/changelog/c-toxcore
--   Roadmap: https://toktok.ltd/roadmap/c-toxcore
+- Changelog: https://toktok.ltd/changelog/c-toxcore
+- Roadmap: https://toktok.ltd/roadmap/c-toxcore
 
 ## Installing toxcore
 
 Detailed installation instructions can be found in [INSTALL.md](INSTALL.md).
 
-Be advised that due to the addition of `cmp` as a submodule, you now also need to initialize the git submodules required by toxcore. This can be done by cloning the repo with the following command: `git clone --recurse-submodules https://github.com/Toktok/c-toxcore` or by running `git submodule update --init` in the root directory of the repo.
+Be advised that due to the addition of `cmp` as a submodule, you now also need
+to initialize the git submodules required by toxcore. This can be done by
+cloning the repo with the following command:
+`git clone --recurse-submodules https://github.com/Toktok/c-toxcore` or by
+running `git submodule update --init` in the root directory of the repo.
 
 In a nutshell, if you have [libsodium](https://github.com/jedisct1/libsodium)
 installed, run:
@@ -74,17 +84,17 @@ if (err_new != TOX_ERR_NEW_OK) {
 }
 ```
 
-Here, we simply exit the program, but in a real client you will probably want
-to do some error handling and proper error reporting to the user. The `NULL`
+Here, we simply exit the program, but in a real client you will probably want to
+do some error handling and proper error reporting to the user. The `NULL`
 argument given to the first parameter of `tox_new` is the `Tox_Options`. It
-contains various write-once network settings and allows you to load a
-previously serialised instance. See [toxcore/tox.h](tox.h) for details.
+contains various write-once network settings and allows you to load a previously
+serialised instance. See [toxcore/tox.h](tox.h) for details.
 
 ### Setting up callbacks
 
-Toxcore works with callbacks that you can register to listen for certain
-events. Examples of such events are "friend request received" or "friend sent
-a message". Search the API for `tox_callback_*` to find all of them.
+Toxcore works with callbacks that you can register to listen for certain events.
+Examples of such events are "friend request received" or "friend sent a
+message". Search the API for `tox_callback_*` to find all of them.
 
 Here, we will set up callbacks for receiving friend requests and receiving
 messages. We will always accept any friend request (because we're a bot), and
