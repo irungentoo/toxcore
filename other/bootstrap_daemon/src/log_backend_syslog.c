@@ -61,6 +61,9 @@ void log_backend_syslog_write(LOG_LEVEL level, const char *format, va_list args)
     }
 
     char *buf = (char *)malloc(size + 1);
+    if (buf == nullptr) {
+        return;
+    }
     vsnprintf(buf, size + 1, format, args);
 
     syslog(log_backend_syslog_level(level), "%s", buf);
