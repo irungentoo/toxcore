@@ -4029,6 +4029,10 @@ static int handle_gc_key_exchange(const GC_Chat *chat, GC_Connection *gconn, con
     memcpy(response + 1, new_session_pk, ENC_PUBLIC_KEY_SIZE);
 
     if (!send_lossless_group_packet(chat, gconn, response, sizeof(response), GP_KEY_ROTATION)) {
+        // Don't really care about zeroing the secret key here, because we failed, but
+        // we're doing it anyway for symmetry with the memzero+munlock below, where we
+        // really do care about it.
+        crypto_memzero(new_session_sk, sizeof(new_session_sk));
         return -3;
     }
 
@@ -4038,6 +4042,7 @@ static int handle_gc_key_exchange(const GC_Chat *chat, GC_Connection *gconn, con
 
     gcc_make_session_shared_key(gconn, sender_public_session_key);
 
+    crypto_memzero(new_session_sk, sizeof(new_session_sk));
     crypto_memunlock(new_session_sk, sizeof(new_session_sk));
 
     gconn->last_key_rotation = mono_time_get(chat->mono_time);
