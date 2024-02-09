@@ -864,9 +864,7 @@ uint16_t sanctions_list_replace_sig(Moderation *moderation, const uint8_t *publi
 
 void sanctions_list_cleanup(Moderation *moderation)
 {
-    if (moderation->sanctions != nullptr) {
-        free(moderation->sanctions);
-    }
+    free(moderation->sanctions);
 
     moderation->sanctions = nullptr;
     moderation->num_sanctions = 0;

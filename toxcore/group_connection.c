@@ -41,9 +41,7 @@ static bool array_entry_is_empty(const GC_Message_Array_Entry *array_entry)
 non_null()
 static void clear_array_entry(GC_Message_Array_Entry *const array_entry)
 {
-    if (array_entry->data != nullptr) {
-        free(array_entry->data);
-    }
+    free(array_entry->data);
 
     *array_entry = (GC_Message_Array_Entry) {
         nullptr

@@ -239,9 +239,7 @@ bool announce_store_data(Announcements *announce, const uint8_t *data_public_key
     if (length > 0) {
         assert(data != nullptr);
 
-        if (entry->data != nullptr) {
-            free(entry->data);
-        }
+        free(entry->data);
 
         uint8_t *entry_data = (uint8_t *)malloc(length);
 
@@ -702,9 +700,7 @@ void kill_announcements(Announcements *announce)
     shared_key_cache_free(announce->shared_keys);
 
     for (uint32_t i = 0; i < ANNOUNCE_BUCKETS * ANNOUNCE_BUCKET_SIZE; ++i) {
-        if (announce->entries[i].data != nullptr) {
-            free(announce->entries[i].data);
-        }
+        free(announce->entries[i].data);
     }
 
     free(announce);

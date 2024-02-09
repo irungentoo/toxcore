@@ -106,14 +106,11 @@ IP_Port random_ip_port(const Random *rng)
     return ip_port;
 }
 
-bool operator==(Family const &a, Family const &b) { return a.value == b.value; }
+bool operator==(Family a, Family b) { return a.value == b.value; }
 
-bool operator==(IP4 const &a, IP4 const &b) { return a.uint32 == b.uint32; }
+bool operator==(IP4 a, IP4 b) { return a.uint32 == b.uint32; }
 
-bool operator==(IP6 const &a, IP6 const &b)
-{
-    return a.uint64[0] == b.uint64[0] && a.uint64[1] == b.uint64[1];
-}
+bool operator==(IP6 a, IP6 b) { return a.uint64[0] == b.uint64[0] && a.uint64[1] == b.uint64[1]; }
 
 bool operator==(IP const &a, IP const &b)
 {
