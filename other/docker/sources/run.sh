@@ -18,4 +18,4 @@ if [ -f "$DOCKERDIR/dockerignore" ]; then
   cat "$DOCKERDIR/dockerignore" >>"$DOCKERDIR/$BUILD.Dockerfile.dockerignore"
 fi
 
-docker build -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/$BUILD.Dockerfile" .
+docker build "${DOCKERFLAGS[@]}" -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/$BUILD.Dockerfile" .

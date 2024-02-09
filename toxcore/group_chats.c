@@ -5560,12 +5560,12 @@ static int make_gc_handshake_packet(const GC_Chat *chat, const GC_Connection *gc
                                     uint8_t request_type, uint8_t join_type, uint8_t *packet, size_t packet_size,
                                     const Node_format *node)
 {
-    if (packet_size != GC_MIN_ENCRYPTED_HS_PAYLOAD_SIZE + sizeof(Node_format)) {
-        LOGGER_FATAL(chat->log, "invalid packet size: %zu", packet_size);
+    if (chat == nullptr || gconn == nullptr || node == nullptr) {
         return -1;
     }
 
-    if (chat == nullptr || gconn == nullptr || node == nullptr) {
+    if (packet_size != GC_MIN_ENCRYPTED_HS_PAYLOAD_SIZE + sizeof(Node_format)) {
+        LOGGER_FATAL(chat->log, "invalid packet size: %zu", packet_size);
         return -1;
     }
 
