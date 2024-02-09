@@ -45,10 +45,12 @@ static_assert(CRYPTO_SIGN_PUBLIC_KEY_SIZE == crypto_sign_PUBLICKEYBYTES,
 static_assert(CRYPTO_SIGN_SECRET_KEY_SIZE == crypto_sign_SECRETKEYBYTES,
               "CRYPTO_SIGN_SECRET_KEY_SIZE should be equal to crypto_sign_SECRETKEYBYTES");
 
-bool create_extended_keypair(uint8_t pk[EXT_PUBLIC_KEY_SIZE], uint8_t sk[EXT_SECRET_KEY_SIZE])
+bool create_extended_keypair(uint8_t pk[EXT_PUBLIC_KEY_SIZE], uint8_t sk[EXT_SECRET_KEY_SIZE], const Random *rng)
 {
     /* create signature key pair */
-    crypto_sign_keypair(pk + ENC_PUBLIC_KEY_SIZE, sk + ENC_SECRET_KEY_SIZE);
+    uint8_t seed[crypto_sign_SEEDBYTES];
+    random_bytes(rng, seed, crypto_sign_SEEDBYTES);
+    crypto_sign_seed_keypair(pk + ENC_PUBLIC_KEY_SIZE, sk + ENC_SECRET_KEY_SIZE, seed);
 
     /* convert public signature key to public encryption key */
     const int res1 = crypto_sign_ed25519_pk_to_curve25519(pk, pk + ENC_PUBLIC_KEY_SIZE);

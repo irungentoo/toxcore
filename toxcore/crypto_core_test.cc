@@ -75,7 +75,7 @@ TEST(CryptoCore, Signatures)
     ExtPublicKey pk;
     ExtSecretKey sk;
 
-    EXPECT_TRUE(create_extended_keypair(pk.data(), sk.data()));
+    EXPECT_TRUE(create_extended_keypair(pk.data(), sk.data(), rng));
 
     std::vector<uint8_t> message{0};
     message.clear();

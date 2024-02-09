@@ -194,6 +194,7 @@ protected:
     ExtPublicKey pk;
     ExtSecretKey sk;
     Logger *log = logger_new();
+    Test_Random rng;
     Test_Memory mem;
     Moderation mod{mem};
 
@@ -203,7 +204,7 @@ protected:
 
     void SetUp() override
     {
-        ASSERT_TRUE(create_extended_keypair(pk.data(), sk.data()));
+        ASSERT_TRUE(create_extended_keypair(pk.data(), sk.data(), rng));
 
         mod.log = log;
 

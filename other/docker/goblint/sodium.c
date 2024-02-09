@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-int crypto_sign_keypair(unsigned char *pk, unsigned char *sk)
+int crypto_sign_seed_keypair(unsigned char *pk, unsigned char *sk, const unsigned char *seed)
 {
     memset(pk, 0, 32);
     memset(sk, 0, 32);

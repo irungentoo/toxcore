@@ -333,11 +333,12 @@ bool public_key_valid(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]);
  *
  * @param[out] pk The buffer where the public key will be stored. Must have room for EXT_PUBLIC_KEY_SIZE bytes.
  * @param[out] sk The buffer where the secret key will be stored. Must have room for EXT_SECRET_KEY_SIZE bytes.
+ * @param rng The random number generator to use for the key generator seed.
  *
  * @retval true on success.
  */
 non_null()
-bool create_extended_keypair(uint8_t pk[EXT_PUBLIC_KEY_SIZE], uint8_t sk[EXT_SECRET_KEY_SIZE]);
+bool create_extended_keypair(uint8_t pk[EXT_PUBLIC_KEY_SIZE], uint8_t sk[EXT_SECRET_KEY_SIZE], const Random *rng);
 
 /** Functions for groupchat extended keys */
 non_null() const uint8_t *get_enc_key(const uint8_t *key);

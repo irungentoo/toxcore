@@ -7656,8 +7656,8 @@ int gc_group_load(GC_Session *c, Bin_Unpack *bu)
     return group_number;
 }
 
-int gc_group_add(GC_Session *c, Group_Privacy_State privacy_state, const uint8_t *group_name,
-                 uint16_t group_name_length,
+int gc_group_add(GC_Session *c, Group_Privacy_State privacy_state,
+                 const uint8_t *group_name, uint16_t group_name_length,
                  const uint8_t *nick, size_t nick_length)
 {
     if (group_name_length > MAX_GC_GROUP_NAME_SIZE) {
@@ -7690,7 +7690,7 @@ int gc_group_add(GC_Session *c, Group_Privacy_State privacy_state, const uint8_t
 
     crypto_memlock(chat->chat_secret_key, sizeof(chat->chat_secret_key));
 
-    create_extended_keypair(chat->chat_public_key, chat->chat_secret_key);
+    create_extended_keypair(chat->chat_public_key, chat->chat_secret_key, chat->rng);
 
     if (!init_gc_shared_state_founder(chat, privacy_state, group_name, group_name_length)) {
         group_delete(c, chat);
@@ -8439,7 +8439,7 @@ static bool create_new_chat_ext_keypair(GC_Chat *chat)
 {
     crypto_memlock(chat->self_secret_key, sizeof(chat->self_secret_key));
 
-    if (!create_extended_keypair(chat->self_public_key, chat->self_secret_key)) {
+    if (!create_extended_keypair(chat->self_public_key, chat->self_secret_key, chat->rng)) {
         crypto_memunlock(chat->self_secret_key, sizeof(chat->self_secret_key));
         return false;
     }
