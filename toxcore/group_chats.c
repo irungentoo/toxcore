@@ -4033,6 +4033,7 @@ static int handle_gc_key_exchange(const GC_Chat *chat, GC_Connection *gconn, con
         // we're doing it anyway for symmetry with the memzero+munlock below, where we
         // really do care about it.
         crypto_memzero(new_session_sk, sizeof(new_session_sk));
+        crypto_memunlock(new_session_sk, sizeof(new_session_sk));
         return -3;
     }
 
