@@ -45,45 +45,46 @@ static_assert(CRYPTO_SIGN_PUBLIC_KEY_SIZE == crypto_sign_PUBLICKEYBYTES,
 static_assert(CRYPTO_SIGN_SECRET_KEY_SIZE == crypto_sign_SECRETKEYBYTES,
               "CRYPTO_SIGN_SECRET_KEY_SIZE should be equal to crypto_sign_SECRETKEYBYTES");
 
-bool create_extended_keypair(uint8_t pk[EXT_PUBLIC_KEY_SIZE], uint8_t sk[EXT_SECRET_KEY_SIZE], const Random *rng)
+bool create_extended_keypair(Extended_Public_Key *pk, Extended_Secret_Key *sk, const Random *rng)
 {
     /* create signature key pair */
     uint8_t seed[crypto_sign_SEEDBYTES];
     random_bytes(rng, seed, crypto_sign_SEEDBYTES);
-    crypto_sign_seed_keypair(pk + ENC_PUBLIC_KEY_SIZE, sk + ENC_SECRET_KEY_SIZE, seed);
+    crypto_sign_seed_keypair(pk->sig, sk->sig, seed);
+    crypto_memzero(seed, crypto_sign_SEEDBYTES);
 
     /* convert public signature key to public encryption key */
-    const int res1 = crypto_sign_ed25519_pk_to_curve25519(pk, pk + ENC_PUBLIC_KEY_SIZE);
+    const int res1 = crypto_sign_ed25519_pk_to_curve25519(pk->enc, pk->sig);
 
     /* convert secret signature key to secret encryption key */
-    const int res2 = crypto_sign_ed25519_sk_to_curve25519(sk, sk + ENC_SECRET_KEY_SIZE);
+    const int res2 = crypto_sign_ed25519_sk_to_curve25519(sk->enc, sk->sig);
 
     return res1 == 0 && res2 == 0;
 }
 
-const uint8_t *get_enc_key(const uint8_t *key)
+const uint8_t *get_enc_key(const Extended_Public_Key *key)
 {
-    return key;
+    return key->enc;
 }
 
-const uint8_t *get_sig_pk(const uint8_t *key)
+const uint8_t *get_sig_pk(const Extended_Public_Key *key)
 {
-    return key + ENC_PUBLIC_KEY_SIZE;
+    return key->sig;
 }
 
-void set_sig_pk(uint8_t *key, const uint8_t *sig_pk)
+void set_sig_pk(Extended_Public_Key *key, const uint8_t *sig_pk)
 {
-    memcpy(key + ENC_PUBLIC_KEY_SIZE, sig_pk, SIG_PUBLIC_KEY_SIZE);
+    memcpy(key->sig, sig_pk, SIG_PUBLIC_KEY_SIZE);
 }
 
-const uint8_t *get_sig_sk(const uint8_t *key)
+const uint8_t *get_sig_sk(const Extended_Secret_Key *key)
 {
-    return key + ENC_SECRET_KEY_SIZE;
+    return key->sig;
 }
 
-const uint8_t *get_chat_id(const uint8_t *key)
+const uint8_t *get_chat_id(const Extended_Public_Key *key)
 {
-    return key + ENC_PUBLIC_KEY_SIZE;
+    return key->sig;
 }
 
 #if !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)

@@ -223,6 +223,8 @@ set(toxcore_SOURCES
   toxcore/ccompat.h
   toxcore/crypto_core.c
   toxcore/crypto_core.h
+  toxcore/crypto_core_pack.c
+  toxcore/crypto_core_pack.h
   toxcore/DHT.c
   toxcore/DHT.h
   toxcore/events/conference_connected.c

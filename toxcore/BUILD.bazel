@@ -176,6 +176,20 @@ cc_library(
 )
 
 cc_library(
+    name = "crypto_core_pack",
+    srcs = ["crypto_core_pack.c"],
+    hdrs = ["crypto_core_pack.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        ":attributes",
+        ":bin_pack",
+        ":bin_unpack",
+        ":ccompat",
+        ":crypto_core",
+    ],
+)
+
+cc_library(
     name = "crypto_core_test_util",
     testonly = True,
     srcs = ["crypto_core_test_util.cc"],
@@ -920,6 +934,7 @@ cc_library(
         ":bin_unpack",
         ":ccompat",
         ":crypto_core",
+        ":crypto_core_pack",
         ":forwarding",
         ":friend_connection",
         ":friend_requests",

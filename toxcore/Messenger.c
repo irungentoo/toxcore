@@ -404,7 +404,7 @@ bool m_create_group_connection(Messenger *m, GC_Chat *chat)
     const int onion_friend_number = friend_conn_get_onion_friendnum(connection);
     Onion_Friend *onion_friend = onion_get_friend(m->onion_c, (uint16_t)onion_friend_number);
 
-    onion_friend_set_gc_public_key(onion_friend, get_chat_id(chat->chat_public_key));
+    onion_friend_set_gc_public_key(onion_friend, get_chat_id(&chat->chat_public_key));
     onion_friend_set_gc_data(onion_friend, nullptr, 0);
 
     return true;
@@ -2594,8 +2594,8 @@ static bool self_announce_group(const Messenger *m, GC_Chat *chat, Onion_Friend 
         memcpy(&announce.base_announce.ip_port, &chat->self_ip_port, sizeof(IP_Port));
     }
 
-    memcpy(announce.base_announce.peer_public_key, chat->self_public_key, ENC_PUBLIC_KEY_SIZE);
-    memcpy(announce.chat_public_key, get_chat_id(chat->chat_public_key), ENC_PUBLIC_KEY_SIZE);
+    memcpy(announce.base_announce.peer_public_key, chat->self_public_key.enc, ENC_PUBLIC_KEY_SIZE);
+    memcpy(announce.chat_public_key, get_chat_id(&chat->chat_public_key), ENC_PUBLIC_KEY_SIZE);
 
     uint8_t gc_data[GCA_MAX_DATA_LENGTH];
     const int length = gca_pack_public_announce(m->log, gc_data, GCA_MAX_DATA_LENGTH, &announce);

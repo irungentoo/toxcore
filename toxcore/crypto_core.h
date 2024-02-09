@@ -324,6 +324,16 @@ void random_bytes(const Random *rng, uint8_t *bytes, size_t length);
 non_null()
 bool public_key_valid(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]);
 
+typedef struct Extended_Public_Key {
+    uint8_t enc[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t sig[CRYPTO_SIGN_PUBLIC_KEY_SIZE];
+} Extended_Public_Key;
+
+typedef struct Extended_Secret_Key {
+    uint8_t enc[CRYPTO_SECRET_KEY_SIZE];
+    uint8_t sig[CRYPTO_SIGN_SECRET_KEY_SIZE];
+} Extended_Secret_Key;
+
 /**
  * @brief Creates an extended keypair: curve25519 and ed25519 for encryption and signing
  *   respectively. The Encryption keys are derived from the signature keys.
@@ -338,14 +348,14 @@ bool public_key_valid(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]);
  * @retval true on success.
  */
 non_null()
-bool create_extended_keypair(uint8_t pk[EXT_PUBLIC_KEY_SIZE], uint8_t sk[EXT_SECRET_KEY_SIZE], const Random *rng);
+bool create_extended_keypair(Extended_Public_Key *pk, Extended_Secret_Key *sk, const Random *rng);
 
 /** Functions for groupchat extended keys */
-non_null() const uint8_t *get_enc_key(const uint8_t *key);
-non_null() const uint8_t *get_sig_pk(const uint8_t *key);
-non_null() void set_sig_pk(uint8_t *key, const uint8_t *sig_pk);
-non_null() const uint8_t *get_sig_sk(const uint8_t *key);
-non_null() const uint8_t *get_chat_id(const uint8_t *key);
+non_null() const uint8_t *get_enc_key(const Extended_Public_Key *key);
+non_null() const uint8_t *get_sig_pk(const Extended_Public_Key *key);
+non_null() void set_sig_pk(Extended_Public_Key *key, const uint8_t *sig_pk);
+non_null() const uint8_t *get_sig_sk(const Extended_Secret_Key *key);
+non_null() const uint8_t *get_chat_id(const Extended_Public_Key *key);
 
 /**
  * @brief Generate a new random keypair.

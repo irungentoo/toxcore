@@ -79,7 +79,7 @@ typedef struct GC_Exit_Info {
 } GC_Exit_Info;
 
 typedef struct GC_PeerAddress {
-    uint8_t     public_key[EXT_PUBLIC_KEY_SIZE];
+    Extended_Public_Key public_key;
     IP_Port     ip_port;
 } GC_PeerAddress;
 
@@ -242,7 +242,7 @@ typedef struct GC_Peer {
 
 typedef struct GC_SharedState {
     uint32_t    version;
-    uint8_t     founder_public_key[EXT_PUBLIC_KEY_SIZE];
+    Extended_Public_Key founder_public_key;
     uint16_t    maxpeers;
     uint16_t    group_name_len;
     uint8_t     group_name[MAX_GC_GROUP_NAME_SIZE];
@@ -297,11 +297,11 @@ typedef struct GC_Chat {
     uint32_t    numpeers;
     int         group_number;
 
-    uint8_t     chat_public_key[EXT_PUBLIC_KEY_SIZE];  // the chat_id is the sig portion
-    uint8_t     chat_secret_key[EXT_SECRET_KEY_SIZE];  // only used by the founder
+    Extended_Public_Key chat_public_key;  // the chat_id is the sig portion
+    Extended_Secret_Key chat_secret_key;  // only used by the founder
 
-    uint8_t     self_public_key[EXT_PUBLIC_KEY_SIZE];
-    uint8_t     self_secret_key[EXT_SECRET_KEY_SIZE];
+    Extended_Public_Key self_public_key;
+    Extended_Secret_Key self_secret_key;
 
     uint64_t    time_connected;
     uint64_t    last_ping_interval;

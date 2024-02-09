@@ -439,7 +439,7 @@ int gcc_handle_packet_fragment(const GC_Session *c, GC_Chat *chat, uint32_t peer
     }
 
     uint8_t sender_pk[ENC_PUBLIC_KEY_SIZE];
-    memcpy(sender_pk, get_enc_key(gconn->addr.public_key), ENC_PUBLIC_KEY_SIZE);
+    memcpy(sender_pk, get_enc_key(&gconn->addr.public_key), ENC_PUBLIC_KEY_SIZE);
 
     uint8_t *payload = nullptr;
     const uint16_t processed_len = reassemble_packet(chat->log, gconn, &payload, message_id);
@@ -513,7 +513,7 @@ static bool process_recv_array_entry(const GC_Session *c, GC_Chat *chat, GC_Conn
                                      GC_Message_Array_Entry *const array_entry, void *userdata)
 {
     uint8_t sender_pk[ENC_PUBLIC_KEY_SIZE];
-    memcpy(sender_pk, get_enc_key(gconn->addr.public_key), ENC_PUBLIC_KEY_SIZE);
+    memcpy(sender_pk, get_enc_key(&gconn->addr.public_key), ENC_PUBLIC_KEY_SIZE);
 
     const bool ret = handle_gc_lossless_helper(c, chat, peer_number, array_entry->data, array_entry->data_length,
                      array_entry->packet_type, userdata);
@@ -629,7 +629,7 @@ int gcc_encrypt_and_send_lossless_packet(const GC_Chat *chat, const GC_Connectio
     }
 
     const int enc_len = group_packet_wrap(
-                            chat->log, chat->rng, chat->self_public_key, gconn->session_shared_key, packet,
+                            chat->log, chat->rng, chat->self_public_key.enc, gconn->session_shared_key, packet,
                             packet_size, data, length, message_id, packet_type, NET_PACKET_GC_LOSSLESS);
 
     if (enc_len < 0) {

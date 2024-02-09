@@ -15,8 +15,6 @@
 
 namespace {
 
-using ExtPublicKey = std::array<uint8_t, EXT_PUBLIC_KEY_SIZE>;
-using ExtSecretKey = std::array<uint8_t, EXT_SECRET_KEY_SIZE>;
 using ModerationHash = std::array<uint8_t, MOD_MODERATION_HASH_SIZE>;
 
 TEST(ModList, PackedSizeOfEmptyModListIsZero)
@@ -191,8 +189,8 @@ TEST(SanctionsList, PackUnpackSanctionsCreds)
 
 struct SanctionsListMod : ::testing::Test {
 protected:
-    ExtPublicKey pk;
-    ExtSecretKey sk;
+    Extended_Public_Key pk;
+    Extended_Secret_Key sk;
     Logger *log = logger_new();
     Test_Random rng;
     Test_Memory mem;
@@ -204,14 +202,14 @@ protected:
 
     void SetUp() override
     {
-        ASSERT_TRUE(create_extended_keypair(pk.data(), sk.data(), rng));
+        ASSERT_TRUE(create_extended_keypair(&pk, &sk, rng));
 
         mod.log = log;
 
-        memcpy(mod.self_public_sig_key, get_sig_pk(pk.data()), SIG_PUBLIC_KEY_SIZE);
-        memcpy(mod.self_secret_sig_key, get_sig_sk(sk.data()), SIG_SECRET_KEY_SIZE);
+        memcpy(mod.self_public_sig_key, get_sig_pk(&pk), SIG_PUBLIC_KEY_SIZE);
+        memcpy(mod.self_secret_sig_key, get_sig_sk(&sk), SIG_SECRET_KEY_SIZE);
 
-        ASSERT_TRUE(mod_list_add_entry(&mod, get_sig_pk(pk.data())));
+        ASSERT_TRUE(mod_list_add_entry(&mod, get_sig_pk(&pk)));
 
         EXPECT_FALSE(sanctions_list_check_integrity(&mod, &mod.sanctions_creds, &sanctions[0], 0));
         EXPECT_FALSE(sanctions_list_check_integrity(&mod, &mod.sanctions_creds, &sanctions[0], 1));
@@ -232,7 +230,7 @@ protected:
         EXPECT_TRUE(sanctions_list_remove_observer(&mod, sanctioned_pk2, nullptr));
         EXPECT_FALSE(sanctions_list_entry_exists(&mod, &sanctions[0]));
         EXPECT_FALSE(sanctions_list_entry_exists(&mod, &sanctions[1]));
-        EXPECT_TRUE(mod_list_remove_entry(&mod, get_sig_pk(pk.data())));
+        EXPECT_TRUE(mod_list_remove_entry(&mod, get_sig_pk(&pk)));
 
         logger_kill(log);
     }

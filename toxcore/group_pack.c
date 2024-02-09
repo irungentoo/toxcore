@@ -19,6 +19,7 @@
 #include "bin_unpack.h"
 #include "ccompat.h"
 #include "crypto_core.h"
+#include "crypto_core_pack.h"
 #include "group_common.h"
 #include "group_moderation.h"
 #include "logger.h"
@@ -119,7 +120,7 @@ static bool load_unpack_state_bin(GC_Chat *chat, Bin_Unpack *bu)
         return false;
     }
 
-    if (!bin_unpack_bin_fixed(bu, chat->shared_state.founder_public_key, EXT_PUBLIC_KEY_SIZE)) {
+    if (!unpack_extended_public_key(&chat->shared_state.founder_public_key, bu)) {
         LOGGER_ERROR(chat->log, "Failed to unpack founder public key");
         return false;
     }
@@ -213,10 +214,10 @@ static bool load_unpack_keys(GC_Chat *chat, Bin_Unpack *bu)
         return false;
     }
 
-    if (!(bin_unpack_bin_fixed(bu, chat->chat_public_key, EXT_PUBLIC_KEY_SIZE)
-            && bin_unpack_bin_fixed(bu, chat->chat_secret_key, EXT_SECRET_KEY_SIZE)
-            && bin_unpack_bin_fixed(bu, chat->self_public_key, EXT_PUBLIC_KEY_SIZE)
-            && bin_unpack_bin_fixed(bu, chat->self_secret_key, EXT_SECRET_KEY_SIZE))) {
+    if (!(unpack_extended_public_key(&chat->chat_public_key, bu)
+            && unpack_extended_secret_key(&chat->chat_secret_key, bu)
+            && unpack_extended_public_key(&chat->self_public_key, bu)
+            && unpack_extended_secret_key(&chat->self_secret_key, bu))) {
         LOGGER_ERROR(chat->log, "Failed to unpack keys");
         return false;
     }
@@ -255,7 +256,7 @@ static bool load_unpack_self_info(GC_Chat *chat, Bin_Unpack *bu)
     }
 
     // we have to add ourself before setting self info
-    if (peer_add(chat, nullptr, chat->self_public_key) != 0) {
+    if (peer_add(chat, nullptr, chat->self_public_key.enc) != 0) {
         LOGGER_ERROR(chat->log, "Failed to add self to peer list");
         return false;
     }
@@ -267,7 +268,7 @@ static bool load_unpack_self_info(GC_Chat *chat, Bin_Unpack *bu)
 
     GC_Peer *self = &chat->group[0];
 
-    memcpy(self->gconn.addr.public_key, chat->self_public_key, EXT_PUBLIC_KEY_SIZE);
+    self->gconn.addr.public_key = chat->self_public_key;
     memcpy(self->nick, self_nick, self_nick_len);
     self->nick_length = self_nick_len;
     self->role = (Group_Role)self_role;
@@ -357,7 +358,7 @@ static void save_pack_state_bin(const GC_Chat *chat, Bin_Pack *bp)
     bin_pack_array(bp, 5);
 
     bin_pack_bin(bp, chat->shared_state_sig, SIGNATURE_SIZE); // 1
-    bin_pack_bin(bp, chat->shared_state.founder_public_key, EXT_PUBLIC_KEY_SIZE); // 2
+    pack_extended_public_key(&chat->shared_state.founder_public_key, bp); // 2
     bin_pack_bin(bp, chat->shared_state.group_name, chat->shared_state.group_name_len); // 3
     bin_pack_bin(bp, chat->shared_state.password, chat->shared_state.password_length); // 4
     bin_pack_bin(bp, chat->shared_state.mod_list_hash, MOD_MODERATION_HASH_SIZE); // 5
@@ -415,10 +416,10 @@ static void save_pack_keys(const GC_Chat *chat, Bin_Pack *bp)
 {
     bin_pack_array(bp, 4);
 
-    bin_pack_bin(bp, chat->chat_public_key, EXT_PUBLIC_KEY_SIZE); // 1
-    bin_pack_bin(bp, chat->chat_secret_key, EXT_SECRET_KEY_SIZE); // 2
-    bin_pack_bin(bp, chat->self_public_key, EXT_PUBLIC_KEY_SIZE); // 3
-    bin_pack_bin(bp, chat->self_secret_key, EXT_SECRET_KEY_SIZE); // 4
+    pack_extended_public_key(&chat->chat_public_key, bp); // 1
+    pack_extended_secret_key(&chat->chat_secret_key, bp); // 2
+    pack_extended_public_key(&chat->self_public_key, bp); // 3
+    pack_extended_secret_key(&chat->self_secret_key, bp); // 4
 }
 
 non_null()
