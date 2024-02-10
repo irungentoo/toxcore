@@ -236,15 +236,15 @@ uint16_t sanctions_creds_pack(const Mod_Sanction_Creds *creds, uint8_t *data)
 {
     uint16_t packed_len = 0;
 
-    net_pack_u32(data + packed_len, creds->version);
+    net_pack_u32(&data[packed_len], creds->version);
     packed_len += sizeof(uint32_t);
-    memcpy(data + packed_len, creds->hash, MOD_SANCTION_HASH_SIZE);
+    memcpy(&data[packed_len], creds->hash, MOD_SANCTION_HASH_SIZE);
     packed_len += MOD_SANCTION_HASH_SIZE;
-    net_pack_u16(data + packed_len, creds->checksum);
+    net_pack_u16(&data[packed_len], creds->checksum);
     packed_len += sizeof(uint16_t);
-    memcpy(data + packed_len, creds->sig_pk, SIG_PUBLIC_KEY_SIZE);
+    memcpy(&data[packed_len], creds->sig_pk, SIG_PUBLIC_KEY_SIZE);
     packed_len += SIG_PUBLIC_KEY_SIZE;
-    memcpy(data + packed_len, creds->sig, SIGNATURE_SIZE);
+    memcpy(&data[packed_len], creds->sig, SIGNATURE_SIZE);
     packed_len += SIGNATURE_SIZE;
 
     return packed_len;
@@ -268,11 +268,11 @@ int sanctions_list_pack(uint8_t *data, uint16_t length, const Mod_Sanction *sanc
             return -1;
         }
 
-        memcpy(data + packed_len, &sanctions[i].type, sizeof(uint8_t));
+        memcpy(&data[packed_len], &sanctions[i].type, sizeof(uint8_t));
         packed_len += sizeof(uint8_t);
-        memcpy(data + packed_len, sanctions[i].setter_public_sig_key, SIG_PUBLIC_KEY_SIZE);
+        memcpy(&data[packed_len], sanctions[i].setter_public_sig_key, SIG_PUBLIC_KEY_SIZE);
         packed_len += SIG_PUBLIC_KEY_SIZE;
-        net_pack_u64(data + packed_len, sanctions[i].time_set);
+        net_pack_u64(&data[packed_len], sanctions[i].time_set);
         packed_len += TIME_STAMP_SIZE;
 
         const uint8_t sanctions_type = sanctions[i].type;
@@ -282,7 +282,7 @@ int sanctions_list_pack(uint8_t *data, uint16_t length, const Mod_Sanction *sanc
                 return -1;
             }
 
-            memcpy(data + packed_len, sanctions[i].target_public_enc_key, ENC_PUBLIC_KEY_SIZE);
+            memcpy(&data[packed_len], sanctions[i].target_public_enc_key, ENC_PUBLIC_KEY_SIZE);
             packed_len += ENC_PUBLIC_KEY_SIZE;
         } else {
             return -1;
@@ -293,7 +293,7 @@ int sanctions_list_pack(uint8_t *data, uint16_t length, const Mod_Sanction *sanc
         }
 
         /* Signature must be packed last */
-        memcpy(data + packed_len, sanctions[i].signature, SIGNATURE_SIZE);
+        memcpy(&data[packed_len], sanctions[i].signature, SIGNATURE_SIZE);
         packed_len += SIGNATURE_SIZE;
     }
 
@@ -305,7 +305,7 @@ int sanctions_list_pack(uint8_t *data, uint16_t length, const Mod_Sanction *sanc
         return -1;
     }
 
-    const uint16_t cred_len = sanctions_creds_pack(creds, data + packed_len);
+    const uint16_t cred_len = sanctions_creds_pack(creds, &data[packed_len]);
 
     if (cred_len != MOD_SANCTIONS_CREDS_SIZE) {
         return -1;
@@ -318,15 +318,15 @@ uint16_t sanctions_creds_unpack(Mod_Sanction_Creds *creds, const uint8_t *data)
 {
     uint16_t len_processed = 0;
 
-    net_unpack_u32(data + len_processed, &creds->version);
+    net_unpack_u32(&data[len_processed], &creds->version);
     len_processed += sizeof(uint32_t);
-    memcpy(creds->hash, data + len_processed, MOD_SANCTION_HASH_SIZE);
+    memcpy(creds->hash, &data[len_processed], MOD_SANCTION_HASH_SIZE);
     len_processed += MOD_SANCTION_HASH_SIZE;
-    net_unpack_u16(data + len_processed, &creds->checksum);
+    net_unpack_u16(&data[len_processed], &creds->checksum);
     len_processed += sizeof(uint16_t);
-    memcpy(creds->sig_pk, data + len_processed, SIG_PUBLIC_KEY_SIZE);
+    memcpy(creds->sig_pk, &data[len_processed], SIG_PUBLIC_KEY_SIZE);
     len_processed += SIG_PUBLIC_KEY_SIZE;
-    memcpy(creds->sig, data + len_processed, SIGNATURE_SIZE);
+    memcpy(creds->sig, &data[len_processed], SIGNATURE_SIZE);
     len_processed += SIGNATURE_SIZE;
 
     return len_processed;
@@ -343,11 +343,11 @@ int sanctions_list_unpack(Mod_Sanction *sanctions, Mod_Sanction_Creds *creds, ui
             return -1;
         }
 
-        memcpy(&sanctions[num].type, data + len_processed, sizeof(uint8_t));
+        memcpy(&sanctions[num].type, &data[len_processed], sizeof(uint8_t));
         len_processed += sizeof(uint8_t);
-        memcpy(sanctions[num].setter_public_sig_key, data + len_processed, SIG_PUBLIC_KEY_SIZE);
+        memcpy(sanctions[num].setter_public_sig_key, &data[len_processed], SIG_PUBLIC_KEY_SIZE);
         len_processed += SIG_PUBLIC_KEY_SIZE;
-        net_unpack_u64(data + len_processed, &sanctions[num].time_set);
+        net_unpack_u64(&data[len_processed], &sanctions[num].time_set);
         len_processed += TIME_STAMP_SIZE;
 
         if (sanctions[num].type == SA_OBSERVER) {
@@ -355,7 +355,7 @@ int sanctions_list_unpack(Mod_Sanction *sanctions, Mod_Sanction_Creds *creds, ui
                 return -1;
             }
 
-            memcpy(sanctions[num].target_public_enc_key, data + len_processed, ENC_PUBLIC_KEY_SIZE);
+            memcpy(sanctions[num].target_public_enc_key, &data[len_processed], ENC_PUBLIC_KEY_SIZE);
             len_processed += ENC_PUBLIC_KEY_SIZE;
         } else {
             return -1;
@@ -365,7 +365,7 @@ int sanctions_list_unpack(Mod_Sanction *sanctions, Mod_Sanction_Creds *creds, ui
             return -1;
         }
 
-        memcpy(sanctions[num].signature, data + len_processed, SIGNATURE_SIZE);
+        memcpy(sanctions[num].signature, &data[len_processed], SIGNATURE_SIZE);
         len_processed += SIGNATURE_SIZE;
 
         ++num;
@@ -383,7 +383,7 @@ int sanctions_list_unpack(Mod_Sanction *sanctions, Mod_Sanction_Creds *creds, ui
         return num;
     }
 
-    const uint16_t creds_len = sanctions_creds_unpack(creds, data + len_processed);
+    const uint16_t creds_len = sanctions_creds_unpack(creds, &data[len_processed]);
 
     if (creds_len != MOD_SANCTIONS_CREDS_SIZE) {
         return -1;
