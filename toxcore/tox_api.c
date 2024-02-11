@@ -273,6 +273,15 @@ void tox_options_set_operating_system(Tox_Options *options, const Tox_System *op
 {
     options->operating_system = operating_system;
 }
+bool tox_options_get_experimental_groups_persistence(const Tox_Options *options)
+{
+    return options->experimental_groups_persistence;
+}
+void tox_options_set_experimental_groups_persistence(
+    Tox_Options *options, bool experimental_groups_persistence)
+{
+    options->experimental_groups_persistence = experimental_groups_persistence;
+}
 
 const uint8_t *tox_options_get_savedata_data(const Tox_Options *options)
 {
@@ -297,6 +306,7 @@ void tox_options_default(Tox_Options *options)
         tox_options_set_local_discovery_enabled(options, true);
         tox_options_set_dht_announcements_enabled(options, true);
         tox_options_set_experimental_thread_safety(options, false);
+        tox_options_set_experimental_groups_persistence(options, false);
     }
 }
 

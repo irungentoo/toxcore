@@ -78,6 +78,7 @@ typedef struct Messenger_Options {
     bool hole_punching_enabled;
     bool local_discovery_enabled;
     bool dht_announcements_enabled;
+    bool groups_persistence_enabled;
 
     logger_cb *log_callback;
     void *log_context;

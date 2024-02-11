@@ -246,8 +246,8 @@ static void group_save_test(AutoTox *autotoxes)
     ck_assert(options != nullptr);
 
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
-
     tox_options_set_savedata_data(options, save, save_length);
+    tox_options_set_experimental_groups_persistence(options, true);
 
     Tox *new_tox = tox_new_log(options, nullptr, nullptr);
 
@@ -283,7 +283,11 @@ int main(void)
     Run_Auto_Options autotest_opts = default_run_auto_options();
     autotest_opts.graph = GRAPH_COMPLETE;
 
-    run_auto_test(nullptr, NUM_GROUP_TOXES, group_save_test, sizeof(State), &autotest_opts);
+    Tox_Options *opts = tox_options_new(nullptr);
+    ck_assert(opts != nullptr);
+    tox_options_set_experimental_groups_persistence(opts, true);
+    run_auto_test(opts, NUM_GROUP_TOXES, group_save_test, sizeof(State), &autotest_opts);
+    tox_options_free(opts);
 
     return 0;
 }
