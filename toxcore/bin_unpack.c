@@ -21,12 +21,13 @@ struct Bin_Unpack {
 non_null()
 static bool buf_reader(cmp_ctx_t *ctx, void *data, size_t limit)
 {
+    uint8_t *bytes = (uint8_t *)data;
     Bin_Unpack *reader = (Bin_Unpack *)ctx->buf;
     assert(reader != nullptr && reader->bytes != nullptr);
     if (limit > reader->bytes_size) {
         return false;
     }
-    memcpy(data, reader->bytes, limit);
+    memcpy(bytes, reader->bytes, limit);
     reader->bytes += limit;
     reader->bytes_size -= limit;
     return true;

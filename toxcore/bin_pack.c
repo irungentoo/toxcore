@@ -36,6 +36,7 @@ static bool null_skipper(cmp_ctx_t *ctx, size_t count)
 non_null()
 static size_t buf_writer(cmp_ctx_t *ctx, const void *data, size_t count)
 {
+    const uint8_t *bytes = (const uint8_t *)data;
     Bin_Pack *bp = (Bin_Pack *)ctx->buf;
     assert(bp != nullptr);
     const uint32_t new_pos = bp->bytes_pos + count;
@@ -48,7 +49,7 @@ static size_t buf_writer(cmp_ctx_t *ctx, const void *data, size_t count)
             // Buffer too small.
             return 0;
         }
-        memcpy(&bp->bytes[bp->bytes_pos], data, count);
+        memcpy(&bp->bytes[bp->bytes_pos], bytes, count);
     }
     bp->bytes_pos += count;
     return count;
