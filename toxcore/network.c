@@ -1705,7 +1705,7 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool 
         }
 
         ip_port->ip.family = host_family;
-        memcpy(&ip_port->ip.ip.v4, data + 1, SIZE_IP4);
+        memcpy(ip_port->ip.ip.v4.uint8, data + 1, SIZE_IP4);
         memcpy(&ip_port->port, data + 1 + SIZE_IP4, sizeof(uint16_t));
         return size;
     } else {
@@ -1716,7 +1716,7 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool 
         }
 
         ip_port->ip.family = host_family;
-        memcpy(&ip_port->ip.ip.v6, data + 1, SIZE_IP6);
+        memcpy(ip_port->ip.ip.v6.uint8, data + 1, SIZE_IP6);
         memcpy(&ip_port->port, data + 1 + SIZE_IP6, sizeof(uint16_t));
         return size;
     }
@@ -2059,10 +2059,10 @@ int32_t net_getipport(const Memory *mem, const char *node, IP_Port **res, int to
 
         if (cur->ai_family == AF_INET) {
             const struct sockaddr_in *addr = (const struct sockaddr_in *)(const void *)cur->ai_addr;
-            memcpy(&ip_port->ip.ip.v4, &addr->sin_addr, sizeof(IP4));
+            ip_port->ip.ip.v4.uint32 = addr->sin_addr.s_addr;
         } else if (cur->ai_family == AF_INET6) {
             const struct sockaddr_in6 *addr = (const struct sockaddr_in6 *)(const void *)cur->ai_addr;
-            memcpy(&ip_port->ip.ip.v6, &addr->sin6_addr, sizeof(IP6));
+            memcpy(ip_port->ip.ip.v6.uint8, addr->sin6_addr.s6_addr, sizeof(IP6));
         } else {
             continue;
         }
