@@ -1799,7 +1799,7 @@ static bool unpack_gc_sync_announce(GC_Chat *chat, const uint8_t *data, const ui
  * Return -1 if the group is full or the peer failed to unpack.
  * Return -2 if `peer_number` does not designate a valid peer.
  */
-non_null(1, 2, 4) nullable(6)
+non_null(1, 2) nullable(4, 6)
 static int handle_gc_sync_response(const GC_Session *c, GC_Chat *chat, uint32_t peer_number, const uint8_t *data,
                                    uint16_t length, void *userdata)
 {
@@ -2241,7 +2241,7 @@ static bool send_gc_invite_response_reject(const GC_Chat *chat, const GC_Connect
  * Return -3 if we fail to send an invite response.
  * Return -4 if peer_number does not designate a valid peer.
  */
-non_null()
+non_null(1) nullable(3)
 static int handle_gc_invite_request(GC_Chat *chat, uint32_t peer_number, const uint8_t *data, uint16_t length)
 {
     if (chat->shared_state.version == 0) {  // we aren't synced yet; ignore request
