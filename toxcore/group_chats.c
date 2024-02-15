@@ -961,7 +961,7 @@ non_null() static bool broadcast_gc_mod_list(const GC_Chat *chat);
 non_null() static bool broadcast_gc_shared_state(const GC_Chat *chat);
 non_null() static bool update_gc_sanctions_list(GC_Chat *chat, const uint8_t *public_sig_key);
 non_null() static bool update_gc_topic(GC_Chat *chat, const uint8_t *public_sig_key);
-non_null() static bool send_gc_set_observer(const GC_Chat *chat, const uint8_t *target_ext_pk,
+non_null() static bool send_gc_set_observer(const GC_Chat *chat, const Extended_Public_Key *target_ext_pk,
         const uint8_t *sanction_data, uint16_t length, bool add_obs);
 
 /** Returns true if peer designated by `peer_number` is in the sanctions list as an observer. */
@@ -1119,7 +1119,7 @@ static bool prune_gc_mod_list(GC_Chat *chat)
 non_null()
 static bool prune_gc_sanctions_list_inner(
     GC_Chat *chat, const Mod_Sanction *sanction,
-    const uint8_t target_ext_pk[ENC_PUBLIC_KEY_SIZE + SIG_PUBLIC_KEY_SIZE])
+    const Extended_Public_Key *target_ext_pk)
 {
     if (!sanctions_list_remove_observer(&chat->moderation, sanction->target_public_enc_key, nullptr)) {
         LOGGER_WARNING(chat->log, "Failed to remove entry from observer list");
@@ -1159,10 +1159,10 @@ static bool prune_gc_sanctions_list(GC_Chat *chat)
 
         if (peer_number == -1) {
             const Mod_Sanction *sanction = &chat->moderation.sanctions[i];
-            uint8_t target_ext_pk[ENC_PUBLIC_KEY_SIZE + SIG_PUBLIC_KEY_SIZE];
-            memcpy(target_ext_pk, sanction->target_public_enc_key, ENC_PUBLIC_KEY_SIZE);
-            memcpy(target_ext_pk + ENC_PUBLIC_KEY_SIZE, sanction->setter_public_sig_key, SIG_PUBLIC_KEY_SIZE);
-            return prune_gc_sanctions_list_inner(chat, sanction, target_ext_pk);
+            Extended_Public_Key target_ext_pk;
+            memcpy(target_ext_pk.enc, sanction->target_public_enc_key, ENC_PUBLIC_KEY_SIZE);
+            memcpy(target_ext_pk.sig, sanction->setter_public_sig_key, SIG_PUBLIC_KEY_SIZE);
+            return prune_gc_sanctions_list_inner(chat, sanction, &target_ext_pk);
         }
     }
 
@@ -4457,10 +4457,10 @@ static int handle_gc_set_observer(const GC_Session *c, GC_Chat *chat, uint32_t p
  * Returns true on success.
  */
 non_null()
-static bool send_gc_set_observer(const GC_Chat *chat, const uint8_t *target_ext_pk, const uint8_t *sanction_data,
-                                 uint16_t length, bool add_obs)
+static bool send_gc_set_observer(const GC_Chat *chat, const Extended_Public_Key *target_ext_pk,
+                                 const uint8_t *sanction_data, uint16_t length, bool add_obs)
 {
-    const uint16_t packet_len = 1 + EXT_PUBLIC_KEY_SIZE + length;
+    const uint16_t packet_len = 1 + ENC_PUBLIC_KEY_SIZE + SIG_PUBLIC_KEY_SIZE + length;
     uint8_t *packet = (uint8_t *)malloc(packet_len);
 
     if (packet == nullptr) {
@@ -4469,8 +4469,9 @@ static bool send_gc_set_observer(const GC_Chat *chat, const uint8_t *target_ext_
 
     net_pack_bool(&packet[0], add_obs);
 
-    memcpy(packet + 1, target_ext_pk, EXT_PUBLIC_KEY_SIZE);
-    memcpy(packet + 1 + EXT_PUBLIC_KEY_SIZE, sanction_data, length);
+    memcpy(packet + 1, target_ext_pk->enc, ENC_PUBLIC_KEY_SIZE);
+    memcpy(packet + 1 + ENC_PUBLIC_KEY_SIZE, target_ext_pk->sig, SIG_PUBLIC_KEY_SIZE);
+    memcpy(packet + 1 + ENC_PUBLIC_KEY_SIZE + SIG_PUBLIC_KEY_SIZE, sanction_data, length);
 
     if (!send_gc_broadcast_message(chat, packet, packet_len, GM_SET_OBSERVER)) {
         free(packet);
@@ -4557,7 +4558,7 @@ static bool mod_gc_set_observer(GC_Chat *chat, uint32_t peer_number, bool add_ob
 
     update_gc_peer_roles(chat);
 
-    return send_gc_set_observer(chat, gconn->addr.public_key.enc, sanction_data, length, add_obs);
+    return send_gc_set_observer(chat, &gconn->addr.public_key, sanction_data, length, add_obs);
 }
 
 /** @brief Sets the role of `peer_number` to `new_role`. If necessary this function will first
