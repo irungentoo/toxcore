@@ -9,7 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LOADED_SAVE_FILE "../auto_tests/data/save.tox"
+#define LOADED_SAVE_FILE_BIG    "../auto_tests/data/save.tox.big"
+#define LOADED_SAVE_FILE_LITTLE "../auto_tests/data/save.tox.little"
 
 // Information from the save file
 #define EXPECTED_NAME "name"
@@ -18,7 +19,7 @@
 #define EXPECTED_STATUS_MESSAGE_SIZE strlen(EXPECTED_STATUS_MESSAGE)
 #define EXPECTED_NUM_FRIENDS 1
 #define EXPECTED_NOSPAM "4C762C7D"
-#define EXPECTED_TOX_ID "B70E97D41F69B7F4C42A5BC7BD7A76B95B8030BE1B7C0E9E6FC19FC4ABEB195B4C762C7D800B"
+#define EXPECTED_TOX_ID "E776E9A993EE3CAE04F5946D9AC66FBBAA8C63A95A94B41942353C6DC1739B4B4C762C7DA7B9"
 
 static size_t get_file_size(const char *save_path)
 {
@@ -135,6 +136,12 @@ static void test_save_compatibility(const char *save_path)
     tox_kill(tox);
 }
 
+static bool is_little_endian(void)
+{
+    uint16_t x = 1;
+    return ((uint8_t *)&x)[0] == 1;
+}
+
 // cppcheck-suppress constParameter
 int main(int argc, char *argv[])
 {
@@ -153,10 +160,15 @@ int main(int argc, char *argv[])
         base_path[strrchr(base_path, '/') - base_path] = '\0';
     }
 
-    char save_path[4096 + sizeof(LOADED_SAVE_FILE)];
-    snprintf(save_path, sizeof(save_path), "%s/%s", base_path, LOADED_SAVE_FILE);
-
-    test_save_compatibility(save_path);
+    if (is_little_endian()) {
+        char save_path[4096 + sizeof(LOADED_SAVE_FILE_LITTLE)];
+        snprintf(save_path, sizeof(save_path), "%s/%s", base_path, LOADED_SAVE_FILE_LITTLE);
+        test_save_compatibility(save_path);
+    } else {
+        char save_path[4096 + sizeof(LOADED_SAVE_FILE_BIG)];
+        snprintf(save_path, sizeof(save_path), "%s/%s", base_path, LOADED_SAVE_FILE_BIG);
+        test_save_compatibility(save_path);
+    }
 
     return 0;
 }

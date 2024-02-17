@@ -240,6 +240,7 @@ endif
 
 
 EXTRA_DIST += \
-	$(top_srcdir)/auto_tests/data/save.tox \
+	$(top_srcdir)/auto_tests/data/save.tox.big \
+	$(top_srcdir)/auto_tests/data/save.tox.little \
 	$(top_srcdir)/auto_tests/check_compat.h \
 	$(top_srcdir)/auto_tests/auto_test_support.h
