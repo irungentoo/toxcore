@@ -18,6 +18,7 @@ package main
 import (
 	"encoding/hex"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -104,7 +105,10 @@ func main() {
 		if r.Header.Get("Upgrade") == "websocket" {
 			serveWs(w, r)
 		} else {
-			http.ServeFile(w, r, r.URL.Path[1:])
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusNotFound)
+
+			fmt.Fprintf(w, "404 Not Found")
 		}
 	})
 	log.Fatal(http.ListenAndServe(*sourceAddr, nil))
