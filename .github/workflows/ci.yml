@@ -122,6 +122,41 @@ jobs:
       - name: Cross compilation
         run: .github/scripts/cmake-win${{ matrix.bits }} script
 
+  build-netbsd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Test in NetBSD
+        id: test
+        uses: vmactions/netbsd-vm@v1
+        with:
+          usesh: true
+          copyback: false
+          prepare:
+            /usr/sbin/pkg_add
+              cmake
+              googletest
+              libconfig
+              libopus
+              libsodium
+              libvpx
+              pkg-config
+
+          run: |
+            # TODO(iphydf): Investigate NetBSD failures on these tests.
+            sed -Ei -e '/(TCP|dht_getnodes_api)/s/^/#/' auto_tests/CMakeLists.txt
+            cmake . \
+              -DMIN_LOGGER_LEVEL=TRACE \
+              -DMUST_BUILD_TOXAV=ON \
+              -DNON_HERMETIC_TESTS=ON \
+              -DTEST_TIMEOUT_SECONDS=90 \
+              -DUSE_IPV6=OFF \
+              -DAUTOTEST=ON
+            cmake --build . --target install
+            ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6
+
   mypy:
     runs-on: ubuntu-latest
     steps:
