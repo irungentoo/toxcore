@@ -136,6 +136,8 @@ if(MIN_LOGGER_LEVEL)
   endif()
 endif()
 
+option(EXPERIMENTAL_API "Install experimental header file with unstable API" OFF)
+
 option(USE_IPV6 "Use IPv6 in tests" ON)
 if(NOT USE_IPV6)
   add_definitions(-DUSE_IPV6=0)
@@ -359,8 +361,11 @@ set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} libsodium)
 set(toxcore_API_HEADERS
   ${toxcore_SOURCE_DIR}/toxcore/tox.h^tox
   ${toxcore_SOURCE_DIR}/toxcore/tox_events.h^tox
-  ${toxcore_SOURCE_DIR}/toxcore/tox_dispatch.h^tox
-  ${toxcore_SOURCE_DIR}/toxcore/tox_private.h^tox)
+  ${toxcore_SOURCE_DIR}/toxcore/tox_dispatch.h^tox)
+if(EXPERIMENTAL_API)
+  set(toxcore_API_HEADERS ${toxcore_API_HEADERS}
+    ${toxcore_SOURCE_DIR}/toxcore/tox_private.h^tox)
+endif()
 
 ################################################################################
 #
