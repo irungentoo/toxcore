@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tool: [autotools, clang-tidy, compcert, cppcheck, doxygen, goblint, infer, misra, modules, rpm, slimcc, sparse, tcc, tokstyle]
+        tool: [autotools, clang-tidy, compcert, cppcheck, doxygen, goblint, infer, freebsd, misra, modules, rpm, slimcc, sparse, tcc, tokstyle]
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
@@ -146,12 +146,49 @@ jobs:
 
           run: |
             # TODO(iphydf): Investigate NetBSD failures on these tests.
-            sed -Ei -e '/(TCP|dht_getnodes_api)/s/^/#/' auto_tests/CMakeLists.txt
+            sed -Ei -e '/\((TCP|dht_getnodes_api)\)/s/^/#/' auto_tests/CMakeLists.txt
             cmake . \
               -DMIN_LOGGER_LEVEL=TRACE \
               -DMUST_BUILD_TOXAV=ON \
               -DNON_HERMETIC_TESTS=ON \
               -DTEST_TIMEOUT_SECONDS=90 \
+              -DUSE_IPV6=OFF \
+              -DAUTOTEST=ON
+            cmake --build . --target install
+            ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6
+
+  build-freebsd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Test in FreeBSD
+        id: test
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          copyback: false
+          prepare:
+            PAGER=cat ASSUME_ALWAYS_YES=YES pkg install
+              cmake
+              git
+              gmake
+              googletest
+              libconfig
+              libsodium
+              libvpx
+              opus
+              pkgconf
+
+          run: |
+            # TODO(iphydf): Investigate FreeBSD failures on these tests.
+            sed -Ei -e '/\(dht_getnodes_api\)/s/^/#/' auto_tests/CMakeLists.txt
+            cmake . \
+              -DMIN_LOGGER_LEVEL=TRACE \
+              -DMUST_BUILD_TOXAV=ON \
+              -DNON_HERMETIC_TESTS=ON \
+              -DTEST_TIMEOUT_SECONDS=50 \
               -DUSE_IPV6=OFF \
               -DAUTOTEST=ON
             cmake --build . --target install

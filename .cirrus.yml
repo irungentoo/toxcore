@@ -27,6 +27,7 @@ bazel-dbg_task:
     - cd /src/workspace && bazel test -k
         --build_tag_filters=-haskell
         --test_tag_filters=-haskell
+        --remote_http_cache=http://$CIRRUS_HTTP_CACHE_HOST
         --
         //c-toxcore/...
         -//c-toxcore/auto_tests:tcp_relay_test # TODO(robinlinden): Why does this pass locally but not in Cirrus?
@@ -47,13 +48,30 @@ cimple_task:
         //c-toxcore/...
 
 freebsd_task:
-  container:
-    image: toxchat/freebsd:latest
-    cpu: 2
-    memory: 4G
-    kvm: true
+  freebsd_instance:
+    image_family: freebsd-14-0
   configure_script:
+    - PAGER=cat ASSUME_ALWAYS_YES=YES pkg install
+        cmake
+        git
+        gmake
+        googletest
+        libconfig
+        libsodium
+        libvpx
+        opus
+        pkgconf
     - git submodule update --init --recursive
-    - cd .. && mv cirrus-ci-build /work/c-toxcore && mkdir cirrus-ci-build
   test_all_script:
-    - cd /work/c-toxcore && .github/scripts/cmake-freebsd
+    - |
+      # TODO(iphydf): Investigate FreeBSD failures on these tests.
+      sed -Ei -e '/\(dht_getnodes_api\)/s/^/#/' auto_tests/CMakeLists.txt
+      cmake . \
+        -DMIN_LOGGER_LEVEL=TRACE \
+        -DMUST_BUILD_TOXAV=ON \
+        -DNON_HERMETIC_TESTS=ON \
+        -DTEST_TIMEOUT_SECONDS=50 \
+        -DUSE_IPV6=OFF \
+        -DAUTOTEST=ON
+      cmake --build . --target install
+      ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6
