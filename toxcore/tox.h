@@ -2458,6 +2458,7 @@ void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *callback);
 
 typedef uint32_t Tox_Conference_Number;
 typedef uint32_t Tox_Conference_Peer_Number;
+typedef uint32_t Tox_Conference_Offline_Peer_Number;
 
 /**
  * @brief Conference types for the conference_invite event.
@@ -2682,7 +2683,7 @@ const char *tox_err_conference_peer_query_to_string(Tox_Err_Conference_Peer_Quer
  * peer_number for the functions querying these peers. Return value is
  * unspecified on failure.
  */
-Tox_Conference_Peer_Number tox_conference_peer_count(
+uint32_t tox_conference_peer_count(
     const Tox *tox, Tox_Conference_Number conference_number, Tox_Err_Conference_Peer_Query *error);
 
 /**
@@ -2744,7 +2745,7 @@ uint32_t tox_conference_offline_peer_count(
  */
 size_t tox_conference_offline_peer_get_name_size(
     const Tox *tox, Tox_Conference_Number conference_number,
-    Tox_Conference_Peer_Number offline_peer_number, Tox_Err_Conference_Peer_Query *error);
+    Tox_Conference_Offline_Peer_Number offline_peer_number, Tox_Err_Conference_Peer_Query *error);
 
 /**
  * @brief Copy the name of offline_peer_number who is in conference_number to name.
@@ -2757,7 +2758,7 @@ size_t tox_conference_offline_peer_get_name_size(
  * @return true on success.
  */
 bool tox_conference_offline_peer_get_name(
-    const Tox *tox, Tox_Conference_Number conference_number, Tox_Conference_Peer_Number offline_peer_number,
+    const Tox *tox, Tox_Conference_Number conference_number, Tox_Conference_Offline_Peer_Number offline_peer_number,
     uint8_t name[], Tox_Err_Conference_Peer_Query *error);
 
 /**
@@ -2769,14 +2770,14 @@ bool tox_conference_offline_peer_get_name(
  */
 bool tox_conference_offline_peer_get_public_key(
     const Tox *tox, Tox_Conference_Number conference_number,
-    Tox_Conference_Peer_Number offline_peer_number, uint8_t public_key[TOX_PUBLIC_KEY_SIZE], Tox_Err_Conference_Peer_Query *error);
+    Tox_Conference_Offline_Peer_Number offline_peer_number, uint8_t public_key[TOX_PUBLIC_KEY_SIZE], Tox_Err_Conference_Peer_Query *error);
 
 /**
  * @brief Return a unix-time timestamp of the last time offline_peer_number was seen to be active.
  */
 uint64_t tox_conference_offline_peer_get_last_active(
     const Tox *tox, Tox_Conference_Number conference_number,
-    Tox_Conference_Peer_Number offline_peer_number, Tox_Err_Conference_Peer_Query *error);
+    Tox_Conference_Offline_Peer_Number offline_peer_number, Tox_Err_Conference_Peer_Query *error);
 
 typedef enum Tox_Err_Conference_Set_Max_Offline {
 
