@@ -382,13 +382,13 @@ static void voice_state_message_test(AutoTox *autotox, Tox_Group_Voice_State voi
 static bool all_peers_got_voice_state_change(AutoTox *autotoxes, uint32_t num_toxes,
         Tox_Group_Voice_State expected_voice_state)
 {
-    Tox_Err_Group_State_Queries query_err;
+    Tox_Err_Group_State_Query query_err;
 
     for (uint32_t i = 0; i < num_toxes; ++i) {
         const State *state = (State *)autotoxes[i].state;
 
         Tox_Group_Voice_State voice_state = tox_group_get_voice_state(autotoxes[i].tox, state->group_number, &query_err);
-        ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+        ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
         if (voice_state != expected_voice_state) {
             return false;
@@ -472,11 +472,11 @@ static void group_moderation_test(AutoTox *autotoxes)
     ck_assert_msg(err_new == TOX_ERR_GROUP_NEW_OK, "Failed to create group. error: %d\n", err_new);
 
     /* Founder gets chat ID */
-    Tox_Err_Group_State_Queries id_err;
+    Tox_Err_Group_State_Query id_err;
     uint8_t chat_id[TOX_GROUP_CHAT_ID_SIZE];
     tox_group_get_chat_id(tox0, state0->group_number, chat_id, &id_err);
 
-    ck_assert_msg(id_err == TOX_ERR_GROUP_STATE_QUERIES_OK, "Failed to get chat ID. error: %d", id_err);
+    ck_assert_msg(id_err == TOX_ERR_GROUP_STATE_QUERY_OK, "Failed to get chat ID. error: %d", id_err);
 
     fprintf(stderr, "Peers attemping to join DHT group via the chat ID\n");
 

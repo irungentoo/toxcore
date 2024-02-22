@@ -58,28 +58,28 @@ static void group_peer_join_handler(const Tox_Event_Group_Peer_Join *event, void
  */
 static int has_correct_group_state(const Tox *tox, uint32_t group_number, const uint8_t *expected_chat_id)
 {
-    Tox_Err_Group_State_Queries query_err;
+    Tox_Err_Group_State_Query query_err;
 
     Tox_Group_Privacy_State priv_state = tox_group_get_privacy_state(tox, group_number, &query_err);
-    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
     if (priv_state != NEW_PRIV_STATE) {
         return -1;
     }
 
     size_t pass_len = tox_group_get_password_size(tox, group_number, &query_err);
-    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
     uint8_t password[TOX_GROUP_MAX_PASSWORD_SIZE];
     tox_group_get_password(tox, group_number, password, &query_err);
-    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
     if (pass_len != PASS_LEN || memcmp(password, PASSWORD, pass_len) != 0) {
         return -2;
     }
 
     size_t gname_len = tox_group_get_name_size(tox, group_number, &query_err);
-    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
     uint8_t group_name[TOX_GROUP_MAX_GROUP_NAME_LENGTH];
     tox_group_get_name(tox, group_number, group_name, &query_err);
@@ -93,17 +93,17 @@ static int has_correct_group_state(const Tox *tox, uint32_t group_number, const 
     }
 
     Tox_Group_Topic_Lock topic_lock = tox_group_get_topic_lock(tox, group_number, &query_err);
-    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
     if (topic_lock != TOX_GROUP_TOPIC_LOCK_DISABLED) {
         return -5;
     }
 
-    Tox_Err_Group_State_Queries id_err;
+    Tox_Err_Group_State_Query id_err;
     uint8_t chat_id[TOX_GROUP_CHAT_ID_SIZE];
     tox_group_get_chat_id(tox, group_number, chat_id, &id_err);
 
-    ck_assert(id_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+    ck_assert(id_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
     if (memcmp(chat_id, expected_chat_id, TOX_GROUP_CHAT_ID_SIZE) != 0) {
         return -6;
@@ -174,9 +174,9 @@ static void group_save_test(AutoTox *autotoxes)
 
     uint8_t chat_id[TOX_GROUP_CHAT_ID_SIZE];
 
-    Tox_Err_Group_State_Queries id_err;
+    Tox_Err_Group_State_Query id_err;
     tox_group_get_chat_id(tox0, group_number, chat_id, &id_err);
-    ck_assert(id_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+    ck_assert(id_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
     uint8_t founder_pk[TOX_GROUP_PEER_PUBLIC_KEY_SIZE];
 

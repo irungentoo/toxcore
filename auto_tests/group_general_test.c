@@ -194,13 +194,13 @@ static void group_peer_self_join_handler(const Tox_Event_Group_Self_Join *event,
     ck_assert(tox_group_get_name_size(autotox->tox, groupnumber, nullptr) == GROUP_NAME_LEN);
     ck_assert(tox_group_get_topic_size(autotox->tox, groupnumber, nullptr) == TOPIC_LEN);
 
-    Tox_Err_Group_State_Queries query_err;
+    Tox_Err_Group_State_Query query_err;
     tox_group_get_name(autotox->tox, groupnumber, group_name, &query_err);
-    ck_assert_msg(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK, "%d", query_err);
+    ck_assert_msg(query_err == TOX_ERR_GROUP_STATE_QUERY_OK, "%d", query_err);
     ck_assert(memcmp(group_name, GROUP_NAME, GROUP_NAME_LEN) == 0);
 
     tox_group_get_topic(autotox->tox, groupnumber, topic, &query_err);
-    ck_assert_msg(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK, "%d", query_err);
+    ck_assert_msg(query_err == TOX_ERR_GROUP_STATE_QUERY_OK, "%d", query_err);
     ck_assert(memcmp(topic, TOPIC, TOPIC_LEN) == 0);
 
     uint32_t peer_id = tox_group_self_get_peer_id(autotox->tox, groupnumber, nullptr);
@@ -307,10 +307,10 @@ static void group_announce_test(AutoTox *autotoxes)
     ck_assert(tp_err == TOX_ERR_GROUP_TOPIC_SET_OK);
 
     // get the chat id of the new group.
-    Tox_Err_Group_State_Queries err_id;
+    Tox_Err_Group_State_Query err_id;
     uint8_t chat_id[TOX_GROUP_CHAT_ID_SIZE];
     tox_group_get_chat_id(tox0, groupnumber, chat_id, &err_id);
-    ck_assert(err_id == TOX_ERR_GROUP_STATE_QUERIES_OK);
+    ck_assert(err_id == TOX_ERR_GROUP_STATE_QUERY_OK);
 
     // tox1 joins it.
     Tox_Err_Group_Join err_join;

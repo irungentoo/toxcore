@@ -160,11 +160,11 @@ static void group_tcp_test(AutoTox *autotoxes)
 
     iterate_group(autotoxes, NUM_GROUP_TOXES, GROUP_ITERATION_INTERVAL);
 
-    Tox_Err_Group_State_Queries id_err;
+    Tox_Err_Group_State_Query id_err;
     uint8_t chat_id[TOX_GROUP_CHAT_ID_SIZE];
 
     tox_group_get_chat_id(autotoxes[0].tox, groupnumber, chat_id, &id_err);
-    ck_assert_msg(id_err == TOX_ERR_GROUP_STATE_QUERIES_OK, "%d", id_err);
+    ck_assert_msg(id_err == TOX_ERR_GROUP_STATE_QUERY_OK, "%d", id_err);
 
     printf("Tox 0 created new group...\n");
 

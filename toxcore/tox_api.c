@@ -1253,17 +1253,17 @@ const char *tox_err_group_peer_query_to_string(Tox_Err_Group_Peer_Query value)
 
     return "<invalid Tox_Err_Group_Peer_Query>";
 }
-const char *tox_err_group_state_queries_to_string(Tox_Err_Group_State_Queries value)
+const char *tox_err_group_state_query_to_string(Tox_Err_Group_State_Query value)
 {
     switch (value) {
-        case TOX_ERR_GROUP_STATE_QUERIES_OK:
-            return "TOX_ERR_GROUP_STATE_QUERIES_OK";
+        case TOX_ERR_GROUP_STATE_QUERY_OK:
+            return "TOX_ERR_GROUP_STATE_QUERY_OK";
 
-        case TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND:
-            return "TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND";
+        case TOX_ERR_GROUP_STATE_QUERY_GROUP_NOT_FOUND:
+            return "TOX_ERR_GROUP_STATE_QUERY_GROUP_NOT_FOUND";
     }
 
-    return "<invalid Tox_Err_Group_State_Queries>";
+    return "<invalid Tox_Err_Group_State_Query>";
 }
 const char *tox_err_group_topic_set_to_string(Tox_Err_Group_Topic_Set value)
 {

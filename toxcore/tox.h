@@ -4131,21 +4131,21 @@ void tox_callback_group_peer_status(Tox *tox, tox_group_peer_status_cb *callback
 /**
  * General error codes for group state get and size functions.
  */
-typedef enum Tox_Err_Group_State_Queries {
+typedef enum Tox_Err_Group_State_Query {
 
     /**
      * The function returned successfully.
      */
-    TOX_ERR_GROUP_STATE_QUERIES_OK,
+    TOX_ERR_GROUP_STATE_QUERY_OK,
 
     /**
      * The group number passed did not designate a valid group.
      */
-    TOX_ERR_GROUP_STATE_QUERIES_GROUP_NOT_FOUND,
+    TOX_ERR_GROUP_STATE_QUERY_GROUP_NOT_FOUND,
 
-} Tox_Err_Group_State_Queries;
+} Tox_Err_Group_State_Query;
 
-const char *tox_err_group_state_queries_to_string(Tox_Err_Group_State_Queries value);
+const char *tox_err_group_state_query_to_string(Tox_Err_Group_State_Query value);
 
 /**
  * Error codes for group topic setting.
@@ -4211,7 +4211,7 @@ bool tox_group_set_topic(
  * The return value is equal to the `length` argument received by the last
  * `group_topic` callback.
  */
-size_t tox_group_get_topic_size(const Tox *tox, Tox_Group_Number group_number, Tox_Err_Group_State_Queries *error);
+size_t tox_group_get_topic_size(const Tox *tox, Tox_Group_Number group_number, Tox_Err_Group_State_Query *error);
 
 /**
  * Write the topic designated by the given group number to a byte array.
@@ -4228,7 +4228,7 @@ size_t tox_group_get_topic_size(const Tox *tox, Tox_Group_Number group_number, T
  */
 bool tox_group_get_topic(
     const Tox *tox, Tox_Group_Number group_number,
-    uint8_t topic[], Tox_Err_Group_State_Queries *error);
+    uint8_t topic[], Tox_Err_Group_State_Query *error);
 
 /**
  * @param group_number The group number of the group the topic change is intended for.
@@ -4253,7 +4253,7 @@ void tox_callback_group_topic(Tox *tox, tox_group_topic_cb *callback);
  * Return the length of the group name. If the group number is invalid, the
  * return value is unspecified.
  */
-size_t tox_group_get_name_size(const Tox *tox, Tox_Group_Number group_number, Tox_Err_Group_State_Queries *error);
+size_t tox_group_get_name_size(const Tox *tox, Tox_Group_Number group_number, Tox_Err_Group_State_Query *error);
 
 /**
  * Write the name of the group designated by the given group number to a byte array.
@@ -4267,7 +4267,7 @@ size_t tox_group_get_name_size(const Tox *tox, Tox_Group_Number group_number, To
  */
 bool tox_group_get_name(
     const Tox *tox, Tox_Group_Number group_number,
-    uint8_t name[], Tox_Err_Group_State_Queries *error);
+    uint8_t name[], Tox_Err_Group_State_Query *error);
 
 /**
  * Write the Chat ID designated by the given group number to a byte array.
@@ -4281,7 +4281,7 @@ bool tox_group_get_name(
  */
 bool tox_group_get_chat_id(
     const Tox *tox, Tox_Group_Number group_number, uint8_t chat_id[TOX_GROUP_CHAT_ID_SIZE],
-    Tox_Err_Group_State_Queries *error);
+    Tox_Err_Group_State_Query *error);
 
 /**
  * Return the number of groups in the Tox chats array.
@@ -4298,7 +4298,7 @@ uint32_t tox_group_get_number_groups(const Tox *tox);
  * @see the `Group chat founder controls` section for the respective set function.
  */
 Tox_Group_Privacy_State tox_group_get_privacy_state(const Tox *tox, Tox_Group_Number group_number,
-        Tox_Err_Group_State_Queries *error);
+        Tox_Err_Group_State_Query *error);
 
 /**
  * @param group_number The group number of the group the privacy state is intended for.
@@ -4323,7 +4323,7 @@ void tox_callback_group_privacy_state(Tox *tox, tox_group_privacy_state_cb *call
  * @see the `Group chat founder controls` section for the respective set function.
  */
 Tox_Group_Voice_State tox_group_get_voice_state(const Tox *tox, Tox_Group_Number group_number,
-        Tox_Err_Group_State_Queries *error);
+        Tox_Err_Group_State_Query *error);
 
 /**
  * @param group_number The group number of the group the voice state change is intended for.
@@ -4349,7 +4349,7 @@ void tox_callback_group_voice_state(Tox *tox, tox_group_voice_state_cb *callback
  * @see the `Group chat founder contols` section for the respective set function.
  */
 Tox_Group_Topic_Lock tox_group_get_topic_lock(const Tox *tox, Tox_Group_Number group_number,
-        Tox_Err_Group_State_Queries *error);
+        Tox_Err_Group_State_Query *error);
 
 /**
  * @param group_number The group number of the group for which the topic lock has changed.
@@ -4373,7 +4373,7 @@ void tox_callback_group_topic_lock(Tox *tox, tox_group_topic_lock_cb *callback);
  *
  * @see the `Group chat founder controls` section for the respective set function.
  */
-uint16_t tox_group_get_peer_limit(const Tox *tox, Tox_Group_Number group_number, Tox_Err_Group_State_Queries *error);
+uint16_t tox_group_get_peer_limit(const Tox *tox, Tox_Group_Number group_number, Tox_Err_Group_State_Query *error);
 
 /**
  * @param group_number The group number of the group for which the peer limit has changed.
@@ -4392,7 +4392,7 @@ void tox_callback_group_peer_limit(Tox *tox, tox_group_peer_limit_cb *callback);
  * Return the length of the group password. If the group number is invalid, the
  * return value is unspecified.
  */
-size_t tox_group_get_password_size(const Tox *tox, Tox_Group_Number group_number, Tox_Err_Group_State_Queries *error);
+size_t tox_group_get_password_size(const Tox *tox, Tox_Group_Number group_number, Tox_Err_Group_State_Query *error);
 
 /**
  * Write the password for the group designated by the given group number to a byte array.
@@ -4411,7 +4411,7 @@ size_t tox_group_get_password_size(const Tox *tox, Tox_Group_Number group_number
  */
 bool tox_group_get_password(
     const Tox *tox, Tox_Group_Number group_number, uint8_t password[],
-    Tox_Err_Group_State_Queries *error);
+    Tox_Err_Group_State_Query *error);
 
 /**
  * @param group_number The group number of the group for which the password has changed.

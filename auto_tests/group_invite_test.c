@@ -134,11 +134,11 @@ static void group_invite_test(AutoTox *autotoxes)
 
     iterate_all_wait(autotoxes, NUM_GROUP_TOXES, ITERATION_INTERVAL);
 
-    Tox_Err_Group_State_Queries id_err;
+    Tox_Err_Group_State_Query id_err;
     uint8_t chat_id[TOX_GROUP_CHAT_ID_SIZE];
 
     tox_group_get_chat_id(tox0, groupnumber, chat_id, &id_err);
-    ck_assert_msg(id_err == TOX_ERR_GROUP_STATE_QUERIES_OK, "%d", id_err);
+    ck_assert_msg(id_err == TOX_ERR_GROUP_STATE_QUERY_OK, "%d", id_err);
 
     // peer 1 joins public group with no password
     Tox_Err_Group_Join join_err;

@@ -264,14 +264,14 @@ static bool all_peers_have_same_topic(const AutoTox *autotoxes, uint32_t num_pee
 {
     uint8_t expected_topic[TOX_GROUP_MAX_TOPIC_LENGTH];
 
-    Tox_Err_Group_State_Queries query_err;
+    Tox_Err_Group_State_Query query_err;
     size_t expected_topic_length = tox_group_get_topic_size(autotoxes[0].tox, groupnumber, &query_err);
 
-    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
     tox_group_get_topic(autotoxes[0].tox, groupnumber, expected_topic, &query_err);
 
-    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+    ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
     const State *state0 = (const State *)autotoxes[0].state;
 
@@ -286,7 +286,7 @@ static bool all_peers_have_same_topic(const AutoTox *autotoxes, uint32_t num_pee
     for (size_t i = 1; i < num_peers; ++i) {
         size_t topic_length = tox_group_get_topic_size(autotoxes[i].tox, groupnumber, &query_err);
 
-        ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+        ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
         if (topic_length != expected_topic_length) {
             return false;
@@ -295,7 +295,7 @@ static bool all_peers_have_same_topic(const AutoTox *autotoxes, uint32_t num_pee
         uint8_t topic[TOX_GROUP_MAX_TOPIC_LENGTH];
         tox_group_get_topic(autotoxes[i].tox, groupnumber, topic, &query_err);
 
-        ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERIES_OK);
+        ck_assert(query_err == TOX_ERR_GROUP_STATE_QUERY_OK);
 
         if (memcmp(expected_topic, (const char *)topic, topic_length) != 0) {
             return false;
@@ -360,11 +360,11 @@ static void group_sync_test(AutoTox *autotoxes)
 
     fprintf(stderr, "tox0 creats new group and invites all his friends");
 
-    Tox_Err_Group_State_Queries id_err;
+    Tox_Err_Group_State_Query id_err;
     uint8_t chat_id[TOX_GROUP_CHAT_ID_SIZE];
 
     tox_group_get_chat_id(tox0, groupnumber, chat_id, &id_err);
-    ck_assert_msg(id_err == TOX_ERR_GROUP_STATE_QUERIES_OK, "%d", id_err);
+    ck_assert_msg(id_err == TOX_ERR_GROUP_STATE_QUERY_OK, "%d", id_err);
 
     for (size_t i = 1; i < NUM_GROUP_TOXES; ++i) {
         Tox_Err_Group_Join join_err;
