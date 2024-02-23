@@ -298,9 +298,9 @@ static void group_announce_test(AutoTox *autotoxes)
     iterate_all_wait(autotoxes, NUM_GROUP_TOXES, ITERATION_INTERVAL);
 
     // changes the state (for sync check purposes)
-    Tox_Err_Group_Founder_Set_Peer_Limit limit_set_err;
-    tox_group_founder_set_peer_limit(tox0, groupnumber, PEER_LIMIT, &limit_set_err);
-    ck_assert_msg(limit_set_err == TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_OK, "failed to set peer limit: %d", limit_set_err);
+    Tox_Err_Group_Set_Peer_Limit limit_set_err;
+    tox_group_set_peer_limit(tox0, groupnumber, PEER_LIMIT, &limit_set_err);
+    ck_assert_msg(limit_set_err == TOX_ERR_GROUP_SET_PEER_LIMIT_OK, "failed to set peer limit: %d", limit_set_err);
 
     Tox_Err_Group_Topic_Set tp_err;
     tox_group_set_topic(tox0, groupnumber, (const uint8_t *)TOPIC, TOPIC_LEN, &tp_err);

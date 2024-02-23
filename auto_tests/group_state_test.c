@@ -244,26 +244,26 @@ static void set_group_state(Tox *tox, uint32_t groupnumber, uint32_t peer_limit,
                             Tox_Group_Topic_Lock topic_lock)
 {
 
-    Tox_Err_Group_Founder_Set_Peer_Limit limit_set_err;
-    tox_group_founder_set_peer_limit(tox, groupnumber, peer_limit, &limit_set_err);
-    ck_assert_msg(limit_set_err == TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_OK, "failed to set peer limit: %d", limit_set_err);
+    Tox_Err_Group_Set_Peer_Limit limit_set_err;
+    tox_group_set_peer_limit(tox, groupnumber, peer_limit, &limit_set_err);
+    ck_assert_msg(limit_set_err == TOX_ERR_GROUP_SET_PEER_LIMIT_OK, "failed to set peer limit: %d", limit_set_err);
 
-    Tox_Err_Group_Founder_Set_Privacy_State priv_err;
-    tox_group_founder_set_privacy_state(tox, groupnumber, priv_state, &priv_err);
-    ck_assert_msg(priv_err == TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_OK, "failed to set privacy state: %d", priv_err);
+    Tox_Err_Group_Set_Privacy_State priv_err;
+    tox_group_set_privacy_state(tox, groupnumber, priv_state, &priv_err);
+    ck_assert_msg(priv_err == TOX_ERR_GROUP_SET_PRIVACY_STATE_OK, "failed to set privacy state: %d", priv_err);
 
-    Tox_Err_Group_Founder_Set_Password pass_set_err;
-    tox_group_founder_set_password(tox, groupnumber, password, pass_len, &pass_set_err);
-    ck_assert_msg(pass_set_err == TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_OK, "failed to set password: %d", pass_set_err);
+    Tox_Err_Group_Set_Password pass_set_err;
+    tox_group_set_password(tox, groupnumber, password, pass_len, &pass_set_err);
+    ck_assert_msg(pass_set_err == TOX_ERR_GROUP_SET_PASSWORD_OK, "failed to set password: %d", pass_set_err);
 
-    Tox_Err_Group_Founder_Set_Topic_Lock lock_set_err;
-    tox_group_founder_set_topic_lock(tox, groupnumber, topic_lock, &lock_set_err);
-    ck_assert_msg(lock_set_err == TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_OK, "failed to set topic lock: %d",
+    Tox_Err_Group_Set_Topic_Lock lock_set_err;
+    tox_group_set_topic_lock(tox, groupnumber, topic_lock, &lock_set_err);
+    ck_assert_msg(lock_set_err == TOX_ERR_GROUP_SET_TOPIC_LOCK_OK, "failed to set topic lock: %d",
                   lock_set_err);
 
-    Tox_Err_Group_Founder_Set_Voice_State voice_set_err;
-    tox_group_founder_set_voice_state(tox, groupnumber, voice_state, &voice_set_err);
-    ck_assert_msg(voice_set_err == TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_OK, "failed to set voice state: %d",
+    Tox_Err_Group_Set_Voice_State voice_set_err;
+    tox_group_set_voice_state(tox, groupnumber, voice_state, &voice_set_err);
+    ck_assert_msg(voice_set_err == TOX_ERR_GROUP_SET_VOICE_STATE_OK, "failed to set voice state: %d",
                   voice_set_err);
 }
 

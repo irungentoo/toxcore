@@ -4402,7 +4402,7 @@ size_t tox_group_get_password_size(const Tox *tox, Tox_Group_Number group_number
  * The data received is equal to the data received by the last
  * `group_password` callback.
  *
- * @see the `Group chat founder controls` section for the respective set function.
+ * @see the `Group chat Founder controls` section for the respective set function.
  *
  * @param password A valid memory region large enough to store the group password.
  *   If this parameter is NULL, this function call has no effect.
@@ -5079,56 +5079,56 @@ void tox_callback_group_join_fail(Tox *tox, tox_group_join_fail_cb *callback);
 
 /*******************************************************************************
  *
- * :: Group chat founder controls (these only work for the group founder)
+ * :: Group chat Founder controls
  *
  ******************************************************************************/
 
-typedef enum Tox_Err_Group_Founder_Set_Password {
+typedef enum Tox_Err_Group_Set_Password {
 
     /**
      * The function returned successfully.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_OK,
+    TOX_ERR_GROUP_SET_PASSWORD_OK,
 
     /**
      * The group number passed did not designate a valid group.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_GROUP_NOT_FOUND,
+    TOX_ERR_GROUP_SET_PASSWORD_GROUP_NOT_FOUND,
 
     /**
      * The caller does not have the required permissions to set the password.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_PERMISSIONS,
+    TOX_ERR_GROUP_SET_PASSWORD_PERMISSIONS,
 
     /**
      * Password length exceeded TOX_GROUP_MAX_PASSWORD_SIZE.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_TOO_LONG,
+    TOX_ERR_GROUP_SET_PASSWORD_TOO_LONG,
 
     /**
      * The packet failed to send.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_FAIL_SEND,
+    TOX_ERR_GROUP_SET_PASSWORD_FAIL_SEND,
 
     /**
      * The function failed to allocate enough memory for the operation.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_MALLOC,
+    TOX_ERR_GROUP_SET_PASSWORD_MALLOC,
 
     /**
      * The group is disconnected.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_DISCONNECTED,
+    TOX_ERR_GROUP_SET_PASSWORD_DISCONNECTED,
 
-} Tox_Err_Group_Founder_Set_Password;
+} Tox_Err_Group_Set_Password;
 
-const char *tox_err_group_founder_set_password_to_string(Tox_Err_Group_Founder_Set_Password value);
+const char *tox_err_group_set_password_to_string(Tox_Err_Group_Set_Password value);
 
 /**
  * Set or unset the group password.
  *
- * This function sets the groups password, creates a new group shared state including the change,
- * and distributes it to the rest of the group.
+ * This function allows Founders to set or unset a group password. It will create a new
+ * group shared state including the change and distribute it to the rest of the group.
  *
  * @param group_number The group number of the group for which we wish to set the password.
  * @param password The password we want to set. Set password to NULL to unset the password.
@@ -5136,58 +5136,58 @@ const char *tox_err_group_founder_set_password_to_string(Tox_Err_Group_Founder_S
  *
  * @return true on success.
  */
-bool tox_group_founder_set_password(
+bool tox_group_set_password(
     Tox *tox, Tox_Group_Number group_number,
     const uint8_t password[], size_t length,
-    Tox_Err_Group_Founder_Set_Password *error);
+    Tox_Err_Group_Set_Password *error);
 
-typedef enum Tox_Err_Group_Founder_Set_Topic_Lock {
+typedef enum Tox_Err_Group_Set_Topic_Lock {
 
     /**
      * The function returned successfully.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_OK,
+    TOX_ERR_GROUP_SET_TOPIC_LOCK_OK,
 
     /**
      * The group number passed did not designate a valid group.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_GROUP_NOT_FOUND,
+    TOX_ERR_GROUP_SET_TOPIC_LOCK_GROUP_NOT_FOUND,
 
     /**
      * Tox_Group_Topic_Lock is an invalid type.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_INVALID,
+    TOX_ERR_GROUP_SET_TOPIC_LOCK_INVALID,
 
     /**
      * The caller does not have the required permissions to set the topic lock.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_PERMISSIONS,
+    TOX_ERR_GROUP_SET_TOPIC_LOCK_PERMISSIONS,
 
     /**
      * The topic lock could not be set. This may occur due to an error related to
      * cryptographic signing of the new shared state.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_FAIL_SET,
+    TOX_ERR_GROUP_SET_TOPIC_LOCK_FAIL_SET,
 
     /**
      * The packet failed to send.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_FAIL_SEND,
+    TOX_ERR_GROUP_SET_TOPIC_LOCK_FAIL_SEND,
 
     /**
      * The group is disconnected.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_DISCONNECTED,
+    TOX_ERR_GROUP_SET_TOPIC_LOCK_DISCONNECTED,
 
-} Tox_Err_Group_Founder_Set_Topic_Lock;
+} Tox_Err_Group_Set_Topic_Lock;
 
-const char *tox_err_group_founder_set_topic_lock_to_string(Tox_Err_Group_Founder_Set_Topic_Lock value);
+const char *tox_err_group_set_topic_lock_to_string(Tox_Err_Group_Set_Topic_Lock value);
 
 /**
  * Set the group topic lock state.
  *
- * This function sets the group's topic lock state to enabled or disabled, creates a new shared
- * state including the change, and distributes it to the rest of the group.
+ * This function allows Founders to enable or disable the group's topic lock. It will create a
+ * new shared state including the change and distribute it to the rest of the group.
  *
  * When the topic lock is enabled, only the group founder and moderators may set the topic.
  * When disabled, all peers except those with the observer role may set the topic.
@@ -5197,51 +5197,51 @@ const char *tox_err_group_founder_set_topic_lock_to_string(Tox_Err_Group_Founder
  *
  * @return true on success.
  */
-bool tox_group_founder_set_topic_lock(Tox *tox, Tox_Group_Number group_number, Tox_Group_Topic_Lock topic_lock,
-                                      Tox_Err_Group_Founder_Set_Topic_Lock *error);
+bool tox_group_set_topic_lock(Tox *tox, Tox_Group_Number group_number, Tox_Group_Topic_Lock topic_lock,
+                              Tox_Err_Group_Set_Topic_Lock *error);
 
-typedef enum Tox_Err_Group_Founder_Set_Voice_State {
+typedef enum Tox_Err_Group_Set_Voice_State {
 
     /**
      * The function returned successfully.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_OK,
+    TOX_ERR_GROUP_SET_VOICE_STATE_OK,
 
     /**
      * The group number passed did not designate a valid group.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_GROUP_NOT_FOUND,
+    TOX_ERR_GROUP_SET_VOICE_STATE_GROUP_NOT_FOUND,
 
     /**
      * The caller does not have the required permissions to set the privacy state.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_PERMISSIONS,
+    TOX_ERR_GROUP_SET_VOICE_STATE_PERMISSIONS,
 
     /**
      * The voice state could not be set. This may occur due to an error related to
      * cryptographic signing of the new shared state.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_FAIL_SET,
+    TOX_ERR_GROUP_SET_VOICE_STATE_FAIL_SET,
 
     /**
      * The packet failed to send.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_FAIL_SEND,
+    TOX_ERR_GROUP_SET_VOICE_STATE_FAIL_SEND,
 
     /**
      * The group is disconnected.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_VOICE_STATE_DISCONNECTED,
+    TOX_ERR_GROUP_SET_VOICE_STATE_DISCONNECTED,
 
-} Tox_Err_Group_Founder_Set_Voice_State;
+} Tox_Err_Group_Set_Voice_State;
 
-const char *tox_err_group_founder_set_voice_state_to_string(Tox_Err_Group_Founder_Set_Voice_State value);
+const char *tox_err_group_set_voice_state_to_string(Tox_Err_Group_Set_Voice_State value);
 
 /**
  * Set the group voice state.
  *
- * This function sets the group's voice state, creates a new group shared state
- * including the change, and distributes it to the rest of the group.
+ * This function allows Founders to set the group's voice state. It will create a new group
+ * shared state including the change and distribute it to the rest of the group.
  *
  * If an attempt is made to set the voice state to the same state that the group is already
  * in, the function call will be successful and no action will be taken.
@@ -5251,51 +5251,51 @@ const char *tox_err_group_founder_set_voice_state_to_string(Tox_Err_Group_Founde
  *
  * @return true on success.
  */
-bool tox_group_founder_set_voice_state(Tox *tox, Tox_Group_Number group_number, Tox_Group_Voice_State voice_state,
-                                       Tox_Err_Group_Founder_Set_Voice_State *error);
+bool tox_group_set_voice_state(Tox *tox, Tox_Group_Number group_number, Tox_Group_Voice_State voice_state,
+                               Tox_Err_Group_Set_Voice_State *error);
 
-typedef enum Tox_Err_Group_Founder_Set_Privacy_State {
+typedef enum Tox_Err_Group_Set_Privacy_State {
 
     /**
      * The function returned successfully.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_OK,
+    TOX_ERR_GROUP_SET_PRIVACY_STATE_OK,
 
     /**
      * The group number passed did not designate a valid group.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_GROUP_NOT_FOUND,
+    TOX_ERR_GROUP_SET_PRIVACY_STATE_GROUP_NOT_FOUND,
 
     /**
      * The caller does not have the required permissions to set the privacy state.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_PERMISSIONS,
+    TOX_ERR_GROUP_SET_PRIVACY_STATE_PERMISSIONS,
 
     /**
      * The privacy state could not be set. This may occur due to an error related to
      * cryptographic signing of the new shared state.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_FAIL_SET,
+    TOX_ERR_GROUP_SET_PRIVACY_STATE_FAIL_SET,
 
     /**
      * The packet failed to send.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_FAIL_SEND,
+    TOX_ERR_GROUP_SET_PRIVACY_STATE_FAIL_SEND,
 
     /**
      * The group is disconnected.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_DISCONNECTED,
+    TOX_ERR_GROUP_SET_PRIVACY_STATE_DISCONNECTED,
 
-} Tox_Err_Group_Founder_Set_Privacy_State;
+} Tox_Err_Group_Set_Privacy_State;
 
-const char *tox_err_group_founder_set_privacy_state_to_string(Tox_Err_Group_Founder_Set_Privacy_State value);
+const char *tox_err_group_set_privacy_state_to_string(Tox_Err_Group_Set_Privacy_State value);
 
 /**
  * Set the group privacy state.
  *
- * This function sets the group's privacy state, creates a new group shared state
- * including the change, and distributes it to the rest of the group.
+ * This function allows Founders to set the group's privacy state. It will create a new group
+ * shared state including the change and distribute it to the rest of the group.
  *
  * If an attempt is made to set the privacy state to the same state that the group is already
  * in, the function call will be successful and no action will be taken.
@@ -5305,63 +5305,64 @@ const char *tox_err_group_founder_set_privacy_state_to_string(Tox_Err_Group_Foun
  *
  * @return true on success.
  */
-bool tox_group_founder_set_privacy_state(Tox *tox, Tox_Group_Number group_number, Tox_Group_Privacy_State privacy_state,
-        Tox_Err_Group_Founder_Set_Privacy_State *error);
+bool tox_group_set_privacy_state(Tox *tox, Tox_Group_Number group_number, Tox_Group_Privacy_State privacy_state,
+                                 Tox_Err_Group_Set_Privacy_State *error);
 
-typedef enum Tox_Err_Group_Founder_Set_Peer_Limit {
+typedef enum Tox_Err_Group_Set_Peer_Limit {
 
     /**
      * The function returned successfully.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_OK,
+    TOX_ERR_GROUP_SET_PEER_LIMIT_OK,
 
     /**
      * The group number passed did not designate a valid group.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_GROUP_NOT_FOUND,
+    TOX_ERR_GROUP_SET_PEER_LIMIT_GROUP_NOT_FOUND,
 
     /**
      * The caller does not have the required permissions to set the peer limit.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_PERMISSIONS,
+    TOX_ERR_GROUP_SET_PEER_LIMIT_PERMISSIONS,
 
     /**
      * The peer limit could not be set. This may occur due to an error related to
      * cryptographic signing of the new shared state.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_FAIL_SET,
+    TOX_ERR_GROUP_SET_PEER_LIMIT_FAIL_SET,
 
     /**
      * The packet failed to send.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_FAIL_SEND,
+    TOX_ERR_GROUP_SET_PEER_LIMIT_FAIL_SEND,
 
     /**
      * The group is disconnected.
      */
-    TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_DISCONNECTED,
+    TOX_ERR_GROUP_SET_PEER_LIMIT_DISCONNECTED,
 
-} Tox_Err_Group_Founder_Set_Peer_Limit;
+} Tox_Err_Group_Set_Peer_Limit;
 
-const char *tox_err_group_founder_set_peer_limit_to_string(Tox_Err_Group_Founder_Set_Peer_Limit value);
+const char *tox_err_group_set_peer_limit_to_string(Tox_Err_Group_Set_Peer_Limit value);
 
 /**
  * Set the group peer limit.
  *
- * This function sets a limit for the number of peers who may be in the group, creates a new
- * group shared state including the change, and distributes it to the rest of the group.
+ * This function allows Founders to set a limit for the number of peers who may be in the
+ * group. It will create a new group shared state including the change and distribute it to the
+ * rest of the group.
  *
  * @param group_number The group number of the group for which we wish to set the peer limit.
  * @param peer_limit The maximum number of peers to allow in the group.
  *
  * @return true on success.
  */
-bool tox_group_founder_set_peer_limit(Tox *tox, Tox_Group_Number group_number, uint16_t peer_limit,
-                                      Tox_Err_Group_Founder_Set_Peer_Limit *error);
+bool tox_group_set_peer_limit(Tox *tox, Tox_Group_Number group_number, uint16_t peer_limit,
+                              Tox_Err_Group_Set_Peer_Limit *error);
 
 /*******************************************************************************
  *
- * :: Group chat moderation
+ * :: Group chat moderation controls
  *
  ******************************************************************************/
 
@@ -5403,55 +5404,59 @@ const char *tox_err_group_set_ignore_to_string(Tox_Err_Group_Set_Ignore value);
 bool tox_group_set_ignore(Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, bool ignore,
                           Tox_Err_Group_Set_Ignore *error);
 
-typedef enum Tox_Err_Group_Mod_Set_Role {
+typedef enum Tox_Err_Group_Set_Role {
 
     /**
      * The function returned successfully.
      */
-    TOX_ERR_GROUP_MOD_SET_ROLE_OK,
+    TOX_ERR_GROUP_SET_ROLE_OK,
 
     /**
      * The group number passed did not designate a valid group.
      */
-    TOX_ERR_GROUP_MOD_SET_ROLE_GROUP_NOT_FOUND,
+    TOX_ERR_GROUP_SET_ROLE_GROUP_NOT_FOUND,
 
     /**
      * The ID passed did not designate a valid peer. Note: you cannot set your own role.
      */
-    TOX_ERR_GROUP_MOD_SET_ROLE_PEER_NOT_FOUND,
+    TOX_ERR_GROUP_SET_ROLE_PEER_NOT_FOUND,
 
     /**
      * The caller does not have the required permissions for this action.
      */
-    TOX_ERR_GROUP_MOD_SET_ROLE_PERMISSIONS,
+    TOX_ERR_GROUP_SET_ROLE_PERMISSIONS,
 
     /**
      * The role assignment is invalid. This will occur if you try to set a peer's role to
      * the role they already have.
      */
-    TOX_ERR_GROUP_MOD_SET_ROLE_ASSIGNMENT,
+    TOX_ERR_GROUP_SET_ROLE_ASSIGNMENT,
 
     /**
      * The role was not successfully set. This may occur if the packet failed to send, or
      * if the role limit has been reached.
      */
-    TOX_ERR_GROUP_MOD_SET_ROLE_FAIL_ACTION,
+    TOX_ERR_GROUP_SET_ROLE_FAIL_ACTION,
 
     /**
      * The caller attempted to set their own role.
      */
-    TOX_ERR_GROUP_MOD_SET_ROLE_SELF,
+    TOX_ERR_GROUP_SET_ROLE_SELF,
 
-} Tox_Err_Group_Mod_Set_Role;
+} Tox_Err_Group_Set_Role;
 
-const char *tox_err_group_mod_set_role_to_string(Tox_Err_Group_Mod_Set_Role value);
+const char *tox_err_group_set_role_to_string(Tox_Err_Group_Set_Role value);
 
 /**
  * Set a peer's role.
  *
  * This function will first remove the peer's previous role and then assign them a new role.
  * It will also send a packet to the rest of the group, requesting that they perform
- * the role reassignment. Note: peers cannot be set to the founder role.
+ * the role reassignment.
+ *
+ * Only Founders may promote peers to the Moderator role, and only Founders and Moderators may
+ * set peers to the Observer or User role. Moderators may not set the role of other Moderators
+ * or the Founder. Peers may not be promoted to the Founder role.
  *
  * @param group_number The group number of the group the in which you wish set the peer's role.
  * @param peer_id The ID of the peer whose role you wish to set.
@@ -5459,64 +5464,65 @@ const char *tox_err_group_mod_set_role_to_string(Tox_Err_Group_Mod_Set_Role valu
  *
  * @return true on success.
  */
-bool tox_group_mod_set_role(Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Group_Role role,
-                            Tox_Err_Group_Mod_Set_Role *error);
+bool tox_group_set_role(Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Group_Role role,
+                        Tox_Err_Group_Set_Role *error);
 
-typedef enum Tox_Err_Group_Mod_Kick_Peer {
+typedef enum Tox_Err_Group_Kick_Peer {
 
     /**
      * The function returned successfully.
      */
-    TOX_ERR_GROUP_MOD_KICK_PEER_OK,
+    TOX_ERR_GROUP_KICK_PEER_OK,
 
     /**
      * The group number passed did not designate a valid group.
      */
-    TOX_ERR_GROUP_MOD_KICK_PEER_GROUP_NOT_FOUND,
+    TOX_ERR_GROUP_KICK_PEER_GROUP_NOT_FOUND,
 
     /**
      * The ID passed did not designate a valid peer.
      */
-    TOX_ERR_GROUP_MOD_KICK_PEER_PEER_NOT_FOUND,
+    TOX_ERR_GROUP_KICK_PEER_PEER_NOT_FOUND,
 
     /**
      * The caller does not have the required permissions for this action.
      */
-    TOX_ERR_GROUP_MOD_KICK_PEER_PERMISSIONS,
+    TOX_ERR_GROUP_KICK_PEER_PERMISSIONS,
 
     /**
      * The peer could not be kicked from the group.
      */
-    TOX_ERR_GROUP_MOD_KICK_PEER_FAIL_ACTION,
+    TOX_ERR_GROUP_KICK_PEER_FAIL_ACTION,
 
     /**
      * The packet failed to send.
      */
-    TOX_ERR_GROUP_MOD_KICK_PEER_FAIL_SEND,
+    TOX_ERR_GROUP_KICK_PEER_FAIL_SEND,
 
     /**
      * The caller attempted to set their own role.
      */
-    TOX_ERR_GROUP_MOD_KICK_PEER_SELF,
+    TOX_ERR_GROUP_KICK_PEER_SELF,
 
-} Tox_Err_Group_Mod_Kick_Peer;
+} Tox_Err_Group_Kick_Peer;
 
-const char *tox_err_group_mod_kick_peer_to_string(Tox_Err_Group_Mod_Kick_Peer value);
+const char *tox_err_group_kick_peer_to_string(Tox_Err_Group_Kick_Peer value);
 
 /**
  * Kick a peer.
  *
- * This function will remove a peer from the caller's peer list and send a packet to all
- * group members requesting them to do the same. Note: This function will not trigger
- * the `group_peer_exit` event for the caller.
+ * This function allows peers with the Founder or Moderator role to silently instruct
+ * all other peers in the group to remove a particular peer from their peer list.
+ *
+ * Note: This function will not trigger the `group_peer_exit` event for the caller.
  *
  * @param group_number The group number of the group the action is intended for.
  * @param peer_id The ID of the peer who will be kicked.
  *
  * @return true on success.
  */
-bool tox_group_mod_kick_peer(const Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id,
-                             Tox_Err_Group_Mod_Kick_Peer *error);
+bool tox_group_kick_peer(const Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id,
+                         Tox_Err_Group_Kick_Peer *error);
 
 /**
  * Represents moderation events. These should be used with the `group_moderation` event.

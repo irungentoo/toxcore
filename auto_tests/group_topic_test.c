@@ -274,9 +274,9 @@ static void group_topic_test(AutoTox *autotoxes)
     wait_state_topic(autotoxes, groupnumber, TOPIC, TOPIC_LEN);
 
     /* Founder disables topic lock */
-    Tox_Err_Group_Founder_Set_Topic_Lock lock_set_err;
-    tox_group_founder_set_topic_lock(tox0, groupnumber, TOX_GROUP_TOPIC_LOCK_DISABLED, &lock_set_err);
-    ck_assert_msg(lock_set_err == TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_OK, "failed to disable topic lock: %d",
+    Tox_Err_Group_Set_Topic_Lock lock_set_err;
+    tox_group_set_topic_lock(tox0, groupnumber, TOX_GROUP_TOPIC_LOCK_DISABLED, &lock_set_err);
+    ck_assert_msg(lock_set_err == TOX_ERR_GROUP_SET_TOPIC_LOCK_OK, "failed to disable topic lock: %d",
                   lock_set_err);
 
     fprintf(stderr, "Topic lock disabled\n");
@@ -290,9 +290,9 @@ static void group_topic_test(AutoTox *autotoxes)
     ck_assert_msg(change_count == NUM_GROUP_TOXES, "%u peers changed the topic with topic lock disabled", change_count);
 
     /* founder silences the last peer he saw join */
-    Tox_Err_Group_Mod_Set_Role merr;
-    tox_group_mod_set_role(tox0, groupnumber, state0->peer_id, TOX_GROUP_ROLE_OBSERVER, &merr);
-    ck_assert_msg(merr == TOX_ERR_GROUP_MOD_SET_ROLE_OK, "Failed to set %u to observer role: %d", state0->peer_id, merr);
+    Tox_Err_Group_Set_Role merr;
+    tox_group_set_role(tox0, groupnumber, state0->peer_id, TOX_GROUP_ROLE_OBSERVER, &merr);
+    ck_assert_msg(merr == TOX_ERR_GROUP_SET_ROLE_OK, "Failed to set %u to observer role: %d", state0->peer_id, merr);
 
     fprintf(stderr, "Random peer is set to observer\n");
 
@@ -304,8 +304,8 @@ static void group_topic_test(AutoTox *autotoxes)
     ck_assert_msg(change_count == NUM_GROUP_TOXES - 1, "%u peers changed the topic with a silenced peer", change_count);
 
     /* Founder enables topic lock and sets topic back to original */
-    tox_group_founder_set_topic_lock(tox0, groupnumber, TOX_GROUP_TOPIC_LOCK_ENABLED, &lock_set_err);
-    ck_assert_msg(lock_set_err == TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_OK, "failed to enable topic lock: %d",
+    tox_group_set_topic_lock(tox0, groupnumber, TOX_GROUP_TOPIC_LOCK_ENABLED, &lock_set_err);
+    ck_assert_msg(lock_set_err == TOX_ERR_GROUP_SET_TOPIC_LOCK_OK, "failed to enable topic lock: %d",
                   lock_set_err);
 
     fprintf(stderr, "Topic lock enabled\n");

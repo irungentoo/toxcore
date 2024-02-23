@@ -200,21 +200,21 @@ static void group_save_test(AutoTox *autotoxes)
     tox_group_set_topic(tox0, group_number, (const uint8_t *)TOPIC, TOPIC_LEN, &top_err);
     ck_assert(top_err == TOX_ERR_GROUP_TOPIC_SET_OK);
 
-    Tox_Err_Group_Founder_Set_Topic_Lock lock_set_err;
-    tox_group_founder_set_topic_lock(tox0, group_number, TOX_GROUP_TOPIC_LOCK_DISABLED, &lock_set_err);
-    ck_assert(lock_set_err == TOX_ERR_GROUP_FOUNDER_SET_TOPIC_LOCK_OK);
+    Tox_Err_Group_Set_Topic_Lock lock_set_err;
+    tox_group_set_topic_lock(tox0, group_number, TOX_GROUP_TOPIC_LOCK_DISABLED, &lock_set_err);
+    ck_assert(lock_set_err == TOX_ERR_GROUP_SET_TOPIC_LOCK_OK);
 
-    Tox_Err_Group_Founder_Set_Privacy_State priv_err;
-    tox_group_founder_set_privacy_state(tox0, group_number, NEW_PRIV_STATE, &priv_err);
-    ck_assert(priv_err == TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_OK);
+    Tox_Err_Group_Set_Privacy_State priv_err;
+    tox_group_set_privacy_state(tox0, group_number, NEW_PRIV_STATE, &priv_err);
+    ck_assert(priv_err == TOX_ERR_GROUP_SET_PRIVACY_STATE_OK);
 
-    Tox_Err_Group_Founder_Set_Password pass_set_err;
-    tox_group_founder_set_password(tox0, group_number, (const uint8_t *)PASSWORD, PASS_LEN, &pass_set_err);
-    ck_assert(pass_set_err == TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_OK);
+    Tox_Err_Group_Set_Password pass_set_err;
+    tox_group_set_password(tox0, group_number, (const uint8_t *)PASSWORD, PASS_LEN, &pass_set_err);
+    ck_assert(pass_set_err == TOX_ERR_GROUP_SET_PASSWORD_OK);
 
-    Tox_Err_Group_Founder_Set_Peer_Limit limit_set_err;
-    tox_group_founder_set_peer_limit(tox0, group_number, PEER_LIMIT, &limit_set_err);
-    ck_assert(limit_set_err == TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_OK);
+    Tox_Err_Group_Set_Peer_Limit limit_set_err;
+    tox_group_set_peer_limit(tox0, group_number, PEER_LIMIT, &limit_set_err);
+    ck_assert(limit_set_err == TOX_ERR_GROUP_SET_PEER_LIMIT_OK);
 
     // change self state
     Tox_Err_Group_Self_Name_Set n_err;
