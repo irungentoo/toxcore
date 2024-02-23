@@ -128,31 +128,38 @@ components, so your mileage might vary.
 
 There are some options that are available to configure the build.
 
-| Name                   | Description                                                                                   | Expected Value                                                            | Default Value                                     |
-| ---------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------- |
-| `AUTOTEST`             | Enable autotests (mainly for CI).                                                             | ON or OFF                                                                 | OFF                                               |
-| `BOOTSTRAP_DAEMON`     | Enable building of tox-bootstrapd, the DHT bootstrap node daemon. For Unix-like systems only. | ON or OFF                                                                 | ON                                                |
-| `BUILD_FUZZ_TESTS`     | Build fuzzing harnesses.                                                                      | ON or OFF                                                                 | OFF                                               |
-| `BUILD_MISC_TESTS`     | Build additional tests.                                                                       | ON or OFF                                                                 | OFF                                               |
-| `BUILD_FUN_UTILS`      | Build additional funny utilities.                                                             | ON or OFF                                                                 | OFF                                               |
-| `BUILD_TOXAV`          | Whether to build the toxav library.                                                           | ON or OFF                                                                 | ON                                                |
-| `CMAKE_INSTALL_PREFIX` | Path to where everything should be installed.                                                 | Directory path.                                                           | Platform-dependent. Refer to CMake documentation. |
-| `CMAKE_BUILD_TYPE`     | Specifies the build type on single-configuration generators (e.g. make or ninja).             | Debug, Release, RelWithDebInfo, MinSizeRel                                | Empty string.                                     |
-| `DHT_BOOTSTRAP`        | Enable building of `DHT_bootstrap`                                                            | ON or OFF                                                                 | ON                                                |
-| `ENABLE_SHARED`        | Build shared (dynamic) libraries for all modules.                                             | ON or OFF                                                                 | ON                                                |
-| `ENABLE_STATIC`        | Build static libraries for all modules.                                                       | ON or OFF                                                                 | ON                                                |
-| `EXECUTION_TRACE`      | Print a function trace during execution (for debugging).                                      | ON or OFF                                                                 | OFF                                               |
-| `FULLY_STATIC`         | Build fully static executables.                                                               | ON or OFF                                                                 | OFF                                               |
-| `MIN_LOGGER_LEVEL`     | Logging level to use.                                                                         | TRACE, DEBUG, INFO, WARNING, ERROR or nothing (empty string) for default. | Empty string.                                     |
-| `MSVC_STATIC_SODIUM`   | Whether to link libsodium statically for MSVC.                                                | ON or OFF                                                                 | OFF                                               |
-| `MUST_BUILD_TOXAV`     | Fail the build if toxav cannot be built.                                                      | ON or OFF                                                                 | OFF                                               |
-| `NON_HERMETIC_TESTS`   | Whether to build and run tests that depend on an internet connection.                         | ON or OFF                                                                 | OFF                                               |
-| `EXPERIMENTAL_API`     | Install the experimental private API header.                                                  | ON or OFF                                                                 | OFF                                               |
-| `STRICT_ABI`           | Enforce strict ABI export in dynamic libraries.                                               | ON or OFF                                                                 | OFF                                               |
-| `TEST_TIMEOUT_SECONDS` | Limit runtime of each test to the number of seconds specified.                                | Positive number or nothing (empty string).                                | Empty string.                                     |
-| `USE_IPV6`             | Use IPv6 in tests.                                                                            | ON or OFF                                                                 | ON                                                |
+| Name                    | Description                                                                                   | Expected Value                                                            | Default Value                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------- |
+| `AUTOTEST`              | Enable autotests (mainly for CI).                                                             | ON or OFF                                                                 | OFF                                               |
+| `BOOTSTRAP_DAEMON`      | Enable building of tox-bootstrapd, the DHT bootstrap node daemon. For Unix-like systems only. | ON or OFF                                                                 | ON                                                |
+| `BUILD_FUN_UTILS`       | Build additional just for fun utilities.                                                      | ON or OFF                                                                 | OFF                                               |
+| `BUILD_FUZZ_TESTS`      | Build fuzzing harnesses.                                                                      | ON or OFF                                                                 | OFF                                               |
+| `BUILD_MISC_TESTS`      | Build additional tests.                                                                       | ON or OFF                                                                 | OFF                                               |
+| `BUILD_TOXAV`           | Whether to build the toxav library.                                                           | ON or OFF                                                                 | ON                                                |
+| `CMAKE_BUILD_TYPE`      | Specifies the build type on single-configuration generators (e.g. make or ninja).             | Debug, Release, RelWithDebInfo, MinSizeRel                                | Empty string.                                     |
+| `CMAKE_INSTALL_PREFIX`  | Path to where everything should be installed.                                                 | Directory path.                                                           | Platform-dependent. Refer to CMake documentation. |
+| `DHT_BOOTSTRAP`         | Enable building of `DHT_bootstrap`.                                                           | ON or OFF                                                                 | ON                                                |
+| `ENABLE_SHARED`         | Build shared (dynamic) libraries for all modules.                                             | ON or OFF                                                                 | ON                                                |
+| `ENABLE_STATIC`         | Build static libraries for all modules.                                                       | ON or OFF                                                                 | ON                                                |
+| `EXPERIMENTAL_API`      | Install experimental header file with unstable API.                                           | ON or OFF                                                                 | OFF                                               |
+| `FLAT_OUTPUT_STRUCTURE` | Whether to produce output artifacts in {bin,lib}.                                             | ON or OFF                                                                 | OFF                                               |
+| `FULLY_STATIC`          | Build fully static executables.                                                               | ON or OFF                                                                 | OFF                                               |
+| `MIN_LOGGER_LEVEL`      | Logging level to use.                                                                         | TRACE, DEBUG, INFO, WARNING, ERROR or nothing (empty string) for default. | Empty string.                                     |
+| `MSVC_STATIC_SODIUM`    | Whether to link libsodium statically for MSVC.                                                | ON or OFF                                                                 | OFF                                               |
+| `MUST_BUILD_TOXAV`      | Fail the build if toxav cannot be built.                                                      | ON or OFF                                                                 | OFF                                               |
+| `NON_HERMETIC_TESTS`    | Whether to build and run tests that depend on an internet connection.                         | ON or OFF                                                                 | OFF                                               |
+| `PROXY_TEST`            | Enable proxy test (requires `other/proxy/proxy_server.go` to be running).                     | ON or OFF                                                                 | OFF                                               |
+| `STRICT_ABI`            | Enforce strict ABI export in dynamic libraries.                                               | ON or OFF                                                                 | OFF                                               |
+| `TEST_TIMEOUT_SECONDS`  | Limit runtime of each test to the number of seconds specified.                                | Positive number or nothing (empty string).                                | Empty string.                                     |
+| `USE_IPV6`              | Use IPv6 in tests.                                                                            | ON or OFF                                                                 | ON                                                |
 
 You can get this list of option using the following commands
+
+```sh
+cmake -B _build -LAH
+```
+
+or
 
 ```sh
 grep "option(" CMakeLists.txt cmake/*
@@ -193,6 +200,13 @@ cd _build
 cmake ..
 make
 make install
+```
+
+or shorter
+
+```sh
+cmake -B _build
+cmake -B _build --target install
 ```
 
 #### Windows

@@ -143,13 +143,13 @@ if(NOT USE_IPV6)
   add_definitions(-DUSE_IPV6=0)
 endif()
 
-option(BUILD_MISC_TESTS "Build additional tests and utilities" OFF)
+option(BUILD_MISC_TESTS "Build additional tests" OFF)
 option(BUILD_FUN_UTILS "Build additional just for fun utilities" OFF)
 
 option(AUTOTEST "Enable autotests (mainly for CI)" OFF)
 if(AUTOTEST)
   option(NON_HERMETIC_TESTS "Whether to build and run tests that depend on an internet connection" OFF)
-  option(PROXY_TEST "Enable proxy test (needs HTTP/SOCKS5 proxy on port 8080/8081)" OFF)
+  option(PROXY_TEST "Enable proxy test (requires other/proxy/proxy_server.go to be running)" OFF)
 endif()
 
 option(BUILD_TOXAV "Whether to build the tox AV library" ON)
