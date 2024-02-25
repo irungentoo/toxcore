@@ -305,9 +305,9 @@ available to customize the building of the container image.
 | `SUPPORT_ARCH_x86_64` | Support building 64-bit toxcore.                    | "true" or "false" (case sensitive). | true          |
 | `SUPPORT_TEST`        | Support running toxcore automated tests.            | "true" or "false" (case sensitive). | false         |
 | `CROSS_COMPILE`       | Cross-compiling. True for Docker, false for Cygwin. | "true" or "false" (case sensitive). | true          |
-| `VERSION_OPUS`        | Version of libopus to build toxcore with.           | Numeric version number.             | 1.3.1         |
-| `VERSION_SODIUM`      | Version of libsodium to build toxcore with.         | Numeric version number.             | 1.0.18        |
-| `VERSION_VPX`         | Version of libvpx to build toxcore with.            | Numeric version number.             | 1.11.0        |
+| `VERSION_OPUS`        | Version of libopus to build toxcore with.           | Numeric version number.             | 1.4           |
+| `VERSION_SODIUM`      | Version of libsodium to build toxcore with.         | Numeric version number.             | 1.0.19        |
+| `VERSION_VPX`         | Version of libvpx to build toxcore with.            | Numeric version number.             | 1.14.0        |
 
 Example of building a container image with options
 

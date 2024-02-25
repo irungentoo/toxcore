@@ -1,10 +1,12 @@
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
+
+# When editing, make sure to update /other/windows_build_script_toxcore.sh and
+# INSTALL.md to match.
 
 # Build-time environment variables
-ARG VERSION_MSGPACK=4.0.0 \
+ARG VERSION_OPUS=1.4 \
     VERSION_SODIUM=1.0.19 \
-    VERSION_OPUS=1.3.1 \
-    VERSION_VPX=1.11.0 \
+    VERSION_VPX=1.14.0 \
  \
     SUPPORT_TEST=false \
     SUPPORT_ARCH_i686=true \

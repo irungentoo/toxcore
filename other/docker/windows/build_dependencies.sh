@@ -50,7 +50,7 @@ build() {
 
   echo
   echo "=== Building Opus $VERSION_OPUS $ARCH ==="
-  curl "${CURL_OPTIONS[@]}" -O "https://archive.mozilla.org/pub/opus/opus-$VERSION_OPUS.tar.gz"
+  curl "${CURL_OPTIONS[@]}" -O "https://ftp.osuosl.org/pub/xiph/releases/opus/opus-$VERSION_OPUS.tar.gz"
   tar -xf "opus-$VERSION_OPUS.tar.gz"
   cd "opus-$VERSION_OPUS"
   ./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-extra-programs --disable-doc --disable-shared --enable-static

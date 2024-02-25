@@ -5,6 +5,7 @@ set -e -x
 #=== Install Packages ===
 
 apt-get update
+apt-get upgrade -y
 
 # Arch-independent packages required for building toxcore's dependencies and toxcore itself
 apt-get install -y \
@@ -13,8 +14,8 @@ apt-get install -y \
   ca-certificates \
   cmake \
   curl \
-  libtool \
   libc-dev \
+  libtool \
   make \
   pkg-config \
   tree \

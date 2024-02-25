@@ -1,8 +1,11 @@
 #!/bin/sh
 
-export VERSION_SODIUM="1.0.18"
-export VERSION_OPUS="1.3.1"
-export VERSION_VPX="1.9.0"
+# When editing, make sure to update /other/docker/windows/Dockerfile and
+# INSTALL.md to match.
+
+export VERSION_OPUS="1.4"
+export VERSION_SODIUM="1.0.19"
+export VERSION_VPX="1.14.0"
 
 export SUPPORT_TEST=false
 export SUPPORT_ARCH_i686=true
