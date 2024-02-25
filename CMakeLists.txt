@@ -454,7 +454,7 @@ elseif(TARGET Threads::Threads)
   set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} Threads::Threads)
 endif()
 if(WIN32)
-  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} iphlpapi wsock32 ws2_32)
+  set(toxcore_LINK_LIBRARIES ${toxcore_LINK_LIBRARIES} iphlpapi ws2_32)
 endif()
 
 ################################################################################
