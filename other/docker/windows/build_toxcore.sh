@@ -29,7 +29,7 @@ build() {
   mkdir -p "$STATIC_TOXCORE_PREFIX_DIR" "$SHARED_TOXCORE_PREFIX_DIR"
 
   export MAKEFLAGS=j"$(nproc)"
-  export CFLAGS=-O3
+  export CFLAGS="-D_FORTIFY_SOURCE=3 -D_GLIBCXX_ASSERTIONS -ftrivial-auto-var-init=zero -fPIE -pie -fstack-protector-strong -fstack-clash-protection -fcf-protection=full"
 
   echo
   echo "=== Building toxcore $ARCH ==="
@@ -61,19 +61,29 @@ build() {
     echo "SET(CROSSCOMPILING_EMULATOR /usr/bin/wine)" >>windows_toolchain.cmake
   fi
 
+  if [ "$ARCH" = "i686" ]; then
+    TOXCORE_CFLAGS=""
+  else
+    # This makes the build work with -fstack-clash-protection, as otherwise it crashes with:
+    #/tmp/toxcore/toxcore/logger.c: In function 'logger_abort':
+    #/tmp/toxcore/toxcore/logger.c:124:1: internal compiler error: in seh_emit_stackalloc, at config/i386/winnt.cc:1055
+    # Should get patched in a future gcc version: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90458
+    TOXCORE_CFLAGS="-fno-asynchronous-unwind-tables"
+  fi
+
   # Silly way to bypass a shellharden check
   read -ra EXTRA_CMAKE_FLAGS_ARRAY <<<"$EXTRA_CMAKE_FLAGS"
-  cmake -DCMAKE_TOOLCHAIN_FILE=windows_toolchain.cmake \
+  CFLAGS="$CFLAGS $TOXCORE_CFLAGS" \
+    cmake \
+    -DCMAKE_TOOLCHAIN_FILE=windows_toolchain.cmake \
     -DCMAKE_INSTALL_PREFIX="$STATIC_TOXCORE_PREFIX_DIR" \
+    -DCMAKE_BUILD_TYPE="Release" \
     -DENABLE_SHARED=OFF \
     -DENABLE_STATIC=ON \
-    -DCMAKE_C_FLAGS="$CMAKE_C_FLAGS" \
-    -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS" \
-    -DCMAKE_EXE_LINKER_FLAGS="$CMAKE_EXE_LINKER_FLAGS -fstack-protector" \
-    -DCMAKE_SHARED_LINKER_FLAGS="$CMAKE_SHARED_LINKER_FLAGS" \
+    -DCMAKE_EXE_LINKER_FLAGS="-static" \
     "${EXTRA_CMAKE_FLAGS_ARRAY[@]}" \
     -S ..
-  cmake --build . --target install -- -j"$(nproc)"
+  cmake --build . --target install --parallel "$(nproc)"
 
   if [ "$ENABLE_TEST" = "true" ]; then
     rm -rf /root/.wine
@@ -89,7 +99,7 @@ build() {
     export CTEST_OUTPUT_ON_FAILURE=1
     # add libgcc_s_sjlj-1.dll libwinpthread-1.dll into PATH env var of wine
     export WINEPATH="$(
-      cd /usr/lib/gcc/"$WINDOWS_TOOLCHAIN"/*posix/
+      cd /usr/lib/gcc/"$WINDOWS_TOOLCHAIN"/*win32/
       winepath -w "$PWD"
     )"\;"$(winepath -w /usr/"$WINDOWS_TOOLCHAIN"/lib/)"
 
@@ -114,8 +124,12 @@ build() {
 
   if [ "$CROSS_COMPILE" = "true" ]; then
     LIBWINPTHREAD="/usr/$WINDOWS_TOOLCHAIN/lib/libwinpthread.a"
+    cd "/usr/lib/gcc/$WINDOWS_TOOLCHAIN"/*win32/
+    LIBSSP="$PWD/libssp.a"
+    cd -
   else
     LIBWINPTHREAD="/usr/$WINDOWS_TOOLCHAIN/sys-root/mingw/lib/libwinpthread.a"
+    LIBSSP="/usr/$WINDOWS_TOOLCHAIN/sys-root/mingw/lib/libssp.a"
   fi
 
   "$WINDOWS_TOOLCHAIN"-gcc -Wl,--export-all-symbols \
@@ -129,7 +143,7 @@ build() {
     -liphlpapi \
     -lws2_32 \
     -static-libgcc \
-    -lssp
+    "$LIBSSP"
   cp libtox.dll.a "$RESULT_PREFIX_DIR"/lib
   mkdir -p "$RESULT_PREFIX_DIR"/bin
   cp libtox.dll "$RESULT_PREFIX_DIR"/bin

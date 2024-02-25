@@ -21,7 +21,7 @@ build() {
   mkdir -p "$PREFIX_DIR"
 
   export MAKEFLAGS=j"$(nproc)"
-  export CFLAGS=-O3
+  export CFLAGS="-O3 -D_FORTIFY_SOURCE=3 -D_GLIBCXX_ASSERTIONS -ftrivial-auto-var-init=zero -fPIE -pie -fstack-protector-strong -fstack-clash-protection -fcf-protection=full"
 
   CURL_OPTIONS=(-L --connect-timeout 10)
 
@@ -43,17 +43,38 @@ build() {
   curl "${CURL_OPTIONS[@]}" -O "https://github.com/jedisct1/libsodium/releases/download/$VERSION_SODIUM-RELEASE/libsodium-$VERSION_SODIUM.tar.gz"
   tar -xf "libsodium-$VERSION_SODIUM.tar.gz"
   cd "libsodium-stable"
-  ./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-shared --enable-static
+  ./configure \
+    --host="$WINDOWS_TOOLCHAIN" \
+    --prefix="$PREFIX_DIR" \
+    --disable-shared \
+    --enable-static
   make
   make install
   cd ..
 
   echo
   echo "=== Building Opus $VERSION_OPUS $ARCH ==="
+  if [ "$ARCH" = "i686" ]; then
+    LIB_OPUS_CFLAGS=""
+  else
+    # This makes the build work with -fstack-clash-protection, as otherwise it crashes with:
+    # silk/float/encode_frame_FLP.c: In function 'silk_encode_frame_FLP':
+    # silk/float/encode_frame_FLP.c:379:1: internal compiler error: in i386_pe_seh_unwind_emit, at config/i386/winnt.cc:1274
+    # Should get patched in a future gcc version: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90458
+    LIB_OPUS_CFLAGS="-fno-asynchronous-unwind-tables"
+  fi
+
   curl "${CURL_OPTIONS[@]}" -O "https://ftp.osuosl.org/pub/xiph/releases/opus/opus-$VERSION_OPUS.tar.gz"
   tar -xf "opus-$VERSION_OPUS.tar.gz"
   cd "opus-$VERSION_OPUS"
-  ./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-extra-programs --disable-doc --disable-shared --enable-static
+  CFLAGS="$CFLAGS $LIB_OPUS_CFLAGS" \
+    ./configure \
+    --host="$WINDOWS_TOOLCHAIN" \
+    --prefix="$PREFIX_DIR" \
+    --disable-extra-programs \
+    --disable-doc \
+    --disable-shared \
+    --enable-static
   make
   make install
   cd ..
@@ -74,7 +95,16 @@ build() {
   curl "${CURL_OPTIONS[@]}" "https://github.com/webmproject/libvpx/archive/v$VERSION_VPX.tar.gz" -o "libvpx-$VERSION_VPX.tar.gz"
   tar -xf "libvpx-$VERSION_VPX.tar.gz"
   cd "libvpx-$VERSION_VPX"
-  CFLAGS="$LIB_VPX_CFLAGS" CROSS="$WINDOWS_TOOLCHAIN"- ./configure --target="$LIB_VPX_TARGET" --prefix="$PREFIX_DIR" --disable-examples --disable-unit-tests --disable-shared --enable-static
+  CFLAGS="$CFLAGS $LIB_VPX_CFLAGS" \
+    CROSS="$WINDOWS_TOOLCHAIN"- \
+    ./configure \
+    --target="$LIB_VPX_TARGET" \
+    --prefix="$PREFIX_DIR" \
+    --disable-examples \
+    --disable-unit-tests \
+    --disable-tools \
+    --disable-shared \
+    --enable-static
   make
   make install
   cd ..
