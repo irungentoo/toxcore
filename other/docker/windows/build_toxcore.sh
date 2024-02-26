@@ -66,6 +66,10 @@ build() {
     TOXCORE_CFLAGS="-fno-asynchronous-unwind-tables"
   fi
 
+  # Patch CMakeLists.txt to make cracker.exe statically link against OpenMP. For some reason
+  # -DCMAKE_EXE_LINKER_FLAGS="-static" doesn't do it.
+  sed -i "s|OpenMP::OpenMP_C)|$(realpath -- /usr/lib/gcc/"$WINDOWS_TOOLCHAIN"/*-win32/libgomp.a) \${CMAKE_THREAD_LIBS_INIT})\ntarget_compile_options(cracker PRIVATE -fopenmp)|g" ../other/fun/CMakeLists.txt
+
   # Silly way to bypass a shellharden check
   read -ra EXTRA_CMAKE_FLAGS_ARRAY <<<"$EXTRA_CMAKE_FLAGS"
   CFLAGS="$CFLAGS $TOXCORE_CFLAGS" \
