@@ -17,6 +17,7 @@ apt-get install -y \
   libc-dev \
   libtool \
   make \
+  mingw-w64-tools \
   pkg-config \
   tree \
   yasm

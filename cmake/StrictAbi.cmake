@@ -48,8 +48,8 @@ function(_make_version_script target)
 endfunction()
 
 option(STRICT_ABI "Enforce strict ABI export in dynamic libraries" OFF)
-if(WIN32 OR APPLE)
-  # Windows and OSX don't have this linker functionality.
+if((WIN32 AND NOT MINGW) OR APPLE)
+  # Windows and macOS don't have this linker functionality.
   set(STRICT_ABI OFF)
 endif()
 

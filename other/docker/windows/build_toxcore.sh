@@ -75,6 +75,8 @@ build() {
     -DCMAKE_BUILD_TYPE="Release" \
     -DENABLE_SHARED=ON \
     -DENABLE_STATIC=ON \
+    -DSTRICT_ABI=ON \
+    -DEXPERIMENTAL_API=ON \
     -DCMAKE_EXE_LINKER_FLAGS="-static" \
     -DCMAKE_SHARED_LINKER_FLAGS="-static" \
     "${EXTRA_CMAKE_FLAGS_ARRAY[@]}" \
@@ -109,6 +111,23 @@ build() {
       set -e
     fi
   fi
+
+  # generate def, lib and exp as they supposedly help with linking against the dlls,
+  # especially the lib is supposed to be of great help when linking on msvc.
+  # cd in order to keep the object names inside .lib and .dll.a short
+  cd "$RESULT_PREFIX_DIR"/bin/
+  for TOX_DLL in *.dll; do
+    gendef - "$TOX_DLL" >"${TOX_DLL%.*}.def"
+    # we overwrite the CMake-generated .dll.a for the better
+    # compatibility with the .lib being generated here
+    "$WINDOWS_TOOLCHAIN"-dlltool \
+      --input-def "${TOX_DLL%.*}.def" \
+      --output-lib "${TOX_DLL%.*}.lib" \
+      --output-exp "${TOX_DLL%.*}.exp" \
+      --output-delaylib "../lib/${TOX_DLL%.*}.dll.a" \
+      --dllname "$TOX_DLL"
+  done
+  cd -
 
   # move static dependencies
   cp -a "$DEP_PREFIX_DIR"/* "$RESULT_PREFIX_DIR"
