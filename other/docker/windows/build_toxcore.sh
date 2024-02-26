@@ -23,11 +23,6 @@ build() {
 
   rm -rf /tmp/*
 
-  # where to install static/shared toxcores before deciding whether they should be copied over to the user
-  STATIC_TOXCORE_PREFIX_DIR="/tmp/static_prefix"
-  SHARED_TOXCORE_PREFIX_DIR="/tmp/shared_prefix"
-  mkdir -p "$STATIC_TOXCORE_PREFIX_DIR" "$SHARED_TOXCORE_PREFIX_DIR"
-
   export MAKEFLAGS=j"$(nproc)"
   export CFLAGS="-D_FORTIFY_SOURCE=3 -D_GLIBCXX_ASSERTIONS -ftrivial-auto-var-init=zero -fPIE -pie -fstack-protector-strong -fstack-clash-protection -fcf-protection=full"
 
@@ -76,11 +71,12 @@ build() {
   CFLAGS="$CFLAGS $TOXCORE_CFLAGS" \
     cmake \
     -DCMAKE_TOOLCHAIN_FILE=windows_toolchain.cmake \
-    -DCMAKE_INSTALL_PREFIX="$STATIC_TOXCORE_PREFIX_DIR" \
+    -DCMAKE_INSTALL_PREFIX="$RESULT_PREFIX_DIR" \
     -DCMAKE_BUILD_TYPE="Release" \
-    -DENABLE_SHARED=OFF \
+    -DENABLE_SHARED=ON \
     -DENABLE_STATIC=ON \
     -DCMAKE_EXE_LINKER_FLAGS="-static" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-static" \
     "${EXTRA_CMAKE_FLAGS_ARRAY[@]}" \
     -S ..
   cmake --build . --target install --parallel "$(nproc)"
@@ -97,10 +93,12 @@ build() {
 
     winecfg
     export CTEST_OUTPUT_ON_FAILURE=1
-    # add libgcc_s_sjlj-1.dll libwinpthread-1.dll into PATH env var of wine
+    # we don't have to do this since autotests are statically compiled now,
+    # but just in case add MinGW-w64 dll locations to the PATH anyway
     export WINEPATH="$(
       cd /usr/lib/gcc/"$WINDOWS_TOOLCHAIN"/*win32/
       winepath -w "$PWD"
+      cd -
     )"\;"$(winepath -w /usr/"$WINDOWS_TOOLCHAIN"/lib/)"
 
     if [ "$ALLOW_TEST_FAILURE" = "true" ]; then
@@ -113,40 +111,7 @@ build() {
   fi
 
   # move static dependencies
-  cp -a "$STATIC_TOXCORE_PREFIX_DIR"/* "$RESULT_PREFIX_DIR"
   cp -a "$DEP_PREFIX_DIR"/* "$RESULT_PREFIX_DIR"
-
-  # make libtox.dll
-  cd "$SHARED_TOXCORE_PREFIX_DIR"
-  for archive in "$STATIC_TOXCORE_PREFIX_DIR"/lib/libtox*.a; do
-    "$WINDOWS_TOOLCHAIN"-ar xv "$archive"
-  done
-
-  if [ "$CROSS_COMPILE" = "true" ]; then
-    LIBWINPTHREAD="/usr/$WINDOWS_TOOLCHAIN/lib/libwinpthread.a"
-    cd "/usr/lib/gcc/$WINDOWS_TOOLCHAIN"/*win32/
-    LIBSSP="$PWD/libssp.a"
-    cd -
-  else
-    LIBWINPTHREAD="/usr/$WINDOWS_TOOLCHAIN/sys-root/mingw/lib/libwinpthread.a"
-    LIBSSP="/usr/$WINDOWS_TOOLCHAIN/sys-root/mingw/lib/libssp.a"
-  fi
-
-  "$WINDOWS_TOOLCHAIN"-gcc -Wl,--export-all-symbols \
-    -Wl,--out-implib=libtox.dll.a \
-    -shared \
-    -o libtox.dll \
-    *.obj \
-    "$STATIC_TOXCORE_PREFIX_DIR"/lib/*.a \
-    "$DEP_PREFIX_DIR"/lib/*.a \
-    "$LIBWINPTHREAD" \
-    -liphlpapi \
-    -lws2_32 \
-    -static-libgcc \
-    "$LIBSSP"
-  cp libtox.dll.a "$RESULT_PREFIX_DIR"/lib
-  mkdir -p "$RESULT_PREFIX_DIR"/bin
-  cp libtox.dll "$RESULT_PREFIX_DIR"/bin
 
   rm -rf /tmp/*
 
