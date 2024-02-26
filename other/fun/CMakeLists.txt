@@ -35,11 +35,9 @@ target_link_sodium(create_savedata)
 target_link_toxcore(create_savedata)
 
 add_executable(sign sign.c)
-target_link_libraries(sign PRIVATE misc_tools)
 target_link_sodium(sign)
 
 add_executable(cracker_simple cracker_simple.c)
-target_link_libraries(cracker_simple PRIVATE misc_tools)
 target_link_sodium(cracker_simple)
 
 find_package(OpenMP)

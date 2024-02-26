@@ -13,11 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Sodium includes*/
-#include <sodium/crypto_scalarmult_curve25519.h>
-#include <sodium/randombytes.h>
+#include <sodium.h>
 
-#include "../../testing/misc_tools.h"
 #include "../../toxcore/ccompat.h"
 
 // Secret key and public key length
@@ -40,7 +37,13 @@ int main(int argc, char *argv[])
     long long unsigned int num_tries = 0;
 
     size_t len = strlen(argv[1]) / 2;
-    unsigned char *key = hex_string_to_bin(argv[1]);
+    unsigned char *key = (unsigned char *)malloc(len);
+    const char *hex_end = nullptr;
+    if (sodium_hex2bin(key, len, argv[1], strlen(argv[1]), nullptr, nullptr, &hex_end) != 0
+            || hex_end != argv[1] + strlen(argv[1])) {
+        printf("Invalid key provided\n");
+        return 1;
+    }
     uint8_t pub_key[KEY_LEN], priv_key[KEY_LEN], c_key[KEY_LEN];
 
     if (len > KEY_LEN) {

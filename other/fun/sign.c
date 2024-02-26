@@ -18,7 +18,6 @@
 #include <sodium.h>
 #include <string.h>
 
-#include "../../testing/misc_tools.h" // hex_string_to_bin
 #include "../../toxcore/ccompat.h"
 
 static int load_file(const char *filename, unsigned char **result)
@@ -70,7 +69,12 @@ int main(int argc, char *argv[])
     }
 
     if (argc == 5 && argv[1][0] == 's') {
-        unsigned char *secret_key = hex_string_to_bin(argv[2]);
+        const char *hex_end = nullptr;
+        if (sodium_hex2bin(sk, sizeof(sk), argv[2], strlen(argv[2]), nullptr, nullptr, &hex_end) != 0
+                || hex_end != argv[2] + strlen(argv[2])) {
+            printf("Invalid secret key provided.\n");
+            goto fail;
+        }
         unsigned char *data = nullptr;
         int size = load_file(argv[3], &data);
 
@@ -80,9 +84,8 @@ int main(int argc, char *argv[])
 
         unsigned long long smlen;
         unsigned char *sm = (unsigned char *)malloc(size + crypto_sign_ed25519_BYTES * 2);
-        crypto_sign_ed25519(sm, &smlen, data, size, secret_key);
+        crypto_sign_ed25519(sm, &smlen, data, size, sk);
         free(data);
-        free(secret_key);
 
         if (smlen - size != crypto_sign_ed25519_BYTES) {
             free(sm);
@@ -110,8 +113,13 @@ int main(int argc, char *argv[])
     }
 
     if (argc == 4 && argv[1][0] == 'c') {
-        unsigned char *public_key = hex_string_to_bin(argv[2]);
-        unsigned char *data;
+        const char *hex_end = nullptr;
+        if (sodium_hex2bin(pk, sizeof(pk), argv[2], strlen(argv[2]), nullptr, nullptr, &hex_end) != 0
+                || hex_end != argv[2] + strlen(argv[2])) {
+            printf("Invalid public key provided.\n");
+            goto fail;
+        }
+        unsigned char *data = nullptr;
         int size = load_file(argv[3], &data);
 
         if (size < 0) {
@@ -127,7 +135,7 @@ int main(int argc, char *argv[])
         unsigned char *m = (unsigned char *)malloc(size);
         unsigned long long mlen;
 
-        if (crypto_sign_ed25519_open(m, &mlen, signe, size, public_key) == -1) {
+        if (crypto_sign_ed25519_open(m, &mlen, signe, size, pk) == -1) {
             printf("Failed checking sig.\n");
             free(m);
             free(signe);
