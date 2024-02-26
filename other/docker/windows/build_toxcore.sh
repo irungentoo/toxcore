@@ -146,6 +146,11 @@ build() {
   done
   cp "$DEP_PREFIX_DIR"/lib/pkgconfig/* "$RESULT_PREFIX_DIR/lib/pkgconfig/"
 
+  # strip everything
+  set +e
+  "$WINDOWS_TOOLCHAIN"-strip --strip-unneeded "$RESULT_PREFIX_DIR"/bin/*.* "$RESULT_PREFIX_DIR"/lib/*.*
+  set -e
+
   rm -rf /tmp/*
 
   sed -i "s|^prefix=.*|prefix=$RESULT_PREFIX_DIR|g" "$RESULT_PREFIX_DIR"/lib/pkgconfig/*.pc
