@@ -77,11 +77,14 @@ build() {
     -DENABLE_STATIC=ON \
     -DSTRICT_ABI=ON \
     -DEXPERIMENTAL_API=ON \
+    -DBUILD_FUN_UTILS=ON \
     -DCMAKE_EXE_LINKER_FLAGS="-static" \
     -DCMAKE_SHARED_LINKER_FLAGS="-static" \
     "${EXTRA_CMAKE_FLAGS_ARRAY[@]}" \
     -S ..
   cmake --build . --target install --parallel "$(nproc)"
+  # CMake doesn't install fun utils, so do it manually
+  cp -a other/fun/*.exe "$RESULT_PREFIX_DIR/bin/"
 
   if [ "$ENABLE_TEST" = "true" ]; then
     rm -rf /root/.wine
