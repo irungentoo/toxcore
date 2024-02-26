@@ -129,18 +129,26 @@ build() {
   done
   cd -
 
-  # move static dependencies
-  cp -a "$DEP_PREFIX_DIR"/* "$RESULT_PREFIX_DIR"
+  # copy over the deps
+  if [ "$CROSS_COMPILE" = "true" ]; then
+    LIBWINPTHREAD="/usr/$WINDOWS_TOOLCHAIN/lib/libwinpthread.a"
+    cd /usr/lib/gcc/"$WINDOWS_TOOLCHAIN"/*win32/
+    LIBSSP="$PWD/libssp.a"
+    cd -
+  else
+    LIBWINPTHREAD="/usr/$WINDOWS_TOOLCHAIN/sys-root/mingw/lib/libwinpthread.a"
+    LIBSSP="/usr/$WINDOWS_TOOLCHAIN/sys-root/mingw/lib/libssp.a"
+  fi
+  cp -a "$LIBWINPTHREAD" "$LIBSSP" "$RESULT_PREFIX_DIR/lib/"
+  for STATIC_LIB in "$DEP_PREFIX_DIR"/lib/*.a; do
+    [[ "$STATIC_LIB" == *.dll.a ]] && continue
+    cp -a "$STATIC_LIB" "$RESULT_PREFIX_DIR/lib/"
+  done
+  cp "$DEP_PREFIX_DIR"/lib/pkgconfig/* "$RESULT_PREFIX_DIR/lib/pkgconfig/"
 
   rm -rf /tmp/*
 
-  # remove everything from include directory except tox headers
-  mv "$RESULT_PREFIX_DIR"/include/tox "$RESULT_PREFIX_DIR"/tox
-  rm -rf "$RESULT_PREFIX_DIR"/include/*
-  mv "$RESULT_PREFIX_DIR"/tox "$RESULT_PREFIX_DIR"/include/tox
-
   sed -i "s|^prefix=.*|prefix=$RESULT_PREFIX_DIR|g" "$RESULT_PREFIX_DIR"/lib/pkgconfig/*.pc
-  sed -i "s|^libdir=.*|libdir=$RESULT_PREFIX_DIR/lib|g" "$RESULT_PREFIX_DIR"/lib/*.la
 }
 
 #=== Test Supported vs. Enabled ===
