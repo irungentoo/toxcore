@@ -299,15 +299,14 @@ Get the toxcore source code and navigate to `other/docker/windows`.
 Build the container image based on the Dockerfile. The following options are
 available to customize the building of the container image.
 
-| Name                  | Description                                         | Expected Value                      | Default Value |
-| --------------------- | --------------------------------------------------- | ----------------------------------- | ------------- |
-| `SUPPORT_ARCH_i686`   | Support building 32-bit toxcore.                    | "true" or "false" (case sensitive). | true          |
-| `SUPPORT_ARCH_x86_64` | Support building 64-bit toxcore.                    | "true" or "false" (case sensitive). | true          |
-| `SUPPORT_TEST`        | Support running toxcore automated tests.            | "true" or "false" (case sensitive). | false         |
-| `CROSS_COMPILE`       | Cross-compiling. True for Docker, false for Cygwin. | "true" or "false" (case sensitive). | true          |
-| `VERSION_OPUS`        | Version of libopus to build toxcore with.           | Numeric version number.             | 1.4           |
-| `VERSION_SODIUM`      | Version of libsodium to build toxcore with.         | Numeric version number.             | 1.0.19        |
-| `VERSION_VPX`         | Version of libvpx to build toxcore with.            | Numeric version number.             | 1.14.0        |
+| Name                  | Description                                 | Expected Value                      | Default Value |
+| --------------------- | ------------------------------------------- | ----------------------------------- | ------------- |
+| `SUPPORT_ARCH_i686`   | Support building 32-bit toxcore.            | "true" or "false" (case sensitive). | true          |
+| `SUPPORT_ARCH_x86_64` | Support building 64-bit toxcore.            | "true" or "false" (case sensitive). | true          |
+| `SUPPORT_TEST`        | Support running toxcore automated tests.    | "true" or "false" (case sensitive). | false         |
+| `VERSION_OPUS`        | Version of libopus to build toxcore with.   | Numeric version number.             | 1.4           |
+| `VERSION_SODIUM`      | Version of libsodium to build toxcore with. | Numeric version number.             | 1.0.19        |
+| `VERSION_VPX`         | Version of libvpx to build toxcore with.    | Numeric version number.             | 1.14.0        |
 
 Example of building a container image with options
 
@@ -329,7 +328,6 @@ customize the running of the container image.
 | `ENABLE_ARCH_x86_64` | Build 64-bit toxcore. The image should have been built with `SUPPORT_ARCH_x86_64` enabled. | "true" or "false" (case sensitive). | `true`                      |
 | `ENABLE_TEST`        | Run the test suite. The image should have been built with `SUPPORT_TEST` enabled.          | "true" or "false" (case sensitive). | `false`                     |
 | `EXTRA_CMAKE_FLAGS`  | Extra arguments to pass to the CMake command when building toxcore.                        | CMake options.                      | `-DTEST_TIMEOUT_SECONDS=90` |
-| `CROSS_COMPILE`      | Cross-compiling. True for Docker, false for Cygwin.                                        | "true" or "false" (case sensitive). | `true`                      |
 
 Example of running the container with options
 
@@ -339,12 +337,108 @@ docker run \
   -e ALLOW_TEST_FAILURE=true \
   -v /path/to/toxcore/sourcecode:/toxcore \
   -v /path/to/where/output/build/result:/prefix \
+  -t \
   --rm \
   toxcore
 ```
 
 After the build succeeds, you should see the built toxcore libraries in
 `/path/to/where/output/build/result`.
+
+The file structure should look similar to the following
+
+```
+result
+├── [4.0K]  i686
+│   ├── [ 36K]  bin
+│   │   ├── [636K]  DHT_bootstrap.exe
+│   │   ├── [572K]  cracker.exe
+│   │   ├── [359K]  cracker_simple.exe
+│   │   ├── [378K]  create_bootstrap_keys.exe
+│   │   ├── [378K]  create_minimal_savedata.exe
+│   │   ├── [958K]  create_savedata.exe
+│   │   ├── [ 18K]  libtoxcore.def
+│   │   ├── [2.6M]  libtoxcore.dll
+│   │   ├── [ 65K]  libtoxcore.exp
+│   │   ├── [428K]  libtoxcore.lib
+│   │   ├── [989K]  save-generator.exe
+│   │   ├── [381K]  sign.exe
+│   │   └── [408K]  strkey.exe
+│   ├── [4.0K]  include
+│   │   └── [4.0K]  tox
+│   │       ├── [177K]  tox.h
+│   │       ├── [ 10K]  tox_dispatch.h
+│   │       ├── [ 26K]  tox_events.h
+│   │       ├── [6.4K]  tox_private.h
+│   │       ├── [ 26K]  toxav.h
+│   │       └── [ 12K]  toxencryptsave.h
+│   └── [4.0K]  lib
+│       ├── [577K]  libopus.a
+│       ├── [660K]  libsodium.a
+│       ├── [ 10K]  libssp.a
+│       ├── [1016K]  libtoxcore.a
+│       ├── [456K]  libtoxcore.dll.a
+│       ├── [2.7M]  libvpx.a
+│       ├── [ 72K]  libwinpthread.a
+│       └── [4.0K]  pkgconfig
+│           ├── [ 250]  libsodium.pc
+│           ├── [ 357]  opus.pc
+│           ├── [ 247]  toxcore.pc
+│           └── [ 309]  vpx.pc
+└── [4.0K]  x86_64
+    ├── [ 36K]  bin
+    │   ├── [504K]  DHT_bootstrap.exe
+    │   ├── [474K]  cracker.exe
+    │   ├── [277K]  cracker_simple.exe
+    │   ├── [287K]  create_bootstrap_keys.exe
+    │   ├── [288K]  create_minimal_savedata.exe
+    │   ├── [769K]  create_savedata.exe
+    │   ├── [ 18K]  libtoxcore.def
+    │   ├── [2.4M]  libtoxcore.dll
+    │   ├── [ 64K]  libtoxcore.exp
+    │   ├── [420K]  libtoxcore.lib
+    │   ├── [800K]  save-generator.exe
+    │   ├── [289K]  sign.exe
+    │   └── [317K]  strkey.exe
+    ├── [4.0K]  include
+    │   └── [4.0K]  tox
+    │       ├── [177K]  tox.h
+    │       ├── [ 10K]  tox_dispatch.h
+    │       ├── [ 26K]  tox_events.h
+    │       ├── [6.4K]  tox_private.h
+    │       ├── [ 26K]  toxav.h
+    │       └── [ 12K]  toxencryptsave.h
+    └── [4.0K]  lib
+        ├── [697K]  libopus.a
+        ├── [575K]  libsodium.a
+        ├── [ 11K]  libssp.a
+        ├── [905K]  libtoxcore.a
+        ├── [449K]  libtoxcore.dll.a
+        ├── [2.9M]  libvpx.a
+        ├── [ 68K]  libwinpthread.a
+        └── [4.0K]  pkgconfig
+            ├── [ 252]  libsodium.pc
+            ├── [ 359]  opus.pc
+            ├── [ 249]  toxcore.pc
+            └── [ 311]  vpx.pc
+
+12 directories, 60 files
+```
+
+- `libtoxcore.dll` is the shared library. It is fully self-contained, with no
+  additional dependencies aside from the Windows OS dlls, and can be used in
+  MSVC, MinGW, Clang, etc. projects. Despite its name, it provides toxcore,
+  toxav, toxencryptsave -- all of Tox.
+- `libtoxcore.a` is the static library. In order to use it, it needs to be
+  linked against the other provided .a libraries (but not the .dll.a!) and
+  additionally -liphlpapi and -lws2_32 Windows dlls. It similarly provides all
+  of Tox APIs.
+- `libtoxcore.dll.a` is the MinGW import library for `libtoxcore.dll`.
+- `libtoxcore.lib` is the MSVC import library for `libtoxcore.dll`.
+- `libtoxcore.exp` and `libtoxcore.def` are the exported by `libtoxcore`
+  symbols.
+- `*.exe` are statically compiled executables -- `DHT_bootstrap` and
+  [the fun utils](#secondary).
 
 ## Pre-built binaries
 

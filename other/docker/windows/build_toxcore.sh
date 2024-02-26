@@ -2,6 +2,9 @@
 
 set -e -x
 
+# Note: when modifying this script, don't forget to update the appropriate
+#       parts of the cross-compilation section of the INSTALL.md.
+
 #=== Cross-Compile Toxcore ===
 
 build() {
