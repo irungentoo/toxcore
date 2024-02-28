@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 set -e -x
 
@@ -40,12 +40,21 @@ if [ "$SUPPORT_TEST" = "true" ]; then
   apt-get install -y \
     texinfo
 
+  CURL_OPTIONS=(-L --connect-timeout 10)
+
+  # While we would prefer to use Debian's Wine packages, use WineHQ's packages
+  # instead as Debian Bookworm's Wine crashes when creating a 64-bit prefix.
+  # see https://github.com/TokTok/c-toxcore/pull/2713#issuecomment-1967319113
+  # for the crash details
+  curl "${CURL_OPTIONS[@]}" -o /etc/apt/keyrings/winehq-archive.key \
+    https://dl.winehq.org/wine-builds/winehq.key
+  curl "${CURL_OPTIONS[@]}" -O --output-dir /etc/apt/sources.list.d/ \
+    https://dl.winehq.org/wine-builds/debian/dists/bookworm/winehq-bookworm.sources
+
   dpkg --add-architecture i386
   apt-get update
   apt-get install -y \
-    wine \
-    wine32 \
-    wine64
+    winehq-stable
 fi
 
 # Clean up to reduce image size
