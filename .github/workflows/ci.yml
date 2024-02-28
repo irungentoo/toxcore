@@ -83,7 +83,7 @@ jobs:
       - name: Build and test
         run: .github/scripts/cmake-osx
 
-  build-msvc:
+  build-windows-msvc:
     strategy:
       matrix:
         version: [2019, 2022]
@@ -109,18 +109,6 @@ jobs:
         run: |
           cd _build
           ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6 --build-config Debug
-
-  build-windows:
-    strategy:
-      matrix:
-        bits: [32, 64]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Cross compilation
-        run: .github/scripts/cmake-win${{ matrix.bits }} script
 
   build-netbsd:
     runs-on: ubuntu-latest

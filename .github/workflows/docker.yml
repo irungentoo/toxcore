@@ -138,9 +138,15 @@ jobs:
           cache-from: type=registry,ref=toxchat/c-toxcore:esp32
           cache-to: type=inline
 
-  docker-win32:
+  docker-windows-mingw:
+    strategy:
+      matrix:
+        bits: [32, 64]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to DockerHub
@@ -149,39 +155,27 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push
+      - name: Build and store to local Docker daemon
         uses: docker/build-push-action@v5
         with:
-          context: "{{defaultContext}}:other/docker/windows"
-          push: ${{ github.event_name == 'push' }}
-          tags: toxchat/windows:win32
-          cache-from: type=registry,ref=toxchat/windows:win32
-          cache-to: type=inline
+          context: other/docker/windows
+          load: true
+          tags: toxchat/windows:win${{ matrix.bits }}
+          cache-from: type=registry,ref=toxchat/windows:win${{ matrix.bits }}
           build-args: |
-            SUPPORT_ARCH_i686=true
-            SUPPORT_ARCH_x86_64=false
+            SUPPORT_ARCH_i686=${{ matrix.bits == '32' }}
+            SUPPORT_ARCH_x86_64=${{ matrix.bits == '64' }}
             SUPPORT_TEST=true
-
-  docker-win64:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Login to DockerHub
+      - name: Push the stored image to Dockerhub
         if: ${{ github.event_name == 'push' }}
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: "{{defaultContext}}:other/docker/windows"
+          context: other/docker/windows
           push: ${{ github.event_name == 'push' }}
-          tags: toxchat/windows:win64
-          cache-from: type=registry,ref=toxchat/windows:win64
-          cache-to: type=inline
+          tags: toxchat/windows:win${{ matrix.bits }}
           build-args: |
-            SUPPORT_ARCH_i686=false
-            SUPPORT_ARCH_x86_64=true
+            SUPPORT_ARCH_i686=${{ matrix.bits == '32' }}
+            SUPPORT_ARCH_x86_64=${{ matrix.bits == '64' }}
             SUPPORT_TEST=true
+      - name: Cross-compile
+        run: .github/scripts/cmake-win${{ matrix.bits }} script
