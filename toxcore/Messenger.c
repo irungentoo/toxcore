@@ -2468,14 +2468,12 @@ static void do_friends(Messenger *m, void *userdata)
             }
         }
 
-        if (m->friendlist[i].status == FRIEND_REQUESTED
-                || m->friendlist[i].status == FRIEND_CONFIRMED) { /* friend is not online. */
-            if (m->friendlist[i].status == FRIEND_REQUESTED) {
-                /* If we didn't connect to friend after successfully sending him a friend request the request is deemed
-                 * unsuccessful so we set the status back to FRIEND_ADDED and try again.
-                 */
-                check_friend_request_timed_out(m, i, temp_time, userdata);
-            }
+        if (m->friendlist[i].status == FRIEND_REQUESTED) {
+            /* If we didn't connect to friend after successfully sending him a friend
+             * request the request is deemed unsuccessful so we set the status back to
+             * FRIEND_ADDED and try again.
+             */
+            check_friend_request_timed_out(m, i, temp_time, userdata);
         }
 
         if (m->friendlist[i].status == FRIEND_ONLINE) { /* friend is online. */
