@@ -6,6 +6,7 @@
 export VERSION_OPUS="1.4"
 export VERSION_SODIUM="1.0.19"
 export VERSION_VPX="1.14.0"
+export ENABLE_HASH_VERIFICATION=true
 
 export SUPPORT_TEST=false
 export SUPPORT_ARCH_i686=true

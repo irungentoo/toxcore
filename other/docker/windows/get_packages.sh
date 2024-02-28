@@ -51,6 +51,12 @@ if [ "$SUPPORT_TEST" = "true" ]; then
   curl "${CURL_OPTIONS[@]}" -O --output-dir /etc/apt/sources.list.d/ \
     https://dl.winehq.org/wine-builds/debian/dists/bookworm/winehq-bookworm.sources
 
+  . ./check_sha256.sh
+  check_sha256 "78b185fabdb323971d13bd329fefc8038e08559aa51c4996de18db0639a51df6" \
+    "/etc/apt/keyrings/winehq-archive.key"
+  check_sha256 "8dd8ef66c749d56e798646674c1c185a99b3ed6727ca0fbb5e493951e66c0f9e" \
+    "/etc/apt/sources.list.d/winehq-bookworm.sources"
+
   dpkg --add-architecture i386
   apt-get update
   apt-get install -y \

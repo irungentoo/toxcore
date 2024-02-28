@@ -7,6 +7,7 @@ FROM debian:bookworm-slim
 ARG VERSION_OPUS=1.4 \
     VERSION_SODIUM=1.0.19 \
     VERSION_VPX=1.14.0 \
+    ENABLE_HASH_VERIFICATION=true \
  \
     SUPPORT_TEST=false \
     SUPPORT_ARCH_i686=true \
@@ -20,6 +21,7 @@ ENV SUPPORT_TEST=${SUPPORT_TEST} \
     CROSS_COMPILE=${CROSS_COMPILE}
 
 WORKDIR /work
+COPY check_sha256.sh .
 COPY get_packages.sh .
 RUN ./get_packages.sh
 
