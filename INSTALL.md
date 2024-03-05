@@ -322,13 +322,13 @@ docker build \
 Run the container to build toxcore. The following options are available to
 customize the running of the container image.
 
-| Name                 | Description                                                                                | Expected Value                      | Default Value               |
-| -------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------- | --------------------------- |
-| `ALLOW_TEST_FAILURE` | Don't stop if a test suite fails.                                                          | "true" or "false" (case sensitive). | `false`                     |
-| `ENABLE_ARCH_i686`   | Build 32-bit toxcore. The image should have been built with `SUPPORT_ARCH_i686` enabled.   | "true" or "false" (case sensitive). | `true`                      |
-| `ENABLE_ARCH_x86_64` | Build 64-bit toxcore. The image should have been built with `SUPPORT_ARCH_x86_64` enabled. | "true" or "false" (case sensitive). | `true`                      |
-| `ENABLE_TEST`        | Run the test suite. The image should have been built with `SUPPORT_TEST` enabled.          | "true" or "false" (case sensitive). | `false`                     |
-| `EXTRA_CMAKE_FLAGS`  | Extra arguments to pass to the CMake command when building toxcore.                        | CMake options.                      | `-DTEST_TIMEOUT_SECONDS=90` |
+| Name                 | Description                                                                                | Expected Value                      | Default Value                              |
+| -------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------- | ------------------------------------------ |
+| `ALLOW_TEST_FAILURE` | Don't stop if a test suite fails.                                                          | "true" or "false" (case sensitive). | `false`                                    |
+| `ENABLE_ARCH_i686`   | Build 32-bit toxcore. The image should have been built with `SUPPORT_ARCH_i686` enabled.   | "true" or "false" (case sensitive). | `true`                                     |
+| `ENABLE_ARCH_x86_64` | Build 64-bit toxcore. The image should have been built with `SUPPORT_ARCH_x86_64` enabled. | "true" or "false" (case sensitive). | `true`                                     |
+| `ENABLE_TEST`        | Run the test suite. The image should have been built with `SUPPORT_TEST` enabled.          | "true" or "false" (case sensitive). | `false`                                    |
+| `EXTRA_CMAKE_FLAGS`  | Extra arguments to pass to the CMake command when building toxcore.                        | CMake options.                      | `-DTEST_TIMEOUT_SECONDS=90 -DUSE_IPV6=OFF` |
 
 Example of running the container with options
 

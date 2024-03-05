@@ -19,6 +19,6 @@ export ENABLE_TEST=false
 export ALLOW_TEST_FAILURE=false
 export ENABLE_ARCH_i686=true
 export ENABLE_ARCH_x86_64=true
-export EXTRA_CMAKE_FLAGS="-DTEST_TIMEOUT_SECONDS=90"
+export EXTRA_CMAKE_FLAGS="-DTEST_TIMEOUT_SECONDS=90 -DUSE_IPV6=OFF"
 
 sh ./other/docker/windows/build_toxcore.sh
