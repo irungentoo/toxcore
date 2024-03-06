@@ -14,6 +14,7 @@ sh_test(
     args = ["$(locations %s)" % f for f in CIMPLE_FILES] + [
         "-Wno-boolean-return",
         "-Wno-callback-names",
+        "-Wno-enum-from-int",
         "+RTS",
         "-N4",
         "-RTS",

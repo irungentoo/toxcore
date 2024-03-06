@@ -34,8 +34,8 @@ non_null()
 bool gc_load_unpack_group(GC_Chat *chat, Bin_Unpack *bu);
 
 non_null()
-bool group_privacy_state_from_int(uint8_t value, Group_Privacy_State *out);
+bool group_privacy_state_from_int(uint8_t value, Group_Privacy_State *out_enum);
 non_null()
-bool group_voice_state_from_int(uint8_t value, Group_Voice_State *out);
+bool group_voice_state_from_int(uint8_t value, Group_Voice_State *out_enum);
 
 #endif /* C_TOXCORE_TOXCORE_GROUP_PACK_H */

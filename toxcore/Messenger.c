@@ -775,31 +775,31 @@ int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length)
 }
 
 non_null()
-static bool userstatus_from_int(uint8_t status, Userstatus *out)
+static bool userstatus_from_int(uint8_t status, Userstatus *out_enum)
 {
     switch (status) {
         case USERSTATUS_NONE: {
-            *out = USERSTATUS_NONE;
+            *out_enum = USERSTATUS_NONE;
             return true;
         }
 
         case USERSTATUS_AWAY: {
-            *out = USERSTATUS_AWAY;
+            *out_enum = USERSTATUS_AWAY;
             return true;
         }
 
         case USERSTATUS_BUSY: {
-            *out = USERSTATUS_BUSY;
+            *out_enum = USERSTATUS_BUSY;
             return true;
         }
 
         case USERSTATUS_INVALID: {
-            *out = USERSTATUS_INVALID;
+            *out_enum = USERSTATUS_INVALID;
             return true;
         }
 
         default: {
-            *out = USERSTATUS_INVALID;
+            *out_enum = USERSTATUS_INVALID;
             return false;
         }
     }

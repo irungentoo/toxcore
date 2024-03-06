@@ -26,46 +26,46 @@
 #include "network.h"
 #include "util.h"
 
-bool group_privacy_state_from_int(uint8_t value, Group_Privacy_State *out)
+bool group_privacy_state_from_int(uint8_t value, Group_Privacy_State *out_enum)
 {
     switch (value) {
         case GI_PUBLIC: {
-            *out = GI_PUBLIC;
+            *out_enum = GI_PUBLIC;
             return true;
         }
 
         case GI_PRIVATE: {
-            *out = GI_PRIVATE;
+            *out_enum = GI_PRIVATE;
             return true;
         }
 
         default: {
-            *out = GI_PUBLIC;
+            *out_enum = GI_PUBLIC;
             return false;
         }
     }
 }
 
-bool group_voice_state_from_int(uint8_t value, Group_Voice_State *out)
+bool group_voice_state_from_int(uint8_t value, Group_Voice_State *out_enum)
 {
     switch (value) {
         case GV_ALL: {
-            *out = GV_ALL;
+            *out_enum = GV_ALL;
             return true;
         }
 
         case GV_MODS: {
-            *out = GV_MODS;
+            *out_enum = GV_MODS;
             return true;
         }
 
         case GV_FOUNDER: {
-            *out = GV_FOUNDER;
+            *out_enum = GV_FOUNDER;
             return true;
         }
 
         default: {
-            *out = GV_ALL;
+            *out_enum = GV_ALL;
             return false;
         }
     }
