@@ -4605,11 +4605,6 @@ typedef enum Tox_Err_Group_Send_Custom_Packet {
     TOX_ERR_GROUP_SEND_CUSTOM_PACKET_EMPTY,
 
     /**
-     * The caller does not have the required permissions to send group messages.
-     */
-    TOX_ERR_GROUP_SEND_CUSTOM_PACKET_PERMISSIONS,
-
-    /**
      * The group is disconnected.
      */
     TOX_ERR_GROUP_SEND_CUSTOM_PACKET_DISCONNECTED,
@@ -4681,11 +4676,6 @@ typedef enum Tox_Err_Group_Send_Custom_Private_Packet {
      * The peer ID passed did no designate a valid peer.
      */
     TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_PEER_NOT_FOUND,
-
-    /**
-     * The caller does not have the required permissions to send group messages.
-     */
-    TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_PERMISSIONS,
 
     /**
      * The packet failed to send.

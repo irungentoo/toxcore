@@ -192,8 +192,7 @@ int gc_send_private_message(const GC_Chat *chat, GC_Peer_Id peer_id, uint8_t typ
  * Returns 0 on success.
  * Returns -1 if the message is too long.
  * Returns -2 if the message pointer is NULL or length is zero.
- * Returns -3 if the sender has the observer role.
- * Returns -4 if the packet did not successfully send to any peer.
+ * Returns -3 if the packet did not successfully send to any peer.
  */
 non_null()
 int gc_send_custom_packet(const GC_Chat *chat, bool lossless, const uint8_t *data, uint16_t length);
@@ -206,8 +205,7 @@ int gc_send_custom_packet(const GC_Chat *chat, bool lossless, const uint8_t *dat
  * @retval -1 if the message is too long.
  * @retval -2 if the message pointer is NULL or length is zero.
  * @retval -3 if the supplied peer_id does not designate a valid peer.
- * @retval -4 if the sender has the observer role.
- * @retval -5 if the packet fails to send.
+ * @retval -4 if the packet fails to send.
  */
 non_null()
 int gc_send_custom_private_packet(const GC_Chat *chat, bool lossless, GC_Peer_Id peer_id, const uint8_t *message,

@@ -5067,10 +5067,6 @@ int gc_send_custom_private_packet(const GC_Chat *chat, bool lossless, GC_Peer_Id
         return -3;
     }
 
-    if (gc_get_self_role(chat) >= GR_OBSERVER) {
-        return -4;
-    }
-
     bool ret;
 
     if (lossless) {
@@ -5079,7 +5075,7 @@ int gc_send_custom_private_packet(const GC_Chat *chat, bool lossless, GC_Peer_Id
         ret = send_lossy_group_packet(chat, gconn, message, length, GP_CUSTOM_PRIVATE_PACKET);
     }
 
-    return ret ? 0 : -5;
+    return ret ? 0 : -4;
 }
 
 /** @brief Handles a custom private packet.
@@ -5099,10 +5095,6 @@ static int handle_gc_custom_private_packet(const GC_Session *c, const GC_Chat *c
         return -1;
     }
 
-    if (peer->ignore || peer->role >= GR_OBSERVER) {
-        return 0;
-    }
-
     if (c->custom_private_packet != nullptr) {
         c->custom_private_packet(c->messenger, chat->group_number, peer->peer_id, data, length, userdata);
     }
@@ -5120,10 +5112,6 @@ int gc_send_custom_packet(const GC_Chat *chat, bool lossless, const uint8_t *dat
         return -2;
     }
 
-    if (gc_get_self_role(chat) >= GR_OBSERVER) {
-        return -3;
-    }
-
     bool success;
 
     if (lossless) {
@@ -5132,7 +5120,7 @@ int gc_send_custom_packet(const GC_Chat *chat, bool lossless, const uint8_t *dat
         success = send_gc_lossy_packet_all_peers(chat, data, length, GP_CUSTOM_PACKET);
     }
 
-    return success ? 0 : -4;
+    return success ? 0 : -3;
 }
 
 /** @brief Handles a custom packet.
@@ -5150,10 +5138,6 @@ static int handle_gc_custom_packet(const GC_Session *c, const GC_Chat *chat, con
 
     if (data == nullptr || length == 0) {
         return -1;
-    }
-
-    if (peer->ignore || peer->role >= GR_OBSERVER) {
-        return 0;
     }
 
     if (c->custom_packet != nullptr) {

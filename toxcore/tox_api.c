@@ -1370,9 +1370,6 @@ const char *tox_err_group_send_custom_packet_to_string(Tox_Err_Group_Send_Custom
         case TOX_ERR_GROUP_SEND_CUSTOM_PACKET_EMPTY:
             return "TOX_ERR_GROUP_SEND_CUSTOM_PACKET_EMPTY";
 
-        case TOX_ERR_GROUP_SEND_CUSTOM_PACKET_PERMISSIONS:
-            return "TOX_ERR_GROUP_SEND_CUSTOM_PACKET_PERMISSIONS";
-
         case TOX_ERR_GROUP_SEND_CUSTOM_PACKET_DISCONNECTED:
             return "TOX_ERR_GROUP_SEND_CUSTOM_PACKET_DISCONNECTED";
 
@@ -1399,9 +1396,6 @@ const char *tox_err_group_send_custom_private_packet_to_string(Tox_Err_Group_Sen
 
         case TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_PEER_NOT_FOUND:
             return "TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_PEER_NOT_FOUND";
-
-        case TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_PERMISSIONS:
-            return "TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_PERMISSIONS";
 
         case TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_FAIL_SEND:
             return "TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_FAIL_SEND";
