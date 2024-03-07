@@ -757,6 +757,7 @@ int main(int argc, char** argv) {
                 EventTypeTrivial{"uint32_t", "peer_id"},
                 EventTypeTrivial{"Tox_Message_Type", "type"},
                 EventTypeByteRange{"message", "message_length", "length"}, // the latter two are ideally the same
+                EventTypeTrivial{"uint32_t", "message_id"},
             }
         },
         {

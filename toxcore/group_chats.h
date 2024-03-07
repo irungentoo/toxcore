@@ -181,9 +181,9 @@ int gc_send_message(const GC_Chat *chat, const uint8_t *message, uint16_t length
  * Returns -5 if the sender has the observer role.
  * Returns -6 if the packet fails to send.
  */
-non_null()
+non_null(1, 4) nullable(6)
 int gc_send_private_message(const GC_Chat *chat, GC_Peer_Id peer_id, uint8_t type, const uint8_t *message,
-                            uint16_t length);
+                            uint16_t length, uint32_t *message_id);
 
 /** @brief Sends a custom packet to the group. If lossless is true, the packet will be lossless.
  *

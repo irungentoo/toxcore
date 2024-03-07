@@ -268,6 +268,8 @@ const uint8_t *tox_event_group_private_message_get_message(
     const Tox_Event_Group_Private_Message *group_private_message);
 uint32_t tox_event_group_private_message_get_message_length(
     const Tox_Event_Group_Private_Message *group_private_message);
+uint32_t tox_event_group_private_message_get_message_id(
+    const Tox_Event_Group_Private_Message *group_private_message);
 
 typedef struct Tox_Event_Group_Custom_Packet Tox_Event_Group_Custom_Packet;
 uint32_t tox_event_group_custom_packet_get_group_number(

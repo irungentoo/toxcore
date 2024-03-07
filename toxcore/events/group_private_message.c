@@ -30,6 +30,7 @@ struct Tox_Event_Group_Private_Message {
     Tox_Message_Type type;
     uint8_t *message;
     uint32_t message_length;
+    uint32_t message_id;
 };
 
 non_null()
@@ -111,6 +112,19 @@ const uint8_t *tox_event_group_private_message_get_message(const Tox_Event_Group
 }
 
 non_null()
+static void tox_event_group_private_message_set_message_id(Tox_Event_Group_Private_Message *group_private_message,
+        uint32_t message_id)
+{
+    assert(group_private_message != nullptr);
+    group_private_message->message_id = message_id;
+}
+uint32_t tox_event_group_private_message_get_message_id(const Tox_Event_Group_Private_Message *group_private_message)
+{
+    assert(group_private_message != nullptr);
+    return group_private_message->message_id;
+}
+
+non_null()
 static void tox_event_group_private_message_construct(Tox_Event_Group_Private_Message *group_private_message)
 {
     *group_private_message = (Tox_Event_Group_Private_Message) {
@@ -126,11 +140,12 @@ static void tox_event_group_private_message_destruct(Tox_Event_Group_Private_Mes
 bool tox_event_group_private_message_pack(
     const Tox_Event_Group_Private_Message *event, Bin_Pack *bp)
 {
-    return bin_pack_array(bp, 4)
+    return bin_pack_array(bp, 5)
            && bin_pack_u32(bp, event->group_number)
            && bin_pack_u32(bp, event->peer_id)
            && tox_message_type_pack(event->type, bp)
-           && bin_pack_bin(bp, event->message, event->message_length);
+           && bin_pack_bin(bp, event->message, event->message_length)
+           && bin_pack_u32(bp, event->message_id);
 }
 
 non_null()
@@ -138,14 +153,15 @@ static bool tox_event_group_private_message_unpack_into(
     Tox_Event_Group_Private_Message *event, Bin_Unpack *bu)
 {
     assert(event != nullptr);
-    if (!bin_unpack_array_fixed(bu, 4, nullptr)) {
+    if (!bin_unpack_array_fixed(bu, 5, nullptr)) {
         return false;
     }
 
     return bin_unpack_u32(bu, &event->group_number)
            && bin_unpack_u32(bu, &event->peer_id)
            && tox_message_type_unpack(&event->type, bu)
-           && bin_unpack_bin(bu, &event->message, &event->message_length);
+           && bin_unpack_bin(bu, &event->message, &event->message_length)
+           && bin_unpack_u32(bu, &event->message_id);
 }
 
 /*****************************************************
@@ -238,7 +254,7 @@ static Tox_Event_Group_Private_Message *tox_event_group_private_message_alloc(vo
  *****************************************************/
 
 void tox_events_handle_group_private_message(
-    Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Message_Type type, const uint8_t *message, size_t length,
+    Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Message_Type type, const uint8_t *message, size_t length, uint32_t message_id,
     void *user_data)
 {
     Tox_Event_Group_Private_Message *group_private_message = tox_event_group_private_message_alloc(user_data);
@@ -251,4 +267,5 @@ void tox_events_handle_group_private_message(
     tox_event_group_private_message_set_peer_id(group_private_message, peer_id);
     tox_event_group_private_message_set_type(group_private_message, type);
     tox_event_group_private_message_set_message(group_private_message, message, length);
+    tox_event_group_private_message_set_message_id(group_private_message, message_id);
 }

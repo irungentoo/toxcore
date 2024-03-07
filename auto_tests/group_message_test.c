@@ -274,7 +274,6 @@ static void group_message_handler(const Tox_Event_Group_Message *event, void *us
     State *state = (State *)autotox->state;
 
     state->message_received = true;
-
     state->pseudo_msg_id = pseudo_msg_id;
 }
 
@@ -288,6 +287,7 @@ static void group_private_message_handler(const Tox_Event_Group_Private_Message 
     const Tox_Message_Type type = tox_event_group_private_message_get_type(event);
     const uint8_t *message = tox_event_group_private_message_get_message(event);
     const size_t length = tox_event_group_private_message_get_message_length(event);
+    const uint32_t pseudo_msg_id = tox_event_group_private_message_get_message_id(event);
 
     ck_assert_msg(length == TEST_PRIVATE_MESSAGE_LEN, "Failed to receive message. Invalid length: %zu\n", length);
 
@@ -320,7 +320,7 @@ static void group_private_message_handler(const Tox_Event_Group_Private_Message 
     ck_assert(s_err == TOX_ERR_GROUP_SELF_QUERY_OK);
     ck_assert(memcmp(self_name, PEER1_NICK, self_name_len) == 0);
 
-    printf("%s sent private action to %s: %s\n", peer_name, self_name, message_buf);
+    printf("%s sent private action to %s:(id: %u) %s\n", peer_name, self_name, pseudo_msg_id, message_buf);
     ck_assert(memcmp(message_buf, TEST_PRIVATE_MESSAGE, length) == 0);
 
     ck_assert(type == TOX_MESSAGE_TYPE_ACTION);
@@ -328,6 +328,7 @@ static void group_private_message_handler(const Tox_Event_Group_Private_Message 
     State *state = (State *)autotox->state;
 
     state->private_message_received = true;
+    state->pseudo_msg_id = pseudo_msg_id;
 }
 
 static void group_message_handler_lossless_test(const Tox_Event_Group_Message *event, void *user_data)
@@ -435,7 +436,8 @@ static void group_message_test(AutoTox *autotoxes)
         }
     }
 
-    ck_assert_msg(state0->pseudo_msg_id == state1->pseudo_msg_id, "id0:%u id1:%u", state0->pseudo_msg_id, state1->pseudo_msg_id);
+    ck_assert_msg(state0->pseudo_msg_id == state1->pseudo_msg_id, "id0:%u id1:%u",
+                  state0->pseudo_msg_id, state1->pseudo_msg_id);
 
     // Make sure we're still connected to each friend
     Tox_Connection conn_1 = tox_friend_get_connection_status(tox0, 0, nullptr);
@@ -460,13 +462,22 @@ static void group_message_test(AutoTox *autotoxes)
     tox_group_set_ignore(tox0, group_number, state0->peer_id, false, &ig_err);
     ck_assert_msg(ig_err == TOX_ERR_GROUP_SET_IGNORE_OK, "%d", ig_err);
 
-    fprintf(stderr, "Sending private message...\n");
+    fprintf(stderr, "Sending private action...\n");
 
-    // tox0 sends a private action to tox1
+    // tox1 sends a private action to tox0
     Tox_Err_Group_Send_Private_Message m_err;
-    tox_group_send_private_message(tox1, group_number, state1->peer_id, TOX_MESSAGE_TYPE_ACTION,
-                                   (const uint8_t *)TEST_PRIVATE_MESSAGE, TEST_PRIVATE_MESSAGE_LEN, &m_err);
+    state1->pseudo_msg_id = tox_group_send_private_message(tox1, group_number, state1->peer_id,
+                            TOX_MESSAGE_TYPE_ACTION, (const uint8_t *)TEST_PRIVATE_MESSAGE,
+                            TEST_PRIVATE_MESSAGE_LEN, &m_err);
+
     ck_assert_msg(m_err == TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_OK, "%d", m_err);
+
+    while (!state0->private_message_received) {
+        iterate_all_wait(autotoxes, NUM_GROUP_TOXES, ITERATION_INTERVAL);
+    }
+
+    ck_assert_msg(state0->pseudo_msg_id == state1->pseudo_msg_id, "id0:%u id1:%u",
+                  state0->pseudo_msg_id, state1->pseudo_msg_id);
 
     fprintf(stderr, "Sending custom packets...\n");
 
@@ -496,8 +507,7 @@ static void group_message_test(AutoTox *autotoxes)
 
     ck_assert_msg(cperr == TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_OK, "%d", cperr);
 
-    while (!state0->private_message_received || state0->custom_packets_received < 2
-            || state0->custom_private_packets_received < 2) {
+    while (state0->custom_packets_received < 2 || state0->custom_private_packets_received < 2) {
         iterate_all_wait(autotoxes, NUM_GROUP_TOXES, ITERATION_INTERVAL);
     }
 

@@ -536,16 +536,16 @@ static void tox_group_message_handler(const Messenger *m, uint32_t group_number,
     }
 }
 
-non_null(1, 5) nullable(7)
+non_null(1, 5) nullable(8)
 static void tox_group_private_message_handler(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id,
-        unsigned int type, const uint8_t *message, size_t length, void *user_data)
+        unsigned int type, const uint8_t *message, size_t length, uint32_t message_id, void *user_data)
 {
     struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
 
     if (tox_data->tox->group_private_message_callback != nullptr) {
         tox_unlock(tox_data->tox);
         tox_data->tox->group_private_message_callback(tox_data->tox, group_number, gc_peer_id_to_int(peer_id), (Tox_Message_Type)type, message,
-                length, tox_data->user_data);
+                length, message_id, tox_data->user_data);
         tox_lock(tox_data->tox);
     }
 }
@@ -3994,8 +3994,8 @@ Tox_Group_Message_Id tox_group_send_message(
     return -1;
 }
 
-bool tox_group_send_private_message(const Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Message_Type type,
-                                    const uint8_t *message, size_t length, Tox_Err_Group_Send_Private_Message *error)
+Tox_Group_Message_Id tox_group_send_private_message(const Tox *tox, uint32_t group_number, uint32_t peer_id,
+        Tox_Message_Type type, const uint8_t *message, size_t length, Tox_Err_Group_Send_Private_Message *error)
 {
     assert(tox != nullptr);
 
@@ -4005,59 +4005,60 @@ bool tox_group_send_private_message(const Tox *tox, uint32_t group_number, uint3
     if (chat == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_GROUP_NOT_FOUND);
         tox_unlock(tox);
-        return false;
+        return -1;
     }
 
     if (chat->connection_state == CS_DISCONNECTED) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_DISCONNECTED);
         tox_unlock(tox);
-        return false;
+        return -1;
     }
 
-    const int ret = gc_send_private_message(chat, gc_peer_id_from_int(peer_id), type, message, length);
+    uint32_t message_id = 0;
+    const int ret = gc_send_private_message(chat, gc_peer_id_from_int(peer_id), type, message, length, &message_id);
     tox_unlock(tox);
 
     switch (ret) {
         case 0: {
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_OK);
-            return true;
+            return message_id;
         }
 
         case -1: {
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_TOO_LONG);
-            return false;
+            return -1;
         }
 
         case -2: {
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_EMPTY);
-            return false;
+            return -1;
         }
 
         case -3: {
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PEER_NOT_FOUND);
-            return false;
+            return -1;
         }
 
         case -4: {
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_BAD_TYPE);
-            return false;
+            return -1;
         }
 
         case -5: {
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PERMISSIONS);
-            return false;
+            return -1;
         }
 
         case -6: {
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_FAIL_SEND);
-            return false;
+            return -1;
         }
     }
 
     /* can't happen */
     LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
 
-    return false;
+    return -1;
 }
 
 bool tox_group_send_custom_packet(const Tox *tox, uint32_t group_number, bool lossless, const uint8_t *data,

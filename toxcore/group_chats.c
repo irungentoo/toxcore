@@ -4911,11 +4911,12 @@ int gc_send_message(const GC_Chat *chat, const uint8_t *message, uint16_t length
         return -5;
     }
 
+    free(message_raw);
+
     if (message_id != nullptr) {
         *message_id = pseudo_msg_id;
     }
 
-    free(message_raw);
     return 0;
 }
 
@@ -4955,7 +4956,7 @@ static int handle_gc_message(const GC_Session *c, const GC_Chat *chat, const GC_
 }
 
 int gc_send_private_message(const GC_Chat *chat, GC_Peer_Id peer_id, uint8_t type, const uint8_t *message,
-                            uint16_t length)
+                            uint16_t length, uint32_t *message_id)
 {
     if (length > MAX_GC_MESSAGE_SIZE) {
         return -1;
@@ -4981,23 +4982,28 @@ int gc_send_private_message(const GC_Chat *chat, GC_Peer_Id peer_id, uint8_t typ
         return -5;
     }
 
-    uint8_t *message_with_type = (uint8_t *)malloc(length + 1);
+    const uint16_t raw_length = 1 + length + GC_MESSAGE_PSEUDO_ID_SIZE;
+    uint8_t *message_with_type = (uint8_t *)malloc(raw_length);
 
     if (message_with_type == nullptr) {
         return -6;
     }
 
     message_with_type[0] = type;
-    memcpy(message_with_type + 1, message, length);
 
-    uint8_t *packet = (uint8_t *)malloc(length + 1 + GC_BROADCAST_ENC_HEADER_SIZE);
+    const uint32_t pseudo_msg_id = random_u32(chat->rng);
+    net_pack_u32(message_with_type + 1, pseudo_msg_id);
+
+    memcpy(message_with_type + 1 + GC_MESSAGE_PSEUDO_ID_SIZE, message, length);
+
+    uint8_t *packet = (uint8_t *)malloc(raw_length + GC_BROADCAST_ENC_HEADER_SIZE);
 
     if (packet == nullptr) {
         free(message_with_type);
         return -6;
     }
 
-    const uint16_t packet_len = make_gc_broadcast_header(message_with_type, length + 1, packet, GM_PRIVATE_MESSAGE);
+    const uint16_t packet_len = make_gc_broadcast_header(message_with_type, raw_length, packet, GM_PRIVATE_MESSAGE);
 
     free(message_with_type);
 
@@ -5007,6 +5013,10 @@ int gc_send_private_message(const GC_Chat *chat, GC_Peer_Id peer_id, uint8_t typ
     }
 
     free(packet);
+
+    if (message_id != nullptr) {
+        *message_id = pseudo_msg_id;
+    }
 
     return 0;
 }
@@ -5020,7 +5030,7 @@ non_null(1, 2, 3, 4) nullable(6)
 static int handle_gc_private_message(const GC_Session *c, const GC_Chat *chat, const GC_Peer *peer, const uint8_t *data,
                                      uint16_t length, void *userdata)
 {
-    if (data == nullptr || length > MAX_GC_MESSAGE_SIZE || length <= 1) {
+    if (data == nullptr || length > MAX_GC_MESSAGE_SIZE || length <= 1 + GC_MESSAGE_PSEUDO_ID_SIZE) {
         return -1;
     }
 
@@ -5035,8 +5045,13 @@ static int handle_gc_private_message(const GC_Session *c, const GC_Chat *chat, c
         return 0;
     }
 
+    uint32_t message_id;
+    net_unpack_u32(data + 1, &message_id);
+
     if (c->private_message != nullptr) {
-        c->private_message(c->messenger, chat->group_number, peer->peer_id, message_type, data + 1, length - 1, userdata);
+        c->private_message(c->messenger, chat->group_number, peer->peer_id, message_type,
+                           data + 1 + GC_MESSAGE_PSEUDO_ID_SIZE, length - 1 - GC_MESSAGE_PSEUDO_ID_SIZE,
+                           message_id, userdata);
     }
 
     return 0;
