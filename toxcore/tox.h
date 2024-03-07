@@ -4753,7 +4753,7 @@ void tox_callback_group_message(Tox *tox, tox_group_message_cb *callback);
  */
 typedef void tox_group_private_message_cb(
     Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Message_Type type,
-    const uint8_t message[], size_t length, uint32_t message_id, void *user_data);
+    const uint8_t message[], size_t length, Tox_Group_Message_Id message_id, void *user_data);
 
 /**
  * Set the callback for the `group_private_message` event. Pass NULL to unset.

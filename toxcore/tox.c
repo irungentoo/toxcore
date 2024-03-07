@@ -524,7 +524,7 @@ static void tox_group_password_handler(const Messenger *m, uint32_t group_number
 
 non_null(1, 5) nullable(8)
 static void tox_group_message_handler(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id, unsigned int type,
-                                      const uint8_t *message, size_t length, uint32_t message_id, void *user_data)
+                                      const uint8_t *message, size_t length, Tox_Group_Message_Id message_id, void *user_data)
 {
     struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
 
@@ -538,7 +538,7 @@ static void tox_group_message_handler(const Messenger *m, uint32_t group_number,
 
 non_null(1, 5) nullable(8)
 static void tox_group_private_message_handler(const Messenger *m, uint32_t group_number, GC_Peer_Id peer_id,
-        unsigned int type, const uint8_t *message, size_t length, uint32_t message_id, void *user_data)
+        unsigned int type, const uint8_t *message, size_t length, Tox_Group_Message_Id message_id, void *user_data)
 {
     struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
 
