@@ -1340,6 +1340,9 @@ const char *tox_err_group_send_private_message_to_string(Tox_Err_Group_Send_Priv
         case TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_EMPTY:
             return "TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_EMPTY";
 
+        case TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_BAD_TYPE:
+            return "TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_BAD_TYPE";
+
         case TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PERMISSIONS:
             return "TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PERMISSIONS";
 
@@ -1348,9 +1351,6 @@ const char *tox_err_group_send_private_message_to_string(Tox_Err_Group_Send_Priv
 
         case TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_DISCONNECTED:
             return "TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_DISCONNECTED";
-
-        case TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_BAD_TYPE:
-            return "TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_BAD_TYPE";
     }
 
     return "<invalid Tox_Err_Group_Send_Private_Message>";

@@ -4534,6 +4534,11 @@ typedef enum Tox_Err_Group_Send_Private_Message {
     TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_EMPTY,
 
     /**
+     * The message type is invalid.
+     */
+    TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_BAD_TYPE,
+
+    /**
      * The caller does not have the required permissions to send group messages.
      */
     TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PERMISSIONS,
@@ -4547,11 +4552,6 @@ typedef enum Tox_Err_Group_Send_Private_Message {
      * The group is disconnected.
      */
     TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_DISCONNECTED,
-
-    /**
-     * The message type is invalid.
-     */
-    TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_BAD_TYPE,
 
 } Tox_Err_Group_Send_Private_Message;
 
