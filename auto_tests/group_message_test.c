@@ -284,7 +284,7 @@ static void group_private_message_handler(const Tox_Event_Group_Private_Message 
 
     const uint32_t groupnumber = tox_event_group_private_message_get_group_number(event);
     const uint32_t peer_id = tox_event_group_private_message_get_peer_id(event);
-    const Tox_Message_Type type = tox_event_group_private_message_get_type(event);
+    const Tox_Message_Type type = tox_event_group_private_message_get_message_type(event);
     const uint8_t *message = tox_event_group_private_message_get_message(event);
     const size_t length = tox_event_group_private_message_get_message_length(event);
     const Tox_Group_Message_Id pseudo_msg_id = tox_event_group_private_message_get_message_id(event);

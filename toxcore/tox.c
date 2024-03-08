@@ -3932,7 +3932,7 @@ bool tox_group_get_password(const Tox *tox, uint32_t group_number, uint8_t *pass
 }
 
 Tox_Group_Message_Id tox_group_send_message(
-    const Tox *tox, uint32_t group_number, Tox_Message_Type type, const uint8_t *message,
+    const Tox *tox, uint32_t group_number, Tox_Message_Type message_type, const uint8_t *message,
     size_t length, Tox_Err_Group_Send_Message *error)
 {
     assert(tox != nullptr);
@@ -3953,7 +3953,7 @@ Tox_Group_Message_Id tox_group_send_message(
     }
 
     uint32_t message_id = 0;
-    const int ret = gc_send_message(chat, message, length, type, &message_id);
+    const int ret = gc_send_message(chat, message, length, message_type, &message_id);
     tox_unlock(tox);
 
     switch (ret) {
@@ -3995,7 +3995,7 @@ Tox_Group_Message_Id tox_group_send_message(
 }
 
 Tox_Group_Message_Id tox_group_send_private_message(const Tox *tox, uint32_t group_number, uint32_t peer_id,
-        Tox_Message_Type type, const uint8_t *message, size_t length, Tox_Err_Group_Send_Private_Message *error)
+        Tox_Message_Type message_type, const uint8_t *message, size_t length, Tox_Err_Group_Send_Private_Message *error)
 {
     assert(tox != nullptr);
 
@@ -4015,7 +4015,7 @@ Tox_Group_Message_Id tox_group_send_private_message(const Tox *tox, uint32_t gro
     }
 
     uint32_t message_id = 0;
-    const int ret = gc_send_private_message(chat, gc_peer_id_from_int(peer_id), type, message, length, &message_id);
+    const int ret = gc_send_private_message(chat, gc_peer_id_from_int(peer_id), message_type, message, length, &message_id);
     tox_unlock(tox);
 
     switch (ret) {

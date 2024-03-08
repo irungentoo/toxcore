@@ -4493,7 +4493,7 @@ const char *tox_err_group_send_message_to_string(Tox_Err_Group_Send_Message valu
  * then reassemble the fragments. Messages may not be empty.
  *
  * @param group_number The group number of the group the message is intended for.
- * @param type Message type (normal, action, ...).
+ * @param message_type Message type (normal, action, ...).
  * @param message A non-NULL pointer to the first element of a byte array
  *   containing the message text.
  * @param length Length of the message to be sent.
@@ -4502,7 +4502,7 @@ const char *tox_err_group_send_message_to_string(Tox_Err_Group_Send_Message valu
  *   returned message ID value will be undefined.
  */
 Tox_Group_Message_Id tox_group_send_message(
-    const Tox *tox, Tox_Group_Number group_number, Tox_Message_Type type,
+    const Tox *tox, Tox_Group_Number group_number, Tox_Message_Type message_type,
     const uint8_t message[], size_t length,
     Tox_Err_Group_Send_Message *error);
 
@@ -4569,6 +4569,7 @@ const char *tox_err_group_send_private_message_to_string(Tox_Err_Group_Send_Priv
  *
  * @param group_number The group number of the group the message is intended for.
  * @param peer_id The ID of the peer the message is intended for.
+ * @param message_type The type of message (normal, action, ...).
  * @param message A non-NULL pointer to the first element of a byte array
  *   containing the message text.
  * @param length Length of the message to be sent.
@@ -4576,7 +4577,7 @@ const char *tox_err_group_send_private_message_to_string(Tox_Err_Group_Send_Priv
  * @return true on success.
  */
 Tox_Group_Message_Id tox_group_send_private_message(
-    const Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Message_Type type,
+    const Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Message_Type message_type,
     const uint8_t message[], size_t length,
     Tox_Err_Group_Send_Private_Message *error);
 
@@ -4729,13 +4730,13 @@ bool tox_group_send_custom_private_packet(const Tox *tox, Tox_Group_Number group
 /**
  * @param group_number The group number of the group the message is intended for.
  * @param peer_id The ID of the peer who sent the message.
- * @param type The type of message (normal, action, ...).
+ * @param message_type The type of message (normal, action, ...).
  * @param message The message data.
  * @param message_length The length of the message.
  * @param message_id A pseudo message id that clients can use to uniquely identify this group message.
  */
 typedef void tox_group_message_cb(
-    Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Message_Type type,
+    Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Message_Type message_type,
     const uint8_t message[], size_t message_length, Tox_Group_Message_Id message_id, void *user_data);
 
 /**
@@ -4748,12 +4749,13 @@ void tox_callback_group_message(Tox *tox, tox_group_message_cb *callback);
 /**
  * @param group_number The group number of the group the private message is intended for.
  * @param peer_id The ID of the peer who sent the private message.
+ * @param message_type The type of message (normal, action, ...).
  * @param message The message data.
  * @param message_length The length of the message.
  * @param message_id A pseudo message id that clients can use to uniquely identify this group message.
  */
 typedef void tox_group_private_message_cb(
-    Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Message_Type type,
+    Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Message_Type message_type,
     const uint8_t message[], size_t message_length, Tox_Group_Message_Id message_id, void *user_data);
 
 /**

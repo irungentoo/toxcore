@@ -745,7 +745,7 @@ int main(int argc, char** argv) {
             {
                 EventTypeTrivial{"uint32_t", "group_number"},
                 EventTypeTrivial{"uint32_t", "peer_id"},
-                EventTypeTrivial{"Tox_Message_Type", "type"},
+                EventTypeTrivial{"Tox_Message_Type", "message_type"},
                 EventTypeByteRange{"message", "message_length", "message_length"},
                 EventTypeTrivial{"uint32_t", "message_id"},
             }
@@ -755,7 +755,7 @@ int main(int argc, char** argv) {
             {
                 EventTypeTrivial{"uint32_t", "group_number"},
                 EventTypeTrivial{"uint32_t", "peer_id"},
-                EventTypeTrivial{"Tox_Message_Type", "type"},
+                EventTypeTrivial{"Tox_Message_Type", "message_type"},
                 EventTypeByteRange{"message", "message_length", "message_length"},
                 EventTypeTrivial{"uint32_t", "message_id"},
             }

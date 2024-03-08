@@ -248,7 +248,7 @@ uint32_t tox_event_group_message_get_group_number(
     const Tox_Event_Group_Message *group_message);
 uint32_t tox_event_group_message_get_peer_id(
     const Tox_Event_Group_Message *group_message);
-Tox_Message_Type tox_event_group_message_get_type(
+Tox_Message_Type tox_event_group_message_get_message_type(
     const Tox_Event_Group_Message *group_message);
 const uint8_t *tox_event_group_message_get_message(
     const Tox_Event_Group_Message *group_message);
@@ -262,7 +262,7 @@ uint32_t tox_event_group_private_message_get_group_number(
     const Tox_Event_Group_Private_Message *group_private_message);
 uint32_t tox_event_group_private_message_get_peer_id(
     const Tox_Event_Group_Private_Message *group_private_message);
-Tox_Message_Type tox_event_group_private_message_get_type(
+Tox_Message_Type tox_event_group_private_message_get_message_type(
     const Tox_Event_Group_Private_Message *group_private_message);
 const uint8_t *tox_event_group_private_message_get_message(
     const Tox_Event_Group_Private_Message *group_private_message);
