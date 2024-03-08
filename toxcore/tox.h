@@ -4094,11 +4094,11 @@ bool tox_group_peer_get_public_key(
  * @param group_number The group number of the group the name change is intended for.
  * @param peer_id The ID of the peer who has changed their name.
  * @param name The name data.
- * @param length The length of the name.
+ * @param name_length The length of the name.
  */
 typedef void tox_group_peer_name_cb(
     Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id,
-    const uint8_t name[], size_t length, void *user_data);
+    const uint8_t name[], size_t name_length, void *user_data);
 
 /**
  * Set the callback for the `group_peer_name` event. Pass NULL to unset.
@@ -4235,11 +4235,11 @@ bool tox_group_get_topic(
  * @param peer_id The ID of the peer who changed the topic. If the peer who set the topic
  *   is not present in our peer list this value will be set to 0.
  * @param topic The topic data.
- * @param length The topic length.
+ * @param topic_length The topic length.
  */
 typedef void tox_group_topic_cb(
     Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id,
-    const uint8_t topic[], size_t length,
+    const uint8_t topic[], size_t topic_length,
     void *user_data);
 
 /**
@@ -4416,11 +4416,11 @@ bool tox_group_get_password(
 /**
  * @param group_number The group number of the group for which the password has changed.
  * @param password The new group password.
- * @param length The length of the password.
+ * @param password_length The length of the password.
  */
 typedef void tox_group_password_cb(
     Tox *tox, Tox_Group_Number group_number,
-    const uint8_t password[], size_t length,
+    const uint8_t password[], size_t password_length,
     void *user_data);
 
 /**
@@ -4731,12 +4731,12 @@ bool tox_group_send_custom_private_packet(const Tox *tox, Tox_Group_Number group
  * @param peer_id The ID of the peer who sent the message.
  * @param type The type of message (normal, action, ...).
  * @param message The message data.
+ * @param message_length The length of the message.
  * @param message_id A pseudo message id that clients can use to uniquely identify this group message.
- * @param length The length of the message.
  */
 typedef void tox_group_message_cb(
     Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Message_Type type,
-    const uint8_t message[], size_t length, Tox_Group_Message_Id message_id, void *user_data);
+    const uint8_t message[], size_t message_length, Tox_Group_Message_Id message_id, void *user_data);
 
 /**
  * Set the callback for the `group_message` event. Pass NULL to unset.
@@ -4749,11 +4749,12 @@ void tox_callback_group_message(Tox *tox, tox_group_message_cb *callback);
  * @param group_number The group number of the group the private message is intended for.
  * @param peer_id The ID of the peer who sent the private message.
  * @param message The message data.
- * @param length The length of the message.
+ * @param message_length The length of the message.
+ * @param message_id A pseudo message id that clients can use to uniquely identify this group message.
  */
 typedef void tox_group_private_message_cb(
     Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id, Tox_Message_Type type,
-    const uint8_t message[], size_t length, Tox_Group_Message_Id message_id, void *user_data);
+    const uint8_t message[], size_t message_length, Tox_Group_Message_Id message_id, void *user_data);
 
 /**
  * Set the callback for the `group_private_message` event. Pass NULL to unset.
@@ -4766,11 +4767,11 @@ void tox_callback_group_private_message(Tox *tox, tox_group_private_message_cb *
  * @param group_number The group number of the group the packet is intended for.
  * @param peer_id The ID of the peer who sent the packet.
  * @param data The packet data.
- * @param length The length of the data.
+ * @param data_length The length of the data.
  */
 typedef void tox_group_custom_packet_cb(
     Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id,
-    const uint8_t data[], size_t length, void *user_data);
+    const uint8_t data[], size_t data_length, void *user_data);
 
 /**
  * Set the callback for the `group_custom_packet` event. Pass NULL to unset.
@@ -4783,11 +4784,11 @@ void tox_callback_group_custom_packet(Tox *tox, tox_group_custom_packet_cb *call
  * @param group_number The group number of the group the packet is intended for.
  * @param peer_id The ID of the peer who sent the packet.
  * @param data The packet data.
- * @param length The length of the data.
+ * @param data_length The length of the data.
  */
 typedef void tox_group_custom_private_packet_cb(
     Tox *tox, Tox_Group_Number group_number, Tox_Group_Peer_Number peer_id,
-    const uint8_t data[], size_t length, void *user_data);
+    const uint8_t data[], size_t data_length, void *user_data);
 
 /**
  * Set the callback for the `group_custom_private_packet` event. Pass NULL to unset.
@@ -4923,11 +4924,11 @@ Tox_Group_Number tox_group_invite_accept(
 /**
  * @param friend_number The friend number of the contact who sent the invite.
  * @param invite_data The invite data.
- * @param length The length of invite_data.
+ * @param invite_data_length The length of invite_data.
  */
 typedef void tox_group_invite_cb(
     Tox *tox, Tox_Friend_Number friend_number,
-    const uint8_t invite_data[], size_t length,
+    const uint8_t invite_data[], size_t invite_data_length,
     const uint8_t group_name[], size_t group_name_length,
     void *user_data);
 

@@ -220,7 +220,7 @@ static Tox_Event_Group_Topic *tox_event_group_topic_alloc(void *user_data)
  *****************************************************/
 
 void tox_events_handle_group_topic(
-    Tox *tox, uint32_t group_number, uint32_t peer_id, const uint8_t *topic, size_t length,
+    Tox *tox, uint32_t group_number, uint32_t peer_id, const uint8_t *topic, size_t topic_length,
     void *user_data)
 {
     Tox_Event_Group_Topic *group_topic = tox_event_group_topic_alloc(user_data);
@@ -231,5 +231,5 @@ void tox_events_handle_group_topic(
 
     tox_event_group_topic_set_group_number(group_topic, group_number);
     tox_event_group_topic_set_peer_id(group_topic, peer_id);
-    tox_event_group_topic_set_topic(group_topic, topic, length);
+    tox_event_group_topic_set_topic(group_topic, topic, topic_length);
 }

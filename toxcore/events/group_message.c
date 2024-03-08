@@ -254,7 +254,7 @@ static Tox_Event_Group_Message *tox_event_group_message_alloc(void *user_data)
  *****************************************************/
 
 void tox_events_handle_group_message(
-    Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Message_Type type, const uint8_t *message, size_t length, uint32_t message_id,
+    Tox *tox, uint32_t group_number, uint32_t peer_id, Tox_Message_Type type, const uint8_t *message, size_t message_length, uint32_t message_id,
     void *user_data)
 {
     Tox_Event_Group_Message *group_message = tox_event_group_message_alloc(user_data);
@@ -266,6 +266,6 @@ void tox_events_handle_group_message(
     tox_event_group_message_set_group_number(group_message, group_number);
     tox_event_group_message_set_peer_id(group_message, peer_id);
     tox_event_group_message_set_type(group_message, type);
-    tox_event_group_message_set_message(group_message, message, length);
+    tox_event_group_message_set_message(group_message, message, message_length);
     tox_event_group_message_set_message_id(group_message, message_id);
 }

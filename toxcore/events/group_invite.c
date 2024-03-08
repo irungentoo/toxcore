@@ -248,7 +248,7 @@ static Tox_Event_Group_Invite *tox_event_group_invite_alloc(void *user_data)
  *****************************************************/
 
 void tox_events_handle_group_invite(
-    Tox *tox, uint32_t friend_number, const uint8_t *invite_data, size_t length, const uint8_t *group_name, size_t group_name_length,
+    Tox *tox, uint32_t friend_number, const uint8_t *invite_data, size_t invite_data_length, const uint8_t *group_name, size_t group_name_length,
     void *user_data)
 {
     Tox_Event_Group_Invite *group_invite = tox_event_group_invite_alloc(user_data);
@@ -258,6 +258,6 @@ void tox_events_handle_group_invite(
     }
 
     tox_event_group_invite_set_friend_number(group_invite, friend_number);
-    tox_event_group_invite_set_invite_data(group_invite, invite_data, length);
+    tox_event_group_invite_set_invite_data(group_invite, invite_data, invite_data_length);
     tox_event_group_invite_set_group_name(group_invite, group_name, group_name_length);
 }

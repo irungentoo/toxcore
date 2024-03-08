@@ -220,7 +220,7 @@ static Tox_Event_Group_Custom_Private_Packet *tox_event_group_custom_private_pac
  *****************************************************/
 
 void tox_events_handle_group_custom_private_packet(
-    Tox *tox, uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t length,
+    Tox *tox, uint32_t group_number, uint32_t peer_id, const uint8_t *data, size_t data_length,
     void *user_data)
 {
     Tox_Event_Group_Custom_Private_Packet *group_custom_private_packet = tox_event_group_custom_private_packet_alloc(user_data);
@@ -231,5 +231,5 @@ void tox_events_handle_group_custom_private_packet(
 
     tox_event_group_custom_private_packet_set_group_number(group_custom_private_packet, group_number);
     tox_event_group_custom_private_packet_set_peer_id(group_custom_private_packet, peer_id);
-    tox_event_group_custom_private_packet_set_data(group_custom_private_packet, data, length);
+    tox_event_group_custom_private_packet_set_data(group_custom_private_packet, data, data_length);
 }
