@@ -1587,7 +1587,7 @@ void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *callback);
 /**
  * @brief Return the length of the friend's status message.
  *
- * If the friend number isinvalid, the return value is SIZE_MAX.
+ * If the friend number is invalid, the return value is SIZE_MAX.
  */
 size_t tox_friend_get_status_message_size(
     const Tox *tox, Tox_Friend_Number friend_number, Tox_Err_Friend_Query *error);
@@ -2260,7 +2260,7 @@ const char *tox_err_file_send_to_string(Tox_Err_File_Send value);
  * - If the file size was decreased
  *   - and sending mode was streaming, the behaviour is as expected.
  *   - and sending mode was file, the callback will return 0 at the new
- *     (earlier) end-of-file, signalling to the friend that the transfer was
+ *     (earlier) end-of-file, signaling to the friend that the transfer was
  *     cancelled.
  * - If the file contents were modified
  *   - at a position before the current read, the two files (local and remote)
@@ -4376,7 +4376,7 @@ uint32_t tox_group_get_number_groups(const Tox *tox);
  * The value returned is equal to the data received by the last
  * `group_privacy_state` callback.
  *
- * @see the `Group chat founder controls` section for the respective set
+ * @see the `Group chat Founder controls` section for the respective set
  *   function.
  */
 Tox_Group_Privacy_State tox_group_get_privacy_state(const Tox *tox, Tox_Group_Number group_number,
@@ -4404,7 +4404,7 @@ void tox_callback_group_privacy_state(Tox *tox, tox_group_privacy_state_cb *call
  * The value returned is equal to the data received by the last
  * `group_voice_state` callback.
  *
- * @see the `Group chat founder controls` section for the respective set
+ * @see the `Group chat Founder controls` section for the respective set
  *   function.
  */
 Tox_Group_Voice_State tox_group_get_voice_state(const Tox *tox, Tox_Group_Number group_number,
@@ -4433,7 +4433,7 @@ void tox_callback_group_voice_state(Tox *tox, tox_group_voice_state_cb *callback
  * The value returned is equal to the data received by the last
  * `group_topic_lock` callback.
  *
- * @see the `Group chat founder contols` section for the respective set
+ * @see the `Group chat Founder controls` section for the respective set
  *   function.
  */
 Tox_Group_Topic_Lock tox_group_get_topic_lock(const Tox *tox, Tox_Group_Number group_number,
@@ -4461,7 +4461,7 @@ void tox_callback_group_topic_lock(Tox *tox, tox_group_topic_lock_cb *callback);
  * The value returned is equal to the data received by the last
  * `group_peer_limit` callback.
  *
- * @see the `Group chat founder controls` section for the respective set
+ * @see the `Group chat Founder controls` section for the respective set
  *   function.
  */
 uint16_t tox_group_get_peer_limit(const Tox *tox, Tox_Group_Number group_number, Tox_Err_Group_State_Query *error);

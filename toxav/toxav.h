@@ -39,7 +39,7 @@
  * ToxAV thread (see above). Audio and video receive frame events are triggered
  * from ToxAV thread while all the other events are triggered from Tox thread.
  *
- * Tox thread has priority with mutex mechanisms. Any api function can
+ * Tox thread has priority with mutex mechanisms. Any API function can
  * fail if mutexes are held by Tox thread in which case they will set SYNC
  * error code.
  *
@@ -566,7 +566,7 @@ typedef enum Toxav_Err_Send_Frame {
     TOXAV_ERR_SEND_FRAME_PAYLOAD_TYPE_DISABLED,
 
     /**
-     * Failed to push frame through rtp interface.
+     * Failed to push frame through RTP interface.
      */
     TOXAV_ERR_SEND_FRAME_RTP_FAILED,
 
@@ -588,7 +588,7 @@ typedef enum Toxav_Err_Send_Frame {
  *   `sample_count * channels`.
  * @param sample_count Number of samples in this frame. Valid numbers here are
  *   `((sample rate) * (audio length) / 1000)`, where audio length can be
- *   2.5, 5, 10, 20, 40 or 60 millseconds.
+ *   2.5, 5, 10, 20, 40 or 60 milliseconds.
  * @param channels Number of audio channels. Supported values are 1 and 2.
  * @param sampling_rate Audio sampling rate used in this frame. Valid sampling
  *   rates are 8000, 12000, 16000, 24000, or 48000.

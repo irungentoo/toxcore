@@ -154,7 +154,7 @@ uint16_t tox_dht_get_num_closelist(const Tox *tox);
 
 /**
  * This function returns the number of DHT nodes in the closelist,
- * that are capable to store annouce data (introduced in version 0.2.18).
+ * that are capable to store announce data (introduced in version 0.2.18).
  *
  * @return number
  */
