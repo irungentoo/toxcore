@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2016-2020 The TokTok team.
+ * Copyright © 2016-2024 The TokTok team.
  * Copyright © 2013 Tox project.
  */
 
@@ -98,7 +98,7 @@ typedef enum Tox_Err_Dht_Get_Nodes {
     TOX_ERR_DHT_GET_NODES_OK,
 
     /**
-     * UDP is disabled in tox options; the DHT can only be queried when UDP is enabled.
+     * UDP is disabled in Tox options; the DHT can only be queried when UDP is enabled.
      */
     TOX_ERR_DHT_GET_NODES_UDP_DISABLED,
 

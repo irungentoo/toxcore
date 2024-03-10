@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2016-2018 The TokTok team.
+ * Copyright © 2016-2024 The TokTok team.
  * Copyright © 2013-2015 Tox project.
  */
 
@@ -24,22 +24,22 @@
  * @section av_threading Threading implications
  *
  * Only toxav_iterate is thread-safe, all other functions must run from the
- * tox thread.
+ * Tox thread.
  *
  * Important exceptions are the `*_iterate` and `*_iterate_interval`
  * functions. You have to choose either the single thread or the multi thread
  * functions and read their documentation.
  *
  * A common way to run ToxAV (multiple or single instance) is to have a thread,
- * separate from tox instance thread, running a simple toxav_iterate loop,
+ * separate from Tox instance thread, running a simple toxav_iterate loop,
  * sleeping for `toxav_iteration_interval * milliseconds` on each iteration.
  *
- * An important thing to note is that events are triggered from both tox and
- * toxav thread (see above). Audio and video receive frame events are triggered
- * from toxav thread while all the other events are triggered from tox thread.
+ * An important thing to note is that events are triggered from both Tox and
+ * ToxAV thread (see above). Audio and video receive frame events are triggered
+ * from ToxAV thread while all the other events are triggered from Tox thread.
  *
  * Tox thread has priority with mutex mechanisms. Any api function can
- * fail if mutexes are held by tox thread in which case they will set SYNC
+ * fail if mutexes are held by Tox thread in which case they will set SYNC
  * error code.
  *
  * @subsection av_multi_threading Separate audio and video threads
@@ -737,7 +737,7 @@ void toxav_callback_video_receive_frame(ToxAV *av, toxav_video_receive_frame_cb 
 #ifndef APIGEN_IGNORE
 
 /***
- * NOTE Compatibility with old toxav group calls. TODO(iphydf): remove
+ * NOTE Compatibility with old ToxAV group calls. TODO(iphydf): remove
  *
  * TODO(iphydf): Use proper new API guidelines for these. E.g. don't use inline
  * function types, don't have per-callback userdata, especially don't have one
@@ -751,7 +751,7 @@ typedef void toxav_group_audio_cb(Tox *tox, uint32_t groupnumber, uint32_t peern
 typedef void toxav_audio_data_cb(void *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t pcm[],
                                  uint32_t samples, uint8_t channels, uint32_t sample_rate, void *userdata);
 
-/** @brief Create a new toxav group.
+/** @brief Create a new ToxAV group.
  *
  * @return group number on success.
  * @retval -1 on failure.

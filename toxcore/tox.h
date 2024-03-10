@@ -642,7 +642,7 @@ struct Tox_Options {
     size_t savedata_length;
 
     /**
-     * Logging callback for the new tox instance.
+     * Logging callback for the new Tox instance.
      */
     tox_log_cb *log_callback;
 
@@ -905,7 +905,7 @@ Tox *tox_new(const Tox_Options *options, Tox_Err_New *error);
 void tox_kill(Tox *tox);
 
 /**
- * @brief Calculates the number of bytes required to store the tox instance with
+ * @brief Calculates the number of bytes required to store the Tox instance with
  *   tox_get_savedata.
  *
  * This function cannot fail. The result is always greater than 0.
@@ -915,11 +915,12 @@ void tox_kill(Tox *tox);
 size_t tox_get_savedata_size(const Tox *tox);
 
 /**
- * @brief Store all information associated with the tox instance to a byte array.
+ * @brief Store all information associated with the Tox instance to a byte
+ *   array.
  *
- * @param savedata A memory region large enough to store the tox instance
- *   data. Call tox_get_savedata_size to find the number of bytes required. If this parameter
- *   is NULL, this function has no effect.
+ * @param savedata A memory region large enough to store the Tox instance
+ *   data. Call tox_get_savedata_size to find the number of bytes required. If
+ *   this parameter is NULL, this function has no effect.
  */
 void tox_get_savedata(const Tox *tox, uint8_t savedata[]);
 
