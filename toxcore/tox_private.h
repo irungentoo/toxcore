@@ -78,7 +78,7 @@ uint32_t tox_dht_node_public_key_size(void);
 
 /**
  * @param public_key The node's public key.
- * @param ip The node's IP address, represented as a NULL terminated string.
+ * @param ip The node's IP address, represented as a NUL-terminated C string.
  * @param port The node's port.
  */
 typedef void tox_dht_get_nodes_response_cb(Tox *tox, const uint8_t *public_key, const char *ip, uint16_t port,
@@ -132,8 +132,8 @@ typedef enum Tox_Err_Dht_Get_Nodes {
  *
  * @param public_key The public key of the node that we wish to query. This key
  *   must be at least `TOX_DHT_NODE_PUBLIC_KEY_SIZE` bytes in length.
- * @param ip A NULL terminated string representing the IP address of the node we
- *   wish to query.
+ * @param ip A NUL-terminated C string representing the IP address of the node
+ *   we wish to query.
  * @param port The port of the node we wish to query.
  * @param target_public_key The public key for which we want to find close
  *   nodes.
