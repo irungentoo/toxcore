@@ -459,13 +459,12 @@ typedef enum Tox_Log_Level {
     TOX_LOG_LEVEL_INFO,
 
     /**
-     * Warnings about events_alloc inconsistency or logic errors.
+     * Warnings about internal inconsistency or logic errors.
      */
     TOX_LOG_LEVEL_WARNING,
 
     /**
-     * Severe unexpected errors caused by external or events_alloc
-     * inconsistency.
+     * Severe unexpected errors caused by external or internal inconsistency.
      */
     TOX_LOG_LEVEL_ERROR,
 
@@ -474,7 +473,7 @@ typedef enum Tox_Log_Level {
 const char *tox_log_level_to_string(Tox_Log_Level value);
 
 /**
- * @brief This event is triggered when the toxcore library logs an events_alloc
+ * @brief This event is triggered when the toxcore library logs an internal
  *   message.
  *
  * This is mostly useful for debugging. This callback can be called from any
@@ -834,7 +833,7 @@ typedef enum Tox_Err_New {
 
     /**
      * The function was unable to allocate enough memory to store the
-     * events_alloc structures for the Tox object.
+     * internal structures for the Tox object.
      */
     TOX_ERR_NEW_MALLOC,
 
@@ -1921,7 +1920,7 @@ typedef uint32_t Tox_File_Number;
  * If hash is NULL or data is NULL while length is not 0 the function returns
  * false, otherwise it returns true.
  *
- * This function is a wrapper to events_alloc message-digest functions.
+ * This function is a wrapper to internal message-digest functions.
  *
  * @param hash A valid memory location the hash data. It must be at least
  *   TOX_HASH_LENGTH bytes in size.
