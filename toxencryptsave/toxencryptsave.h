@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2016-2018 The TokTok team.
+ * Copyright © 2016-2024 The TokTok team.
  * Copyright © 2013-2016 Tox Developers.
  */
 
@@ -165,9 +165,9 @@ typedef enum Tox_Err_Decryption {
 /**
  * Encrypts the given data with the given passphrase.
  *
- * The output array must be at least `plaintext_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH`
- * bytes long. This delegates to tox_pass_key_derive and
- * tox_pass_key_encrypt.
+ * The output array must be at least
+ * `plaintext_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH` bytes long. This delegates
+ * to tox_pass_key_derive and tox_pass_key_encrypt.
  *
  * @param plaintext A byte array of length `plaintext_len`.
  * @param plaintext_len The length of the plain text array. Bigger than 0.
@@ -183,11 +183,13 @@ bool tox_pass_encrypt(const uint8_t plaintext[], size_t plaintext_len, const uin
 /**
  * Decrypts the given data with the given passphrase.
  *
- * The output array must be at least `ciphertext_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH`
- * bytes long. This delegates to tox_pass_key_decrypt.
+ * The output array must be at least
+ * `ciphertext_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH` bytes long. This
+ * delegates to tox_pass_key_decrypt.
  *
  * @param ciphertext A byte array of length `ciphertext_len`.
- * @param ciphertext_len The length of the cipher text array. At least TOX_PASS_ENCRYPTION_EXTRA_LENGTH.
+ * @param ciphertext_len The length of the cipher text array. At least
+ *   TOX_PASS_ENCRYPTION_EXTRA_LENGTH.
  * @param passphrase The user-provided password. Can be empty.
  * @param passphrase_len The length of the password.
  * @param plaintext The plain text array to write the decrypted data to.
@@ -215,7 +217,8 @@ bool tox_pass_decrypt(const uint8_t ciphertext[], size_t ciphertext_len, const u
  * user-provided password.
  *
  * The Tox_Pass_Key structure is hidden in the implementation. It can be created
- * using tox_pass_key_derive or tox_pass_key_derive_with_salt and must be deallocated using tox_pass_key_free.
+ * using tox_pass_key_derive or tox_pass_key_derive_with_salt and must be
+ * deallocated using tox_pass_key_free.
  */
 #ifndef TOX_PASS_KEY_DEFINED
 #define TOX_PASS_KEY_DEFINED
@@ -261,10 +264,11 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(
     const uint8_t salt[TOX_PASS_SALT_LENGTH], Tox_Err_Key_Derivation *error);
 
 /**
- * Encrypt a plain text with a key produced by tox_pass_key_derive or tox_pass_key_derive_with_salt.
+ * Encrypt a plain text with a key produced by tox_pass_key_derive or
+ * tox_pass_key_derive_with_salt.
  *
- * The output array must be at least `plaintext_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH`
- * bytes long.
+ * The output array must be at least
+ * `plaintext_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH` bytes long.
  *
  * @param plaintext A byte array of length `plaintext_len`.
  * @param plaintext_len The length of the plain text array. Bigger than 0.
@@ -280,7 +284,8 @@ bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t plaintext[], si
  * tox_pass_key_derive or tox_pass_key_derive_with_salt.
  *
  * @param ciphertext A byte array of length `ciphertext_len`.
- * @param ciphertext_len The length of the cipher text array. At least TOX_PASS_ENCRYPTION_EXTRA_LENGTH.
+ * @param ciphertext_len The length of the cipher text array. At least
+ *   TOX_PASS_ENCRYPTION_EXTRA_LENGTH.
  * @param plaintext The plain text array to write the decrypted data to.
  *
  * @return true on success.
@@ -315,7 +320,8 @@ typedef enum Tox_Err_Get_Salt {
  * produce the same key as was previously used. Any data encrypted with this
  * module can be used as input.
  *
- * The cipher text must be at least TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes in length.
+ * The cipher text must be at least TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes in
+ * length.
  * The salt must be TOX_PASS_SALT_LENGTH bytes in length.
  * If the passed byte arrays are smaller than required, the behaviour is
  * undefined.
