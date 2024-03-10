@@ -12,14 +12,14 @@
  *
  * @section av_events Events and callbacks
  *
- * As in Core API, events are handled by callbacks. One callback can be
+ * As in the toxcore API, events are handled by callbacks. One callback can be
  * registered per event. All events have a callback function type named
  * `toxav_{event}_cb` and a function to register it named
  * `toxav_callback_{event}`. Passing a NULL callback will result in no callback
  * being registered for that event. Only one callback per event can be
  * registered, so if a client needs multiple event listeners, it needs to
- * implement the dispatch functionality itself. Unlike Core API, lack of some
- * event handlers will cause the the library to drop calls before they are
+ * implement the dispatch functionality itself. Unlike the toxcore API, lack of
+ * some event handlers will cause the the library to drop calls before they are
  * started. Hanging up call from a callback causes undefined behaviour.
  *
  * @section av_threading Threading implications
@@ -609,8 +609,8 @@ bool toxav_audio_set_bit_rate(ToxAV *av, uint32_t friend_number, uint32_t bit_ra
 
 /**
  * The function type for the audio_bit_rate callback. The event is triggered
- * when the network becomes too saturated for current bit rates at which
- * point core suggests new bit rates.
+ * when the network becomes too saturated for current bit rates at which point
+ * ToxAV suggests new bit rates.
  *
  * @param friend_number The friend number of the friend for which to set the
  *   bit rate.
@@ -659,8 +659,8 @@ bool toxav_video_set_bit_rate(ToxAV *av, uint32_t friend_number, uint32_t bit_ra
 
 /**
  * The function type for the video_bit_rate callback. The event is triggered
- * when the network becomes too saturated for current bit rates at which
- * point core suggests new bit rates.
+ * when the network becomes too saturated for current bit rates at which point
+ * ToxAV suggests new bit rates.
  *
  * @param friend_number The friend number of the friend for which to set the
  *   bit rate.
