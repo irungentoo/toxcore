@@ -78,7 +78,7 @@ uint32_t tox_dht_node_public_key_size(void);
 
 /**
  * @param public_key The node's public key.
- * @param ip The node's IP address, represented as a null terminated string.
+ * @param ip The node's IP address, represented as a NULL terminated string.
  * @param port The node's port.
  */
 typedef void tox_dht_get_nodes_response_cb(Tox *tox, const uint8_t *public_key, const char *ip, uint16_t port,

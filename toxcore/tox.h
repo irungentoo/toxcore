@@ -4071,8 +4071,8 @@ Tox_Connection tox_group_peer_get_connection_status(const Tox *tox, Tox_Group_Nu
  * This key will be permanently tied to a particular peer until they explicitly leave the group and is
  * the only way to reliably identify the same peer across client restarts.
  *
- * `public_key` should have room for at least TOX_GROUP_PEER_PUBLIC_KEY_SIZE bytes. If `public_key` is null
- * this function has no effect.
+ * `public_key` should have room for at least TOX_GROUP_PEER_PUBLIC_KEY_SIZE
+ * bytes. If `public_key` is NULL this function has no effect.
  *
  * @param group_number The group number of the group we wish to query.
  * @param peer_id The ID of the peer whose public key we wish to retrieve.
@@ -4449,7 +4449,7 @@ typedef enum Tox_Err_Group_Send_Message {
     TOX_ERR_GROUP_SEND_MESSAGE_TOO_LONG,
 
     /**
-     * The message pointer is null or length is zero.
+     * The message pointer is NULL or length is zero.
      */
     TOX_ERR_GROUP_SEND_MESSAGE_EMPTY,
 
@@ -4524,7 +4524,7 @@ typedef enum Tox_Err_Group_Send_Private_Message {
     TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_TOO_LONG,
 
     /**
-     * The message pointer is null or length is zero.
+     * The message pointer is NULL or length is zero.
      */
     TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_EMPTY,
 
@@ -4596,7 +4596,7 @@ typedef enum Tox_Err_Group_Send_Custom_Packet {
     TOX_ERR_GROUP_SEND_CUSTOM_PACKET_TOO_LONG,
 
     /**
-     * The message pointer is null or length is zero.
+     * The message pointer is NULL or length is zero.
      */
     TOX_ERR_GROUP_SEND_CUSTOM_PACKET_EMPTY,
 
@@ -4664,7 +4664,7 @@ typedef enum Tox_Err_Group_Send_Custom_Private_Packet {
     TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_TOO_LONG,
 
     /**
-     * The message pointer is null or length is zero.
+     * The message pointer is NULL or length is zero.
      */
     TOX_ERR_GROUP_SEND_CUSTOM_PRIVATE_PACKET_EMPTY,
 
