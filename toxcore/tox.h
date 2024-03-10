@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright © 2016-2018 The TokTok team.
+ * Copyright © 2016-2024 The TokTok team.
  * Copyright © 2013 Tox project.
  */
 
@@ -52,17 +52,9 @@
  * event listeners, it needs to implement the dispatch functionality itself.
  *
  * The last argument to a callback is the user data pointer. It is passed from
- * tox_iterate to each callback in sequence.
- *
- * The user data pointer is never stored or dereferenced by any library code, so
- * can be any pointer, including NULL. Callbacks must all operate on the same
- * object type. In the apidsl code (tox.in.h), this is denoted with `any`. The
- * `any` in tox_iterate must be the same `any` as in all callbacks. In C,
- * lacking parametric polymorphism, this is a pointer to void.
- *
- * Old style callbacks that are registered together with a user data pointer
- * receive that pointer as argument when they are called. They can each have
- * their own user data pointer of their own type.
+ * tox_iterate to each callback in sequence. The user data pointer is never
+ * stored or dereferenced by any library code, so can be any pointer, including
+ * NULL.
  *
  * @section threading Threading implications
  *
@@ -1071,8 +1063,10 @@ void tox_callback_self_connection_status(Tox *tox, tox_self_connection_status_cb
 uint32_t tox_iteration_interval(const Tox *tox);
 
 /**
- * @brief The main loop that needs to be run in intervals of `tox_iteration_interval()`
- *   milliseconds.
+ * @brief The main loop that needs to be run in intervals of
+ *   `tox_iteration_interval()` milliseconds.
+ * @param user_data Any pointer a client wishes the Tox instance to pass into
+ *   the event callbacks, including NULL.
  */
 void tox_iterate(Tox *tox, void *user_data);
 
