@@ -4888,9 +4888,9 @@ typedef enum Tox_Err_Group_Invite_Accept {
     TOX_ERR_GROUP_INVITE_ACCEPT_PASSWORD,
 
     /**
-     * There was a core error when initiating the group.
+     * The friend number passed did not designate a valid friend.
      */
-    TOX_ERR_GROUP_INVITE_ACCEPT_CORE,
+    TOX_ERR_GROUP_INVITE_ACCEPT_FRIEND_NOT_FOUND,
 
     /**
      * Packet failed to send.
