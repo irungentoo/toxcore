@@ -712,7 +712,8 @@ static int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
                       length - cookie_len, STATE_COOKIE_TYPE);
 }
 
-Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
+nullable(1, 2, 3)
+static Tox *tox_new_system(const struct Tox_Options *options, Tox_Err_New *error, const Tox_System *sys)
 {
     struct Tox_Options *default_options = nullptr;
 
@@ -736,7 +737,6 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     const struct Tox_Options *const opts = options != nullptr ? options : default_options;
     assert(opts != nullptr);
 
-    const Tox_System *sys = tox_options_get_operating_system(opts);
     const Tox_System default_system = tox_default_system();
 
     if (sys == nullptr) {
@@ -1018,6 +1018,37 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
     tox_options_free(default_options);
     return tox;
+}
+
+Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
+{
+    return tox_new_system(options, error, nullptr);
+}
+
+Tox *tox_new_testing(const Tox_Options *options, Tox_Err_New *error, const Tox_Options_Testing *testing, Tox_Err_New_Testing *testing_error)
+{
+    if (testing == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_NULL);
+        SET_ERROR_PARAMETER(testing_error, TOX_ERR_NEW_TESTING_NULL);
+        return nullptr;
+    }
+
+    if (testing->operating_system == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_NULL);
+        SET_ERROR_PARAMETER(testing_error, TOX_ERR_NEW_TESTING_NULL);
+        return nullptr;
+    }
+
+    const Tox_System *sys = testing->operating_system;
+
+    if (sys->rng == nullptr || sys->ns == nullptr || sys->mem == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_NULL);
+        SET_ERROR_PARAMETER(testing_error, TOX_ERR_NEW_TESTING_NULL);
+        return nullptr;
+    }
+
+    SET_ERROR_PARAMETER(testing_error, TOX_ERR_NEW_TESTING_OK);
+    return tox_new_system(options, error, sys);
 }
 
 void tox_kill(Tox *tox)

@@ -497,15 +497,6 @@ typedef void tox_log_cb(Tox *tox, Tox_Log_Level level, const char *file, uint32_
                         const char *message, void *user_data);
 
 /**
- * @brief Operating system functions used by Tox.
- *
- * This struct is opaque and generally shouldn't be used in clients, but in
- * combination with tox_private.h, it allows tests to inject non-IO (hermetic)
- * versions of low level network, RNG, and time keeping functions.
- */
-typedef struct Tox_System Tox_System;
-
-/**
  * @brief This struct contains all the startup options for Tox.
  *
  * You must tox_options_new to allocate an object of this type.
@@ -666,12 +657,6 @@ struct Tox_Options {
     bool experimental_thread_safety;
 
     /**
-     * Low level operating system functionality such as send/recv, random
-     * number generation, and memory allocation.
-     */
-    const Tox_System *operating_system;
-
-    /**
      * Enable saving DHT-based group chats to Tox save data (via
      * `tox_get_savedata`). This format will change in the future, so don't rely
      * on it.
@@ -752,10 +737,6 @@ void tox_options_set_log_user_data(Tox_Options *options, void *log_user_data);
 bool tox_options_get_experimental_thread_safety(const Tox_Options *options);
 
 void tox_options_set_experimental_thread_safety(Tox_Options *options, bool experimental_thread_safety);
-
-const Tox_System *tox_options_get_operating_system(const Tox_Options *options);
-
-void tox_options_set_operating_system(Tox_Options *options, const Tox_System *operating_system);
 
 bool tox_options_get_experimental_groups_persistence(const Tox_Options *options);
 

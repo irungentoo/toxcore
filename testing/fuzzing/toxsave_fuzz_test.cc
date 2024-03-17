@@ -20,14 +20,15 @@ void TestSaveDataLoading(Fuzz_Data &input)
     const size_t savedata_size = input.size();
     CONSUME_OR_RETURN(const uint8_t *savedata, input, savedata_size);
 
-    Null_System sys;
-    tox_options_set_operating_system(tox_options, sys.sys.get());
-
     // pass test data to Tox
     tox_options_set_savedata_data(tox_options, savedata, savedata_size);
     tox_options_set_savedata_type(tox_options, TOX_SAVEDATA_TYPE_TOX_SAVE);
 
-    Tox *tox = tox_new(tox_options, nullptr);
+    Tox_Options_Testing tox_options_testing;
+    Null_System sys;
+    tox_options_testing.operating_system = sys.sys.get();
+
+    Tox *tox = tox_new_testing(tox_options, nullptr, &tox_options_testing, nullptr);
     tox_options_free(tox_options);
     if (tox == nullptr) {
         // Tox save was invalid, we're finished here

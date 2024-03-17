@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "../../toxcore/tox.h"
+#include "../../toxcore/tox_private.h"
 
 struct Fuzz_Data {
     static constexpr bool DEBUG = false;

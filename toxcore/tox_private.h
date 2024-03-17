@@ -18,20 +18,31 @@ extern "C" {
 
 typedef uint64_t tox_mono_time_cb(void *user_data);
 
-struct Tox_System {
+typedef struct Tox_System {
     tox_mono_time_cb *mono_time_callback;
     void *mono_time_user_data;
     const struct Random *rng;
     const struct Network *ns;
     const struct Memory *mem;
-};
+} Tox_System;
 
 Tox_System tox_default_system(void);
 
+const Tox_System *tox_get_system(Tox *tox);
+
+typedef struct Tox_Options_Testing {
+    const struct Tox_System *operating_system;
+} Tox_Options_Testing;
+
+typedef enum Tox_Err_New_Testing {
+    TOX_ERR_NEW_TESTING_OK,
+    TOX_ERR_NEW_TESTING_NULL,
+} Tox_Err_New_Testing;
+
+Tox *tox_new_testing(const Tox_Options *options, Tox_Err_New *error, const Tox_Options_Testing *testing, Tox_Err_New_Testing *testing_error);
+
 void tox_lock(const Tox *tox);
 void tox_unlock(const Tox *tox);
-
-const Tox_System *tox_get_system(Tox *tox);
 
 /**
  * Set the callback for the `friend_lossy_packet` event for a specific packet

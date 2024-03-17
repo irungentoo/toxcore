@@ -195,13 +195,16 @@ void RecordBootstrap(const char *init, const char *bootstrap)
         });
 
     Tox_Err_New error_new;
+    Tox_Err_New_Testing error_new_testing;
+    Tox_Options_Testing tox_options_testing;
 
     Record_System sys1(global, 4, "tox1");  // fair dice roll
     tox_options_set_log_user_data(opts, &sys1);
-    tox_options_set_operating_system(opts, sys1.sys.get());
-    Tox *tox1 = tox_new(opts, &error_new);
+    tox_options_testing.operating_system = sys1.sys.get();
+    Tox *tox1 = tox_new_testing(opts, &error_new, &tox_options_testing, &error_new_testing);
     assert(tox1 != nullptr);
     assert(error_new == TOX_ERR_NEW_OK);
+    assert(error_new_testing == TOX_ERR_NEW_TESTING_OK);
     std::array<uint8_t, TOX_ADDRESS_SIZE> address1;
     tox_self_get_address(tox1, address1.data());
     std::array<uint8_t, TOX_PUBLIC_KEY_SIZE> pk1;
@@ -211,10 +214,11 @@ void RecordBootstrap(const char *init, const char *bootstrap)
 
     Record_System sys2(global, 5, "tox2");  // unfair dice roll
     tox_options_set_log_user_data(opts, &sys2);
-    tox_options_set_operating_system(opts, sys2.sys.get());
-    Tox *tox2 = tox_new(opts, &error_new);
+    tox_options_testing.operating_system = sys2.sys.get();
+    Tox *tox2 = tox_new_testing(opts, &error_new, &tox_options_testing, &error_new_testing);
     assert(tox2 != nullptr);
     assert(error_new == TOX_ERR_NEW_OK);
+    assert(error_new_testing == TOX_ERR_NEW_TESTING_OK);
     std::array<uint8_t, TOX_ADDRESS_SIZE> address2;
     tox_self_get_address(tox2, address2.data());
     std::array<uint8_t, TOX_PUBLIC_KEY_SIZE> pk2;

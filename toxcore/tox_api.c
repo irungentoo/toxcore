@@ -265,14 +265,6 @@ void tox_options_set_experimental_thread_safety(
 {
     options->experimental_thread_safety = experimental_thread_safety;
 }
-const Tox_System *tox_options_get_operating_system(const Tox_Options *options)
-{
-    return options->operating_system;
-}
-void tox_options_set_operating_system(Tox_Options *options, const Tox_System *operating_system)
-{
-    options->operating_system = operating_system;
-}
 bool tox_options_get_experimental_groups_persistence(const Tox_Options *options)
 {
     return options->experimental_groups_persistence;
