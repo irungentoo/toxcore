@@ -151,6 +151,7 @@ There are some options that are available to configure the build.
 | `PROXY_TEST`            | Enable proxy test (requires `other/proxy/proxy_server.go` to be running).                     | ON or OFF                                                                 | OFF                                               |
 | `STRICT_ABI`            | Enforce strict ABI export in dynamic libraries.                                               | ON or OFF                                                                 | OFF                                               |
 | `TEST_TIMEOUT_SECONDS`  | Limit runtime of each test to the number of seconds specified.                                | Positive number or nothing (empty string).                                | Empty string.                                     |
+| `UNITTEST`              | Enable unit tests (disable if you don't have a working gmock or gtest).                       | ON or OFF                                                                 | ON                                                |
 | `USE_IPV6`              | Use IPv6 in tests.                                                                            | ON or OFF                                                                 | ON                                                |
 
 You can get this list of option using the following commands
