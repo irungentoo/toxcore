@@ -1,9 +1,274 @@
 
 
+## v0.2.19
+
+### Merged PRs:
+
+- [#2744](https://github.com/TokTok/c-toxcore/pull/2744) docs: Document that group topic lock is default on.
+- [#2743](https://github.com/TokTok/c-toxcore/pull/2743) docs: Add missing param docs for callbacks.
+- [#2742](https://github.com/TokTok/c-toxcore/pull/2742) chore: Add cmake flag to disable unit tests.
+- [#2741](https://github.com/TokTok/c-toxcore/pull/2741) refactor: Don't expose Tox_System in the public API
+- [#2736](https://github.com/TokTok/c-toxcore/pull/2736) cleanup: A more descriptive error for group invite accept function
+- [#2735](https://github.com/TokTok/c-toxcore/pull/2735) chore: Small API doc fixes
+- [#2732](https://github.com/TokTok/c-toxcore/pull/2732) cleanup: event length naming inconsistencies
+- [#2731](https://github.com/TokTok/c-toxcore/pull/2731) cleanup: align group send err enum order
+- [#2729](https://github.com/TokTok/c-toxcore/pull/2729) cleanup: use typedef for private message ID's in callback
+- [#2728](https://github.com/TokTok/c-toxcore/pull/2728) refactor: Observers/ignored peers can now send and receive custom packets
+- [#2727](https://github.com/TokTok/c-toxcore/pull/2727) feat: add message IDs to private group messages
+- [#2726](https://github.com/TokTok/c-toxcore/pull/2726) refactor: Rename `out` parameters to `out_$something`.
+- [#2718](https://github.com/TokTok/c-toxcore/pull/2718) chore: Use a specific non-broken slimcc version.
+- [#2713](https://github.com/TokTok/c-toxcore/pull/2713) feat: Update and improve the Windows cross-compilation
+- [#2712](https://github.com/TokTok/c-toxcore/pull/2712) chore: Update github actions.
+- [#2710](https://github.com/TokTok/c-toxcore/pull/2710) docs: Update the list of CMake options
+- [#2709](https://github.com/TokTok/c-toxcore/pull/2709) refactor: Remove "mod" and "founder" from group API naming scheme
+- [#2708](https://github.com/TokTok/c-toxcore/pull/2708) docs: add the experimental api build option to INSTALL.md
+- [#2705](https://github.com/TokTok/c-toxcore/pull/2705) refactor: Rename Queries to Query to align with other enums.
+- [#2704](https://github.com/TokTok/c-toxcore/pull/2704) fix: Correct type for conference offline peer numbers.
+- [#2700](https://github.com/TokTok/c-toxcore/pull/2700) test: Add FreeBSD VM action on GitHub.
+- [#2699](https://github.com/TokTok/c-toxcore/pull/2699) test: Add pkgsrc build.
+- [#2698](https://github.com/TokTok/c-toxcore/pull/2698) chore: Only install tox_private.h on request.
+- [#2697](https://github.com/TokTok/c-toxcore/pull/2697) test: Build toxcore on NetBSD (VM).
+- [#2696](https://github.com/TokTok/c-toxcore/pull/2696) fix: save_compatibility_test failing on big-endian systems
+- [#2695](https://github.com/TokTok/c-toxcore/pull/2695) fix: Don't serve files from websockify.
+- [#2689](https://github.com/TokTok/c-toxcore/pull/2689) fix: Correctly pass extended public keys to group moderation code.
+- [#2686](https://github.com/TokTok/c-toxcore/pull/2686) chore: Compile libsodium reference implementation with compcert.
+- [#2685](https://github.com/TokTok/c-toxcore/pull/2685) cleanup: correct a few nullable annotations
+- [#2684](https://github.com/TokTok/c-toxcore/pull/2684) cleanup: Don't use `memcpy` to cast arbitrary `struct`s to `uint8_t[]`.
+- [#2683](https://github.com/TokTok/c-toxcore/pull/2683) fix: Pass array, not array pointer, to `memcmp`.
+- [#2682](https://github.com/TokTok/c-toxcore/pull/2682) cleanup: Never pass `void*` directly to `memcpy`.
+- [#2678](https://github.com/TokTok/c-toxcore/pull/2678) chore: Disable NGC saving by default, enable through Tox_Options.
+- [#2675](https://github.com/TokTok/c-toxcore/pull/2675) cleanup: Replace pointer arithmetic with explicit `&arr[i]`.
+- [#2672](https://github.com/TokTok/c-toxcore/pull/2672) refactor: Use `structs` for extended public/secret keys.
+- [#2671](https://github.com/TokTok/c-toxcore/pull/2671) refactor: Use tox rng to seed the keypair generation.
+- [#2666](https://github.com/TokTok/c-toxcore/pull/2666) cleanup: Small improvements found by PVS Studio.
+- [#2664](https://github.com/TokTok/c-toxcore/pull/2664) docs: Run prettier-markdown on markdown files.
+- [#2662](https://github.com/TokTok/c-toxcore/pull/2662) fix: Correct a few potential null derefs in bootstrap daemon.
+- [#2661](https://github.com/TokTok/c-toxcore/pull/2661) fix: Zero out stack-allocated secret key before return.
+- [#2660](https://github.com/TokTok/c-toxcore/pull/2660) fix: Add missing memunlock of local variable when it goes out of scope.
+- [#2659](https://github.com/TokTok/c-toxcore/pull/2659) cleanup: Simplify custom packet length check in NGC.
+- [#2658](https://github.com/TokTok/c-toxcore/pull/2658) refactor: Make prune_gc_sanctions_list more obviously correct.
+- [#2657](https://github.com/TokTok/c-toxcore/pull/2657) fix: Fix some false positive from PVS Studio.
+- [#2656](https://github.com/TokTok/c-toxcore/pull/2656) docs: Add static analysis tool list to README.
+- [#2655](https://github.com/TokTok/c-toxcore/pull/2655) cleanup: Check that WINXP macro exists before comparing it.
+- [#2652](https://github.com/TokTok/c-toxcore/pull/2652) refactor: Make tox mutex non-recursive.
+- [#2648](https://github.com/TokTok/c-toxcore/pull/2648) docs: Add more documentation to crypto_core.
+- [#2647](https://github.com/TokTok/c-toxcore/pull/2647) docs: Fix up doxyfile.
+- [#2645](https://github.com/TokTok/c-toxcore/pull/2645) refactor: Remove `Tox *` from `tox_dispatch`.
+- [#2644](https://github.com/TokTok/c-toxcore/pull/2644) refactor: Don't rely on tox_dispatch passing tox in tests.
+- [#2643](https://github.com/TokTok/c-toxcore/pull/2643) refactor: Use strong typedef for NGC peer id.
+- [#2642](https://github.com/TokTok/c-toxcore/pull/2642) chore: Use C++ mode for clang-tidy.
+- [#2640](https://github.com/TokTok/c-toxcore/pull/2640) refactor: Use strong `typedef` instead of `struct` for `Socket`.
+- [#2637](https://github.com/TokTok/c-toxcore/pull/2637) chore: Check that both gtest and gmock exist for tests.
+- [#2634](https://github.com/TokTok/c-toxcore/pull/2634) chore: Add some comments to the astyle config.
+- [#2629](https://github.com/TokTok/c-toxcore/pull/2629) chore: Reformat sources with astyle.
+- [#2626](https://github.com/TokTok/c-toxcore/pull/2626) chore: Rename C++ headers to .hh suffixes.
+- [#2624](https://github.com/TokTok/c-toxcore/pull/2624) test: Add slimcc compiler compatibility test.
+- [#2622](https://github.com/TokTok/c-toxcore/pull/2622) cleanup: Add more `const` where possible.
+- [#2621](https://github.com/TokTok/c-toxcore/pull/2621) cleanup: Remove implicit bool conversions.
+- [#2620](https://github.com/TokTok/c-toxcore/pull/2620) chore: Only check the bootstrap daemon checksum on release.
+- [#2617](https://github.com/TokTok/c-toxcore/pull/2617) cleanup: Further `#include` cleanups.
+- [#2614](https://github.com/TokTok/c-toxcore/pull/2614) cleanup: Use Bazel modules to enforce proper `#include` hygiene.
+- [#2612](https://github.com/TokTok/c-toxcore/pull/2612) refactor: Move pack/unpack `IP_Port` from DHT into network module.
+- [#2611](https://github.com/TokTok/c-toxcore/pull/2611) chore: Really fix coverage docker image build.
+- [#2610](https://github.com/TokTok/c-toxcore/pull/2610) chore: Fix post-submit coverage image.
+- [#2609](https://github.com/TokTok/c-toxcore/pull/2609) fix: partially fix a bug that prevented group part messages from sending
+- [#2605](https://github.com/TokTok/c-toxcore/pull/2605) fix: Don't use `memcmp` to compare `IP_Port`s.
+- [#2604](https://github.com/TokTok/c-toxcore/pull/2604) chore: Fix rpm build; add a CI check for it.
+- [#2603](https://github.com/TokTok/c-toxcore/pull/2603) chore: Speed up docker builds a bit by reducing layer count.
+- [#2602](https://github.com/TokTok/c-toxcore/pull/2602) cleanup: Add `const` where possible in auto tests.
+- [#2601](https://github.com/TokTok/c-toxcore/pull/2601) fix: a few off by one errors in group autotests
+- [#2598](https://github.com/TokTok/c-toxcore/pull/2598) refactor: Rename `system_{memory,...}` to `os_{memory,...}`.
+- [#2597](https://github.com/TokTok/c-toxcore/pull/2597) test: Add goblint static analyser.
+- [#2594](https://github.com/TokTok/c-toxcore/pull/2594) cleanup: Use `memzero(x, s)` instead of `memset(x, 0, s)`.
+- [#2593](https://github.com/TokTok/c-toxcore/pull/2593) cleanup: Use explicit 0 instead of `PACKET_ID_PADDING`.
+- [#2592](https://github.com/TokTok/c-toxcore/pull/2592) cleanup: Remove all uses of `SIZEOF_VLA`.
+- [#2591](https://github.com/TokTok/c-toxcore/pull/2591) cleanup: Expand the `Tox_Options` accessor macros.
+- [#2590](https://github.com/TokTok/c-toxcore/pull/2590) test: Add a simple new/delete test for Tox.
+- [#2588](https://github.com/TokTok/c-toxcore/pull/2588) cleanup: Remove plan9 support.
+- [#2587](https://github.com/TokTok/c-toxcore/pull/2587) cleanup: Add comment after every `#endif`.
+- [#2583](https://github.com/TokTok/c-toxcore/pull/2583) test: Fix comment I broke in the events test PR.
+- [#2582](https://github.com/TokTok/c-toxcore/pull/2582) cleanup: Rename group to conference in groupav documentation.
+- [#2581](https://github.com/TokTok/c-toxcore/pull/2581) cleanup: Ensure handler params are named after callback params.
+- [#2580](https://github.com/TokTok/c-toxcore/pull/2580) cleanup: Minor cleanup of event unpack code.
+- [#2578](https://github.com/TokTok/c-toxcore/pull/2578) refactor: Allow NULL pointers for byte arrays in events.
+- [#2577](https://github.com/TokTok/c-toxcore/pull/2577) refactor: Add common msgpack array packer with callback.
+- [#2576](https://github.com/TokTok/c-toxcore/pull/2576) cleanup: make some improvements to group moderation test
+- [#2575](https://github.com/TokTok/c-toxcore/pull/2575) refactor: Pass `this` pointer as first param to s11n callbacks.
+- [#2573](https://github.com/TokTok/c-toxcore/pull/2573) cleanup: skip a do_gc iteration before removing peers marked for deletion
+- [#2572](https://github.com/TokTok/c-toxcore/pull/2572) cleanup: Remove `bin_pack_{new,free}`.
+- [#2568](https://github.com/TokTok/c-toxcore/pull/2568) feat: Add dht_get_nodes_response event to the events system.
+- [#2567](https://github.com/TokTok/c-toxcore/pull/2567) refactor: Use enum-specific pack functions for enum values.
+- [#2566](https://github.com/TokTok/c-toxcore/pull/2566) cleanup: Remove empty test doing nothing.
+- [#2565](https://github.com/TokTok/c-toxcore/pull/2565) refactor: Factor out union pack switch from event packer.
+- [#2564](https://github.com/TokTok/c-toxcore/pull/2564) cleanup: Move the 2-element array pack out of individual events.
+- [#2563](https://github.com/TokTok/c-toxcore/pull/2563) test: Add printf log statement to group_moderation_test.
+- [#2562](https://github.com/TokTok/c-toxcore/pull/2562) chore: add clangd files to .gitignore
+- [#2561](https://github.com/TokTok/c-toxcore/pull/2561) refactor: Move file streaming test to its own file.
+- [#2560](https://github.com/TokTok/c-toxcore/pull/2560) fix(ci): window builds now build in parallel
+- [#2559](https://github.com/TokTok/c-toxcore/pull/2559) refactor: Migrate auto_tests to new events API.
+- [#2557](https://github.com/TokTok/c-toxcore/pull/2557) test: Add C++ classes wrapping system interfaces.
+- [#2555](https://github.com/TokTok/c-toxcore/pull/2555) fix: Remove fatal error for non-erroneous case
+- [#2554](https://github.com/TokTok/c-toxcore/pull/2554) fix: Make all the fuzzers work again, and add a test for protodump.
+- [#2552](https://github.com/TokTok/c-toxcore/pull/2552) fix: Make sure there's enough space for CONSUME1 in fuzzers.
+- [#2551](https://github.com/TokTok/c-toxcore/pull/2551) chore: Move from gcov to llvm source-based coverage.
+- [#2549](https://github.com/TokTok/c-toxcore/pull/2549) fix: issues with packet broadcast error reporting
+- [#2547](https://github.com/TokTok/c-toxcore/pull/2547) test: Add fuzz tests to the coverage run.
+- [#2545](https://github.com/TokTok/c-toxcore/pull/2545) refactor: Use `operator==` for equality tests of `Node_format`.
+- [#2543](https://github.com/TokTok/c-toxcore/pull/2543) refactor(test): Slightly nicer C++ interface to tox Random.
+- [#2542](https://github.com/TokTok/c-toxcore/pull/2542) refactor: packet broadcast functions now return errors
+- [#2541](https://github.com/TokTok/c-toxcore/pull/2541) fix: don't pass garbage data buffer to packet send functions
+- [#2540](https://github.com/TokTok/c-toxcore/pull/2540) cleanup: Make group packet entry creation less error-prone
+- [#2539](https://github.com/TokTok/c-toxcore/pull/2539) refactor: Minor refactoring of get_close_nodes functions.
+- [#2538](https://github.com/TokTok/c-toxcore/pull/2538) refactor: Factor out malloc+memcpy into memdup.
+- [#2536](https://github.com/TokTok/c-toxcore/pull/2536) cleanup: Some more test cleanups, removing overly smart code.
+- [#2531](https://github.com/TokTok/c-toxcore/pull/2531) test: Add more unit tests for `add_to_list`.
+- [#2530](https://github.com/TokTok/c-toxcore/pull/2530) refactor: Assign malloc return to a local variable first.
+- [#2529](https://github.com/TokTok/c-toxcore/pull/2529) test: Add "infer" CI check to github, remove from circle.
+- [#2527](https://github.com/TokTok/c-toxcore/pull/2527) cleanup: Add Toxav alias for ToxAV.
+- [#2526](https://github.com/TokTok/c-toxcore/pull/2526) cleanup: Make Tox_Options a typedef.
+- [#2525](https://github.com/TokTok/c-toxcore/pull/2525) cleanup: Add dynamically derived array sizes to the API.
+- [#2524](https://github.com/TokTok/c-toxcore/pull/2524) cleanup: Add explicit array sizes to toxencryptsave.
+- [#2523](https://github.com/TokTok/c-toxcore/pull/2523) cleanup: Move `tox_get_system` out of the public API.
+- [#2522](https://github.com/TokTok/c-toxcore/pull/2522) cleanup: Make setters take non-const `Tox *`.
+- [#2521](https://github.com/TokTok/c-toxcore/pull/2521) cleanup: Make array params in toxav `[]` instead of `*`.
+- [#2520](https://github.com/TokTok/c-toxcore/pull/2520) cleanup: Mark arrays in the tox API as `[]` instead of `*`.
+- [#2519](https://github.com/TokTok/c-toxcore/pull/2519) refactor: Align group message sending with other send functions.
+- [#2518](https://github.com/TokTok/c-toxcore/pull/2518) cleanup: Add typedefs for public API int identifiers.
+- [#2517](https://github.com/TokTok/c-toxcore/pull/2517) chore: Spellcheck tox-bootstrapd
+- [#2516](https://github.com/TokTok/c-toxcore/pull/2516) chore: Remove settings.yml in favour of hs-github-tools.
+- [#2515](https://github.com/TokTok/c-toxcore/pull/2515) chore: Use GPL license with https.
+- [#2513](https://github.com/TokTok/c-toxcore/pull/2513) chore: Add fetch-sha256 script to update bootstrap node hash.
+- [#2512](https://github.com/TokTok/c-toxcore/pull/2512) cleanup: Move all vptr-to-ptr casts to the beginning of a function.
+- [#2510](https://github.com/TokTok/c-toxcore/pull/2510) cleanup: Use github actions matrix to simplify CI.
+- [#2509](https://github.com/TokTok/c-toxcore/pull/2509) fix: Use QueryPerformanceCounter on windows for monotonic time.
+- [#2508](https://github.com/TokTok/c-toxcore/pull/2508) chore: Add `net_(new|kill)_strerror` to cppcheck's allocators.
+- [#2507](https://github.com/TokTok/c-toxcore/pull/2507) cleanup: Run clang-tidy on headers, as well.
+- [#2506](https://github.com/TokTok/c-toxcore/pull/2506) cleanup: Make TCP connection failures a warning instead of error.
+- [#2505](https://github.com/TokTok/c-toxcore/pull/2505) cleanup: Make all .c files include the headers they need.
+- [#2504](https://github.com/TokTok/c-toxcore/pull/2504) cleanup: Upgrade cppcheck, fix some warnings.
+- [#2503](https://github.com/TokTok/c-toxcore/pull/2503) cleanup: Upgrade to clang-tidy-17 and fix some warnings.
+- [#2502](https://github.com/TokTok/c-toxcore/pull/2502) chore: Use `pkg_search_module` directly in cmake.
+- [#2501](https://github.com/TokTok/c-toxcore/pull/2501) chore: Add `IMPORTED_TARGET` to pkg-config packages.
+- [#2499](https://github.com/TokTok/c-toxcore/pull/2499) cleanup: Use target_link_libraries directly in cmake.
+- [#2498](https://github.com/TokTok/c-toxcore/pull/2498) chore: Simplify msvc build using vcpkg.
+- [#2497](https://github.com/TokTok/c-toxcore/pull/2497) cleanup: Remove NaCl support.
+- [#2494](https://github.com/TokTok/c-toxcore/pull/2494) fix: unpack enum function names in event impl generator
+- [#2493](https://github.com/TokTok/c-toxcore/pull/2493) chore: Disable targets for cross-compilation.
+- [#2491](https://github.com/TokTok/c-toxcore/pull/2491) chore: Build a docker image with coverage info in it.
+- [#2490](https://github.com/TokTok/c-toxcore/pull/2490) cleanup: Some portability/warning fixes for Windows builds.
+- [#2488](https://github.com/TokTok/c-toxcore/pull/2488) fix: Correct a use-after-free and fix some memory leaks.
+- [#2487](https://github.com/TokTok/c-toxcore/pull/2487) refactor: Change all enum-like `#define` sequences into enums.
+- [#2486](https://github.com/TokTok/c-toxcore/pull/2486) refactor: Change the `TCP_PACKET_*` defines into an enum.
+- [#2485](https://github.com/TokTok/c-toxcore/pull/2485) refactor: event generation tool for reorder pr
+- [#2484](https://github.com/TokTok/c-toxcore/pull/2484) chore: Fix make_single_file to support core-only.
+- [#2481](https://github.com/TokTok/c-toxcore/pull/2481) chore: Update github actions `uses`.
+- [#2480](https://github.com/TokTok/c-toxcore/pull/2480) feat: add ngc related unpack functions
+- [#2479](https://github.com/TokTok/c-toxcore/pull/2479) feat: Add `to_string` functions for all public enums.
+- [#2477](https://github.com/TokTok/c-toxcore/pull/2477) test: add real timeout test
+- [#2476](https://github.com/TokTok/c-toxcore/pull/2476) chore: Move s390x build to post-merge.
+- [#2475](https://github.com/TokTok/c-toxcore/pull/2475) refactor: Give `enum-from-int` functions the ability to report errors.
+- [#2474](https://github.com/TokTok/c-toxcore/pull/2474) cleanup: Remove test net support.
+- [#2472](https://github.com/TokTok/c-toxcore/pull/2472) feat: Enable ubsan on bootstrap nodes.
+- [#2470](https://github.com/TokTok/c-toxcore/pull/2470) test: Add check-c run to bazel build.
+- [#2468](https://github.com/TokTok/c-toxcore/pull/2468) fix(test): tests use ipv6 by default, even with USE_IPV6 set to 0
+- [#2466](https://github.com/TokTok/c-toxcore/pull/2466) cleanup: Make group saving/loading more forgiving with data errors
+- [#2465](https://github.com/TokTok/c-toxcore/pull/2465) refactor: replace memset with a loop
+- [#2459](https://github.com/TokTok/c-toxcore/pull/2459) fix: Enable debug flag for ubsan.
+- [#2458](https://github.com/TokTok/c-toxcore/pull/2458) fix: also Install header for private/experimental API functions with autotools
+- [#2456](https://github.com/TokTok/c-toxcore/pull/2456) docs: Remove defunct IRC channel from README.md
+- [#2454](https://github.com/TokTok/c-toxcore/pull/2454) fix: memory leaks
+- [#2453](https://github.com/TokTok/c-toxcore/pull/2453) refactor: Install header for private/experimental API functions
+- [#2452](https://github.com/TokTok/c-toxcore/pull/2452) refactor: replace DEFAULT_TCP_RELAY_PORTS_COUNT with a compile-time calculation
+- [#2451](https://github.com/TokTok/c-toxcore/pull/2451) cleanup: clarify disabling of static assert checks
+- [#2449](https://github.com/TokTok/c-toxcore/pull/2449) cleanup: replace tabs with spaces
+- [#2448](https://github.com/TokTok/c-toxcore/pull/2448) feat: group connection queries now return our own connection type
+- [#2447](https://github.com/TokTok/c-toxcore/pull/2447) fix: Docker tox-bootstrapd hash update failing when using BuildKit
+- [#2446](https://github.com/TokTok/c-toxcore/pull/2446) feat: Add groupchat API function that returns an IP address string for a peer
+- [#2442](https://github.com/TokTok/c-toxcore/pull/2442) perf: Slightly reduce bandwidth usage when there are few nodes.
+- [#2439](https://github.com/TokTok/c-toxcore/pull/2439) test: Make esp32 build actually try to instantiate tox.
+- [#2438](https://github.com/TokTok/c-toxcore/pull/2438) cleanup: Remove explicit layering_check feature.
+- [#2437](https://github.com/TokTok/c-toxcore/pull/2437) chore: Upgrade sonar-scan jvm to java 17.
+- [#2436](https://github.com/TokTok/c-toxcore/pull/2436) fix: Add missing `htons` call when adding configured TCP relay.
+- [#2434](https://github.com/TokTok/c-toxcore/pull/2434) chore: Cancel old PR builds on docker and sonar-scan workflows.
+- [#2432](https://github.com/TokTok/c-toxcore/pull/2432) chore: Use C99 on MSVC instead of C11.
+- [#2430](https://github.com/TokTok/c-toxcore/pull/2430) chore: Retry freebsd tests 2 times.
+- [#2429](https://github.com/TokTok/c-toxcore/pull/2429) test: Add an s390x build (on alpine) for CI.
+- [#2428](https://github.com/TokTok/c-toxcore/pull/2428) chore: Add a compcert docker run script.
+- [#2427](https://github.com/TokTok/c-toxcore/pull/2427) cleanup: Use tcc docker image for CI.
+- [#2424](https://github.com/TokTok/c-toxcore/pull/2424) fix: Fix memory leak in the error path of loading savedata.
+- [#2420](https://github.com/TokTok/c-toxcore/pull/2420) refactor: Use Bin_Pack for packing Node_format.
+- [#2416](https://github.com/TokTok/c-toxcore/pull/2416) chore: Add more logging to loading conferences from savedata.
+- [#2415](https://github.com/TokTok/c-toxcore/pull/2415) refactor: Add a `bin_unpack_bin_max` for max-length arrays.
+- [#2414](https://github.com/TokTok/c-toxcore/pull/2414) fix: inversed return values
+- [#2413](https://github.com/TokTok/c-toxcore/pull/2413) cleanup: Fix GCC compatibility.
+- [#2408](https://github.com/TokTok/c-toxcore/pull/2408) fix: Ensure we have allocators available for the error paths.
+- [#2407](https://github.com/TokTok/c-toxcore/pull/2407) cleanup: Remove redundant `-DSODIUM_EXPORT` from definitions.
+- [#2406](https://github.com/TokTok/c-toxcore/pull/2406) cleanup: Fix a few more clang-tidy warnings.
+- [#2405](https://github.com/TokTok/c-toxcore/pull/2405) cleanup: Fix a few more clang-tidy warnings.
+- [#2404](https://github.com/TokTok/c-toxcore/pull/2404) cleanup: Enforce stricter identifier naming using clang-tidy.
+- [#2396](https://github.com/TokTok/c-toxcore/pull/2396) chore: Add devcontainer setup for codespaces.
+- [#2393](https://github.com/TokTok/c-toxcore/pull/2393) refactor: Add `mem` module to allow tests to override allocators.
+- [#2392](https://github.com/TokTok/c-toxcore/pull/2392) refactor: Make event dispatch ordered by receive time.
+- [#2391](https://github.com/TokTok/c-toxcore/pull/2391) docs: Fix doxygen config and remove some redundant comments.
+- [#2390](https://github.com/TokTok/c-toxcore/pull/2390) chore: Fix the Android CI job
+- [#2389](https://github.com/TokTok/c-toxcore/pull/2389) fix: Add missing `#include <array>`.
+- [#2388](https://github.com/TokTok/c-toxcore/pull/2388) chore: Add missing module dependencies.
+- [#2384](https://github.com/TokTok/c-toxcore/pull/2384) feat: increase NGC lossy custom packet size
+- [#2383](https://github.com/TokTok/c-toxcore/pull/2383) fix: add missing ngc constants getter declarations and definitions
+- [#2381](https://github.com/TokTok/c-toxcore/pull/2381) fix: incorrect documentation
+- [#2380](https://github.com/TokTok/c-toxcore/pull/2380) feat: allow for larger incoming NGC packets
+- [#2371](https://github.com/TokTok/c-toxcore/pull/2371) docs: fix group_peer_exit_cb
+- [#2370](https://github.com/TokTok/c-toxcore/pull/2370) fix: behaviour of group api function
+- [#2369](https://github.com/TokTok/c-toxcore/pull/2369) fix: flaky tcp test
+- [#2367](https://github.com/TokTok/c-toxcore/pull/2367) fix: fuzz support for TCP server
+- [#2364](https://github.com/TokTok/c-toxcore/pull/2364) fix: potential endless loop under extremely high load
+- [#2362](https://github.com/TokTok/c-toxcore/pull/2362) test: enable tcp relay for bootstrap fuzzing
+- [#2361](https://github.com/TokTok/c-toxcore/pull/2361) fix: resolve_bootstrap_node() not checking net_getipport() returned count correctly
+- [#2357](https://github.com/TokTok/c-toxcore/pull/2357) feat: get the number of close dht nodes with announce/store support
+- [#2355](https://github.com/TokTok/c-toxcore/pull/2355) fix: group custom packet size limits
+- [#2354](https://github.com/TokTok/c-toxcore/pull/2354) fix: DHTBootstrap should always respond to version packets with toxcore version
+- [#2351](https://github.com/TokTok/c-toxcore/pull/2351) fix: Increase max group message length by four bytes
+- [#2348](https://github.com/TokTok/c-toxcore/pull/2348) refactor: Make some improvements to how often/when we announce a group
+- [#2341](https://github.com/TokTok/c-toxcore/pull/2341) fix: #1144 by forcing misc_tools to be a static lib
+- [#2340](https://github.com/TokTok/c-toxcore/pull/2340) fix: missing net to host conversion of port in logging in group_chat.c
+- [#2339](https://github.com/TokTok/c-toxcore/pull/2339) fix: missing net to host conversion of port in logging
+- [#2338](https://github.com/TokTok/c-toxcore/pull/2338) fix: bug causing friend group invites to sometimes fail & improve logging
+- [#2333](https://github.com/TokTok/c-toxcore/pull/2333) docs: Update README for bootstrap node docker
+- [#2329](https://github.com/TokTok/c-toxcore/pull/2329) refactor: extract each case in handle packet in messenger
+- [#2327](https://github.com/TokTok/c-toxcore/pull/2327) fix: unlock correct dht_friend
+- [#2325](https://github.com/TokTok/c-toxcore/pull/2325) fix: Remove cmake cache files after copying to container build directory
+- [#2323](https://github.com/TokTok/c-toxcore/pull/2323) docs: Update README.md to include cmp submodule info
+- [#2318](https://github.com/TokTok/c-toxcore/pull/2318) chore: disable warning about pre C99 code
+- [#2317](https://github.com/TokTok/c-toxcore/pull/2317) Refactor: Extract shared key cache into separate file
+- [#2311](https://github.com/TokTok/c-toxcore/pull/2311) cleanup: make it more clear that assert and uint32_t increment both only exist if NDEBUG is not defined
+- [#2291](https://github.com/TokTok/c-toxcore/pull/2291) test: Add a protocol dump test to generate initial fuzzer input.
+- [#2271](https://github.com/TokTok/c-toxcore/pull/2271) chore: Migrate from Appveyor to Azure Pipelines
+- [#2269](https://github.com/TokTok/c-toxcore/pull/2269) feat: Merge the remainder of the new groupchats implementation
+- [#2203](https://github.com/TokTok/c-toxcore/pull/2203) refactor: Store time in Mono_Time in milliseconds.
+- [#1944](https://github.com/TokTok/c-toxcore/pull/1944) chore: tox_new() should return null when savedata loading fails
+
+### Closed issues:
+
+- [#2739](https://github.com/TokTok/c-toxcore/issues/2739) Tox_Options.operating_system is not clear about it being an experimental option
+- [#2734](https://github.com/TokTok/c-toxcore/issues/2734) error compiling on fedora
+- [#2649](https://github.com/TokTok/c-toxcore/issues/2649) create_extended_keypair should use Random and be made deterministic for fuzzing
+- [#2358](https://github.com/TokTok/c-toxcore/issues/2358) resolve_bootstrap_node assert hit
+- [#2352](https://github.com/TokTok/c-toxcore/issues/2352) SEGV after infinite loop retrying proxy_socks5_read_connection_response
+- [#2335](https://github.com/TokTok/c-toxcore/issues/2335) ipv6 disabled on kernel cmdline disrupts Tox = most tests fail
+- [#2303](https://github.com/TokTok/c-toxcore/issues/2303) Add new group chats events to tox_events and tox_dispatch modules.
+- [#2302](https://github.com/TokTok/c-toxcore/issues/2302) Run strong fuzz tests against NGC
+- [#2301](https://github.com/TokTok/c-toxcore/issues/2301) Implement NGC save/load in hs-toxcore and run round-trip tests against c-toxcore
+- [#2192](https://github.com/TokTok/c-toxcore/issues/2192) Provide official signed release tarballs
+- [#2118](https://github.com/TokTok/c-toxcore/issues/2118) Add a private "get mono_time" API to `tox_private.h` and use it in auto_tests.
+- [#2029](https://github.com/TokTok/c-toxcore/issues/2029) Migrate all auto tests to the events API.
+- [#2014](https://github.com/TokTok/c-toxcore/issues/2014) Add sodium autotools CI build
+- [#1144](https://github.com/TokTok/c-toxcore/issues/1144) DHT_bootstrap should not link against misc_tools
+
 ## v0.2.18
 
 ### Merged PRs:
 
+- [#2300](https://github.com/TokTok/c-toxcore/pull/2300) chore: Release 0.2.18
 - [#2299](https://github.com/TokTok/c-toxcore/pull/2299) fix: remove the assert because buffer can be larger than UINT16_MAX.
 - [#2297](https://github.com/TokTok/c-toxcore/pull/2297) cleanup: remove unused field last_seen from Onion_Friend
 - [#2289](https://github.com/TokTok/c-toxcore/pull/2289) test: Add a Null_System used in toxsave_harness.
@@ -107,6 +372,7 @@
 
 ### Closed issues:
 
+- [#2298](https://github.com/TokTok/c-toxcore/issues/2298) assert makes incorrect assumption
 - [#2256](https://github.com/TokTok/c-toxcore/issues/2256) New Defects reported by Coverity Scan for TokTok/c-toxcore
 - [#2109](https://github.com/TokTok/c-toxcore/issues/2109) Assimilate `messenger_test.c`: replace with public API test
 - [#2012](https://github.com/TokTok/c-toxcore/issues/2012) Support building a DLL on Windows

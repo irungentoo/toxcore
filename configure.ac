@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([tox], [0.2.18])
+AC_INIT([tox], [0.2.19])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([toxcore/net_crypto.c])
 AM_INIT_AUTOMAKE([foreign 1.10 -Wall -Werror subdir-objects tar-ustar])
