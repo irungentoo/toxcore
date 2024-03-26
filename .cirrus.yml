@@ -14,7 +14,7 @@ bazel-opt_task:
         --test_tag_filters=-haskell
         --
         //c-toxcore/...
-        -//c-toxcore/auto_tests:tcp_relay_test # TODO(robinlinden): Why does this pass locally but not in Cirrus?
+        -//c-toxcore/auto_tests:tcp_relay_test # Cirrus doesn't allow external network connections.
 
 bazel-dbg_task:
   container:
@@ -24,7 +24,6 @@ bazel-dbg_task:
   configure_script:
     - git submodule update --init --recursive
     - /src/workspace/tools/inject-repo c-toxcore
-    - sed -i -e 's/build --config=remote/#&/' /src/workspace/.bazelrc.local
   test_all_script:
     - cd /src/workspace && bazel test -k
         --build_tag_filters=-haskell
@@ -32,7 +31,7 @@ bazel-dbg_task:
         --remote_http_cache=http://$CIRRUS_HTTP_CACHE_HOST
         --
         //c-toxcore/...
-        -//c-toxcore/auto_tests:tcp_relay_test # TODO(robinlinden): Why does this pass locally but not in Cirrus?
+        -//c-toxcore/auto_tests:tcp_relay_test # Cirrus doesn't allow external network connections.
 
 cimple_task:
   container:

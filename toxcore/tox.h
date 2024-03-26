@@ -3488,6 +3488,8 @@ const char *tox_group_privacy_state_to_string(Tox_Group_Privacy_State value);
 
 /**
  * Represents the state of the group topic lock.
+ *
+ * The default is enabled.
  */
 typedef enum Tox_Group_Topic_Lock {
 
