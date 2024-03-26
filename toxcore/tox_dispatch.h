@@ -2,6 +2,13 @@
  * Copyright © 2022 The TokTok team.
  */
 
+/**
+ * WARNING: This is an experimental API and is subject to change.
+ *
+ * At this point, it probably won't change very much anymore, but we may have
+ * small breaking changes before a stable release.
+ */
+
 #ifndef C_TOXCORE_TOXCORE_TOX_DISPATCH_H
 #define C_TOXCORE_TOXCORE_TOX_DISPATCH_H
 

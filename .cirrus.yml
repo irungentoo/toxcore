@@ -7,6 +7,7 @@ bazel-opt_task:
   configure_script:
     - git submodule update --init --recursive
     - /src/workspace/tools/inject-repo c-toxcore
+    - sed -i -e 's/build --config=remote/#&/' /src/workspace/.bazelrc.local
   test_all_script:
     - cd /src/workspace && bazel test -k
         --build_tag_filters=-haskell
@@ -23,6 +24,7 @@ bazel-dbg_task:
   configure_script:
     - git submodule update --init --recursive
     - /src/workspace/tools/inject-repo c-toxcore
+    - sed -i -e 's/build --config=remote/#&/' /src/workspace/.bazelrc.local
   test_all_script:
     - cd /src/workspace && bazel test -k
         --build_tag_filters=-haskell
@@ -40,6 +42,7 @@ cimple_task:
   configure_script:
     - git submodule update --init --recursive
     - /src/workspace/tools/inject-repo c-toxcore
+    - sed -i -e 's/build --config=remote/#&/' /src/workspace/.bazelrc.local
   test_all_script:
     - cd /src/workspace && bazel test -k
         --build_tag_filters=haskell
@@ -69,7 +72,7 @@ freebsd_task:
       cmake . \
         -DMIN_LOGGER_LEVEL=TRACE \
         -DMUST_BUILD_TOXAV=ON \
-        -DNON_HERMETIC_TESTS=ON \
+        -DNON_HERMETIC_TESTS=OFF \
         -DTEST_TIMEOUT_SECONDS=50 \
         -DUSE_IPV6=OFF \
         -DAUTOTEST=ON

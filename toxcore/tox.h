@@ -1866,6 +1866,7 @@ void tox_callback_friend_request(Tox *tox, tox_friend_request_cb *callback);
 
 /**
  * @param friend_number The friend number of the friend who sent the message.
+ * @param type The type of the message (normal, action, ...).
  * @param message The message data they sent.
  * @param length The size of the message byte array.
  */
@@ -5021,6 +5022,8 @@ Tox_Group_Number tox_group_invite_accept(
  * @param friend_number The friend number of the contact who sent the invite.
  * @param invite_data The invite data.
  * @param invite_data_length The length of invite_data.
+ * @param group_name The name of the group. In conferences, this is "title".
+ * @param group_name_length The length of the group name.
  */
 typedef void tox_group_invite_cb(
     Tox *tox, Tox_Friend_Number friend_number,
