@@ -9,9 +9,8 @@ cc_fuzz_test(
     corpus = ["//tools/toktok-fuzzer/corpus:bootstrap_fuzz_test"],
     deps = [
         "//c-toxcore/testing/support",
+        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:tox",
-        "//c-toxcore/toxcore:tox_dispatch",
-        "//c-toxcore/toxcore:tox_events",
     ],
 )
 
@@ -24,10 +23,9 @@ cc_fuzz_test(
     data = ["//tools/toktok-fuzzer/init:e2e_fuzz_test.dat"],
     deps = [
         "//c-toxcore/testing/support",
+        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:crypto_core",
         "//c-toxcore/toxcore:tox",
-        "//c-toxcore/toxcore:tox_dispatch",
-        "//c-toxcore/toxcore:tox_events",
     ],
 )
 
@@ -49,9 +47,8 @@ cc_binary(
     copts = ["-UNDEBUG"],
     deps = [
         "//c-toxcore/testing/support",
+        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:tox",
-        "//c-toxcore/toxcore:tox_dispatch",
-        "//c-toxcore/toxcore:tox_events",
         "//c-toxcore/toxcore:util",
     ],
 )

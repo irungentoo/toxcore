@@ -24,49 +24,52 @@
  * :: Set up event handlers.
  *
  *****************************************************/
-
 void tox_events_init(Tox *tox)
 {
-    tox_callback_conference_connected(tox, tox_events_handle_conference_connected);
-    tox_callback_conference_invite(tox, tox_events_handle_conference_invite);
-    tox_callback_conference_message(tox, tox_events_handle_conference_message);
-    tox_callback_conference_peer_list_changed(tox, tox_events_handle_conference_peer_list_changed);
-    tox_callback_conference_peer_name(tox, tox_events_handle_conference_peer_name);
-    tox_callback_conference_title(tox, tox_events_handle_conference_title);
-    tox_callback_file_chunk_request(tox, tox_events_handle_file_chunk_request);
-    tox_callback_file_recv_chunk(tox, tox_events_handle_file_recv_chunk);
-    tox_callback_file_recv_control(tox, tox_events_handle_file_recv_control);
-    tox_callback_file_recv(tox, tox_events_handle_file_recv);
-    tox_callback_friend_connection_status(tox, tox_events_handle_friend_connection_status);
-    tox_callback_friend_lossless_packet(tox, tox_events_handle_friend_lossless_packet);
-    tox_callback_friend_lossy_packet(tox, tox_events_handle_friend_lossy_packet);
-    tox_callback_friend_message(tox, tox_events_handle_friend_message);
-    tox_callback_friend_name(tox, tox_events_handle_friend_name);
-    tox_callback_friend_read_receipt(tox, tox_events_handle_friend_read_receipt);
-    tox_callback_friend_request(tox, tox_events_handle_friend_request);
-    tox_callback_friend_status_message(tox, tox_events_handle_friend_status_message);
-    tox_callback_friend_status(tox, tox_events_handle_friend_status);
-    tox_callback_friend_typing(tox, tox_events_handle_friend_typing);
-    tox_callback_self_connection_status(tox, tox_events_handle_self_connection_status);
-    tox_callback_group_peer_name(tox, tox_events_handle_group_peer_name);
-    tox_callback_group_peer_status(tox, tox_events_handle_group_peer_status);
-    tox_callback_group_topic(tox, tox_events_handle_group_topic);
-    tox_callback_group_privacy_state(tox, tox_events_handle_group_privacy_state);
-    tox_callback_group_voice_state(tox, tox_events_handle_group_voice_state);
-    tox_callback_group_topic_lock(tox, tox_events_handle_group_topic_lock);
-    tox_callback_group_peer_limit(tox, tox_events_handle_group_peer_limit);
-    tox_callback_group_password(tox, tox_events_handle_group_password);
-    tox_callback_group_message(tox, tox_events_handle_group_message);
-    tox_callback_group_private_message(tox, tox_events_handle_group_private_message);
-    tox_callback_group_custom_packet(tox, tox_events_handle_group_custom_packet);
-    tox_callback_group_custom_private_packet(tox, tox_events_handle_group_custom_private_packet);
-    tox_callback_group_invite(tox, tox_events_handle_group_invite);
-    tox_callback_group_peer_join(tox, tox_events_handle_group_peer_join);
-    tox_callback_group_peer_exit(tox, tox_events_handle_group_peer_exit);
-    tox_callback_group_self_join(tox, tox_events_handle_group_self_join);
-    tox_callback_group_join_fail(tox, tox_events_handle_group_join_fail);
-    tox_callback_group_moderation(tox, tox_events_handle_group_moderation);
-    tox_callback_dht_nodes_response(tox, tox_events_handle_dht_nodes_response);
+    tox->self_connection_status_callback = nullptr;
+    tox->friend_name_callback = nullptr;
+    tox->friend_status_message_callback = nullptr;
+    tox->friend_status_callback = nullptr;
+    tox->friend_connection_status_callback = nullptr;
+    tox->friend_typing_callback = nullptr;
+    tox->friend_read_receipt_callback = nullptr;
+    tox->friend_request_callback = nullptr;
+    tox->friend_message_callback = nullptr;
+    tox->file_recv_control_callback = nullptr;
+    tox->file_chunk_request_callback = nullptr;
+    tox->file_recv_callback = nullptr;
+    tox->file_recv_chunk_callback = nullptr;
+    tox->conference_invite_callback = nullptr;
+    tox->conference_connected_callback = nullptr;
+    tox->conference_message_callback = nullptr;
+    tox->conference_title_callback = nullptr;
+    tox->conference_peer_name_callback = nullptr;
+    tox->conference_peer_list_changed_callback = nullptr;
+    tox->dht_nodes_response_callback = nullptr;
+
+    for (uint32_t i = 0; i < UINT8_MAX + 1; ++i) {
+        tox->friend_lossy_packet_callback_per_pktid[i] = nullptr;
+        tox->friend_lossless_packet_callback_per_pktid[i] = nullptr;
+    }
+
+    tox->group_peer_name_callback = nullptr;
+    tox->group_peer_status_callback = nullptr;
+    tox->group_topic_callback = nullptr;
+    tox->group_privacy_state_callback = nullptr;
+    tox->group_topic_lock_callback = nullptr;
+    tox->group_voice_state_callback = nullptr;
+    tox->group_peer_limit_callback = nullptr;
+    tox->group_password_callback = nullptr;
+    tox->group_message_callback = nullptr;
+    tox->group_private_message_callback = nullptr;
+    tox->group_custom_packet_callback = nullptr;
+    tox->group_custom_private_packet_callback = nullptr;
+    tox->group_invite_callback = nullptr;
+    tox->group_peer_join_callback = nullptr;
+    tox->group_peer_exit_callback = nullptr;
+    tox->group_self_join_callback = nullptr;
+    tox->group_join_fail_callback = nullptr;
+    tox->group_moderation_callback = nullptr;
 }
 
 uint32_t tox_events_get_size(const Tox_Events *events)
@@ -90,23 +93,23 @@ const Tox_Event *tox_events_get(const Tox_Events *events, uint32_t index)
 
 Tox_Events *tox_events_iterate(Tox *tox, const Tox_Iterate_Options *options, Tox_Err_Events_Iterate *error)
 {
-    const Tox_System *sys = tox_get_system(tox);
-    Tox_Events_State state = {TOX_ERR_EVENTS_ITERATE_OK, sys->mem, nullptr};
-
-    tox_iterate_with_options(tox, options, &state);
+    tox_lock(tox);
+    Tox_Err_Events_Iterate err;
+    Tox_Events *events = tox_iterate_internal(tox, &err);
 
     if (error != nullptr) {
-        *error = state.error;
+        *error = err;
     }
 
-    const bool fail_hard = tox_iterate_options_get_fail_hard(options);
-
-    if (fail_hard && state.error != TOX_ERR_EVENTS_ITERATE_OK) {
-        tox_events_free(state.events);
+    if (err != TOX_ERR_EVENTS_ITERATE_OK && tox_iterate_options_get_fail_hard(options)) {
+        tox_events_free(events);
+        tox_unlock(tox);
         return nullptr;
     }
 
-    return state.events;
+    tox_events_dispatch(tox, events, nullptr);
+    tox_unlock(tox);
+    return events;
 }
 
 static bool tox_event_pack_handler(const void *_Nonnull arr, uint32_t index, const Logger *_Nonnull logger, Bin_Pack *_Nonnull bp)

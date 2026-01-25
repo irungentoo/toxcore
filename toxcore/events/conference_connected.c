@@ -148,12 +148,10 @@ static Tox_Event_Conference_Connected *_Nullable tox_event_conference_connected_
  *****************************************************/
 
 void tox_events_handle_conference_connected(
-    Tox *_Nonnull tox,
     uint32_t conference_number,
-    void *_Nullable user_data)
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Conference_Connected *conference_connected = tox_event_conference_connected_alloc(state);
+    Tox_Event_Conference_Connected *conference_connected = tox_event_conference_connected_alloc(tox_events_alloc(state));
 
     if (conference_connected == nullptr) {
         return;

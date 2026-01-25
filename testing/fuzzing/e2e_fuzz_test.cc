@@ -210,8 +210,6 @@ void TestEndToEnd(Fuzz_Data &input)
         configure_fuzz_packet_source(*sockets, input);
     }
 
-    tox_events_init(tox);
-
     Tox_Dispatch *dispatch = tox_dispatch_new(nullptr);
     assert(dispatch != nullptr);
     setup_callbacks(dispatch);

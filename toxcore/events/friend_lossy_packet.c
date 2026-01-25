@@ -201,13 +201,11 @@ static Tox_Event_Friend_Lossy_Packet *_Nullable tox_event_friend_lossy_packet_al
  *****************************************************/
 
 void tox_events_handle_friend_lossy_packet(
-    Tox *_Nonnull tox,
     uint32_t friend_number,
-    const uint8_t *_Nullable data, size_t length,
-    void *_Nullable user_data)
+    const uint8_t *data, size_t length,
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Friend_Lossy_Packet *friend_lossy_packet = tox_event_friend_lossy_packet_alloc(state);
+    Tox_Event_Friend_Lossy_Packet *friend_lossy_packet = tox_event_friend_lossy_packet_alloc(tox_events_alloc(state));
 
     if (friend_lossy_packet == nullptr) {
         return;

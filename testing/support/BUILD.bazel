@@ -42,6 +42,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:attributes",
         "//c-toxcore/toxcore:crypto_core",
         "//c-toxcore/toxcore:mem",
@@ -49,7 +50,6 @@ cc_library(
         "//c-toxcore/toxcore:network",
         "//c-toxcore/toxcore:rng",
         "//c-toxcore/toxcore:tox",
-        "//c-toxcore/toxcore:tox_events",
         "//c-toxcore/toxcore:tox_options",
         "@psocket",
     ],
@@ -120,6 +120,7 @@ cc_test(
     srcs = ["bootstrap_scaling_test.cc"],
     deps = [
         ":support",
+        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:network",
         "//c-toxcore/toxcore:tox",
         "@com_google_googletest//:gtest",
@@ -143,6 +144,7 @@ cc_test(
     shard_count = 6,
     deps = [
         ":support",
+        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:attributes",
         "//c-toxcore/toxcore:network",
         "//c-toxcore/toxcore:tox",

@@ -279,16 +279,14 @@ static Tox_Event_Group_Peer_Exit *_Nullable tox_event_group_peer_exit_alloc(Tox_
  *****************************************************/
 
 void tox_events_handle_group_peer_exit(
-    Tox *_Nonnull tox,
     uint32_t group_number,
     uint32_t peer_id,
     Tox_Group_Exit_Type exit_type,
-    const uint8_t *_Nullable name, size_t name_length,
-    const uint8_t *_Nullable part_message, size_t part_message_length,
-    void *_Nullable user_data)
+    const uint8_t *name, size_t name_length,
+    const uint8_t *part_message, size_t part_message_length,
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Group_Peer_Exit *group_peer_exit = tox_event_group_peer_exit_alloc(state);
+    Tox_Event_Group_Peer_Exit *group_peer_exit = tox_event_group_peer_exit_alloc(tox_events_alloc(state));
 
     if (group_peer_exit == nullptr) {
         return;

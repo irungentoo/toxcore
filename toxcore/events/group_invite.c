@@ -249,14 +249,12 @@ static Tox_Event_Group_Invite *_Nullable tox_event_group_invite_alloc(Tox_Events
  *****************************************************/
 
 void tox_events_handle_group_invite(
-    Tox *_Nonnull tox,
     uint32_t friend_number,
-    const uint8_t *_Nullable invite_data, size_t invite_data_length,
-    const uint8_t *_Nullable group_name, size_t group_name_length,
-    void *_Nullable user_data)
+    const uint8_t *invite_data, size_t invite_data_length,
+    const uint8_t *group_name, size_t group_name_length,
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Group_Invite *group_invite = tox_event_group_invite_alloc(state);
+    Tox_Event_Group_Invite *group_invite = tox_event_group_invite_alloc(tox_events_alloc(state));
 
     if (group_invite == nullptr) {
         return;

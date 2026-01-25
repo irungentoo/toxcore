@@ -108,7 +108,6 @@ static void test_tox_events(void)
     for (uint32_t i = 0; i < 2; ++i) {
         index[i] = i + 1;
         toxes[i] = tox_new_log(nullptr, nullptr, &index[i]);
-        tox_events_init(toxes[i]);
         ck_assert_msg(toxes[i] != nullptr, "failed to create tox instances %u", i);
     }
 

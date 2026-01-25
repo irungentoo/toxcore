@@ -197,15 +197,13 @@ static Tox_Event_Group_Moderation *_Nullable tox_event_group_moderation_alloc(To
  *****************************************************/
 
 void tox_events_handle_group_moderation(
-    Tox *_Nonnull tox,
     uint32_t group_number,
     uint32_t source_peer_id,
     uint32_t target_peer_id,
     Tox_Group_Mod_Event mod_type,
-    void *_Nullable user_data)
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Group_Moderation *group_moderation = tox_event_group_moderation_alloc(state);
+    Tox_Event_Group_Moderation *group_moderation = tox_event_group_moderation_alloc(tox_events_alloc(state));
 
     if (group_moderation == nullptr) {
         return;

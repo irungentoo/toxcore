@@ -584,29 +584,29 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
 
 )";
     f << "void tox_events_handle_" << event_name_l << "(\n";
-    f << "    Tox " << (is_public ? "*_Nonnull " : "*") << "tox";
+
 
     for (const auto& t : event_types) {
-        f << ",\n    ";
+        f << "    ";
         std::visit(
             overloaded{
                 [&](const EventTypeTrivial& t) {
                     f << (t.cb_type.empty() ? t.type : t.cb_type) << " " << t.name;
                 },
                 [&](const EventTypeByteRange& t) {
-                    f << "const " << t.type_c_arg << " " << (is_public ? "*_Nullable " : "*") << t.name_data << ", " << t.type_length_cb << " " << t.name_length_cb;
+                    f << "const " << t.type_c_arg << " *" << t.name_data << ", " << t.type_length_cb << " " << t.name_length_cb;
                 },
                 [&](const EventTypeByteArray& t) {
-                    f << "const uint8_t " << (is_public ? "*_Nonnull " : "*") << t.name;
+                    f << "const uint8_t *" << t.name;
                 }
             },
             t
         );
+        f << ",\n";
     }
 
-    f << ",\n    void " << (is_public ? "*_Nullable " : "*") << "user_data)\n{\n";
-    f << "    Tox_Events_State *state = tox_events_alloc(user_data);\n";
-    f << "    Tox_Event_" << event_name << " *" << event_name_l << " = tox_event_" << event_name_l << "_alloc(state);\n\n";
+    f << "    Tox_Events_State *state)\n{\n";
+    f << "    Tox_Event_" << event_name << " *" << event_name_l << " = tox_event_" << event_name_l << "_alloc(tox_events_alloc(state));\n\n";
     f << "    if (" << event_name_l << " == nullptr) {\n        return;\n    }\n\n";
 
     for (const auto& t : event_types) {

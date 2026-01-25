@@ -201,13 +201,11 @@ static Tox_Event_Group_Password *_Nullable tox_event_group_password_alloc(Tox_Ev
  *****************************************************/
 
 void tox_events_handle_group_password(
-    Tox *_Nonnull tox,
     uint32_t group_number,
-    const uint8_t *_Nullable password, size_t password_length,
-    void *_Nullable user_data)
+    const uint8_t *password, size_t password_length,
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Group_Password *group_password = tox_event_group_password_alloc(state);
+    Tox_Event_Group_Password *group_password = tox_event_group_password_alloc(tox_events_alloc(state));
 
     if (group_password == nullptr) {
         return;

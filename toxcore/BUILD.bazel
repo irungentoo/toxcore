@@ -1498,12 +1498,23 @@ cc_library(
     srcs = [
         "tox.c",
         "tox_api.c",
+        "tox_event.c",
+        "tox_events.c",
+        "tox_pack.c",
         "tox_private.c",
-    ],
+        "tox_unpack.c",
+    ] + glob([
+        "events/*.c",
+    ]),
     hdrs = [
+        "events/events_alloc.h",
         "tox.h",
+        "tox_event.h",
+        "tox_events.h",
+        "tox_pack.h",
         "tox_private.h",
         "tox_struct.h",
+        "tox_unpack.h",
     ],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
@@ -1512,6 +1523,8 @@ cc_library(
         ":TCP_client",
         ":TCP_server",
         ":attributes",
+        ":bin_pack",
+        ":bin_unpack",
         ":ccompat",
         ":crypto_core",
         ":ev",
@@ -1535,8 +1548,21 @@ cc_library(
         ":tox_log_level",
         ":tox_options",
         ":util",
+        "//c-toxcore/third_party:cmp",
         "//c-toxcore/toxencryptsave:defines",
         "@pthread",
+    ],
+)
+
+cc_library(
+    name = "tox_dispatch",
+    srcs = ["tox_dispatch.c"],
+    hdrs = ["tox_dispatch.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        ":attributes",
+        ":ccompat",
+        ":tox",
     ],
 )
 
@@ -1557,61 +1583,6 @@ cc_test(
     ],
 )
 
-cc_library(
-    name = "tox_pack",
-    srcs = ["tox_pack.c"],
-    hdrs = ["tox_pack.h"],
-    visibility = ["//c-toxcore:__subpackages__"],
-    deps = [
-        ":attributes",
-        ":bin_pack",
-        ":ccompat",
-        ":tox",
-    ],
-)
-
-cc_library(
-    name = "tox_unpack",
-    srcs = ["tox_unpack.c"],
-    hdrs = ["tox_unpack.h"],
-    visibility = ["//c-toxcore:__subpackages__"],
-    deps = [
-        ":attributes",
-        ":bin_unpack",
-        ":ccompat",
-        ":tox",
-    ],
-)
-
-cc_library(
-    name = "tox_events",
-    srcs = [
-        "tox_event.c",
-        "tox_events.c",
-    ] + glob([
-        "events/*.c",
-    ]),
-    hdrs = [
-        "events/events_alloc.h",
-        "tox_event.h",
-        "tox_events.h",
-    ],
-    visibility = ["//c-toxcore:__subpackages__"],
-    deps = [
-        ":attributes",
-        ":bin_pack",
-        ":bin_unpack",
-        ":ccompat",
-        ":logger",
-        ":mem",
-        ":tox",
-        ":tox_attributes",
-        ":tox_pack",
-        ":tox_unpack",
-        "//c-toxcore/third_party:cmp",
-    ],
-)
-
 cc_test(
     name = "tox_events_test",
     size = "small",
@@ -1619,7 +1590,6 @@ cc_test(
     deps = [
         ":crypto_core",
         ":tox",
-        ":tox_events",
         "//c-toxcore/testing/support",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
@@ -1632,22 +1602,9 @@ cc_fuzz_test(
     srcs = ["tox_events_fuzz_test.cc"],
     corpus = ["//tools/toktok-fuzzer/corpus:tox_events_fuzz_test"],
     deps = [
-        ":tox_dispatch",
-        ":tox_events",
-        "//c-toxcore/testing/support",
-    ],
-)
-
-cc_library(
-    name = "tox_dispatch",
-    srcs = ["tox_dispatch.c"],
-    hdrs = ["tox_dispatch.h"],
-    visibility = ["//c-toxcore:__subpackages__"],
-    deps = [
-        ":attributes",
-        ":ccompat",
         ":tox",
-        ":tox_events",
+        ":tox_dispatch",
+        "//c-toxcore/testing/support",
     ],
 )
 

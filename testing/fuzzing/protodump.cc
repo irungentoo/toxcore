@@ -266,9 +266,6 @@ void RecordBootstrap(const char *init, const char *bootstrap)
     const bool udp_success = tox_bootstrap(tox2, "127.0.0.1", 33445, dht_key1.data(), nullptr);
     assert(udp_success);
 
-    tox_events_init(tox1);
-    tox_events_init(tox2);
-
     Tox_Dispatch *dispatch = tox_dispatch_new(nullptr);
     setup_callbacks(dispatch);
 

@@ -169,13 +169,11 @@ static Tox_Event_Friend_Status *_Nullable tox_event_friend_status_alloc(Tox_Even
  *****************************************************/
 
 void tox_events_handle_friend_status(
-    Tox *_Nonnull tox,
     uint32_t friend_number,
     Tox_User_Status status,
-    void *_Nullable user_data)
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Friend_Status *friend_status = tox_event_friend_status_alloc(state);
+    Tox_Event_Friend_Status *friend_status = tox_event_friend_status_alloc(tox_events_alloc(state));
 
     if (friend_status == nullptr) {
         return;

@@ -192,8 +192,6 @@ void TestBootstrap(Fuzz_Data &input)
     tox_bootstrap(tox, "127.0.0.2", 33446, pub_key, nullptr);
     tox_add_tcp_relay(tox, "127.0.0.2", 33446, pub_key, nullptr);
 
-    tox_events_init(tox);
-
     Tox_Dispatch *dispatch = tox_dispatch_new(nullptr);
     assert(dispatch != nullptr);
     setup_callbacks(dispatch);

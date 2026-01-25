@@ -110,8 +110,8 @@ class BuildContext:
     def bzl_exports_files(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    def bzl_alias(self, *args: Any, **kwargs: Any) -> None:
-        pass
+    def bzl_alias(self, name: str, actual: str, **kwargs: Any) -> None:
+        self._add_target(name, (), (), (actual, ))
 
     def bzl_sh_library(self, *args: Any, **kwargs: Any) -> None:
         pass

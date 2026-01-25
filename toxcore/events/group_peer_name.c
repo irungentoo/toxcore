@@ -215,14 +215,12 @@ static Tox_Event_Group_Peer_Name *_Nullable tox_event_group_peer_name_alloc(Tox_
  *****************************************************/
 
 void tox_events_handle_group_peer_name(
-    Tox *_Nonnull tox,
     uint32_t group_number,
     uint32_t peer_id,
-    const uint8_t *_Nullable name, size_t name_length,
-    void *_Nullable user_data)
+    const uint8_t *name, size_t name_length,
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Group_Peer_Name *group_peer_name = tox_event_group_peer_name_alloc(state);
+    Tox_Event_Group_Peer_Name *group_peer_name = tox_event_group_peer_name_alloc(tox_events_alloc(state));
 
     if (group_peer_name == nullptr) {
         return;

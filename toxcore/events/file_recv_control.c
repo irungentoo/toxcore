@@ -183,14 +183,12 @@ static Tox_Event_File_Recv_Control *_Nullable tox_event_file_recv_control_alloc(
  *****************************************************/
 
 void tox_events_handle_file_recv_control(
-    Tox *_Nonnull tox,
     uint32_t friend_number,
     uint32_t file_number,
     Tox_File_Control control,
-    void *_Nullable user_data)
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_File_Recv_Control *file_recv_control = tox_event_file_recv_control_alloc(state);
+    Tox_Event_File_Recv_Control *file_recv_control = tox_event_file_recv_control_alloc(tox_events_alloc(state));
 
     if (file_recv_control == nullptr) {
         return;

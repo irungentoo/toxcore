@@ -204,13 +204,11 @@ static Tox_Event_Friend_Request *_Nullable tox_event_friend_request_alloc(Tox_Ev
  *****************************************************/
 
 void tox_events_handle_friend_request(
-    Tox *_Nonnull tox,
-    const uint8_t *_Nonnull public_key,
-    const uint8_t *_Nullable message, size_t length,
-    void *_Nullable user_data)
+    const uint8_t *public_key,
+    const uint8_t *message, size_t length,
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Friend_Request *friend_request = tox_event_friend_request_alloc(state);
+    Tox_Event_Friend_Request *friend_request = tox_event_friend_request_alloc(tox_events_alloc(state));
 
     if (friend_request == nullptr) {
         return;

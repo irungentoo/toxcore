@@ -195,15 +195,13 @@ static Tox_Event_File_Chunk_Request *_Nullable tox_event_file_chunk_request_allo
  *****************************************************/
 
 void tox_events_handle_file_chunk_request(
-    Tox *_Nonnull tox,
     uint32_t friend_number,
     uint32_t file_number,
     uint64_t position,
     size_t length,
-    void *_Nullable user_data)
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_File_Chunk_Request *file_chunk_request = tox_event_file_chunk_request_alloc(state);
+    Tox_Event_File_Chunk_Request *file_chunk_request = tox_event_file_chunk_request_alloc(tox_events_alloc(state));
 
     if (file_chunk_request == nullptr) {
         return;

@@ -217,14 +217,12 @@ static Tox_Event_Dht_Nodes_Response *_Nullable tox_event_dht_nodes_response_allo
  *****************************************************/
 
 void tox_events_handle_dht_nodes_response(
-    Tox *tox,
     const uint8_t *public_key,
     const char *ip, uint32_t ip_length,
     uint16_t port,
-    void *user_data)
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Dht_Nodes_Response *dht_nodes_response = tox_event_dht_nodes_response_alloc(state);
+    Tox_Event_Dht_Nodes_Response *dht_nodes_response = tox_event_dht_nodes_response_alloc(tox_events_alloc(state));
 
     if (dht_nodes_response == nullptr) {
         return;

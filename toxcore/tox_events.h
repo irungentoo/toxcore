@@ -527,12 +527,10 @@ uint32_t tox_events_get_size(const Tox_Events *_Nullable events);
 const Tox_Event *_Nullable tox_events_get(const Tox_Events *_Nullable events, uint32_t index);
 
 /**
- * Initialise the events recording system.
+ * Clear all legacy callbacks on the Tox instance.
  *
- * All callbacks will be set to handlers inside the events recording system.
- * After this function returns, no user-defined event handlers will be
- * invoked. If the client sets their own handlers after calling this function,
- * the events associated with that handler will not be recorded.
+ * This ensures that when using the event system, no legacy callbacks
+ * are invoked during dispatch, unless they are set after this call.
  */
 void tox_events_init(Tox *_Nonnull tox);
 

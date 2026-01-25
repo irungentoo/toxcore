@@ -12,6 +12,7 @@
 
 #include "tox.h"
 #include "tox_attributes.h"
+#include "tox_events.h"
 #include "tox_options.h"
 
 #ifdef __cplusplus
@@ -93,6 +94,8 @@ void tox_iterate_with_options(
 
 void tox_lock(const Tox *_Nonnull tox);
 void tox_unlock(const Tox *_Nonnull tox);
+
+Tox_Events *_Nullable tox_iterate_internal(Tox *_Nonnull tox, Tox_Err_Events_Iterate *_Nullable error);
 
 /**
  * Set the callback for the `friend_lossy_packet` event for a specific packet

@@ -201,13 +201,11 @@ static Tox_Event_Friend_Status_Message *_Nullable tox_event_friend_status_messag
  *****************************************************/
 
 void tox_events_handle_friend_status_message(
-    Tox *_Nonnull tox,
     uint32_t friend_number,
-    const uint8_t *_Nullable message, size_t length,
-    void *_Nullable user_data)
+    const uint8_t *message, size_t length,
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Friend_Status_Message *friend_status_message = tox_event_friend_status_message_alloc(state);
+    Tox_Event_Friend_Status_Message *friend_status_message = tox_event_friend_status_message_alloc(tox_events_alloc(state));
 
     if (friend_status_message == nullptr) {
         return;

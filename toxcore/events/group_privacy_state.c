@@ -169,13 +169,11 @@ static Tox_Event_Group_Privacy_State *_Nullable tox_event_group_privacy_state_al
  *****************************************************/
 
 void tox_events_handle_group_privacy_state(
-    Tox *_Nonnull tox,
     uint32_t group_number,
     Tox_Group_Privacy_State privacy_state,
-    void *_Nullable user_data)
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Group_Privacy_State *group_privacy_state = tox_event_group_privacy_state_alloc(state);
+    Tox_Event_Group_Privacy_State *group_privacy_state = tox_event_group_privacy_state_alloc(tox_events_alloc(state));
 
     if (group_privacy_state == nullptr) {
         return;

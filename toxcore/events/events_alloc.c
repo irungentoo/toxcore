@@ -11,9 +11,8 @@
 #include "../tox_event.h"
 #include "../tox_events.h"
 
-Tox_Events_State *tox_events_alloc(void *user_data)
+Tox_Events_State *tox_events_alloc(Tox_Events_State *state)
 {
-    Tox_Events_State *state = (Tox_Events_State *)user_data;
     assert(state != nullptr);
     assert(state->mem != nullptr);
 

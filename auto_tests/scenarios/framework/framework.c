@@ -575,7 +575,6 @@ ToxNode *tox_scenario_add_node_ex(ToxScenario *s, const char *alias, tox_node_sc
     }
 
     node->dispatch = tox_dispatch_new(nullptr);
-    tox_events_init(node->tox);
     mono_time_set_current_time_callback(node->tox->mono_time, get_scenario_clock, s);
 
     // Initial mirror population
@@ -782,7 +781,6 @@ void tox_node_reload(ToxNode *node)
 
     ck_assert_msg(new_tox != nullptr, "tox_new said OK but returned NULL");
     Tox_Dispatch *new_dispatch = tox_dispatch_new(nullptr);
-    tox_events_init(new_tox);
     mono_time_set_current_time_callback(new_tox->mono_time, get_scenario_clock, s);
 
     pthread_mutex_lock(&s->mutex);

@@ -217,14 +217,12 @@ static Tox_Event_Conference_Invite *_Nullable tox_event_conference_invite_alloc(
  *****************************************************/
 
 void tox_events_handle_conference_invite(
-    Tox *_Nonnull tox,
     uint32_t friend_number,
     Tox_Conference_Type type,
-    const uint8_t *_Nullable cookie, size_t length,
-    void *_Nullable user_data)
+    const uint8_t *cookie, size_t length,
+    Tox_Events_State *state)
 {
-    Tox_Events_State *state = tox_events_alloc(user_data);
-    Tox_Event_Conference_Invite *conference_invite = tox_event_conference_invite_alloc(state);
+    Tox_Event_Conference_Invite *conference_invite = tox_event_conference_invite_alloc(tox_events_alloc(state));
 
     if (conference_invite == nullptr) {
         return;
