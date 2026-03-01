@@ -1,0 +1,48 @@
+#!/bin/bash
+
+set -eu
+
+NPROC=$(sysctl -n hw.physicalcpu)
+
+# Workaround for bug in Homebrew where it only finds an old Ruby version.
+brew update
+
+brew install \
+  libconfig \
+  libvpx \
+  ninja \
+  opus
+
+. ".github/scripts/flags-clang.sh"
+
+add_ld_flag -undefined error
+
+# Make compilation error on a warning
+add_flag -Werror
+
+# Allow _Static_assert. Supported C11 extensions are fine, since we have several
+# C99-only compilers we test against anyway. Anything that passes all the
+# compilers we use is fine.
+add_c_flag -Wno-c11-extensions
+add_c_flag -Wno-pre-c11-compat
+
+cmake -GNinja -B_build -H. \
+  -DCMAKE_C_FLAGS="$C_FLAGS" \
+  -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
+  -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" \
+  -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS" \
+  -DCMAKE_INSTALL_PREFIX:PATH="$PWD/_install" \
+  -DMIN_LOGGER_LEVEL=TRACE \
+  -DMUST_BUILD_TOXAV=ON \
+  -DNON_HERMETIC_TESTS=ON \
+  -DTEST_TIMEOUT_SECONDS=120 \
+  -DUSE_IPV6=OFF \
+  -DAUTOTEST=ON
+
+cmake --build _build
+cmake --install _build
+
+# TODO(iphydf): Investigate if we can get lan discovery to work on macos CI.
+# It works, but CI doesn't let us press the "allow broadcast" button.
+ctest --test-dir _build -j50 --output-on-failure --rerun-failed --repeat until-pass:6 -E lan_discovery ||
+  ctest --test-dir _build -j50 --output-on-failure --rerun-failed --repeat until-pass:6 -E lan_discovery

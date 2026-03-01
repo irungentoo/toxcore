@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -ex
+
+FIND="find ."
+FIND="$FIND '(' -name '*.[ch]' ')'"
+FIND="$FIND -and -not -name '*.api.h'"
+FIND="$FIND -and -not -wholename './super_donators/*'"
+FIND="$FIND -and -not -wholename './third_party/*'"
+FIND="$FIND -and -not -wholename './toxencryptsave/crypto_pwhash*'"
+
+readarray -t C_SOURCES <<<"$(eval "$FIND")"
+readarray -t CC_SOURCES <<<"$(find . '(' -name '*.cc' -or -name '*.hh' ')')"
+#CC_SOURCES+=(toxcore/crypto_core.c)
+#CC_SOURCES+=(toxcore/ping_array.c)
+
+# Format C++ sources with clang-format.
+clang-format -i "${CC_SOURCES[@]}"
+
+# Format C sources with astyle. We can't use clang-format, because it strongly
+# messes up formatting of non_null annotations.
+astyle -n --options=other/astyle/astylerc "${C_SOURCES[@]}"
+
+git diff --color=always --exit-code

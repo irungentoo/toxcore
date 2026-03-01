@@ -1,0 +1,13 @@
+---
+ignored:
+  # "cd" is sometimes useful when you want to run one command in one directory
+  # and then another command in another directory, but they should be executed
+  # in the same RUN instruction.
+  - DL3003
+  - DL3007
+  - DL3008
+  - DL3013
+  - DL3018
+  - DL3059
+  # $(pkg-config ...) needs this
+  - SC2046

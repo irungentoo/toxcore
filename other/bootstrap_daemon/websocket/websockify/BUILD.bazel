@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["websockify.go"],
+    importpath = "github.com/TokTok/c-toxcore/other/bootstrap_daemon/websocket/websockify",
+    visibility = ["//visibility:private"],
+    deps = ["@com_github_gorilla_websocket//:go_default_library"],
+)
+
+go_binary(
+    name = "websockify",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)

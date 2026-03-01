@@ -1,0 +1,156 @@
+---
+version: 2
+
+workflows:
+  version: 2
+  circleci:
+    jobs:
+      - bazel-asan
+      - bazel-debug
+      - bazel-msan
+      - bazel-release
+      - clang-analyze
+      - cpplint
+      - static-analysis
+      - cimple
+      - cimplefmt
+      - generate-events
+
+jobs:
+  bazel-asan:
+    working_directory: /tmp/cirrus-ci-build
+    docker:
+      - image: toxchat/toktok-stack:latest
+
+    steps:
+      - checkout
+      - run: bash <(curl -s https://raw.githubusercontent.com/TokTok/ci-tools/refs/heads/master/tools/circleci-bazel-test)
+          --build_tag_filters=-haskell,-fuzz-test
+          --test_tag_filters=-haskell,-fuzz-test
+          //c-toxcore/...
+
+  bazel-debug:
+    working_directory: /tmp/cirrus-ci-build
+    docker:
+      - image: toxchat/toktok-stack:latest
+
+    steps:
+      - checkout
+      - run: bash <(curl -s https://raw.githubusercontent.com/TokTok/ci-tools/refs/heads/master/tools/circleci-bazel-test)
+          --build_tag_filters=-haskell
+          --test_tag_filters=-haskell
+          //c-toxcore/...
+
+  bazel-msan:
+    working_directory: /tmp/cirrus-ci-build
+    docker:
+      - image: toxchat/toktok-stack:latest
+
+    steps:
+      - checkout
+      - run: bash <(curl -s https://raw.githubusercontent.com/TokTok/ci-tools/refs/heads/master/tools/circleci-bazel-test)
+          //c-toxcore/auto_tests:lossless_packet_test
+
+  bazel-release:
+    working_directory: /tmp/cirrus-ci-build
+    docker:
+      - image: toxchat/toktok-stack:latest
+
+    steps:
+      - checkout
+      - run: bash <(curl -s https://raw.githubusercontent.com/TokTok/ci-tools/refs/heads/master/tools/circleci-bazel-test)
+          //c-toxcore/...
+
+  static-analysis:
+    working_directory: ~/work
+    docker:
+      - image: ubuntu
+
+    steps:
+      - run: &apt_install
+          apt-get update &&
+          DEBIAN_FRONTEND=noninteractive
+          apt-get install -y
+            ca-certificates
+            clang
+            cmake
+            git
+            libbenchmark-dev
+            libconfig-dev
+            libgmock-dev
+            libgtest-dev
+            libopus-dev
+            libsodium-dev
+            libvpx-dev
+            llvm-dev
+            ninja-build
+            pkg-config
+      - run:
+          apt-get install -y --no-install-recommends
+            ca-certificates
+            g++
+            llvm-dev
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: other/analysis/check_includes
+      - run: other/analysis/check_logger_levels
+      - run: other/analysis/run-clang
+      - run: other/analysis/run-gcc
+
+  clang-analyze:
+    working_directory: ~/work
+    docker:
+      - image: ubuntu
+
+    steps:
+      - run: *apt_install
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: other/analysis/run-clang-analyze
+
+  cpplint:
+    working_directory: ~/work
+    docker:
+      - image: ubuntu
+
+    steps:
+      - run: *apt_install
+      - run:
+          apt-get install -y --no-install-recommends
+            cpplint
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: other/analysis/run-cpplint
+
+  cimple:
+    working_directory: /tmp/cirrus-ci-build
+    docker:
+      - image: toxchat/toktok-stack:latest
+
+    steps:
+      - checkout
+      - run:
+          CIRCLE_JOB=release bash <(curl -s https://raw.githubusercontent.com/TokTok/ci-tools/refs/heads/master/tools/circleci-bazel-test)
+            --build_tag_filters=haskell
+            --test_tag_filters=haskell
+            --
+            //c-toxcore/...
+
+  cimplefmt:
+    working_directory: ~/work
+    machine: { image: ubuntu-2204:current }
+
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: other/docker/cimplefmt/run -u $(find tox* -name "*.[ch]")
+
+  generate-events:
+    working_directory: ~/work
+    machine: { image: ubuntu-2204:current }
+
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: other/event_tooling/run
+      - run: git diff --exit-code

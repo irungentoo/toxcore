@@ -1,64 +1,64 @@
-/* log.h
- *
- * Tox DHT bootstrap daemon.
- * Logging utility with support of multipel logging backends.
- *
- *  Copyright (C) 2015-2016 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2026 The TokTok team.
+ * Copyright © 2015-2016 Tox project.
  */
 
-#ifndef LOG_H
-#define LOG_H
+/*
+ * Tox DHT bootstrap daemon.
+ * Logging utility with support of multiple logging backends.
+ */
+#ifndef C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_LOG_H
+#define C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_LOG_H
 
 #include <stdbool.h>
 
+#include "../../../toxcore/attributes.h"
+
 typedef enum LOG_BACKEND {
-    LOG_BACKEND_SYSLOG,
-    LOG_BACKEND_STDOUT
+    LOG_BACKEND_STDOUT,
+    LOG_BACKEND_SYSLOG
 } LOG_BACKEND;
 
 typedef enum LOG_LEVEL {
+    LOG_LEVEL_TRACE,
     LOG_LEVEL_INFO,
     LOG_LEVEL_WARNING,
     LOG_LEVEL_ERROR
 } LOG_LEVEL;
 
 /**
+ * Enables or disables logging of trace messages from toxcore.
+ * @param enable true to enable, false to disable.
+ */
+void log_enable_trace(bool enable);
+
+/**
  * Initializes logger.
  * @param backend Specifies which backend to use.
- * @return true on success, flase if log is already opened.
+ * @return true on success, false if log is already opened.
  */
-bool open_log(LOG_BACKEND backend);
+bool log_open(LOG_BACKEND backend);
 
 /**
  * Releases all used resources by the logger.
- * @return true on success, flase if log is already closed.
+ * @return true on success, false if log is already closed.
  */
-bool close_log();
+bool log_close(void);
 
 /**
  * Writes a message to the log.
  * @param level Log level to use.
  * @param format printf-like format string.
  * @param ... Zero or more arguments, similar to printf function.
- * @return true on success, flase if log is closed.
+ * @return true on success, false if log is closed.
  */
-bool write_log(LOG_LEVEL level, const char *format, ...);
+bool log_write(LOG_LEVEL level, const char *category, const char *file, int line, const char *format, ...) GNU_PRINTF(5, 6);
 
+enum {
+    LOG_PATH_PREFIX = sizeof(__FILE__) - sizeof("log.h")
+};
 
-#endif // LOG_H
+#define LOG_WRITEC(level, category, ...) log_write(level, category, &__FILE__[LOG_PATH_PREFIX], __LINE__, __VA_ARGS__)
+#define LOG_WRITE(level, ...) LOG_WRITEC(level, "tox.bootstrap", __VA_ARGS__)
+
+#endif // C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_LOG_H

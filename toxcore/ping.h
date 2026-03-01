@@ -1,47 +1,47 @@
-/*
- * ping.h -- Buffered pinging using cyclic arrays.
- *
- * This file is donated to the Tox Project.
- * Copyright 2013  plutooo
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2026 The TokTok team.
+ * Copyright © 2013 Tox project.
+ * Copyright © 2013 plutooo
  */
-#ifndef __PING_H__
-#define __PING_H__
 
-typedef struct PING PING;
+/**
+ * Buffered pinging using cyclic arrays.
+ */
+#ifndef C_TOXCORE_TOXCORE_PING_H
+#define C_TOXCORE_TOXCORE_PING_H
 
-/* Add nodes to the to_ping list.
- * All nodes in this list are pinged every TIME_TOPING seconds
+#include <stdint.h>
+
+#include "DHT.h"
+#include "attributes.h"
+#include "crypto_core.h"
+#include "mem.h"
+#include "mono_time.h"
+#include "net.h"
+#include "network.h"
+
+typedef struct Ping Ping;
+
+Ping *_Nullable ping_new(const Memory *_Nonnull mem, const Mono_Time *_Nonnull mono_time, const Random *_Nonnull rng, DHT *_Nonnull dht, Networking_Core *_Nonnull net);
+
+void ping_kill(const Memory *_Nonnull mem, Ping *_Nullable ping);
+/** @brief Add nodes to the to_ping list.
+ * All nodes in this list are pinged every TIME_TO_PING seconds
  * and are then removed from the list.
  * If the list is full the nodes farthest from our public_key are replaced.
  * The purpose of this list is to enable quick integration of new nodes into the
  * network while preventing amplification attacks.
  *
- *  return 0 if node was added.
- *  return -1 if node was not added.
+ * @retval 0 if node was added.
+ * @retval -1 if node was not added.
  */
-int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port);
-void do_to_ping(PING *ping);
+int32_t ping_add(Ping *_Nonnull ping, const uint8_t *_Nonnull public_key, const IP_Port *_Nonnull ip_port);
 
-PING *new_ping(DHT *dht);
-void kill_ping(PING *ping);
+/** @brief Ping all the valid nodes in the to_ping list every TIME_TO_PING seconds.
+ * This function must be run at least once every TIME_TO_PING seconds.
+ */
+void ping_iterate(Ping *_Nonnull ping);
 
-int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key);
+void ping_send_request(Ping *_Nonnull ping, const IP_Port *_Nonnull ipp, const uint8_t *_Nonnull public_key);
 
-#endif /* __PING_H__ */
+#endif /* C_TOXCORE_TOXCORE_PING_H */

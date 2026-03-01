@@ -1,0 +1,73 @@
+#!/bin/bash
+
+. other/analysis/gen-file.sh
+
+set -e
+
+run() {
+  echo "Running GCC in variant '$*'"
+  # TODO(iphydf): Get rid of all VLAs, then enable -fstack-protector -Wstack-protector
+  g++ -O3 -o /dev/null amalgamation.cc \
+    "${CPPFLAGS[@]}" \
+    "${LDFLAGS[@]}" \
+    "$@" \
+    -std=c++20 \
+    -fdiagnostics-color=always \
+    -Wall \
+    -Wextra \
+    -Werror \
+    -Wno-error=type-limits \
+    -Wno-aggressive-loop-optimizations \
+    -Wno-float-conversion \
+    -Wno-format-signedness \
+    -Wno-inline \
+    -Wno-missing-field-initializers \
+    -Wno-nonnull-compare \
+    -Wno-padded \
+    -Wno-sign-compare \
+    -Wno-sign-conversion \
+    -Wno-switch-default \
+    -Wno-unused-parameter \
+    -Wstrict-aliasing=0 \
+    -Wstrict-overflow=1 \
+    \
+    -Wmissing-declarations \
+    -Wbool-compare \
+    -Wcast-align \
+    -Wcast-qual \
+    -Wchar-subscripts \
+    -Wdouble-promotion \
+    -Wduplicated-cond \
+    -Wempty-body \
+    -Wenum-compare \
+    -Wfloat-equal \
+    -Wformat=2 \
+    -Wframe-address \
+    -Wframe-larger-than=9000 \
+    -Wignored-attributes \
+    -Wignored-qualifiers \
+    -Winit-self \
+    -Wlarger-than=530000 \
+    -Wmaybe-uninitialized \
+    -Wmemset-transposed-args \
+    -Wmisleading-indentation \
+    -Wnonnull \
+    -Wnull-dereference \
+    -Wodr \
+    -Wredundant-decls \
+    -Wreturn-type \
+    -Wshadow \
+    -Wsuggest-attribute=format \
+    -Wundef \
+    -Wunsafe-loop-optimizations \
+    -Wunused-label \
+    -Wunused-local-typedefs \
+    -Wunused-value \
+    -Wunused-but-set-parameter \
+    -Wunused-but-set-variable \
+    -fopenmp \
+    -Wno-unused-function
+  # TODO(iphydf): Remove this last 1 when the test framework matures.
+}
+
+. other/analysis/variants.sh

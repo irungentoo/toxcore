@@ -1,0 +1,22 @@
+BasedOnStyle: WebKit
+ColumnLimit: 100
+PointerAlignment: Right
+SpacesBeforeTrailingComments: 2
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: Left
+AlwaysBreakTemplateDeclarations: Yes
+SpaceBeforeCpp11BracedList: false
+Cpp11BracedListStyle: true
+
+IncludeIsMainRegex: '([-_](test|fuzz_test))?$'
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:           '^<.*\.h>'
+    Priority:        1
+    SortPriority:    0
+  - Regex:           '^<.*'
+    Priority:        2
+    SortPriority:    0
+  - Regex:           '.*'
+    Priority:        3
+    SortPriority:    0

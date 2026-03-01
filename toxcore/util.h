@@ -1,72 +1,104 @@
-/*
- * util.h -- Utilities.
- *
- * This file is donated to the Tox Project.
- * Copyright 2013  plutooo
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2026 The TokTok team.
+ * Copyright © 2013 Tox project.
+ * Copyright © 2013 plutooo
  */
 
-#ifndef __UTIL_H__
-#define __UTIL_H__
+/**
+ * Utilities.
+ */
+#ifndef C_TOXCORE_TOXCORE_UTIL_H
+#define C_TOXCORE_TOXCORE_UTIL_H
 
-#include <stdbool.h>
-#include <stdint.h>
 #include <pthread.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
+#include "attributes.h"
+#include "mem.h"
 
-void unix_time_update();
-uint64_t unix_time();
-int is_timeout(uint64_t timestamp, uint64_t timeout);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+bool is_power_of_2(uint64_t x);
 
-/* id functions */
-bool id_equal(const uint8_t *dest, const uint8_t *src);
-uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
+/** @brief Frees all pointers in a uint8_t pointer array, as well as the array itself. */
+void free_uint8_t_pointer_array(const Memory *_Nonnull mem, uint8_t *_Nullable *_Nullable ary, size_t n_items);
+/** Returns -1 if failed or 0 if success */
+int create_recursive_mutex(pthread_mutex_t *_Nonnull mutex);
 
-void host_to_net(uint8_t *num, uint16_t numbytes);
-#define net_to_host(x, y) host_to_net(x, y)
+/**
+ * @brief Checks whether two buffers are the same length and contents.
+ *
+ * Calls `memcmp` after checking the sizes are equal.
+ *
+ * @retval true if sizes and contents are equal.
+ * @retval false otherwise.
+ */
+bool memeq(const uint8_t *_Nonnull a, size_t a_size, const uint8_t *_Nonnull b, size_t b_size);
 
-uint16_t lendian_to_host16(uint16_t lendian);
-#define host_tolendian16(x) lendian_to_host16(x)
+/**
+ * @brief Copies a byte array of a given size into a newly allocated one.
+ *
+ * @return nullptr on allocation failure or if the input data was nullptr or data_size was 0.
+ */
+uint8_t *_Nullable memdup(const Memory *_Nonnull mem, const uint8_t *_Nullable data, size_t data_size);
 
-void host_to_lendian32(uint8_t *dest,  uint32_t num);
-void lendian_to_host32(uint32_t *dest, const uint8_t *lendian);
+/**
+ * @brief Set all bytes in `data` to 0.
+ *
+ * NOTE: This does not securely zero out data. DO NOT USE for sensitive data. Use
+ * `crypto_memzero` from `crypto_core.h`, instead. This function is ok to use for
+ * message buffers, public keys, encrypted data, etc. It is not ok for buffers
+ * containing key material (secret keys, shared keys).
+ */
+void memzero(uint8_t *_Nullable data, size_t data_size);
 
-/* state load/save */
-typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32_t len, uint16_t type);
-int load_state(load_state_callback_func load_state_callback, void *outer,
-               const uint8_t *data, uint32_t length, uint16_t cookie_inner);
+// Safe min/max functions with specific types. This forces the conversion to the
+// desired type before the comparison expression, giving the choice of
+// conversion to the caller. Use these instead of inline comparisons or MIN/MAX
+// macros (effectively inline comparisons).
+int16_t max_s16(int16_t a, int16_t b);
+int32_t max_s32(int32_t a, int32_t b);
+int64_t max_s64(int64_t a, int64_t b);
 
-/* Returns -1 if failed or 0 if success */
-int create_recursive_mutex(pthread_mutex_t *mutex);
+int16_t min_s16(int16_t a, int16_t b);
+int32_t min_s32(int32_t a, int32_t b);
+int64_t min_s64(int64_t a, int64_t b);
 
-/* Ring buffer */
-typedef struct RingBuffer RingBuffer;
-bool rb_full(const RingBuffer *b);
-bool rb_empty(const RingBuffer *b);
-void *rb_write(RingBuffer *b, void *p);
-bool rb_read(RingBuffer *b, void **p);
-RingBuffer *rb_new(int size);
-void rb_kill(RingBuffer *b);
-uint16_t rb_size(const RingBuffer *b);
-uint16_t rb_data(const RingBuffer *b, void **dest);
+uint8_t max_u08(uint8_t a, uint8_t b);
+uint16_t max_u16(uint16_t a, uint16_t b);
+uint32_t max_u32(uint32_t a, uint32_t b);
+uint64_t max_u64(uint64_t a, uint64_t b);
 
-#endif /* __UTIL_H__ */
+uint16_t min_u16(uint16_t a, uint16_t b);
+uint32_t min_u32(uint32_t a, uint32_t b);
+uint64_t min_u64(uint64_t a, uint64_t b);
+
+/**
+ * Comparison function:
+ * @retval -1 if `a < b`
+ * @retval 0 if `a == b`
+ * @retval 1 if `a > b`
+ */
+int cmp_uint(uint64_t a, uint64_t b);
+
+/** @brief Returns a 32-bit hash of key of size len */
+uint32_t jenkins_one_at_a_time_hash(const uint8_t *_Nonnull key, size_t len);
+
+/** @brief Computes a checksum of a byte array.
+ *
+ * @param data The byte array used to compute the checksum.
+ * @param length The length in bytes of the passed data.
+ *
+ * @retval The resulting checksum.
+ */
+uint16_t data_checksum(const uint8_t *_Nonnull data, uint32_t length);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+#endif /* C_TOXCORE_TOXCORE_UTIL_H */

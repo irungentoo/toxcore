@@ -1,37 +1,42 @@
-/**  bwcontroller.h
- *
- *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
- *
- *   This file is part of Tox.
- *
- *   Tox is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   Tox is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
- *
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2026 The TokTok team.
+ * Copyright © 2013-2015 Tox project.
  */
+#ifndef C_TOXCORE_TOXAV_BWCONTROLLER_H
+#define C_TOXCORE_TOXAV_BWCONTROLLER_H
 
-#ifndef BWCONROLER_H
-#define BWCONROLER_H
-#include "../toxcore/Messenger.h"
+#include <stddef.h>
+#include <stdint.h>
 
-typedef struct BWController_s BWController;
+#include "../toxcore/logger.h"
+#include "../toxcore/mono_time.h"
 
-BWController *bwc_new(Messenger *m, uint32_t friendnumber,
-                      void (*mcb) (BWController *, uint32_t, float, void *),
-                      void *udata);
-void bwc_kill(BWController *bwc);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void bwc_feed_avg(BWController *bwc, uint32_t bytes);
-void bwc_add_lost(BWController *bwc, uint32_t bytes);
-void bwc_add_recv(BWController *bwc, uint32_t bytes);
+#define BWC_PACKET_ID 196
 
-#endif /* BWCONROLER_H */
+typedef struct BWController BWController;
+
+typedef void bwc_loss_report_cb(BWController *_Nonnull bwc, uint32_t friend_number, float loss, void *_Nullable user_data);
+
+typedef int bwc_send_packet_cb(void *_Nullable user_data, const uint8_t *_Nonnull data, uint16_t length);
+
+BWController *_Nullable bwc_new(const Logger *_Nonnull log, uint32_t friendnumber,
+                                bwc_loss_report_cb *_Nullable mcb, void *_Nullable mcb_user_data,
+                                bwc_send_packet_cb *_Nullable send_packet, void *_Nullable send_packet_user_data,
+                                Mono_Time *_Nonnull bwc_mono_time);
+
+void bwc_kill(BWController *_Nullable bwc);
+
+void bwc_add_lost(BWController *_Nullable bwc, uint32_t bytes_lost);
+void bwc_add_recv(BWController *_Nullable bwc, uint32_t recv_bytes);
+
+void bwc_handle_packet(BWController *_Nullable bwc, const uint8_t *_Nonnull data, size_t length);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+#endif /* C_TOXCORE_TOXAV_BWCONTROLLER_H */

@@ -1,0 +1,27 @@
+# tox-bootstrapd completion                              -*- shell-script -*-
+
+_tox_bootstrapd()
+{
+    local cur prev words cword split
+    _init_completion -s || return
+
+    case $prev in
+        --config)
+            _filedir
+            return
+            ;;
+        --log-backend)
+            COMPREPLY=($(compgen -W 'stdout syslog' -- "$cur"))
+            return
+            ;;
+    esac
+
+    $split && return
+
+    if type _bashcomp_try_faketty &>/dev/null; then
+        COMPREPLY=($(compgen -W '$(_parse_help _bashcomp_try_faketty "$1" --help)' -- "$cur"))
+        [[ ${COMPREPLY-} == *= ]] && compopt -o nospace
+    fi
+} && complete -F _tox_bootstrapd tox-bootstrapd
+
+# ex: filetype=sh

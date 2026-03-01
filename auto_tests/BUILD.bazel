@@ -1,0 +1,91 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "check_compat",
+    testonly = True,
+    hdrs = ["check_compat.h"],
+    visibility = ["//c-toxcore/auto_tests:__subpackages__"],
+    deps = ["//c-toxcore/toxcore:ccompat"],
+)
+
+cc_library(
+    name = "auto_test_support",
+    testonly = True,
+    srcs = ["auto_test_support.c"],
+    hdrs = ["auto_test_support.h"],
+    deps = [
+        ":check_compat",
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore:DHT",
+        "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:net_crypto",
+        "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_dispatch",
+        "//c-toxcore/toxcore:tox_events",
+        "//c-toxcore/toxcore:tox_log_level",
+    ],
+)
+
+flaky_tests = {
+    "crypto_core_test": True,
+}
+
+extra_args = {
+    "proxy_test": ["$(location //c-toxcore/other/proxy)"],
+}
+
+extra_data = {
+    "proxy_test": ["//c-toxcore/other/proxy"],
+}
+
+[cc_test(
+    name = src[:-2],
+    srcs = [src],
+    args = ["$(location %s)" % src] + extra_args.get(
+        src[:-2],
+        [],
+    ),
+    data = glob(["data/*"]) + extra_data.get(
+        src[:-2],
+        [],
+    ),
+    flaky = flaky_tests.get(
+        src[:-2],
+        False,
+    ),
+    deps = [
+        ":auto_test_support",
+        ":check_compat",
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxav",
+        "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:TCP_client",
+        "//c-toxcore/toxcore:TCP_common",
+        "//c-toxcore/toxcore:TCP_connection",
+        "//c-toxcore/toxcore:TCP_server",
+        "//c-toxcore/toxcore:announce",
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:crypto_core",
+        "//c-toxcore/toxcore:forwarding",
+        "//c-toxcore/toxcore:friend_connection",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:net_crypto",
+        "//c-toxcore/toxcore:net_profile",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:onion",
+        "//c-toxcore/toxcore:onion_announce",
+        "//c-toxcore/toxcore:onion_client",
+        "//c-toxcore/toxcore:os_memory",
+        "//c-toxcore/toxcore:os_random",
+        "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_dispatch",
+        "//c-toxcore/toxcore:tox_events",
+        "//c-toxcore/toxcore:tox_unpack",
+        "//c-toxcore/toxcore:util",
+        "//c-toxcore/toxencryptsave",
+        "@libsodium",
+        "@libvpx",
+    ],
+) for src in glob(["*_test.c"])]

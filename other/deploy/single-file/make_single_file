@@ -1,0 +1,60 @@
+#!/usr/bin/env perl
+#
+# This script can be used to create a single .c file with all of toxcore in it
+# as well as your code or test file. It does not depend on any header files
+# anymore, as those are emitted directly into the .c file.
+#
+# Example:
+#
+#   other/deploy/single-file/make_single_file auto_tests/scenarios/scenario_toxav_basic_test.c auto_tests/scenarios/framework/framework.c testing/misc_tools.c | \
+#     tcc -o toxav_basic_test - $(pkg-config --cflags --libs libsodium opus vpx)
+#
+#   other/deploy/single-file/make_single_file -core auto_tests/scenarios/scenario_send_message_test.c auto_tests/scenarios/framework/framework.c testing/misc_tools.c | \
+#     tcc -o send_message_test - $(pkg-config --cflags --libs libsodium)
+
+use strict;
+use warnings;
+
+use Cwd 'abs_path';
+
+sub relative_to {
+   my ($rel, $fn) = @_;
+   my @path = split "/", $rel;
+   pop @path;
+   abs_path(join "/", @path, $fn)
+}
+
+my %seen;
+sub emit {
+   my ($fn) = @_;
+   return if $seen{$fn};
+   $seen{$fn} = 1;
+
+   open my $fh, "<", $fn or die "$fn: $!";
+   my $line = 1;
+   print "#line $line \"$fn\"\n";
+   while (<$fh>) {
+      if (/^#include "([^"]*)"/) {
+         emit(relative_to($fn, $1), $1);
+         ++$line;
+         print "#line $line \"$fn\"\n";
+      } else {
+         print;
+         ++$line;
+      }
+   }
+}
+
+my @core = (<toxcore/*.c>, <toxcore/*/*.c>, <toxencryptsave/*.c>, <third_party/cmp/*.c>);
+if (@ARGV and $ARGV[0] eq "-core") {
+   shift @ARGV;
+   emit(abs_path $_) for @core;
+} else {
+   if (@ARGV and $ARGV[0] eq "-av") {
+      # Ignore -av, it's the default.
+      shift @ARGV;
+   }
+   emit(abs_path $_) for (<toxav/*.c>, @core);
+}
+
+emit(abs_path $_) for @ARGV;

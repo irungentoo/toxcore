@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 ### BEGIN INIT INFO
 # Provides:          tox-bootstrapd
 # Required-Start:    $remote_fs $syslog
@@ -21,6 +21,35 @@ PIDFILE=$PIDDIR/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 USER=tox-bootstrapd
 GROUP=tox-bootstrapd
+
+# Set ulimit -n based on number of fds available.
+# This check is borrowed from Debian's tor package, with a few modifications.
+if [ -r /proc/sys/fs/file-max ]; then
+	system_max=$(cat /proc/sys/fs/file-max)
+	if [ "$system_max" -gt "80000" ] ; then
+		MAX_FILEDESCRIPTORS=32768
+	elif [ "$system_max" -gt "40000" ] ; then
+		MAX_FILEDESCRIPTORS=16384
+	elif [ "$system_max" -gt "20000" ] ; then
+		MAX_FILEDESCRIPTORS=8192
+	elif [ "$system_max" -gt "10000" ] ; then
+		MAX_FILEDESCRIPTORS=4096
+	else
+		MAX_FILEDESCRIPTORS=1024
+		cat << EOF
+
+Warning: Your system has very few file descriptors available in total.
+
+Maybe you should try raising that by adding 'fs.file-max=100000' to your
+/etc/sysctl.conf file.  Feel free to pick any number that you deem appropriate.
+Then run 'sysctl -p'.  See /proc/sys/fs/file-max for the current value, and
+file-nr in the same directory for how many of those are used at the moment.
+
+EOF
+	fi
+else
+	MAX_FILEDESCRIPTORS=32768
+fi
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
@@ -48,6 +77,8 @@ do_start()
 	fi
 	chown $USER:$GROUP $PIDDIR
 	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test --chuid $USER > /dev/null || return 1
+	# TCP Server needs to be able to have lots of TCP sockets open.
+	ulimit -n $MAX_FILEDESCRIPTORS
 	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --chuid $USER -- $DAEMON_ARGS || return 2
 }
 

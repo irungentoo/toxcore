@@ -1,0 +1,154 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "support",
+    srcs = [
+        "doubles/fake_network_stack.cc",
+        "doubles/fake_sockets.cc",
+        "doubles/network_universe.cc",
+        "src/clock.cc",
+        "src/environment.cc",
+        "src/fake_clock.cc",
+        "src/fake_memory.cc",
+        "src/fake_random.cc",
+        "src/fuzz_helpers.cc",
+        "src/memory.cc",
+        "src/network.cc",
+        "src/random.cc",
+        "src/simulated_environment.cc",
+        "src/simulation.cc",
+        "src/tox_network.cc",
+        "src/tox_runner.cc",
+    ],
+    hdrs = [
+        "doubles/fake_clock.hh",
+        "doubles/fake_memory.hh",
+        "doubles/fake_network_stack.hh",
+        "doubles/fake_random.hh",
+        "doubles/fake_sockets.hh",
+        "doubles/network_universe.hh",
+        "public/clock.hh",
+        "public/environment.hh",
+        "public/fuzz_data.hh",
+        "public/fuzz_helpers.hh",
+        "public/memory.hh",
+        "public/mpsc_queue.hh",
+        "public/network.hh",
+        "public/random.hh",
+        "public/simulated_environment.hh",
+        "public/simulation.hh",
+        "public/tox_network.hh",
+        "public/tox_runner.hh",
+    ],
+    copts = select({
+        "//tools/config:windows": ["/wd4200"],  # Zero-sized array in struct/union
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:mem",
+        "//c-toxcore/toxcore:net",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:rng",
+        "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_events",
+        "//c-toxcore/toxcore:tox_options",
+        "@psocket",
+    ],
+)
+
+cc_test(
+    name = "fake_sockets_test",
+    size = "small",
+    srcs = ["doubles/fake_sockets_test.cc"],
+    deps = [
+        ":support",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+        "@psocket",
+    ],
+)
+
+cc_test(
+    name = "fake_network_udp_test",
+    size = "small",
+    srcs = ["doubles/fake_network_udp_test.cc"],
+    deps = [
+        ":support",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+        "@psocket",
+    ],
+)
+
+cc_test(
+    name = "fake_network_tcp_test",
+    srcs = ["doubles/fake_network_tcp_test.cc"],
+    deps = [
+        ":support",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+        "@psocket",
+    ],
+)
+
+cc_test(
+    name = "fake_network_stack_test",
+    size = "small",
+    srcs = ["doubles/fake_network_stack_test.cc"],
+    deps = [
+        ":support",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+        "@psocket",
+    ],
+)
+
+cc_test(
+    name = "network_universe_test",
+    size = "small",
+    srcs = ["doubles/network_universe_test.cc"],
+    deps = [
+        ":support",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+        "@psocket",
+    ],
+)
+
+cc_test(
+    name = "bootstrap_scaling_test",
+    size = "small",
+    srcs = ["bootstrap_scaling_test.cc"],
+    deps = [
+        ":support",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:tox",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "simulation_test",
+    srcs = ["simulation_test.cc"],
+    deps = [
+        ":support",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "tox_network_test",
+    srcs = ["tox_network_test.cc"],
+    deps = [
+        ":support",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:tox",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

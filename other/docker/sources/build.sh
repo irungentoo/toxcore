@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -eux
+BUILD=sources
+docker build -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/$BUILD.Dockerfile" .

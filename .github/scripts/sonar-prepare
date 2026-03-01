@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -eu
+
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends \
+  libconfig-dev \
+  libopus-dev \
+  libsodium-dev \
+  libvpx-dev \
+  ninja-build
+
+. ".github/scripts/flags-gcc.sh"
+
+add_ld_flag -Wl,-z,defs
+
+# Make compilation error on a warning
+add_flag -Werror
+
+cmake -B_build -H. -GNinja \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DCMAKE_C_FLAGS="$C_FLAGS" \
+  -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
+  -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" \
+  -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS" \
+  -DCMAKE_INSTALL_PREFIX:PATH="$PWD/_install" \
+  -DMIN_LOGGER_LEVEL=TRACE \
+  -DMUST_BUILD_TOXAV=ON \
+  -DNON_HERMETIC_TESTS=OFF \
+  -DSTRICT_ABI=ON \
+  -DTEST_TIMEOUT_SECONDS=120 \
+  -DUSE_IPV6=OFF \
+  -DAUTOTEST=ON \
+  -DENABLE_SHARED=OFF

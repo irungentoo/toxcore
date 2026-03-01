@@ -1,0 +1,32 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "scenario_framework",
+    testonly = True,
+    srcs = ["framework/framework.c"],
+    hdrs = ["framework/framework.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//c-toxcore/auto_tests:check_compat",
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_dispatch",
+        "//c-toxcore/toxcore:tox_events",
+    ],
+)
+
+[cc_test(
+    name = src[len("scenario_"):-2],
+    size = "small",
+    srcs = [src],
+    deps = [
+        ":scenario_framework",
+        "//c-toxcore/toxav",
+        "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_events",
+    ],
+) for src in glob(["scenario_*_test.c"])]

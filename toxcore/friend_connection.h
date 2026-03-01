@@ -1,35 +1,26 @@
-/* friend_connection.h
- *
- * Connection to friends.
- *
- *  Copyright (C) 2014 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2026 The TokTok team.
+ * Copyright © 2014 Tox project.
  */
 
+/**
+ * Connection to friends.
+ */
+#ifndef C_TOXCORE_TOXCORE_FRIEND_CONNECTION_H
+#define C_TOXCORE_TOXCORE_FRIEND_CONNECTION_H
 
-#ifndef FRIEND_CONNECTION_H
-#define FRIEND_CONNECTION_H
+#include <stdbool.h>
+#include <stdint.h>
 
-#include "net_crypto.h"
 #include "DHT.h"
-#include "LAN_discovery.h"
+#include "attributes.h"
+#include "logger.h"
+#include "mem.h"
+#include "mono_time.h"
+#include "net.h"
+#include "net_crypto.h"
+#include "network.h"
 #include "onion_client.h"
-
 
 #define MAX_FRIEND_CONNECTION_CALLBACKS 2
 #define MESSENGER_CALLBACK_INDEX 0
@@ -39,174 +30,143 @@
 #define PACKET_ID_SHARE_RELAYS 17
 #define PACKET_ID_FRIEND_REQUESTS 18
 
-/* Interval between the sending of ping packets. */
+/** Interval between the sending of ping packets. */
 #define FRIEND_PING_INTERVAL 8
 
-/* If no packets are received from friend in this time interval, kill the connection. */
+/** If no packets are received from friend in this time interval, kill the connection. */
 #define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 4)
 
-/* Time before friend is removed from the DHT after last hearing about him. */
+/** Time before friend is removed from the DHT after last hearing about him. */
 #define FRIEND_DHT_TIMEOUT BAD_NODE_TIMEOUT
 
 #define FRIEND_MAX_STORED_TCP_RELAYS (MAX_FRIEND_TCP_CONNECTIONS * 4)
 
-/* Max number of tcp relays sent to friends */
-#define MAX_SHARED_RELAYS (RECOMMENDED_FRIEND_TCP_CONNECTIONS)
+/** Max number of tcp relays sent to friends */
+#define MAX_SHARED_RELAYS RECOMMENDED_FRIEND_TCP_CONNECTIONS
 
-/* Interval between the sending of tcp relay information */
-#define SHARE_RELAYS_INTERVAL (5 * 60)
+/** How often we share our TCP relays with each friend connection */
+#define SHARE_RELAYS_INTERVAL (60 * 2)
 
-
-enum {
+typedef enum Friendconn_Status {
     FRIENDCONN_STATUS_NONE,
     FRIENDCONN_STATUS_CONNECTING,
-    FRIENDCONN_STATUS_CONNECTED
-};
+    FRIENDCONN_STATUS_CONNECTED,
+} Friendconn_Status;
 
-typedef struct {
-    uint8_t status;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    uint8_t real_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
-    uint16_t dht_lock;
-    IP_Port dht_ip_port;
-    uint64_t dht_pk_lastrecv, dht_ip_port_lastrecv;
+typedef struct Friend_Connections Friend_Connections;
 
-    int onion_friendnum;
-    int crypt_connection_id;
+Net_Crypto *_Nonnull friendconn_net_crypto(const Friend_Connections *_Nonnull fr_c);
 
-    uint64_t ping_lastrecv, ping_lastsent;
-    uint64_t share_relays_lastsent;
-
-    struct {
-        int (*status_callback)(void *object, int id, uint8_t status);
-        void *status_callback_object;
-        int status_callback_id;
-
-        int (*data_callback)(void *object, int id, uint8_t *data, uint16_t length);
-        void *data_callback_object;
-        int data_callback_id;
-
-        int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length);
-        void *lossy_data_callback_object;
-        int lossy_data_callback_id;
-    } callbacks[MAX_FRIEND_CONNECTION_CALLBACKS];
-
-    uint16_t lock_count;
-
-    Node_format tcp_relays[FRIEND_MAX_STORED_TCP_RELAYS];
-    uint16_t tcp_relay_counter;
-
-    _Bool hosting_tcp_relay;
-} Friend_Conn;
-
-
-typedef struct {
-    Net_Crypto *net_crypto;
-    DHT *dht;
-    Onion_Client *onion_c;
-
-    Friend_Conn *conns;
-    uint32_t num_cons;
-
-    int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len);
-    void *fr_request_object;
-
-    uint64_t last_LANdiscovery;
-} Friend_Connections;
-
-/* return friendcon_id corresponding to the real public key on success.
- * return -1 on failure.
+/**
+ * @return friendcon_id corresponding to the real public key on success.
+ * @retval -1 on failure.
  */
-int getfriend_conn_id_pk(Friend_Connections *fr_c, const uint8_t *real_pk);
+int getfriend_conn_id_pk(const Friend_Connections *_Nonnull fr_c, const uint8_t *_Nonnull real_pk);
 
-/* Increases lock_count for the connection with friendcon_id by 1.
+/** @brief Increases lock_count for the connection with friendcon_id by 1.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
-int friend_connection_lock(Friend_Connections *fr_c, int friendcon_id);
+int friend_connection_lock(const Friend_Connections *_Nonnull fr_c, int friendcon_id);
 
-/* return FRIENDCONN_STATUS_CONNECTED if the friend is connected.
- * return FRIENDCONN_STATUS_CONNECTING if the friend isn't connected.
- * return FRIENDCONN_STATUS_NONE on failure.
+/**
+ * @retval FRIENDCONN_STATUS_CONNECTED if the friend is connected.
+ * @retval FRIENDCONN_STATUS_CONNECTING if the friend isn't connected.
+ * @retval FRIENDCONN_STATUS_NONE on failure.
  */
-unsigned int friend_con_connected(Friend_Connections *fr_c, int friendcon_id);
+unsigned int friend_con_connected(const Friend_Connections *_Nonnull fr_c, int friendcon_id);
 
-/* Copy public keys associated to friendcon_id.
+/** @brief Copy public keys associated to friendcon_id.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
-int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Connections *fr_c, int friendcon_id);
+int get_friendcon_public_keys(uint8_t *_Nullable real_pk, uint8_t *_Nullable dht_temp_pk, const Friend_Connections *_Nonnull fr_c, int friendcon_id);
+/** Set temp dht key for connection. */
+void set_dht_temp_pk(Friend_Connections *_Nonnull fr_c, int friendcon_id, const uint8_t *_Nonnull dht_temp_pk, void *_Nullable userdata);
 
-/* Set temp dht key for connection.
- */
-void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk);
+typedef int global_status_cb(void *_Nullable object, int friendcon_id, bool status, void *_Nullable userdata);
 
-/* Add a TCP relay associated to the friend.
+typedef int fc_status_cb(void *_Nullable object, int friendcon_id, bool status, void *_Nullable userdata);
+typedef int fc_data_cb(void *_Nullable object, int friendcon_id, const uint8_t *_Nonnull data, uint16_t length, void *_Nullable userdata);
+typedef int fc_lossy_data_cb(void *_Nullable object, int friendcon_id, const uint8_t *_Nonnull data, uint16_t length, void *_Nullable userdata);
+
+/** Set global status callback for friend connections. */
+void set_global_status_callback(Friend_Connections *_Nonnull fr_c, global_status_cb *_Nullable global_status_callback, void *_Nullable object);
+/** @brief Set the callbacks for the friend connection.
+ * @param index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we
+ *   want the callback to set in the array.
  *
- * return -1 on failure.
- * return 0 on success.
+ * @retval 0 on success.
+ * @retval -1 on failure
  */
-int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_port, const uint8_t *public_key);
-
-/* Set the callbacks for the friend connection.
- * index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we want the callback to set in the array.
+int friend_connection_callbacks(const Friend_Connections *_Nonnull fr_c, int friendcon_id, unsigned int index,
+                                fc_status_cb *_Nullable status_callback,
+                                fc_data_cb *_Nullable data_callback,
+                                fc_lossy_data_cb *_Nullable lossy_data_callback,
+                                void *_Nullable object, int number);
+/** @brief return the crypt_connection_id for the connection.
  *
- * return 0 on success.
- * return -1 on failure
+ * @return crypt_connection_id on success.
+ * @retval -1 on failure.
  */
-int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsigned int index,
-                                int (*status_callback)(void *object, int id, uint8_t status), int (*data_callback)(void *object, int id, uint8_t *data,
-                                        uint16_t length), int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object,
-                                int number);
+int friend_connection_crypt_connection_id(const Friend_Connections *_Nonnull fr_c, int friendcon_id);
 
-/* return the crypt_connection_id for the connection.
- *
- * return crypt_connection_id on success.
- * return -1 on failure.
- */
-int friend_connection_crypt_connection_id(Friend_Connections *fr_c, int friendcon_id);
-
-/* Create a new friend connection.
+/** @brief Create a new friend connection.
  * If one to that real public key already exists, increase lock count and return it.
  *
- * return -1 on failure.
- * return connection id on success.
+ * @retval -1 on failure.
+ * @return connection id on success.
  */
-int new_friend_connection(Friend_Connections *fr_c, const uint8_t *real_public_key);
+int new_friend_connection(Friend_Connections *_Nonnull fr_c, const uint8_t *_Nonnull real_public_key);
 
-/* Kill a friend connection.
+/** @brief Kill a friend connection.
  *
- * return -1 on failure.
- * return 0 on success.
+ * @retval -1 on failure.
+ * @retval 0 on success.
  */
-int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id);
+int kill_friend_connection(Friend_Connections *_Nonnull fr_c, int friendcon_id);
 
-/* Send a Friend request packet.
+/** @brief Send a Friend request packet.
  *
- *  return -1 if failure.
- *  return  0 if it sent the friend request directly to the friend.
- *  return the number of peers it was routed through if it did not send it directly.
+ * @retval -1 if failure.
+ * @retval  0 if it sent the friend request directly to the friend.
+ * @return the number of peers it was routed through if it did not send it directly.
  */
-int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint32_t nospam_num, const uint8_t *data,
-                               uint16_t length);
+int send_friend_request_packet(Friend_Connections *_Nonnull fr_c, int friendcon_id, uint32_t nospam_num, const uint8_t *_Nonnull data, uint16_t length);
 
-/* Set friend request callback.
+typedef int fr_request_cb(
+    void *_Nonnull object, const uint8_t *_Nonnull source_pubkey, const uint8_t *_Nonnull data, uint16_t length, void *_Nullable userdata);
+
+/** @brief Set friend request callback.
  *
- * This function will be called every time a friend request is received.
+ * This function will be called every time a friend request packet is received.
  */
-void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
-                                 const uint8_t *, uint16_t), void *object);
+void set_friend_request_callback(Friend_Connections *_Nonnull fr_c, fr_request_cb *_Nullable fr_request_callback, void *_Nullable object);
 
-/* Create new friend_connections instance. */
-Friend_Connections *new_friend_connections(Onion_Client *onion_c);
+/** Create new friend_connections instance. */
+Friend_Connections *_Nullable new_friend_connections(const Logger *_Nonnull logger, const Memory *_Nonnull mem, const Mono_Time *_Nonnull mono_time, const Network *_Nonnull ns,
+        Onion_Client *_Nonnull onion_c, DHT *_Nonnull dht, Net_Crypto *_Nonnull net_crypto, Networking_Core *_Nonnull net,
+        bool local_discovery_enabled);
 
-/* main friend_connections loop. */
-void do_friend_connections(Friend_Connections *fr_c);
+/** main friend_connections loop. */
+void do_friend_connections(Friend_Connections *_Nonnull fr_c, void *_Nullable userdata);
 
-/* Free everything related with friend_connections. */
-void kill_friend_connections(Friend_Connections *fr_c);
+/** Free everything related with friend_connections. */
+void kill_friend_connections(Friend_Connections *_Nullable fr_c);
+typedef struct Friend_Conn Friend_Conn;
 
+Friend_Conn *_Nullable get_conn(const Friend_Connections *_Nonnull fr_c, int friendcon_id);
+int friend_conn_get_onion_friendnum(const Friend_Conn *_Nonnull fc);
+const IP_Port *_Nullable friend_conn_get_dht_ip_port(const Friend_Conn *_Nonnull fc);
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
+
+#endif /* C_TOXCORE_TOXCORE_FRIEND_CONNECTION_H */

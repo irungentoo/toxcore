@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+set -eux
+
+BUILD=codeql
+
+# Ensure the sources image is built
+other/docker/sources/build.sh
+
+# Build the codeql image
+docker build -t "toxchat/c-toxcore:$BUILD" -f "other/docker/$BUILD/$BUILD.Dockerfile" .
+
+# Run the container
+echo "Running CodeQL analysis..."
+docker run --rm "toxchat/c-toxcore:$BUILD"

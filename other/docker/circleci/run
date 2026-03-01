@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -eux
+
+SANITIZER="${1:-asan}"
+
+if [ -t 0 ]; then
+  TTY=true
+else
+  TTY=false
+fi
+
+docker build -t toxchat/c-toxcore:circleci other/docker/circleci
+docker run --name toxcore-circleci --rm --interactive="$TTY" --tty="$TTY" --volume "$PWD:/c-toxcore" toxchat/c-toxcore:circleci "$SANITIZER"

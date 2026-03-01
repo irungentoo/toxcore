@@ -1,3 +1,5 @@
+if BUILD_DHT_BOOTSTRAP
+
 bin_PROGRAMS += DHT_bootstrap
 
 DHT_bootstrap_SOURCES = ../other/DHT_bootstrap.c \
@@ -7,16 +9,15 @@ DHT_bootstrap_SOURCES = ../other/DHT_bootstrap.c \
                         ../other/bootstrap_node_packets.c
 
 DHT_bootstrap_CFLAGS = -I$(top_srcdir)/other \
-                        $(LIBSODIUM_CFLAGS) \
-                        $(NACL_CFLAGS)
+                        $(LIBSODIUM_CFLAGS)
 
 DHT_bootstrap_LDADD =   $(LIBSODIUM_LDFLAGS) \
-                        $(NACL_LDFLAGS) \
+                        libmisc_tools.la \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
-                        $(NACL_OBJECTS) \
-                        $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
+
+endif
 
 EXTRA_DIST +=           $(top_srcdir)/other/DHTnodes \
                         $(top_srcdir)/other/tox.png

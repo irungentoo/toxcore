@@ -11,6 +11,9 @@ WorkingDirectory=/var/lib/tox-bootstrapd
 ExecStart=/usr/local/bin/tox-bootstrapd --config /etc/tox-bootstrapd.conf
 User=tox-bootstrapd
 Group=tox-bootstrapd
+# TCP Server needs to be able to have lots of TCP sockets open.
+LimitNOFILE=32768
+# Uncomment to allow binding to ports < 1024, e.g. 443 (HTTPS) for TCP Server
 #CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 [Install]

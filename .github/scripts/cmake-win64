@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+i686=false
+x86_64=true
+WINDOWS_ARCH=win64
+
+. .github/scripts/cmake-windows.sh

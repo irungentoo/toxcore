@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: toxcore
+Description: Tox protocol library
+Requires.private: @toxcore_PKGCONFIG_REQUIRES@
+Version: @PROJECT_VERSION@
+Libs: -L${libdir} -ltoxcore
+Libs.private: @toxcore_PKGCONFIG_LIBS@
+Cflags: -I${includedir}

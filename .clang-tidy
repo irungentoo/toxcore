@@ -1,0 +1,49 @@
+# vim:ft=yaml
+HeaderFilterRegex: "/c-toxcore/[^/]+/[^.].+"
+CheckOptions:
+  - key:             readability-identifier-naming.ClassCase
+    value:           Camel_Snake_Case
+  - key:             readability-identifier-naming.ConstantCase
+    value:           lower_case
+  # bootstrap-daemon has these.
+  - key:             readability-identifier-naming.ConstantIgnoredRegexp
+    value:           "^NAME_.*"
+  - key:             readability-identifier-naming.EnumCase
+    value:           Camel_Snake_Case
+  - key:             readability-identifier-naming.EnumConstantCase
+    value:           UPPER_CASE
+  - key:             readability-identifier-naming.FunctionCase
+    value:           lower_case
+  - key:             readability-identifier-naming.GlobalConstantCase
+    value:           lower_case
+  - key:             readability-identifier-naming.MemberCase
+    value:           lower_case
+  - key:             readability-identifier-naming.MacroDefinitionCase
+    value:           UPPER_CASE
+  - key:             readability-identifier-naming.MacroDefinitionIgnoredRegexp
+    value:           "^_.*|bitwise|force|nullable|non_null|nullptr|static_assert|ck_.*"
+  - key:             readability-identifier-naming.ParameterCase
+    value:           lower_case
+  - key:             readability-identifier-naming.StructCase
+    value:           Camel_Snake_Case
+  - key:             readability-identifier-naming.TypedefCase
+    value:           Camel_Snake_Case
+  - key:             readability-identifier-naming.TypedefIgnoredRegexp
+    value:           ".*_cb"
+  - key:             readability-identifier-naming.UnionCase
+    value:           Camel_Snake_Case
+  - key:             readability-identifier-naming.VariableCase
+    value:           lower_case
+
+  - key:             llvmlibc-restrict-system-libc-headers.Includes
+    value:           "alloca.h,arpa/inet.h,assert.h,ctype.h,errno.h,fcntl.h,getopt.h,libconfig.h,limits.h,linux/if.h,math.h,netdb.h,netinet/in.h,opus.h,pthread.h,signal.h,sodium/crypto_scalarmult_curve25519.h,sodium.h,sodium/randombytes.h,stdarg.h,stdbool.h,stddef.h,stdint.h,stdio.h,stdlib.h,string.h,sys/ioctl.h,syslog.h,sys/resource.h,sys/socket.h,sys/stat.h,sys/time.h,sys/types.h,time.h,unistd.h,vpx/vp8cx.h,vpx/vp8dx.h,vpx/vpx_decoder.h,vpx/vpx_encoder.h,vpx/vpx_image.h"
+  - key:             hicpp-signed-bitwise.IgnorePositiveIntegerLiterals
+    value:           true
+  - key:             concurrency-mt-unsafe.FunctionSet
+    value:           posix
+  - key:             readability-function-cognitive-complexity.Threshold
+    value:           159  # TODO(iphydf): Decrease. tox_new_system is the highest at the moment.
+  - key:             cppcoreguidelines-avoid-do-while.IgnoreMacros
+    value:           true
+  - key:             readability-simplify-boolean-expr.SimplifyDeMorgan
+    value:           false

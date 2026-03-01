@@ -1,0 +1,57 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: ["master"]
+  schedule:
+    - cron: "39 10 * * 0"
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["cpp"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libconfig-dev \
+            libopus-dev \
+            libsodium-dev \
+            libvpx-dev \
+            ninja-build \
+            pkg-config
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Build
+        run: |
+          cmake -GNinja -B _build -S .
+          cmake --build _build --parallel $(nproc)
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

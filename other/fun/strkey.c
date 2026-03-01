@@ -2,7 +2,7 @@
  *
  * Generates Tox's key pairs, checking if a certain string is in the public key.
  *
- * Requires sodium or nacl library.
+ * Requires sodium library.
  *
  * There seem to be some problems with the code working on Windows -- it works
  * when built in debug mode with MinGW 4.8, but it doesn't work correctly when
@@ -41,12 +41,13 @@
 
 #include <sodium.h>
 
+#include "../../toxcore/ccompat.h"
+
 #define PRINT_TRIES_COUNT
 
-void print_key(unsigned char *key)
+static void print_key(const unsigned char *key)
 {
-    size_t i;
-    for (i = 0; i < crypto_box_PUBLICKEYBYTES; i++) {
+    for (size_t i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
         if (key[i] < 16) {
             fprintf(stdout, "0");
         }
@@ -59,19 +60,28 @@ int main(int argc, char *argv[])
 {
     unsigned char public_key[crypto_box_PUBLICKEYBYTES]; // null terminator
     unsigned char secret_key[crypto_box_SECRETKEYBYTES];
-    int offset = 0;
+    long int offset = 0;
     size_t len;
     unsigned char desired_bin[crypto_box_PUBLICKEYBYTES]; // null terminator
 
     if (argc == 3) {
-        offset = atoi(argv[1]);
+        offset = strtol(argv[1], nullptr, 10);
+
+        if (offset <= 0) {
+            fprintf(stderr, "strtol() failed to convert \"%s\" into an integer\n", argv[1]);
+            exit(1);
+        }
+
         char *desired_hex = argv[2];
         len = strlen(desired_hex);
+
         if (len % 2 != 0) {
             fprintf(stderr, "Desired key should have an even number of letters\n");
             exit(1);
         }
-        size_t block_length = (offset < 0 ? 0 : offset) + len/2;
+
+        size_t block_length = (offset < 0 ? 0 : offset) + len / 2;
+
         if (block_length > crypto_box_PUBLICKEYBYTES) {
             fprintf(stderr, "The given key with the given offset exceed public key's length\n");
             exit(1);
@@ -80,8 +90,11 @@ int main(int argc, char *argv[])
         // convert hex to bin
         char *pos = desired_hex;
         size_t i;
+
         for (i = 0; i < len; pos += 2) {
-            sscanf(pos, "%2hhx", &desired_bin[i]);
+            unsigned int value;
+            sscanf(pos, "%02x", &value);
+            desired_bin[i] = value;
             ++i;
         }
     } else {
@@ -97,13 +110,14 @@ int main(int argc, char *argv[])
 
     if (offset < 0) {
         int found = 0;
+
         do {
 #ifdef PRINT_TRIES_COUNT
-            tries ++;
+            ++tries;
 #endif
             crypto_box_keypair(public_key, secret_key);
-            int i;
-            for (i = 0; i <= crypto_box_PUBLICKEYBYTES - len; i ++) {
+
+            for (uint32_t i = 0; i <= crypto_box_PUBLICKEYBYTES - len; ++i) {
                 if (memcmp(public_key + i, desired_bin, len) == 0) {
                     found = 1;
                     break;
@@ -111,11 +125,11 @@ int main(int argc, char *argv[])
             }
         } while (!found);
     } else {
-        unsigned char *p = public_key + offset;
+        const unsigned char *p = public_key + offset;
 
         do {
 #ifdef PRINT_TRIES_COUNT
-	    tries ++;
+            ++tries;
 #endif
             crypto_box_keypair(public_key, secret_key);
         } while (memcmp(p, desired_bin, len) != 0);
@@ -130,7 +144,7 @@ int main(int argc, char *argv[])
     fprintf(stdout, "\n");
 
 #ifdef PRINT_TRIES_COUNT
-	fprintf(stdout, "Found the key pair on %llu try.\n", tries);
+    fprintf(stdout, "Found the key pair on %llu try.\n", tries);
 #endif
 
     return 0;

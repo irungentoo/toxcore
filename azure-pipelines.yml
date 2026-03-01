@@ -1,0 +1,25 @@
+pool:
+  vmImage: "windows-2022"
+jobs:
+  - job: "vcpkg"
+    strategy:
+      matrix:
+        static:
+          ENABLE_STATIC: "ON"
+          ENABLE_SHARED: "OFF"
+        shared:
+          ENABLE_STATIC: "OFF"
+          ENABLE_SHARED: "ON"
+    steps:
+      - task: Cache@2
+        inputs:
+          key: "vcpkg"
+          path: "_build/vcpkg_installed"
+      - bash: git submodule update --init --recursive
+      - bash: cmake --preset windows-default -DENABLE_STATIC=$(ENABLE_STATIC) -DENABLE_SHARED=$(ENABLE_SHARED)
+        env:
+          VCPKG_ROOT: "C:/vcpkg"
+          VCPKG_DEFAULT_TRIPLET: "x64-windows"
+      - bash: cmake --build _build --config Release
+      - bash: ctest --preset windows-default -C Release --parallel 50 ||
+          ctest --preset windows-default -C Release --rerun-failed --output-on-failure

@@ -1,0 +1,36 @@
+# Derived from: https://google.github.io/clusterfuzzlite/running-clusterfuzzlite/github-actions/
+
+name: ClusterFuzzLite pull request fuzzing
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  Fuzzing:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer:
+        - address
+        - undefined
+        - memory
+    steps:
+    - name: Build Fuzzers (${{ matrix.sanitizer }})
+      id: build
+      uses: google/clusterfuzzlite/actions/build_fuzzers@v1
+      with:
+        sanitizer: ${{ matrix.sanitizer }}
+    - name: Run Fuzzers (${{ matrix.sanitizer }})
+      id: run
+      uses: google/clusterfuzzlite/actions/run_fuzzers@v1
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        fuzz-seconds: 300 # 5 mins (total time, not per test)
+        mode: 'code-change'
+        sanitizer: ${{ matrix.sanitizer }}
+        # Optional but recommended: For storing certain artifacts from fuzzing.
+        # See later section on "Git repo for storage".
+        storage-repo: https://github.com/TokTok/toktok-fuzzer.git
+        storage-repo-branch: master   # Optional. Defaults to "main"

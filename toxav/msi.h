@@ -1,151 +1,177 @@
-/**  msi.h
- *
- *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
- *
- *   This file is part of Tox.
- *
- *   Tox is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   Tox is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
- *
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2026 The TokTok team.
+ * Copyright © 2013-2015 Tox project.
  */
+#ifndef C_TOXCORE_TOXAV_MSI_H
+#define C_TOXCORE_TOXAV_MSI_H
 
-#ifndef MSI_H
-#define MSI_H
-
-#include <inttypes.h>
 #include <pthread.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#include "audio.h"
-#include "video.h"
-#include "../toxcore/Messenger.h"
+#include "../toxcore/logger.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Error codes.
  */
-typedef enum {
-    msi_ENone,
-    msi_EInvalidMessage,
-    msi_EInvalidParam,
-    msi_EInvalidState,
-    msi_EStrayMessage,
-    msi_ESystem,
-    msi_EHandle,
-    msi_EUndisclosed, /* NOTE: must be last enum otherwise parsing will not work */
+typedef enum MSIError {
+    MSI_E_NONE,
+    MSI_E_INVALID_MESSAGE,
+    MSI_E_INVALID_PARAM,
+    MSI_E_INVALID_STATE,
+    MSI_E_STRAY_MESSAGE,
+    MSI_E_SYSTEM,
+    MSI_E_HANDLE,
+    MSI_E_UNDISCLOSED, /* NOTE: must be last enum otherwise parsing will not work */
 } MSIError;
 
 /**
  * Supported capabilities
  */
-typedef enum {
-    msi_CapSAudio = 4,  /* sending audio */
-    msi_CapSVideo = 8,  /* sending video */
-    msi_CapRAudio = 16, /* receiving audio */
-    msi_CapRVideo = 32, /* receiving video */
+typedef enum MSICapabilities {
+    MSI_CAP_S_AUDIO = 4,  /* sending audio */
+    MSI_CAP_S_VIDEO = 8,  /* sending video */
+    MSI_CAP_R_AUDIO = 16, /* receiving audio */
+    MSI_CAP_R_VIDEO = 32, /* receiving video */
 } MSICapabilities;
-
 
 /**
  * Call state identifiers.
  */
-typedef enum {
-    msi_CallInactive, /* Default */
-    msi_CallActive,
-    msi_CallRequesting, /* when sending call invite */
-    msi_CallRequested, /* when getting call invite */
+typedef enum MSICallState {
+    MSI_CALL_INACTIVE = 0, /* Default */
+    MSI_CALL_ACTIVE = 1,
+    MSI_CALL_REQUESTING = 2, /* when sending call invite */
+    MSI_CALL_REQUESTED = 3, /* when getting call invite */
 } MSICallState;
 
 /**
  * Callbacks ids that handle the states
  */
-typedef enum {
-    msi_OnInvite, /* Incoming call */
-    msi_OnStart, /* Call (RTP transmission) started */
-    msi_OnEnd, /* Call that was active ended */
-    msi_OnError, /* On protocol error */
-    msi_OnPeerTimeout, /* Peer timed out; stop the call */
-    msi_OnCapabilities, /* Peer requested capabilities change */
+typedef enum MSICallbackID {
+    MSI_ON_INVITE = 0, /* Incoming call */
+    MSI_ON_START = 1, /* Call (RTP transmission) started */
+    MSI_ON_END = 2, /* Call that was active ended */
+    MSI_ON_ERROR = 3, /* On protocol error */
+    MSI_ON_PEERTIMEOUT = 4, /* Peer timed out; stop the call */
+    MSI_ON_CAPABILITIES = 5, /* Peer requested capabilities change */
 } MSICallbackID;
 
 /**
  * The call struct. Please do not modify outside msi.c
  */
-typedef struct MSICall_s {
-    struct MSISession_s *session;           /* Session pointer */
+typedef struct MSICall {
+    struct MSISession *_Nonnull session; /* Session pointer */
 
-    MSICallState         state;
-    uint8_t              peer_capabilities; /* Peer capabilities */
-    uint8_t              self_capabilities; /* Self capabilities */
-    uint16_t             peer_vfpsz;        /* Video frame piece size */
-    uint32_t             friend_number;     /* Index of this call in MSISession */
-    MSIError             error;             /* Last error */
+    MSICallState state;
+    uint8_t peer_capabilities; /* Peer capabilities */
+    uint8_t self_capabilities; /* Self capabilities */
+    uint16_t peer_vfpsz; /* Video frame piece size */
+    uint32_t friend_number; /* Index of this call in MSISession */
+    MSIError error; /* Last error */
 
-    void                *av_call;           /* Pointer to av call handler */
+    void *_Nullable user_data; /* Pointer to av call handler */
 
-    struct MSICall_s    *next;
-    struct MSICall_s    *prev;
+    struct MSICall *_Nullable next;
+    struct MSICall *_Nullable prev;
 } MSICall;
-
 
 /**
  * Expected return on success is 0, if any other number is
  * returned the call is considered errored and will be handled
  * as such which means it will be terminated without any notice.
  */
-typedef int msi_action_cb (void *av, MSICall *call);
+typedef int msi_action_cb(void *_Nullable object, MSICall *_Nonnull call);
+
+/**
+ * Send packet callback.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+typedef int msi_send_packet_cb(void *_Nullable user_data, uint32_t friend_number, const uint8_t *_Nonnull data, size_t length);
+
+/**
+ * MSI callbacks.
+ */
+typedef struct MSICallbacks {
+    msi_action_cb *_Nonnull invite;
+    msi_action_cb *_Nonnull start;
+    msi_action_cb *_Nonnull end;
+    msi_action_cb *_Nonnull error;
+    msi_action_cb *_Nonnull peertimeout;
+    msi_action_cb *_Nonnull capabilities;
+} MSICallbacks;
 
 /**
  * Control session struct. Please do not modify outside msi.c
  */
-typedef struct MSISession_s {
+typedef struct MSISession {
     /* Call handlers */
-    MSICall       **calls;
-    uint32_t        calls_tail;
-    uint32_t        calls_head;
+    MSICall *_Nullable *_Nullable calls;
+    uint32_t calls_tail;
+    uint32_t calls_head;
 
-    void           *av;
-    Messenger      *messenger;
+    void *_Nullable user_data;
+
+    msi_send_packet_cb *_Nonnull send_packet;
+    void *_Nullable send_packet_user_data;
 
     pthread_mutex_t mutex[1];
-    msi_action_cb *callbacks[7];
+
+    msi_action_cb *_Nonnull invite_callback;
+    msi_action_cb *_Nonnull start_callback;
+    msi_action_cb *_Nonnull end_callback;
+    msi_action_cb *_Nonnull error_callback;
+    msi_action_cb *_Nonnull peertimeout_callback;
+    msi_action_cb *_Nonnull capabilities_callback;
 } MSISession;
 
 /**
  * Start the control session.
  */
-MSISession *msi_new(Messenger *m);
+MSISession *_Nullable msi_new(const Logger *_Nonnull log,
+                              msi_send_packet_cb *_Nonnull send_packet, void *_Nullable send_packet_user_data,
+                              const MSICallbacks *_Nonnull callbacks,
+                              void *_Nullable user_data);
 /**
  * Terminate control session. NOTE: all calls will be freed
  */
-int msi_kill(MSISession *session);
-/**
- * Callback setter.
- */
-void msi_register_callback(MSISession *session, msi_action_cb *callback, MSICallbackID id);
+int msi_kill(const Logger *_Nonnull log, MSISession *_Nullable session);
 /**
  * Send invite request to friend_number.
  */
-int msi_invite(MSISession *session, MSICall **call, uint32_t friend_number, uint8_t capabilities);
+int msi_invite(const Logger *_Nonnull log, MSISession *_Nonnull session, MSICall *_Nonnull *_Nonnull call,
+               uint32_t friend_number, uint8_t capabilities);
 /**
- * Hangup call. NOTE: 'call' will be freed
+ * Hangup call. NOTE: `call` will be freed
  */
-int msi_hangup(MSICall *call);
+int msi_hangup(const Logger *_Nonnull log, MSICall *_Nullable call);
 /**
  * Answer call request.
  */
-int msi_answer(MSICall *call, uint8_t capabilities);
+int msi_answer(const Logger *_Nonnull log, MSICall *_Nullable call, uint8_t capabilities);
 /**
  * Change capabilities of the call.
  */
-int msi_change_capabilities(MSICall *call, uint8_t capabilities);
+int msi_change_capabilities(const Logger *_Nonnull log, MSICall *_Nullable call, uint8_t capabilities);
 
-#endif /* MSI_H */
+/**
+ * Handle incoming MSI packet.
+ */
+void msi_handle_packet(MSISession *_Nullable session, const Logger *_Nonnull log, uint32_t friend_number,
+                       const uint8_t *_Nonnull data, size_t length);
+
+/**
+ * Mark a call as timed out.
+ */
+void msi_call_timeout(MSISession *_Nullable session, const Logger *_Nonnull log, uint32_t friend_number);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+#endif /* C_TOXCORE_TOXAV_MSI_H */

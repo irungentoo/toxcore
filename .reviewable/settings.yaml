@@ -1,0 +1,4 @@
+# Reviewable settings file. Read the docs at https://docs.reviewable.io/repositories.html#store-repository-settings-using-the-reviewable-directory
+approval-text: ":lgtm_strong:"
+github-status:
+  updates: always

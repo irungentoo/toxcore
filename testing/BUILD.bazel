@@ -1,0 +1,98 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("//hs-tokstyle/tools:tokstyle.bzl", "tokstyle_c_test")
+
+CIMPLE_FILES = [
+    "//c-toxcore/toxav:cimple_files",
+    "//c-toxcore/toxcore:cimple_files",
+    "//c-toxcore/toxencryptsave:cimple_files",
+    "//c-toxcore/third_party:cimple_files",
+]
+
+sh_test(
+    name = "cimple_test",
+    size = "medium",
+    srcs = ["//hs-tokstyle/tools:check-cimple"],
+    args = ["$(locations %s)" % f for f in CIMPLE_FILES] + [
+        "-Wno-boolean-return",
+        "-Wno-callback-names",
+        "-Wno-enum-from-int",
+        "-Wno-nullability",
+        "-Wno-ownership-decls",
+        "-Wno-tagged-union",
+        "-Wno-type-check",
+        "+RTS",
+        "-N4",
+        "-RTS",
+    ],
+    data = CIMPLE_FILES,
+    tags = [
+        "haskell",
+        "no-cross",
+    ],
+)
+
+tokstyle_c_test(
+    name = "c_test",
+    size = "medium",
+    srcs = CIMPLE_FILES,
+    args = [
+        "-Wno-borrow-check",
+        "-Wno-callback-discipline",
+        "-Wno-strict-typedef",
+    ],
+    tags = [
+        "haskell",
+        "no-cross",
+    ],
+    deps = [
+        "//hs-tokstyle:headers",
+        "@libsodium",
+        "@libvpx",
+        "@opus",
+    ],
+)
+
+sh_test(
+    name = "cimplefmt_test",
+    size = "medium",
+    srcs = ["//hs-cimple/tools:cimplefmt"],
+    args = ["--reparse"] + ["$(locations %s)" % f for f in CIMPLE_FILES],
+    data = CIMPLE_FILES,
+    tags = [
+        "haskell",
+        "no-cross",
+    ],
+)
+
+cc_library(
+    name = "misc_tools",
+    testonly = 1,
+    srcs = ["misc_tools.c"],
+    hdrs = ["misc_tools.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:tox",
+    ],
+)
+
+cc_binary(
+    name = "Messenger_test",
+    testonly = 1,
+    srcs = ["Messenger_test.c"],
+    deps = [
+        ":misc_tools",
+        "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:os_memory",
+        "//c-toxcore/toxcore:os_random",
+    ],
+)
+
+cc_binary(
+    name = "decrypt_save",
+    testonly = 1,
+    srcs = ["decrypt_save.c"],
+    deps = ["//c-toxcore/toxencryptsave"],
+)

@@ -1,0 +1,24 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "tox_messenger_bench",
+    testonly = True,
+    srcs = ["tox_messenger_bench.cc"],
+    deps = [
+        "//c-toxcore/testing/support",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:tox",
+        "@benchmark",
+    ],
+)
+
+cc_binary(
+    name = "tox_friends_scaling_bench",
+    testonly = True,
+    srcs = ["tox_friends_scaling_bench.cc"],
+    deps = [
+        "//c-toxcore/testing/support",
+        "//c-toxcore/toxcore:tox",
+        "@benchmark",
+    ],
+)

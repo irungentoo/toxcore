@@ -1,0 +1,24 @@
+name: 🚀 Release
+description: Build and deploy a new release
+title: Release tracking issue
+labels: [chore]
+type: Task
+body:
+  - type: textarea
+    id: release-notes
+    attributes:
+      label: Release notes
+      description: Write something nice about the new release.
+      placeholder: "Here's our latest awesome release!"
+    validations:
+      required: true
+  - type: dropdown
+    id: production
+    attributes:
+      label: Release type
+      description: Whether this is a production release or a release candidate.
+      options:
+        - Release candidate
+        - Production release
+    validations:
+      required: true

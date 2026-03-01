@@ -1,67 +1,50 @@
-/**  video.h
- *
- *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
- *
- *   This file is part of Tox.
- *
- *   Tox is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   Tox is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
- *
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2026 The TokTok team.
+ * Copyright © 2013-2015 Tox project.
  */
-
-#ifndef VIDEO_H
-#define VIDEO_H
-
-#include <vpx/vpx_decoder.h>
-#include <vpx/vpx_encoder.h>
-#include <vpx/vp8dx.h>
-#include <vpx/vp8cx.h>
-#include <vpx/vpx_image.h>
-#define VIDEO_CODEC_DECODER_INTERFACE (vpx_codec_vp8_dx())
-#define VIDEO_CODEC_ENCODER_INTERFACE (vpx_codec_vp8_cx())
+#ifndef C_TOXCORE_TOXAV_VIDEO_H
+#define C_TOXCORE_TOXAV_VIDEO_H
 
 #include <pthread.h>
+#include <stdint.h>
 
-#include "toxav.h"
+#include "../toxcore/logger.h"
+#include "../toxcore/mono_time.h"
 
-#include "../toxcore/util.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef void vc_video_receive_frame_cb(uint32_t friend_number, uint16_t width, uint16_t height,
+                                       const uint8_t *_Nonnull y, const uint8_t *_Nonnull u, const uint8_t *_Nonnull v,
+                                       int32_t ystride, int32_t ustride, int32_t vstride,
+                                       void *_Nullable user_data);
+
+typedef struct VCSession VCSession;
+
+#define VC_EFLAG_NONE 0
+#define VC_EFLAG_FORCE_KF (1 << 0)
 
 struct RTPMessage;
 
-typedef struct VCSession_s {
-    /* encoding */
-    vpx_codec_ctx_t encoder[1];
-    uint32_t frame_counter;
+VCSession *_Nullable vc_new(const Memory *_Nonnull mem, const Logger *_Nonnull log, const Mono_Time *_Nonnull mono_time, uint32_t friend_number,
+                            vc_video_receive_frame_cb *_Nullable cb, void *_Nullable user_data);
+void vc_kill(VCSession *_Nullable vc);
+void vc_iterate(VCSession *_Nullable vc);
 
-    /* decoding */
-    vpx_codec_ctx_t decoder[1];
-    void *vbuf_raw; /* Un-decoded data */
+int vc_queue_message(const Mono_Time *_Nonnull mono_time, void *_Nullable cs, struct RTPMessage *_Nullable msg);
+int vc_reconfigure_encoder(VCSession *_Nullable vc, uint32_t bit_rate, uint16_t width, uint16_t height, int16_t kf_max_dist);
 
-    uint64_t linfts; /* Last received frame time stamp */
-    uint32_t lcfd; /* Last calculated frame duration for incoming video payload */
+int vc_encode(VCSession *_Nonnull vc, uint16_t width, uint16_t height, const uint8_t *_Nonnull y,
+              const uint8_t *_Nonnull u, const uint8_t *_Nonnull v, int encode_flags);
 
-    ToxAV *av;
-    uint32_t friend_number;
+int vc_get_cx_data(VCSession *_Nonnull vc, uint8_t *_Nonnull *_Nonnull data, uint32_t *_Nonnull size, bool *_Nonnull is_keyframe);
+uint32_t vc_get_lcfd(const VCSession *_Nonnull vc);
+pthread_mutex_t *_Nonnull vc_get_queue_mutex(VCSession *_Nonnull vc);
+void vc_increment_frame_counter(VCSession *_Nonnull vc);
 
-    PAIR(toxav_video_receive_frame_cb *, void *) vcb; /* Video frame receive callback */
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
-    pthread_mutex_t queue_mutex[1];
-} VCSession;
-
-VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data);
-void vc_kill(VCSession *vc);
-void vc_iterate(VCSession *vc);
-int vc_queue_message(void *vcp, struct RTPMessage *msg);
-int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uint16_t height);
-
-#endif /* VIDEO_H */
+#endif /* C_TOXCORE_TOXAV_VIDEO_H */

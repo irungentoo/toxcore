@@ -1,0 +1,204 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [master]
+
+# Cancel old PR builds when pushing new commits.
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  common:
+    uses: TokTok/ci-tools/.github/workflows/common-ci.yml@master
+
+  analysis:
+    strategy:
+      fail-fast: false
+      matrix:
+        tool:
+          [
+            autotools,
+            clang-tidy,
+            compcert,
+            cppcheck,
+            doxygen,
+            infer,
+            misra,
+            modules,
+            pkgsrc,
+            rpm,
+            slimcc,
+            sparse,
+            tcc,
+            tokstyle,
+          ]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+      - name: Build toxchat/c-toxcore:sources
+        uses: docker/build-push-action@v5
+        with:
+          file: other/docker/sources/sources.Dockerfile
+          tags: toxchat/c-toxcore:sources
+      - name: Docker Build
+        uses: docker/build-push-action@v5
+        with:
+          file: other/docker/${{ matrix.tool }}/${{ matrix.tool }}.Dockerfile
+
+  sanitizer:
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [asan, tsan, ubsan]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Run sanitizer
+        run: other/docker/circleci/run "${{ matrix.sanitizer }}"
+
+  coverage-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Build, test, and upload coverage
+        run: other/docker/coverage/run
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Build and test
+        run: .github/scripts/cmake-osx
+
+  build-windows-msvc:
+    strategy:
+      matrix:
+        version: [2022, 2025]
+    runs-on: windows-${{ matrix.version }}
+    env:
+      VCPKG_ROOT: "C:/vcpkg"
+      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v8
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+      - name: Configure CMake
+        run: cmake --preset windows-default
+      - name: Build
+        run: cmake --build _build -j $([int]$env:NUMBER_OF_PROCESSORS+2)
+      - name: Test
+        run: |
+          cd _build
+          ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6 --build-config Debug
+
+  build-netbsd:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Test in NetBSD
+        id: test
+        uses: vmactions/netbsd-vm@v1
+        with:
+          usesh: true
+          copyback: false
+          prepare: /usr/sbin/pkg_add
+            cmake
+            googletest
+            libconfig
+            libopus
+            libsodium
+            libvpx
+            ninja-build
+            pkg-config
+
+          run: |
+            # TODO(iphydf): Investigate NetBSD failures on these tests.
+            sed -Ei -e '/\((TCP|dht_nodes_response_api|tcp_relay)\)/s/^/#/' auto_tests/CMakeLists.txt
+            cmake . \
+              -DMIN_LOGGER_LEVEL=TRACE \
+              -DMUST_BUILD_TOXAV=ON \
+              -DNON_HERMETIC_TESTS=ON \
+              -DTEST_TIMEOUT_SECONDS=90 \
+              -DUSE_IPV6=OFF \
+              -DAUTOTEST=ON \
+              -GNinja
+            cmake --build . --target install
+            ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6
+
+  build-freebsd:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Test in FreeBSD
+        id: test
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          copyback: false
+          prepare: PAGER=cat ASSUME_ALWAYS_YES=YES pkg install
+            cmake
+            git
+            gmake
+            googletest
+            libconfig
+            libsodium
+            libvpx
+            ninja
+            opus
+            pkgconf
+
+          run: |
+            # TODO(iphydf): Investigate FreeBSD failures on these tests.
+            sed -Ei -e '/\(dht_nodes_response_api\)/s/^/#/' auto_tests/CMakeLists.txt
+            cmake . \
+              -DMIN_LOGGER_LEVEL=TRACE \
+              -DMUST_BUILD_TOXAV=ON \
+              -DNON_HERMETIC_TESTS=ON \
+              -DTEST_TIMEOUT_SECONDS=50 \
+              -DUSE_IPV6=OFF \
+              -DAUTOTEST=ON \
+              -GNinja
+            cmake --build . --target install
+            ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6
+
+  mypy:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.12
+      - name: Install mypy
+        run: pip install mypy
+      - name: Run mypy
+        run: |
+          (find . -name "*.py" -and -not -name "conanfile.py"; grep -lR '^#!.*python') \
+              | xargs -n1 -P8 mypy --strict

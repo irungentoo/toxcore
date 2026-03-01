@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+DOCKERFLAGS=(--build-arg SUPPORT_TEST=true)
+
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../sources" && pwd)/run.sh"
+
+# Create a temporary directory for the source to workaround potential bind mount issues
+# (e.g. FUSE/SSHFS filesystems or Docker daemon visibility issues).
+TEMP_SRC=$(mktemp -d -t toxcore-src-XXXXXX)
+cleanup() {
+  rm -rf "$TEMP_SRC"
+}
+trap cleanup EXIT
+
+echo "Copying source to temporary directory $TEMP_SRC..."
+# Exclude .git and build artifacts to speed up copy
+rsync -a --exclude .git --exclude _build . "$TEMP_SRC/"
+
+docker run \
+  -e ENABLE_TEST=true \
+  -e EXTRA_CMAKE_FLAGS=-DUNITTEST=ON \
+  -v "$TEMP_SRC:/toxcore" \
+  -v /tmp/c-toxcore-build:/prefix \
+  -t \
+  --rm \
+  toxchat/c-toxcore:windows

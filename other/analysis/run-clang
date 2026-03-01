@@ -1,0 +1,48 @@
+#!/bin/bash
+
+. other/analysis/gen-file.sh
+
+set -e
+
+run() {
+  echo "Running Clang compiler in variant '$*'"
+  clang++ -o /dev/null amalgamation.cc \
+    "${CPPFLAGS[@]}" \
+    "${LDFLAGS[@]}" \
+    "$@" \
+    -std=c++20 \
+    -Werror \
+    -Weverything \
+    -Wno-alloca \
+    -Wno-c++98-compat-pedantic \
+    -Wno-c99-extensions \
+    -Wno-conversion \
+    -Wno-covered-switch-default \
+    -Wno-disabled-macro-expansion \
+    -Wno-documentation-deprecated-sync \
+    -Wno-documentation-unknown-command \
+    -Wno-global-constructors \
+    -Wno-missing-braces \
+    -Wno-missing-field-initializers \
+    -Wno-missing-noreturn \
+    -Wno-nullability-completeness \
+    -Wno-nullability-extension \
+    -Wno-nullable-to-nonnull-conversion \
+    -Wno-old-style-cast \
+    -Wno-padded \
+    -Wno-source-uses-openmp \
+    -Wno-switch-default \
+    -Wno-tautological-pointer-compare \
+    -Wno-unreachable-code-return \
+    -Wno-unsafe-buffer-usage \
+    -Wno-unused-parameter \
+    -Wno-used-but-marked-unused \
+    -Wno-unneeded-member-function \
+    -Wno-unused-function \
+    -Wno-unused-member-function \
+    -Wno-unused-parameter \
+    -Wno-unused-template
+  # TODO(iphydf): Remove these last 5 when the test framework matures.
+}
+
+. other/analysis/variants.sh

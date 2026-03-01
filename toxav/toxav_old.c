@@ -1,81 +1,50 @@
-/* toxav_old.h
- *
- * Copyright (C) 2013-2015 Tox project All Rights Reserved.
- *
- * This file is part of Tox.
- *
- * Tox is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Tox is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Tox. If not, see <http://www.gnu.org/licenses/>.
- *
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2026 The TokTok team.
+ * Copyright © 2013-2015 Tox project.
  */
+
 /**
  * This file contains the group chats code for the backwards compatibility.
  */
-
 #include "toxav.h"
-#include "group.h"
 
-/* Create a new toxav group.
- *
- * return group number on success.
- * return -1 on failure.
- *
- * Audio data callback format:
- *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
- *
- * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
- */
-int toxav_add_av_groupchat(struct Tox *tox, void (*audio_callback)(void *, int, int, const int16_t *, unsigned int,
-                           uint8_t, unsigned int, void *), void *userdata)
+#include "../toxcore/attributes.h"
+#include "../toxcore/tox_struct.h"
+#include "groupav.h"
+
+int32_t toxav_add_av_groupchat(Tox *_Nonnull tox, toxav_audio_data_cb *_Nullable audio_callback, void *_Nullable userdata)
 {
-    Messenger *m = (Messenger *)tox;
-    return add_av_groupchat(m->group_chat_object, audio_callback, userdata);
+    return add_av_groupchat(tox->m->log, tox, tox->m->conferences_object, (audio_data_cb *)audio_callback, userdata);
 }
 
-/* Join a AV group (you need to have been invited first.)
- *
- * returns group number on success
- * returns -1 on failure.
- *
- * Audio data callback format (same as the one for toxav_add_av_groupchat()):
- *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
- *
- * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
- */
-int toxav_join_av_groupchat(struct Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length,
-                            void (*audio_callback)(void *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *),
-                            void *userdata)
+int32_t toxav_join_av_groupchat(Tox *_Nonnull tox, Tox_Friend_Number friend_number, const uint8_t *_Nonnull data, uint16_t length,
+                                toxav_audio_data_cb *_Nullable audio_callback, void *_Nullable userdata)
 {
-    Messenger *m = (Messenger *)tox;
-    return join_av_groupchat(m->group_chat_object, friendnumber, data, length, audio_callback, userdata);
+    return join_av_groupchat(tox->m->log, tox, tox->m->conferences_object, friend_number, data, length,
+                             (audio_data_cb *)audio_callback, userdata);
 }
 
-/* Send audio to the group chat.
- *
- * return 0 on success.
- * return -1 on failure.
- *
- * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
- *
- * Valid number of samples are ((sample rate) * (audio length (Valid ones are: 2.5, 5, 10, 20, 40 or 60 ms)) / 1000)
- * Valid number of channels are 1 or 2.
- * Valid sample rates are 8000, 12000, 16000, 24000, or 48000.
- *
- * Recommended values are: samples = 960, channels = 1, sample_rate = 48000
- */
-int toxav_group_send_audio(struct Tox *tox, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
-                           unsigned int sample_rate)
+int32_t toxav_group_send_audio(Tox *_Nonnull tox, Tox_Conference_Number conference_number, const int16_t *_Nonnull pcm, uint32_t samples,
+                               uint8_t channels,
+                               uint32_t sample_rate)
 {
-    Messenger *m = (Messenger *)tox;
-    return group_send_audio(m->group_chat_object, groupnumber, pcm, samples, channels, sample_rate);
+    return group_send_audio(tox->m->conferences_object, conference_number, pcm, samples, channels, sample_rate);
+}
+
+int32_t toxav_groupchat_enable_av(Tox *_Nonnull tox, Tox_Conference_Number conference_number, toxav_audio_data_cb *_Nullable audio_callback,
+                                  void *_Nullable userdata)
+{
+    return groupchat_enable_av(tox->m->log, tox, tox->m->conferences_object, conference_number, (audio_data_cb *)audio_callback,
+                               userdata);
+}
+
+int32_t toxav_groupchat_disable_av(Tox *_Nonnull tox, Tox_Conference_Number conference_number)
+{
+    return groupchat_disable_av(tox->m->conferences_object, conference_number);
+}
+
+/** @brief Return whether A/V is enabled in the groupchat. */
+bool toxav_groupchat_av_enabled(Tox *_Nonnull tox, Tox_Conference_Number conference_number)
+{
+    return groupchat_av_enabled(tox->m->conferences_object, conference_number);
 }

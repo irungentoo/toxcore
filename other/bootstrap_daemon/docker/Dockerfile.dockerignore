@@ -1,0 +1,25 @@
+# Very selectively add files to the image, because we may have random stuff
+# lying around. In particular, we don't need to rebuild the docker image when
+# toxav changes or the Dockerfile changes down from the build.
+#
+# LC_ALL=C sort -u
+**/*
+!CMakeLists.txt
+!cmake/*
+!other/DHT_bootstrap.c
+!other/bootstrap_daemon/CMakeLists.txt
+!other/bootstrap_daemon/bash-completion/*
+!other/bootstrap_daemon/docker/get-nodes.py
+!other/bootstrap_daemon/docker/release.patch
+!other/bootstrap_daemon/docker/tox-bootstrapd.sha256
+!other/bootstrap_daemon/src/*
+!other/bootstrap_daemon/tox-bootstrapd.conf
+!other/bootstrap_node_packets.[ch]
+!other/pkgconfig/*
+!other/rpm/*
+!so.version
+!testing/CMakeLists.txt
+!testing/misc_tools.[ch]
+!third_party/cmp/cmp.[ch]
+!toxcore/**/*
+!toxencryptsave/**/*

@@ -1,0 +1,33 @@
+# ---
+# freebsd_task:
+#   timeout_in: 5m
+#   freebsd_instance:
+#     image_family: freebsd-14-2
+#   configure_script:
+#     - PAGER=cat ASSUME_ALWAYS_YES=YES pkg install
+#         cmake
+#         git
+#         gmake
+#         googletest
+#         libconfig
+#         libsodium
+#         libvpx
+#         ninja
+#         opus
+#         pkgconf
+#     - git submodule update --init --recursive
+#   test_all_script:
+#     - |
+#       # TODO(iphydf): Investigate FreeBSD failures on these tests.
+#       sed -Ei -e '/\(dht_nodes_response_api\)/s/^/#/' auto_tests/CMakeLists.txt
+#       cmake . \
+#         -DMIN_LOGGER_LEVEL=TRACE \
+#         -DMUST_BUILD_TOXAV=ON \
+#         -DNON_HERMETIC_TESTS=OFF \
+#         -DTEST_TIMEOUT_SECONDS=50 \
+#         -DUSE_IPV6=OFF \
+#         -DAUTOTEST=ON \
+#         -GNinja
+#       cmake --build . --target install
+#       ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:3 ||
+#         ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6

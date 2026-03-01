@@ -1,0 +1,68 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
+
+cc_fuzz_test(
+    name = "bootstrap_fuzz_test",
+    size = "small",
+    srcs = ["bootstrap_fuzz_test.cc"],
+    copts = ["-UNDEBUG"],
+    corpus = ["//tools/toktok-fuzzer/corpus:bootstrap_fuzz_test"],
+    deps = [
+        "//c-toxcore/testing/support",
+        "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_dispatch",
+        "//c-toxcore/toxcore:tox_events",
+    ],
+)
+
+cc_fuzz_test(
+    name = "e2e_fuzz_test",
+    size = "small",
+    srcs = ["e2e_fuzz_test.cc"],
+    copts = ["-UNDEBUG"],
+    corpus = ["//tools/toktok-fuzzer/corpus:e2e_fuzz_test"],
+    data = ["//tools/toktok-fuzzer/init:e2e_fuzz_test.dat"],
+    deps = [
+        "//c-toxcore/testing/support",
+        "//c-toxcore/toxcore:crypto_core",
+        "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_dispatch",
+        "//c-toxcore/toxcore:tox_events",
+    ],
+)
+
+cc_fuzz_test(
+    name = "toxsave_fuzz_test",
+    size = "small",
+    srcs = ["toxsave_fuzz_test.cc"],
+    copts = ["-UNDEBUG"],
+    corpus = ["//tools/toktok-fuzzer/corpus:toxsave_fuzz_test"],
+    deps = [
+        "//c-toxcore/testing/support",
+        "//c-toxcore/toxcore:tox",
+    ],
+)
+
+cc_binary(
+    name = "protodump",
+    srcs = ["protodump.cc"],
+    copts = ["-UNDEBUG"],
+    deps = [
+        "//c-toxcore/testing/support",
+        "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:tox_dispatch",
+        "//c-toxcore/toxcore:tox_events",
+        "//c-toxcore/toxcore:util",
+    ],
+)
+
+genrule(
+    name = "e2e_fuzz_test_init",
+    outs = [
+        "e2e_fuzz_test_init.dat",
+        "e2e_fuzz_test_bootstrap.dat",
+    ],
+    cmd = "$(location :protodump) $(location e2e_fuzz_test_init.dat) $(location e2e_fuzz_test_bootstrap.dat)",
+    tags = ["manual"],
+    tools = [":protodump"],
+)

@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+import subprocess
+import sys
+from typing import Tuple
+
+ALLOWLIST: Tuple[str, ...] = (
+    # system headers
+    "pthread.h",
+    "stdarg.h",
+    "stdbool.h",
+    "stddef.h",
+    "stdint.h",
+    "time.h",  # time_t used in Messenger.h TODO(iphydf): maybe don't?
+    # toxav stuff, maybe not worth abstracting away
+    "opus.h",
+    "vpx/vp8cx.h",
+    "vpx/vp8dx.h",
+    "vpx/vpx_decoder.h",
+    "vpx/vpx_encoder.h",
+    "vpx/vpx_image.h",
+)
+
+out = (subprocess.run(
+    [
+        "grep", "-R", "^#include <.*>", "other", "toxav", "toxcore",
+        "toxencryptsave"
+    ],
+    check=True,
+    capture_output=True,
+).stdout.decode("utf-8").rstrip())
+
+errors = 0
+for line in out.split("\n"):
+    # other/fun and mallocfail can do what they want.
+    if "/fun/" in line or "/mallocfail/" in line:
+        continue
+    filename, include = line.split(":", 1)
+    # We only check headers.
+    if not filename.endswith(".h"):
+        continue
+    # ccompat.h can include some things we don't really want elsewhere.
+    allowlist = ALLOWLIST
+    if filename == "toxcore/ccompat.h":
+        allowlist += ("assert.h", "alloca.h", "malloc.h", "stdlib.h")
+    header = include[include.index("<") + 1:include.index(">")]
+    if header not in allowlist:
+        source = filename[:-2] + ".c"
+        print(
+            f"{filename}: includes system header <{header}>, which is not allowed in .h files"
+        )
+        print(
+            " " * len(filename) +
+            f"  consider including it in {source} and exporting an abstraction, instead"
+        )
+        errors += 1
+
+if errors:
+    sys.exit(1)

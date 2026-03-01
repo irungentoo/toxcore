@@ -1,0 +1,52 @@
+#!/bin/bash
+
+SKIP_GTEST=1
+SKIP_BENCHMARK=1
+
+. other/analysis/gen-file.sh
+
+set -e
+
+CPPCHECK=("--enable=all")
+CPPCHECK+=("--inconclusive")
+CPPCHECK+=("--check-level=exhaustive")
+CPPCHECK+=("--inline-suppr")
+CPPCHECK+=("--library=other/docker/cppcheck/toxcore.cfg")
+CPPCHECK+=("--error-exitcode=1")
+# Some files don't match all our suppressions below.
+CPPCHECK+=("--suppress=unmatchedSuppression")
+# This disagrees with clang's warnings.
+CPPCHECK+=("--suppress=invalidPrintfArgType_uint")
+# False positives in switch statements.
+CPPCHECK+=("--suppress=knownConditionTrueFalse")
+# Cppcheck does not need standard library headers to get proper results.
+CPPCHECK+=("--suppress=missingIncludeSystem")
+# TODO(iphydf): Maybe fix?
+CPPCHECK+=("--suppress=signConversion")
+# These const correctness checks are very broken for C.
+CPPCHECK+=("--suppress=constParameter")
+CPPCHECK+=("--suppress=constParameterCallback")
+CPPCHECK+=("--suppress=constParameterPointer")
+CPPCHECK+=("--suppress=constVariablePointer")
+
+# We use this for VLAs.
+CPPCHECK_CXX+=("--suppress=allocaCalled")
+# False positive in auto_tests.
+CPPCHECK_CXX+=("--suppress=shadowFunction")
+# False positive in group.c.
+# Using cppcheck-suppress claims the suppression is unused.
+CPPCHECK_CXX+=("--suppress=AssignmentAddressToInteger")
+# We use C style casts because we write C code.
+CPPCHECK_CXX+=("--suppress=cstyleCast")
+# Used in Messenger.c for a static_assert(...)
+CPPCHECK_CXX+=("--suppress=sizeofFunctionCall")
+# This is outdated. Range-for is a good choice.
+CPPCHECK_CXX+=("--suppress=useStlAlgorithm")
+
+run() {
+  echo "Running cppcheck in variant '$*'"
+  cppcheck -j8 "${CPPCHECK[@]}" "${CPPCHECK_C[@]}" tox*/*.[ch] tox*/*/*.[ch] "${CPPFLAGS[@]}" "$@"
+  cppcheck "${CPPCHECK[@]}" "${CPPCHECK_CXX[@]}" amalgamation.cc "${CPPFLAGS[@]}" "$@"
+}
+
+. other/analysis/variants.sh

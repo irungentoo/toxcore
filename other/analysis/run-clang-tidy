@@ -1,0 +1,245 @@
+#!/usr/bin/env bash
+
+CHECKS="*"
+ERRORS="*"
+
+# Can't fix this, because winsock has different HANDLE type than posix.
+# Still good to occasionally look at.
+ERRORS="$ERRORS,-google-readability-casting"
+
+# TODO(iphydf): Fix these.
+CHECKS="$CHECKS,-clang-analyzer-nullability.NullableDereferenced"
+CHECKS="$CHECKS,-clang-analyzer-nullability.NullablePassedToNonnull"
+CHECKS="$CHECKS,-clang-analyzer-nullability.NullPassedToNonnull"
+
+# Need to investigate or disable and document these.
+# =========================================================
+
+# TODO(iphydf): Fix these.
+CHECKS="$CHECKS,-readability-suspicious-call-argument"
+CHECKS="$CHECKS,-cppcoreguidelines-avoid-goto,-hicpp-avoid-goto"
+CHECKS="$CHECKS,-bugprone-incorrect-roundings"
+
+# TODO(iphydf): Fix this by making more functions set error code enums.
+CHECKS="$CHECKS,-bugprone-switch-missing-default-case"
+
+# TODO(iphydf): We might want some of these. For the ones we don't want, add a
+# comment explaining why not.
+CHECKS="$CHECKS,-clang-analyzer-optin.performance.Padding"
+CHECKS="$CHECKS,-hicpp-signed-bitwise"
+
+# TODO(iphydf): Maybe fix these?
+CHECKS="$CHECKS,-bugprone-implicit-widening-of-multiplication-result"
+CHECKS="$CHECKS,-bugprone-integer-division"
+CHECKS="$CHECKS,-misc-no-recursion"
+
+# TODO(iphydf): Only happens in bootstrap_daemon. Fix it.
+CHECKS="$CHECKS,-cppcoreguidelines-avoid-non-const-global-variables"
+
+# TODO(iphydf): Probably fix these.
+CHECKS="$CHECKS,-cert-err33-c,-cppcoreguidelines-avoid-magic-numbers,-readability-magic-numbers"
+
+# Documented disabled checks. We don't want these for sure.
+# =========================================================
+
+# We want to decay many arrays to pointers. In C, we do that all the time.
+CHECKS="$CHECKS,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-hicpp-no-array-decay"
+
+# enum{} breaks comparisons and arithmetic in C++.
+CHECKS="$CHECKS,-modernize-macro-to-enum"
+
+# For most things, we do want this, but for some we want to ensure (with msan)
+# that struct members are actually initialised with useful non-zero values.
+# Initialising them by default takes away that validation.
+CHECKS="$CHECKS,-cppcoreguidelines-pro-type-member-init,-hicpp-member-init"
+
+# https://stackoverflow.com/questions/58672959/why-does-clang-tidy-say-vsnprintf-has-an-uninitialized-va-list-argument
+CHECKS="$CHECKS,-clang-analyzer-valist.Uninitialized"
+
+# We pass a lot of ints around, so many function parameters are some kind of
+# int type that can be converted from another int type. We won't be getting
+# away from that anytime soon.
+CHECKS="$CHECKS,-bugprone-easily-swappable-parameters"
+
+# Callback handlers often don't use all their parameters. There's
+# IgnoreVirtual, but that doesn't work for C-style callbacks.
+CHECKS="$CHECKS,-misc-unused-parameters"
+
+# We sometimes use #if 0.
+CHECKS="$CHECKS,-readability-avoid-unconditional-preprocessor-if"
+
+# We have better macro hygiene checks with tokstyle. We can never pass macro
+# arguments that require parentheses inside the macro.
+CHECKS="$CHECKS,-bugprone-macro-parentheses"
+
+# We don't use memcpy_s.
+CHECKS="$CHECKS,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling"
+
+# __attribute__((nonnull)) causes this warning on defensive null checks.
+CHECKS="$CHECKS,-clang-diagnostic-pointer-bool-conversion"
+CHECKS="$CHECKS,-clang-diagnostic-tautological-pointer-compare"
+
+# Conflicts with "Variable is assigned a value that is never used."
+# [unreadVariable]
+CHECKS="$CHECKS,-cppcoreguidelines-init-variables"
+
+# Short variable names are used quite a lot, and we don't consider them a
+# readability issue.
+CHECKS="$CHECKS,-readability-identifier-length"
+
+# Altera checks are for GPUs (OpenCL). Our code doesn't run on GPUs.
+CHECKS="$CHECKS,-altera-id-dependent-backward-branch"
+CHECKS="$CHECKS,-altera-struct-pack-align"
+CHECKS="$CHECKS,-altera-unroll-loops"
+
+# We target systems other than Android, so we don't want to use non-standard
+# functions from the Android libc.
+CHECKS="$CHECKS,-android-cloexec-accept"
+CHECKS="$CHECKS,-android-cloexec-fopen"
+
+# This catches all the feature test macros (_POSIX_SOURCE etc.).
+CHECKS="$CHECKS,-bugprone-reserved-identifier"
+CHECKS="$CHECKS,-cert-dcl37-c"
+CHECKS="$CHECKS,-cert-dcl51-cpp"
+
+# Too restrictive. This makes sense if the branch clone is very large, but not
+# if it's a single line. It can make the code less readable.
+CHECKS="$CHECKS,-bugprone-branch-clone"
+
+# We intentionally send some not null-terminated strings in tests and use it for
+# the toxencryptsave magic number.
+CHECKS="$CHECKS,-bugprone-not-null-terminated-result"
+
+# We don't want default labels in enum switches.
+CHECKS="$CHECKS,-hicpp-multiway-paths-covered"
+
+# This can make readability quite a bit worse when the 2 cases look very
+# similar.
+CHECKS="$CHECKS,-llvm-else-after-return"
+CHECKS="$CHECKS,-readability-else-after-return"
+
+# We need 'return;' in empty functions because cimple won't allow empty
+# functions otherwise.
+CHECKS="$CHECKS,-readability-redundant-control-flow"
+
+# These are incredibly annoying, because things like
+#   uint16_t a = 0, b = 1, c = a > b ? a : b;
+#                                      ^
+# Trip the checker, which is true, because of integer promotion, but also not
+# very helpful as a diagnostic.
+CHECKS="$CHECKS,-bugprone-narrowing-conversions,-cppcoreguidelines-narrowing-conversions"
+
+# Mistakenly thinks that
+#   const int a = 0, b = 1;
+#   assert(a < b);
+# is a constant expression in C (it is in C++ though, which is probably why it's
+# mistaken), suggesting to replace 'assert()' with 'static_assert()' in cases
+# where that won't work.
+#
+# There are ways to make 'static_assert()' work, but they are rather annoying --
+# they are somewhat ugly, hurting the readability, and some are error-prone:
+#
+# - Turning 'a' and 'b' into enum constants would make it work, but this falls
+#   apart if the enum types are compared against non-enums down the line
+#     error: enumerated and non-enumerated type in conditional expression [-Werror=extra]
+#
+# - Turning 'a' and 'b' into pre-processor macros is the only option left, but
+#   #defines and #undefs in the middle of a function hurt the readability and
+#   are less idiomatic than simply using 'const int'.
+CHECKS="$CHECKS,-cert-dcl03-c,-hicpp-static-assert,-misc-static-assert"
+
+# Doesn't consider use of preprocessor macros as needing a header, breaking
+# struct definitions that depend on size macros from e.g. crypto_core.h.
+CHECKS="$CHECKS,-misc-include-cleaner"
+
+# A bunch of checks only valid for C++, we turn off for C.
+# =========================================================
+
+# We don't use Google's int typedefs.
+CHECKS="$CHECKS,-google-runtime-int"
+# We write C code, so we use C arrays.
+CHECKS="$CHECKS,-cppcoreguidelines-avoid-c-arrays,-hicpp-avoid-c-arrays,-modernize-avoid-c-arrays"
+# C loops are ok. This one tells us to use range-for.
+CHECKS="$CHECKS,-modernize-loop-convert"
+# No auto in C.
+CHECKS="$CHECKS,-hicpp-use-auto,-modernize-use-auto"
+# Only C style casts in C.
+CHECKS="$CHECKS,-cppcoreguidelines-pro-type-cstyle-cast"
+# We use malloc (for now), and MISRA checks this too.
+CHECKS="$CHECKS,-cppcoreguidelines-no-malloc,-hicpp-no-malloc"
+# No owning_ptr<> in C.
+CHECKS="$CHECKS,-cppcoreguidelines-owning-memory"
+# void foo(void) is good in C.
+CHECKS="$CHECKS,-modernize-redundant-void-arg"
+# No using-typedefs in C.
+CHECKS="$CHECKS,-modernize-use-using"
+# No namespaces in C.
+CHECKS="$CHECKS,-misc-use-anonymous-namespace"
+# No trailing return type in C.
+CHECKS="$CHECKS,-modernize-use-trailing-return-type"
+# No <cstdint> and friends in C.
+CHECKS="$CHECKS,-hicpp-deprecated-headers,-modernize-deprecated-headers"
+# We use varargs for logging (we could reconsider, but right now we do).
+CHECKS="$CHECKS,-cppcoreguidelines-pro-type-vararg,-hicpp-vararg,-cert-dcl50-cpp"
+# We do want to use the array index operator, even when the index is non-constant.
+CHECKS="$CHECKS,-cppcoreguidelines-pro-bounds-constant-array-index"
+# We don't want to use pointer arithmetic, but this one includes array index
+# operators, which we do want to use.
+CHECKS="$CHECKS,-cppcoreguidelines-pro-bounds-pointer-arithmetic"
+# Can't use constexpr, yet. C will have it eventually, but it'll be years
+# until we can use it across all the compilers.
+CHECKS="$CHECKS,-cppcoreguidelines-macro-usage"
+# These are all very C++ and/or LLVM specific.
+CHECKS="$CHECKS,-llvmlibc-*"
+
+# We use unions in C, and can't use std::variant or boost::variant.
+CHECKS="$CHECKS,-cppcoreguidelines-pro-type-union-access"
+
+set -eux
+
+DIRS=(
+  other/bootstrap_daemon/src
+  other
+  toxav
+  toxcore
+  toxcore/events
+  toxencryptsave
+)
+
+copy_files() {
+  find "${DIRS[@]}" \
+    -maxdepth 1 -type d -exec mkdir -p "$1/{}" \;
+  find "${DIRS[@]}" \
+    -maxdepth 1 -name "*.[ch]" -exec cp "{}" "$1/{}" \;
+}
+
+run() {
+  echo "Running clang-tidy in variant '$*'"
+  EXTRA_ARGS=("$@")
+  for i in "${!EXTRA_ARGS[@]}"; do
+    EXTRA_ARGS[$i]="--extra-arg=${EXTRA_ARGS[$i]}"
+  done
+  ls .clang-tidy
+  copy_files a
+  if ! find "${DIRS[@]}" \
+    -maxdepth 1 -name "*.[ch]" -print0 \
+    | xargs -0 -n15 -P"$(nproc)" clang-tidy \
+      -p="$PWD/_build" \
+      --extra-arg=-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE \
+      "${EXTRA_ARGS[@]}" \
+      --fix \
+      --checks="$CHECKS" \
+      --warnings-as-errors="$ERRORS" \
+      --use-color; then
+    copy_files b
+    colordiff -ru a b
+    rm -rf a b
+    false
+  fi
+  rm -rf a
+}
+
+cmake . -B_build -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+sed -i -e 's/-std=c11/-xc++/' _build/compile_commands.json
+
+. other/analysis/variants.sh

@@ -1,0 +1,2 @@
+!other/docker/modules/check
+!**/BUILD.bazel

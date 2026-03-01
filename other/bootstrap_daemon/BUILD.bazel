@@ -1,0 +1,33 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "bootstrap_daemon",
+    srcs = glob([
+        "src/*.c",
+        "src/*.h",
+    ]),
+    tags = ["no-windows"],
+    deps = [
+        "//c-toxcore/other:bootstrap_node_packets",
+        "//c-toxcore/toxcore:DHT",
+        "//c-toxcore/toxcore:LAN_discovery",
+        "//c-toxcore/toxcore:TCP_server",
+        "//c-toxcore/toxcore:announce",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:crypto_core",
+        "//c-toxcore/toxcore:forwarding",
+        "//c-toxcore/toxcore:group_announce",
+        "//c-toxcore/toxcore:group_onion_announce",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mem",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:onion",
+        "//c-toxcore/toxcore:onion_announce",
+        "//c-toxcore/toxcore:os_memory",
+        "//c-toxcore/toxcore:os_random",
+        "//c-toxcore/toxcore:tox",
+        "@libconfig",
+    ],
+)

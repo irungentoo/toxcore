@@ -1,0 +1,322 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
+
+exports_files(
+    srcs = ["toxav.h"],
+    visibility = ["//c-toxcore:__pkg__"],
+)
+
+# Private library with the public API header in it because in toxav, lots of
+# things depend on the public API header.
+cc_library(
+    name = "public_api",
+    hdrs = ["toxav.h"],
+    deps = ["//c-toxcore/toxcore:attributes"],
+)
+
+cc_library(
+    name = "ring_buffer",
+    srcs = ["ring_buffer.c"],
+    hdrs = ["ring_buffer.h"],
+    deps = [
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:ccompat",
+    ],
+)
+
+cc_test(
+    name = "ring_buffer_test",
+    size = "small",
+    srcs = ["ring_buffer_test.cc"],
+    deps = [
+        ":ring_buffer",
+        "//c-toxcore/toxcore:attributes",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "ring_buffer_srcs",
+    hdrs = [
+        "ring_buffer.c",
+        "ring_buffer.h",
+    ],
+    visibility = ["//c-toxcore/testing:__pkg__"],
+    deps = ["//c-toxcore/toxcore:ccompat"],
+)
+
+cc_library(
+    name = "rtp",
+    srcs = ["rtp.c"],
+    hdrs = ["rtp.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:net_crypto",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:util",
+        "@libsodium",
+    ],
+)
+
+cc_test(
+    name = "rtp_test",
+    size = "small",
+    srcs = ["rtp_test.cc"],
+    deps = [
+        ":rtp",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:net_crypto",
+        "//c-toxcore/toxcore:os_memory",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_fuzz_test(
+    name = "rtp_fuzz_test",
+    size = "small",
+    srcs = ["rtp_fuzz_test.cc"],
+    copts = ["-UNDEBUG"],
+    deps = [
+        ":rtp",
+        "//c-toxcore/testing/support",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:os_memory",
+    ],
+)
+
+cc_library(
+    name = "bwcontroller",
+    srcs = ["bwcontroller.c"],
+    hdrs = ["bwcontroller.h"],
+    deps = [
+        ":ring_buffer",
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:util",
+    ],
+)
+
+cc_test(
+    name = "bwcontroller_test",
+    size = "small",
+    srcs = ["bwcontroller_test.cc"],
+    deps = [
+        ":bwcontroller",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:os_memory",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "audio",
+    srcs = ["audio.c"],
+    hdrs = ["audio.h"],
+    deps = [
+        ":ring_buffer",
+        ":rtp",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:util",
+        "@opus",
+    ],
+)
+
+cc_library(
+    name = "av_test_support",
+    testonly = True,
+    srcs = ["av_test_support.cc"],
+    hdrs = ["av_test_support.hh"],
+    deps = [
+        ":audio",
+        ":rtp",
+        ":video",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:os_memory",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
+    name = "audio_test",
+    timeout = "moderate",
+    srcs = ["audio_test.cc"],
+    deps = [
+        ":audio",
+        ":av_test_support",
+        ":rtp",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:os_memory",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "video",
+    srcs = ["video.c"],
+    hdrs = ["video.h"],
+    deps = [
+        ":ring_buffer",
+        ":rtp",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:util",
+        "@libvpx",
+    ],
+)
+
+cc_test(
+    name = "video_test",
+    timeout = "moderate",
+    srcs = ["video_test.cc"],
+    deps = [
+        ":av_test_support",
+        ":rtp",
+        ":video",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:os_memory",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_binary(
+    name = "video_bench",
+    testonly = True,
+    srcs = ["video_bench.cc"],
+    deps = [
+        ":av_test_support",
+        ":rtp",
+        ":video",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:os_memory",
+        "@benchmark",
+    ],
+)
+
+cc_binary(
+    name = "audio_bench",
+    testonly = True,
+    srcs = ["audio_bench.cc"],
+    deps = [
+        ":audio",
+        ":av_test_support",
+        ":rtp",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:os_memory",
+        "@benchmark",
+    ],
+)
+
+cc_binary(
+    name = "rtp_bench",
+    testonly = True,
+    srcs = ["rtp_bench.cc"],
+    deps = [
+        ":av_test_support",
+        ":rtp",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:os_memory",
+        "@benchmark",
+    ],
+)
+
+cc_library(
+    name = "msi",
+    srcs = ["msi.c"],
+    hdrs = ["msi.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:util",
+    ],
+)
+
+cc_test(
+    name = "msi_test",
+    size = "small",
+    srcs = ["msi_test.cc"],
+    deps = [
+        ":msi",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:os_memory",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "toxav",
+    srcs = [
+        "groupav.c",
+        "groupav.h",
+        "toxav.c",
+        "toxav_old.c",
+    ],
+    hdrs = ["toxav.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        ":audio",
+        ":bwcontroller",
+        ":msi",
+        ":rtp",
+        ":video",
+        "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:attributes",
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:group",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:net_crypto",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:util",
+        "@libsodium",
+        "@opus",
+    ],
+)
+
+sh_library(
+    name = "cimple_files",
+    srcs = glob([
+        "*.c",
+        "*.h",
+    ]),
+    visibility = ["//c-toxcore/testing:__pkg__"],
+)

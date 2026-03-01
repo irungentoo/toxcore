@@ -1,0 +1,51 @@
+function(target_link_toxcore target)
+  if(TARGET toxcore_static)
+    target_link_libraries(${target} PRIVATE toxcore_static)
+  else()
+    target_link_libraries(${target} PRIVATE toxcore_shared)
+  endif()
+endfunction()
+
+function(target_link_sodium target)
+  if(TARGET unofficial-sodium::sodium)
+    target_link_libraries(${target} PRIVATE unofficial-sodium::sodium)
+  else()
+    target_link_libraries(${target} PRIVATE ${LIBSODIUM_LIBRARIES})
+    target_link_directories(${target} PRIVATE ${LIBSODIUM_LIBRARY_DIRS})
+    target_include_directories(${target} SYSTEM PRIVATE ${LIBSODIUM_INCLUDE_DIRS})
+    target_compile_options(${target} PRIVATE ${LIBSODIUM_CFLAGS_OTHER})
+  endif()
+endfunction()
+
+add_executable(save-generator save-generator.c)
+target_link_libraries(save-generator PRIVATE misc_tools)
+target_link_toxcore(save-generator)
+
+add_executable(strkey strkey.c)
+target_link_sodium(strkey)
+
+add_executable(create_bootstrap_keys create_bootstrap_keys.c)
+target_link_sodium(create_bootstrap_keys)
+
+add_executable(create_minimal_savedata create_minimal_savedata.c)
+target_link_sodium(create_minimal_savedata)
+
+add_executable(create_savedata create_savedata.c)
+target_link_sodium(create_savedata)
+target_link_toxcore(create_savedata)
+
+add_executable(sign sign.c)
+target_link_sodium(sign)
+
+add_executable(cracker_simple cracker_simple.c)
+target_link_sodium(cracker_simple)
+
+find_package(OpenMP)
+if(OpenMP_C_FOUND)
+  add_executable(cracker cracker.c)
+  target_link_libraries(cracker PRIVATE OpenMP::OpenMP_C)
+  target_link_sodium(cracker)
+else()
+  add_executable(cracker cracker.c)
+  target_link_sodium(cracker)
+endif()

@@ -1,0 +1,55 @@
+#!/bin/bash
+# Copyright (C) 2018-2023 nurupo
+
+# Toxcore building
+
+set -eux
+
+cd .. # /work
+. cmake-alpine-run.sh
+
+# === Get VM ready to build the code ===
+
+start_vm
+
+RUN apk add cmake g++ ninja
+
+mv c-toxcore /
+
+# Copy over toxcore code from host to qemu
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P "$SSH_PORT" -r /c-toxcore root@localhost:~
+
+cd /c-toxcore
+. ".github/scripts/flags-gcc.sh"
+
+# Make compilation error on a warning
+add_flag -Werror
+
+# - disabling toxav because vpx doesn't work on s390x.
+# - disabling bootstrap daemons because we don't need them for testing (saving time).
+# - disabling shared libraries because it saves a lot of time on building PIC objects.
+# - enable unity build because it saves a lot of time as well (fewer objects to build).
+RUN "cmake -B_build -Hc-toxcore -GNinja \
+  -DCMAKE_C_FLAGS='$C_FLAGS' \
+  -DCMAKE_CXX_FLAGS='$CXX_FLAGS' \
+  -DCMAKE_EXE_LINKER_FLAGS='$LD_FLAGS' \
+  -DCMAKE_SHARED_LINKER_FLAGS='$LD_FLAGS' \
+  -DCMAKE_INSTALL_PREFIX:PATH='_install' \
+  -DCMAKE_UNITY_BUILD=ON \
+  -DMIN_LOGGER_LEVEL=TRACE \
+  -DNON_HERMETIC_TESTS=ON \
+  -DENABLE_SHARED=OFF \
+  -DBUILD_TOXAV=OFF \
+  -DDHT_BOOTSTRAP=OFF \
+  -DBOOTSTRAP_DAEMON=OFF \
+  -DSTRICT_ABI=ON \
+  -DTEST_TIMEOUT_SECONDS=90 \
+  -DUSE_IPV6=OFF \
+  -DAUTOTEST=ON"
+
+RUN 'cmake --build _build --parallel 2 --target install -- -k 0'
+RUN 'cd _build && ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:1 --timeout 90 || true' &
+
+# Give the tests 5 minutes to run. Sometimes, the per-test timeout doesn't
+# work, so we put a global timeout here for everything.
+sleep 300

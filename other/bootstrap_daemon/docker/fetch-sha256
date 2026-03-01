@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+import json
+import os
+import pprint
+import subprocess
+import sys
+import urllib.request
+from typing import Any
+
+SHA256_FILE = "other/bootstrap_daemon/docker/tox-bootstrapd.sha256"
+
+with open(f"{os.environ['HOME']}/.github-token") as fh:
+    token = fh.read().strip()
+
+head_sha = (subprocess.run(["git", "rev-parse", "HEAD"],
+                           capture_output=True,
+                           check=True).stdout.decode("utf-8").strip())
+
+
+def request(url: str) -> Any:
+    return json.loads(
+        urllib.request.urlopen(
+            urllib.request.Request(
+                url,
+                headers={
+                    "Accept": "application/vnd.github+json",
+                    "Authorization": "Bearer " + token,
+                    "X-GitHub-Api-Version": "2022-11-28",
+                },
+            )).read())
+
+
+pp = pprint.PrettyPrinter(indent=2, compact=True)
+annots = [
+    a for r in request(
+        f"https://api.github.com/repos/TokTok/c-toxcore/commits/{head_sha}/check-runs?per_page=100"
+    )["check_runs"] if r["name"] == "docker-bootstrap-node"
+    for a in request(r["output"]["annotations_url"])
+    if a["path"] == SHA256_FILE
+]
+if not annots:
+    print("could not find sha256sum output")
+    sys.exit(1)
+with open(SHA256_FILE, "w") as fh:
+    fh.write(annots[0]["message"] + "\n")
+    print(f"updated {SHA256_FILE}")

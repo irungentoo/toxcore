@@ -1,0 +1,5 @@
+/Tox.xcframework
+/toxcore-ios*
+/toxcore-iphonesimulator*
+/toxcore-macos*
+/smoke-test.c

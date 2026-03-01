@@ -1,46 +1,45 @@
-/*
-* TCP_client.h -- Implementation of the TCP relay client part of Tox.
-*
-*  Copyright (C) 2014 Tox project All Rights Reserved.
-*
-*  This file is part of Tox.
-*
-*  Tox is free software: you can redistribute it and/or modify
-*  it under the terms of the GNU General Public License as published by
-*  the Free Software Foundation, either version 3 of the License, or
-*  (at your option) any later version.
-*
-*  Tox is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*  GNU General Public License for more details.
-*
-*  You should have received a copy of the GNU General Public License
-*  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
-*
-*/
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2026 The TokTok team.
+ * Copyright © 2014 Tox project.
+ */
 
+/**
+ * Implementation of the TCP relay client part of Tox.
+ */
+#ifndef C_TOXCORE_TOXCORE_TCP_CLIENT_H
+#define C_TOXCORE_TOXCORE_TCP_CLIENT_H
 
-#ifndef TCP_CLIENT_H
-#define TCP_CLIENT_H
+#include <stdint.h>
 
+#include "attributes.h"
 #include "crypto_core.h"
-#include "TCP_server.h"
+#include "forwarding.h"
+#include "logger.h"
+#include "mem.h"
+#include "mono_time.h"
+#include "net.h"
+#include "net_profile.h"
+#include "network.h"
+#include "rng.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define TCP_CONNECTION_TIMEOUT 10
 
-typedef enum {
+typedef enum TCP_Proxy_Type {
     TCP_PROXY_NONE,
     TCP_PROXY_HTTP,
-    TCP_PROXY_SOCKS5
-} TCP_PROXY_TYPE;
+    TCP_PROXY_SOCKS5,
+} TCP_Proxy_Type;
 
-typedef struct {
+typedef struct TCP_Proxy_Info {
     IP_Port ip_port;
     uint8_t proxy_type; // a value from TCP_PROXY_TYPE
 } TCP_Proxy_Info;
 
-enum {
+typedef enum TCP_Client_Status {
     TCP_CLIENT_NO_STATUS,
     TCP_CLIENT_PROXY_HTTP_CONNECTING,
     TCP_CLIENT_PROXY_SOCKS5_CONNECTING,
@@ -49,118 +48,94 @@ enum {
     TCP_CLIENT_UNCONFIRMED,
     TCP_CLIENT_CONFIRMED,
     TCP_CLIENT_DISCONNECTED,
-};
-typedef struct  {
-    uint8_t status;
-    sock_t  sock;
-    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES]; /* our public key */
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* public key of the server */
-    IP_Port ip_port; /* The ip and port of the server */
-    TCP_Proxy_Info proxy_info;
-    uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
-    uint8_t sent_nonce[crypto_box_NONCEBYTES]; /* Nonce of sent packets. */
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
-    uint16_t next_packet_length;
+} TCP_Client_Status;
 
-    uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
+typedef struct TCP_Client_Connection TCP_Client_Connection;
 
-    uint8_t last_packet[2 + MAX_PACKET_SIZE];
-    uint16_t last_packet_length;
-    uint16_t last_packet_sent;
+const uint8_t *_Nonnull tcp_con_public_key(const TCP_Client_Connection *_Nonnull con);
+IP_Port tcp_con_ip_port(const TCP_Client_Connection *_Nonnull con);
+TCP_Client_Status tcp_con_status(const TCP_Client_Connection *_Nonnull con);
 
-    TCP_Priority_List *priority_queue_start, *priority_queue_end;
+void *_Nullable tcp_con_custom_object(const TCP_Client_Connection *_Nonnull con);
+uint32_t tcp_con_custom_uint(const TCP_Client_Connection *_Nonnull con);
+void tcp_con_set_custom_object(TCP_Client_Connection *_Nonnull con, void *_Nonnull object);
+void tcp_con_set_custom_uint(TCP_Client_Connection *_Nonnull con, uint32_t value);
 
-    uint64_t kill_at;
+/** Create new TCP connection to ip_port/public_key */
+TCP_Client_Connection *_Nullable new_tcp_connection(
+    const Logger *_Nonnull logger, const Memory *_Nonnull mem, const Mono_Time *_Nonnull mono_time, const Random *_Nonnull rng, const Network *_Nonnull ns,
+    const IP_Port *_Nonnull ip_port, const uint8_t *_Nonnull public_key, const uint8_t *_Nonnull self_public_key, const uint8_t *_Nonnull self_secret_key,
+    const TCP_Proxy_Info *_Nullable proxy_info, Net_Profile *_Nullable net_profile);
+/** Run the TCP connection */
+void do_tcp_connection(const Logger *_Nonnull logger, const Mono_Time *_Nonnull mono_time,
+                       TCP_Client_Connection *_Nonnull tcp_connection, void *_Nullable userdata);
+/** Kill the TCP connection */
+void kill_tcp_connection(TCP_Client_Connection *_Nullable tcp_connection);
+typedef int tcp_onion_response_cb(void *_Nonnull object, const uint8_t *_Nonnull data, uint16_t length, void *_Nullable userdata);
 
-    uint64_t last_pinged;
-    uint64_t ping_id;
-
-    uint64_t ping_response_id;
-    uint64_t ping_request_id;
-
-    struct {
-        uint8_t status; /* 0 if not used, 1 if other is offline, 2 if other is online. */
-        uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-        uint32_t number;
-    } connections[NUM_CLIENT_CONNECTIONS];
-    int (*response_callback)(void *object, uint8_t connection_id, const uint8_t *public_key);
-    void *response_callback_object;
-    int (*status_callback)(void *object, uint32_t number, uint8_t connection_id, uint8_t status);
-    void *status_callback_object;
-    int (*data_callback)(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data, uint16_t length);
-    void *data_callback_object;
-    int (*oob_data_callback)(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length);
-    void *oob_data_callback_object;
-
-    int (*onion_callback)(void *object, const uint8_t *data, uint16_t length);
-    void *onion_callback_object;
-
-    /* Can be used by user. */
-    void *custom_object;
-    uint32_t custom_uint;
-} TCP_Client_Connection;
-
-/* Create new TCP connection to ip_port/public_key
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure (connection must be killed).
  */
-TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public_key, const uint8_t *self_public_key,
-        const uint8_t *self_secret_key, TCP_Proxy_Info *proxy_info);
+int send_onion_request(const Logger *_Nonnull logger, TCP_Client_Connection *_Nonnull con, const uint8_t *_Nonnull data, uint16_t length);
+void onion_response_handler(TCP_Client_Connection *_Nonnull con, tcp_onion_response_cb *_Nonnull onion_callback, void *_Nonnull object);
 
-/* Run the TCP connection
+int send_forward_request_tcp(const Logger *_Nonnull logger, TCP_Client_Connection *_Nonnull con, const IP_Port *_Nonnull dest, const uint8_t *_Nonnull data, uint16_t length);
+void forwarding_handler(TCP_Client_Connection *_Nonnull con, forwarded_response_cb *_Nonnull forwarded_response_callback, void *_Nonnull object);
+
+typedef int tcp_routing_response_cb(void *_Nonnull object, uint8_t connection_id, const uint8_t *_Nonnull public_key);
+typedef int tcp_routing_status_cb(void *_Nonnull object, uint32_t number, uint8_t connection_id, uint8_t status);
+
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure (connection must be killed).
  */
-void do_TCP_connection(TCP_Client_Connection *TCP_connection);
+int send_routing_request(const Logger *_Nonnull logger, TCP_Client_Connection *_Nonnull con, const uint8_t *_Nonnull public_key);
+void routing_response_handler(TCP_Client_Connection *_Nonnull con, tcp_routing_response_cb *_Nonnull response_callback, void *_Nonnull object);
+void routing_status_handler(TCP_Client_Connection *_Nonnull con, tcp_routing_status_cb *_Nonnull status_callback, void *_Nonnull object);
 
-/* Kill the TCP connection
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure (connection must be killed).
  */
-void kill_TCP_connection(TCP_Client_Connection *TCP_connection);
+int send_disconnect_request(const Logger *_Nonnull logger, TCP_Client_Connection *_Nonnull con, uint8_t con_id);
 
-/* return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure (connection must be killed).
- */
-int send_onion_request(TCP_Client_Connection *con, const uint8_t *data, uint16_t length);
-void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, const uint8_t *data,
-                            uint16_t length), void *object);
-
-/* return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure (connection must be killed).
- */
-int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key);
-void routing_response_handler(TCP_Client_Connection *con, int (*response_callback)(void *object, uint8_t connection_id,
-                              const uint8_t *public_key), void *object);
-void routing_status_handler(TCP_Client_Connection *con, int (*status_callback)(void *object, uint32_t number,
-                            uint8_t connection_id, uint8_t status), void *object);
-
-/* return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure (connection must be killed).
- */
-int send_disconnect_request(TCP_Client_Connection *con, uint8_t con_id);
-
-/* Set the number that will be used as an argument in the callbacks related to con_id.
+/** @brief Set the number that will be used as an argument in the callbacks related to con_id.
  *
- * When not set by this function, the number is ~0.
+ * When not set by this function, the number is -1.
  *
  * return 0 on success.
  * return -1 on failure.
  */
-int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32_t number);
+int set_tcp_connection_number(TCP_Client_Connection *_Nonnull con, uint8_t con_id, uint32_t number);
 
-/* return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure.
+typedef int tcp_routing_data_cb(void *_Nonnull object, uint32_t number, uint8_t connection_id, const uint8_t *_Nonnull data,
+                                uint16_t length, void *_Nullable userdata);
+
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure.
  */
-int send_data(TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, uint16_t length);
-void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint32_t number,
-                          uint8_t connection_id, const uint8_t *data, uint16_t length), void *object);
+int send_data(const Logger *_Nonnull logger, TCP_Client_Connection *_Nonnull con, uint8_t con_id, const uint8_t *_Nonnull data, uint16_t length);
+void routing_data_handler(TCP_Client_Connection *_Nonnull con, tcp_routing_data_cb *_Nonnull data_callback, void *_Nonnull object);
 
-/* return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure.
+typedef int tcp_oob_data_cb(void *_Nonnull object, const uint8_t *_Nonnull public_key, const uint8_t *_Nonnull data, uint16_t length,
+                            void *_Nullable userdata);
+
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure.
  */
-int send_oob_packet(TCP_Client_Connection *con, const uint8_t *public_key, const uint8_t *data, uint16_t length);
-void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, const uint8_t *public_key,
-                      const uint8_t *data, uint16_t length), void *object);
+int send_oob_packet(const Logger *_Nonnull logger, TCP_Client_Connection *_Nonnull con, const uint8_t *_Nonnull public_key, const uint8_t *_Nonnull data, uint16_t length);
+void oob_data_handler(TCP_Client_Connection *_Nonnull con, tcp_oob_data_cb *_Nonnull oob_data_callback, void *_Nonnull object);
 
-
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
+
+#endif /* C_TOXCORE_TOXCORE_TCP_CLIENT_H */

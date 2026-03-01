@@ -1,153 +1,424 @@
-/* crypto_core.h
- *
- * Functions for the core crypto.
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2026 The TokTok team.
+ * Copyright © 2013 Tox project.
  */
-#ifndef CORE_CRYPTO_H
-#define CORE_CRYPTO_H
 
-#include "network.h"
+/** @file
+ * @brief Functions for the core crypto.
+ *
+ * @note This code has to be perfect. We don't mess around with encryption.
+ */
+#ifndef C_TOXCORE_TOXCORE_CRYPTO_CORE_H
+#define C_TOXCORE_TOXCORE_CRYPTO_CORE_H
 
-#ifndef VANILLA_NACL
-/* We use libsodium by default. */
-#include <sodium.h>
-#else
-#include <crypto_box.h>
-#include <randombytes.h>
-#include <crypto_hash_sha256.h>
-#include <crypto_hash_sha512.h>
-#include <crypto_verify_16.h>
-#include <crypto_verify_32.h>
-#include <crypto_scalarmult_curve25519.h>
-#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
-/* I know */
-#define sodium_memcmp(a, b, c) memcmp(a, b, c)
-#define sodium_memzero(a, c) memset(a, 0, c)
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "attributes.h"
+#include "mem.h"
+#include "rng.h"
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#define crypto_box_KEYBYTES (crypto_box_BEFORENMBYTES)
-
-/* compare 2 public keys of length crypto_box_PUBLICKEYBYTES, not vulnerable to timing attacks.
-   returns 0 if both mem locations of length are equal,
-   return -1 if they are not. */
-int public_key_cmp(const uint8_t *pk1, const uint8_t *pk2);
-
-/*  return a random number.
- *
- * random_int for a 32bin int.
- * random_64b for a 64bit int.
+/**
+ * @brief The number of bytes in a signature.
  */
-uint32_t random_int(void);
-uint64_t random_64b(void);
+#define CRYPTO_SIGNATURE_SIZE          64
 
-/* Check if a Tox public key crypto_box_PUBLICKEYBYTES is valid or not.
+/**
+ * @brief The number of bytes in a Tox public key used for signatures.
+ */
+#define CRYPTO_SIGN_PUBLIC_KEY_SIZE    32
+
+/**
+ * @brief The number of bytes in a Tox secret key used for signatures.
+ */
+#define CRYPTO_SIGN_SECRET_KEY_SIZE    64
+
+/**
+ * @brief The number of bytes in a Tox public key used for encryption.
+ */
+#define CRYPTO_PUBLIC_KEY_SIZE         32
+
+/**
+ * @brief The number of bytes in a Tox secret key used for encryption.
+ */
+#define CRYPTO_SECRET_KEY_SIZE         32
+
+/**
+ * @brief The number of bytes in a shared key computed from public and secret keys.
+ */
+#define CRYPTO_SHARED_KEY_SIZE         32
+
+/**
+ * @brief The number of bytes in a symmetric key.
+ */
+#define CRYPTO_SYMMETRIC_KEY_SIZE      CRYPTO_SHARED_KEY_SIZE
+
+/**
+ * @brief The number of bytes needed for the MAC (message authentication code) in an
+ *   encrypted message.
+ */
+#define CRYPTO_MAC_SIZE                16
+
+/**
+ * @brief The number of bytes in a nonce used for encryption/decryption.
+ */
+#define CRYPTO_NONCE_SIZE              24
+
+/**
+ * @brief The number of bytes in a SHA256 hash.
+ */
+#define CRYPTO_SHA256_SIZE             32
+
+/**
+ * @brief The number of bytes in a SHA512 hash.
+ */
+#define CRYPTO_SHA512_SIZE             64
+
+/**
+ * @brief The number of bytes in an encryption public key used by DHT group chats.
+ */
+#define ENC_PUBLIC_KEY_SIZE            CRYPTO_PUBLIC_KEY_SIZE
+
+/**
+ * @brief The number of bytes in an encryption secret key used by DHT group chats.
+ */
+#define ENC_SECRET_KEY_SIZE            CRYPTO_SECRET_KEY_SIZE
+
+/**
+ * @brief The number of bytes in a signature public key.
+ */
+#define SIG_PUBLIC_KEY_SIZE            CRYPTO_SIGN_PUBLIC_KEY_SIZE
+
+/**
+ * @brief The number of bytes in a signature secret key.
+ */
+#define SIG_SECRET_KEY_SIZE            CRYPTO_SIGN_SECRET_KEY_SIZE
+
+/**
+ * @brief The number of bytes in a DHT group chat public key identifier.
+ */
+#define CHAT_ID_SIZE                   SIG_PUBLIC_KEY_SIZE
+
+/**
+ * @brief The number of bytes in an extended public key used by DHT group chats.
+ */
+#define EXT_PUBLIC_KEY_SIZE            (ENC_PUBLIC_KEY_SIZE + SIG_PUBLIC_KEY_SIZE)
+
+/**
+ * @brief The number of bytes in an extended secret key used by DHT group chats.
+ */
+#define EXT_SECRET_KEY_SIZE            (ENC_SECRET_KEY_SIZE + SIG_SECRET_KEY_SIZE)
+
+/**
+ * @brief The number of bytes in an HMAC authenticator.
+ */
+#define CRYPTO_HMAC_SIZE               32
+
+/**
+ * @brief The number of bytes in an HMAC secret key.
+ */
+#define CRYPTO_HMAC_KEY_SIZE           32
+
+/**
+ * @brief A `bzero`-like function which won't be optimised away by the compiler.
+ *
+ * Some compilers will inline `bzero` or `memset` if they can prove that there
+ * will be no reads to the written data. Use this function if you want to be
+ * sure the memory is indeed zeroed.
+ */
+void crypto_memzero(void *_Nonnull data, size_t length);
+
+/**
+ * @brief Compute a SHA256 hash (32 bytes).
+ *
+ * @param[out] hash The SHA256 hash of @p data will be written to this byte array.
+ */
+void crypto_sha256(uint8_t hash[_Nonnull CRYPTO_SHA256_SIZE], const uint8_t *_Nonnull data, size_t length);
+
+/**
+ * @brief Compute a SHA512 hash (64 bytes).
+ *
+ * @param[out] hash The SHA512 hash of @p data will be written to this byte array.
+ */
+void crypto_sha512(uint8_t hash[_Nonnull CRYPTO_SHA512_SIZE], const uint8_t *_Nonnull data, size_t length);
+
+/**
+ * @brief Compute an HMAC authenticator (32 bytes).
+ *
+ * @param[out] auth Resulting authenticator.
+ * @param key Secret key, as generated by `new_hmac_key()`.
+ */
+void crypto_hmac(uint8_t auth[_Nonnull CRYPTO_HMAC_SIZE], const uint8_t key[_Nonnull CRYPTO_HMAC_KEY_SIZE], const uint8_t *_Nonnull data, size_t length);
+
+/**
+ * @brief Verify an HMAC authenticator.
+ */
+bool crypto_hmac_verify(const uint8_t auth[_Nonnull CRYPTO_HMAC_SIZE], const uint8_t key[_Nonnull CRYPTO_HMAC_KEY_SIZE], const uint8_t *_Nonnull data, size_t length);
+
+/**
+ * @brief Compare 2 public keys of length @ref CRYPTO_PUBLIC_KEY_SIZE, not vulnerable to
+ *   timing attacks.
+ *
+ * @retval true if both mem locations of length are equal
+ * @retval false if they are not
+ */
+bool pk_equal(const uint8_t pk1[_Nonnull CRYPTO_PUBLIC_KEY_SIZE], const uint8_t pk2[_Nonnull CRYPTO_PUBLIC_KEY_SIZE]);
+
+/**
+ * @brief Copy a public key from `src` to `dest`.
+ */
+void pk_copy(uint8_t dest[_Nonnull CRYPTO_PUBLIC_KEY_SIZE], const uint8_t src[_Nonnull CRYPTO_PUBLIC_KEY_SIZE]);
+
+/**
+ * @brief Compare 2 SHA512 checksums of length CRYPTO_SHA512_SIZE, not vulnerable to
+ *   timing attacks.
+ *
+ * @return true if both mem locations of length are equal, false if they are not.
+ */
+bool crypto_sha512_eq(const uint8_t cksum1[_Nonnull CRYPTO_SHA512_SIZE], const uint8_t cksum2[_Nonnull CRYPTO_SHA512_SIZE]);
+
+/**
+ * @brief Compare 2 SHA256 checksums of length CRYPTO_SHA256_SIZE, not vulnerable to
+ *   timing attacks.
+ *
+ * @return true if both mem locations of length are equal, false if they are not.
+ */
+bool crypto_sha256_eq(const uint8_t cksum1[_Nonnull CRYPTO_SHA256_SIZE], const uint8_t cksum2[_Nonnull CRYPTO_SHA256_SIZE]);
+
+/**
+ * @brief Return a random 8 bit integer.
+ */
+uint8_t random_u08(const Random *_Nonnull rng);
+
+/**
+ * @brief Return a random 16 bit integer.
+ */
+uint16_t random_u16(const Random *_Nonnull rng);
+
+/**
+ * @brief Return a random 32 bit integer.
+ */
+uint32_t random_u32(const Random *_Nonnull rng);
+
+/**
+ * @brief Return a random 64 bit integer.
+ */
+uint64_t random_u64(const Random *_Nonnull rng);
+
+/**
+ * @brief Return a random 32 bit integer between 0 and upper_bound (excluded).
+ *
+ * This function guarantees a uniform distribution of possible outputs.
+ */
+uint32_t random_range_u32(const Random *_Nonnull rng, uint32_t upper_bound);
+
+/**
+ * @brief Cryptographically signs a message using the supplied secret key and puts the resulting signature
+ *   in the supplied buffer.
+ *
+ * @param[out] signature The buffer for the resulting signature, which must have room for at
+ *   least CRYPTO_SIGNATURE_SIZE bytes.
+ * @param message The message being signed.
+ * @param message_length The length in bytes of the message being signed.
+ * @param secret_key The secret key used to create the signature. The key should be
+ *   produced by either `create_extended_keypair` or the libsodium function `crypto_sign_keypair`.
+ *
+ * @retval true on success.
+ */
+bool crypto_signature_create(uint8_t signature[_Nonnull CRYPTO_SIGNATURE_SIZE], const uint8_t *_Nonnull message, uint64_t message_length, const uint8_t secret_key[_Nonnull SIG_SECRET_KEY_SIZE]);
+
+/** @brief Verifies that the given signature was produced by a given message and public key.
+ *
+ * @param signature The signature we wish to verify.
+ * @param message The message we wish to verify.
+ * @param message_length The length of the message.
+ * @param public_key The public key counterpart of the secret key that was used to
+ *   create the signature.
+ *
+ * @retval true on success.
+ */
+bool crypto_signature_verify(const uint8_t signature[_Nonnull CRYPTO_SIGNATURE_SIZE], const uint8_t *_Nonnull message, uint64_t message_length,
+                             const uint8_t public_key[_Nonnull SIG_PUBLIC_KEY_SIZE]);
+
+/**
+ * @brief Fill the given nonce with random bytes.
+ */
+void random_nonce(const Random *_Nonnull rng, uint8_t nonce[_Nonnull CRYPTO_NONCE_SIZE]);
+
+/**
+ * @brief Fill an array of bytes with random values.
+ */
+void random_bytes(const Random *_Nonnull rng, uint8_t *_Nonnull bytes, size_t length);
+
+/**
+ * @brief Check if a Tox public key CRYPTO_PUBLIC_KEY_SIZE is valid or not.
+ *
  * This should only be used for input validation.
  *
- * return 0 if it isn't.
- * return 1 if it is.
+ * @return false if it isn't, true if it is.
  */
-int public_key_valid(const uint8_t *public_key);
+bool public_key_valid(const uint8_t public_key[_Nonnull CRYPTO_PUBLIC_KEY_SIZE]);
 
-/* Encrypts plain of length length to encrypted of length + 16 using the
- * public key(32 bytes) of the receiver and the secret key of the sender and a 24 byte nonce.
+typedef struct Extended_Public_Key {
+    uint8_t enc[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t sig[CRYPTO_SIGN_PUBLIC_KEY_SIZE];
+} Extended_Public_Key;
+
+typedef struct Extended_Secret_Key {
+    uint8_t enc[CRYPTO_SECRET_KEY_SIZE];
+    uint8_t sig[CRYPTO_SIGN_SECRET_KEY_SIZE];
+} Extended_Secret_Key;
+
+/**
+ * @brief Creates an extended keypair: curve25519 and ed25519 for encryption and signing
+ *   respectively. The Encryption keys are derived from the signature keys.
  *
- *  return -1 if there was a problem.
- *  return length of encrypted data if everything was fine.
- */
-int encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
-                 const uint8_t *plain, uint32_t length, uint8_t *encrypted);
-
-
-/* Decrypts encrypted of length length to plain of length length - 16 using the
- * public key(32 bytes) of the sender, the secret key of the receiver and a 24 byte nonce.
+ * NOTE: This does *not* use Random, so any code using this will not be fuzzable.
+ * TODO: Make it use Random.
  *
- *  return -1 if there was a problem (decryption failed).
- *  return length of plain data if everything was fine.
- */
-int decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
-                 const uint8_t *encrypted, uint32_t length, uint8_t *plain);
-
-/* Fast encrypt/decrypt operations. Use if this is not a one-time communication.
-   encrypt_precompute does the shared-key generation once so it does not have
-   to be preformed on every encrypt/decrypt. */
-void encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, uint8_t *enc_key);
-
-/* Encrypts plain of length length to encrypted of length + 16 using a
- * secret key crypto_box_KEYBYTES big and a 24 byte nonce.
+ * @param[out] pk The buffer where the public key will be stored. Must have room for EXT_PUBLIC_KEY_SIZE bytes.
+ * @param[out] sk The buffer where the secret key will be stored. Must have room for EXT_SECRET_KEY_SIZE bytes.
+ * @param rng The random number generator to use for the key generator seed.
  *
- *  return -1 if there was a problem.
- *  return length of encrypted data if everything was fine.
+ * @retval true on success.
  */
-int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, uint32_t length,
-                           uint8_t *encrypted);
+bool create_extended_keypair(Extended_Public_Key *_Nonnull pk, Extended_Secret_Key *_Nonnull sk, const Random *_Nonnull rng);
 
-/* Decrypts encrypted of length length to plain of length length - 16 using a
- * secret key crypto_box_KEYBYTES big and a 24 byte nonce.
+/** Functions for groupchat extended keys */
+const uint8_t *_Nonnull get_enc_key(const Extended_Public_Key *_Nonnull key);
+const uint8_t *_Nonnull get_sig_pk(const Extended_Public_Key *_Nonnull key);
+void set_sig_pk(Extended_Public_Key *_Nonnull key, const uint8_t *_Nonnull sig_pk);
+const uint8_t *_Nonnull get_sig_sk(const Extended_Secret_Key *_Nonnull key);
+const uint8_t *_Nonnull get_chat_id(const Extended_Public_Key *_Nonnull key);
+
+/**
+ * @brief Generate a new random keypair.
  *
- *  return -1 if there was a problem (decryption failed).
- *  return length of plain data if everything was fine.
+ * Every call to this function is likely to generate a different keypair.
  */
-int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted, uint32_t length,
-                           uint8_t *plain);
+int32_t crypto_new_keypair(const Random *_Nonnull rng, uint8_t public_key[_Nonnull CRYPTO_PUBLIC_KEY_SIZE], uint8_t secret_key[_Nonnull CRYPTO_SECRET_KEY_SIZE]);
 
-/* Increment the given nonce by 1. */
-void increment_nonce(uint8_t *nonce);
+/**
+ * @brief Derive the public key from a given secret key.
+ */
+void crypto_derive_public_key(uint8_t public_key[_Nonnull CRYPTO_PUBLIC_KEY_SIZE], const uint8_t secret_key[_Nonnull CRYPTO_SECRET_KEY_SIZE]);
 
-/* increment the given nonce by num */
-void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num);
-
-/* Fill the given nonce with random bytes. */
-void random_nonce(uint8_t *nonce);
-
-/* Fill a key crypto_box_KEYBYTES big with random bytes */
-void new_symmetric_key(uint8_t *key);
-
-/*Gives a nonce guaranteed to be different from previous ones.*/
-void new_nonce(uint8_t *nonce);
-
-#define MAX_CRYPTO_REQUEST_SIZE 1024
-
-#define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
-#define CRYPTO_PACKET_HARDENING     48  /* Hardening crypto packet ID. */
-#define CRYPTO_PACKET_DHTPK         156
-#define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
-
-/* Create a request to peer.
- * send_public_key and send_secret_key are the pub/secret keys of the sender.
- * recv_public_key is public key of receiver.
- * packet must be an array of MAX_CRYPTO_REQUEST_SIZE big.
- * Data represents the data we send with the request with length being the length of the data.
- * request_id is the id of the request (32 = friend request, 254 = ping request).
+/**
+ * @brief Encrypt message to send from secret key to public key.
  *
- * return -1 on failure.
- * return the length of the created packet on success.
+ * Encrypt plain text of the given length to encrypted of
+ * `length + CRYPTO_MAC_SIZE` using the public key (@ref CRYPTO_PUBLIC_KEY_SIZE
+ * bytes) of the receiver and the secret key of the sender and a
+ * @ref CRYPTO_NONCE_SIZE byte nonce.
+ *
+ * @retval -1 if there was a problem.
+ * @return length of encrypted data if everything was fine.
  */
-int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
-                   const uint8_t *recv_public_key, const uint8_t *data, uint32_t length, uint8_t request_id);
+int32_t encrypt_data(const Memory *_Nonnull mem, const uint8_t public_key[_Nonnull CRYPTO_PUBLIC_KEY_SIZE], const uint8_t secret_key[_Nonnull CRYPTO_SECRET_KEY_SIZE],
+                     const uint8_t nonce[_Nonnull CRYPTO_NONCE_SIZE], const uint8_t *_Nonnull plain, size_t length, uint8_t *_Nonnull encrypted);
 
-/* puts the senders public key in the request in public_key, the data from the request
-   in data if a friend or ping request was sent to us and returns the length of the data.
-   packet is the request packet and length is its length
-   return -1 if not valid request. */
-int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
-                   uint8_t *request_id, const uint8_t *packet, uint16_t length);
+/**
+ * @brief Decrypt message from public key to secret key.
+ *
+ * Decrypt encrypted text of the given @p length to plain text of the given
+ * `length - CRYPTO_MAC_SIZE` using the public key (@ref CRYPTO_PUBLIC_KEY_SIZE
+ * bytes) of the sender, the secret key of the receiver and a
+ * @ref CRYPTO_NONCE_SIZE byte nonce.
+ *
+ * @retval -1 if there was a problem (decryption failed).
+ * @return length of plain text data if everything was fine.
+ */
+int32_t decrypt_data(const Memory *_Nonnull mem, const uint8_t public_key[_Nonnull CRYPTO_PUBLIC_KEY_SIZE], const uint8_t secret_key[_Nonnull CRYPTO_SECRET_KEY_SIZE],
+                     const uint8_t nonce[_Nonnull CRYPTO_NONCE_SIZE], const uint8_t *_Nonnull encrypted, size_t length, uint8_t *_Nonnull plain);
 
+/**
+ * @brief Fast encrypt/decrypt operations.
+ *
+ * Use if this is not a one-time communication. `encrypt_precompute` does the
+ * shared-key generation once so it does not have to be performed on every
+ * encrypt/decrypt.
+ */
+int32_t encrypt_precompute(const uint8_t public_key[_Nonnull CRYPTO_PUBLIC_KEY_SIZE], const uint8_t secret_key[_Nonnull CRYPTO_SECRET_KEY_SIZE],
+                           uint8_t shared_key[_Nonnull CRYPTO_SHARED_KEY_SIZE]);
 
+/**
+ * @brief Encrypt message with precomputed shared key.
+ *
+ * Encrypts plain of length length to encrypted of length + @ref CRYPTO_MAC_SIZE
+ * using a shared key @ref CRYPTO_SYMMETRIC_KEY_SIZE big and a @ref CRYPTO_NONCE_SIZE
+ * byte nonce.
+ *
+ * @retval -1 if there was a problem.
+ * @return length of encrypted data if everything was fine.
+ */
+int32_t encrypt_data_symmetric(const Memory *_Nonnull mem, const uint8_t shared_key[_Nonnull CRYPTO_SHARED_KEY_SIZE], const uint8_t nonce[_Nonnull CRYPTO_NONCE_SIZE],
+                               const uint8_t *_Nonnull plain, size_t length, uint8_t *_Nonnull encrypted);
+
+/**
+ * @brief Decrypt message with precomputed shared key.
+ *
+ * Decrypts encrypted of length length to plain of length
+ * `length - CRYPTO_MAC_SIZE` using a shared key @ref CRYPTO_SYMMETRIC_KEY_SIZE
+ * big and a @ref CRYPTO_NONCE_SIZE byte nonce.
+ *
+ * @retval -1 if there was a problem (decryption failed).
+ * @return length of plain data if everything was fine.
+ */
+int32_t decrypt_data_symmetric(const Memory *_Nonnull mem, const uint8_t shared_key[_Nonnull CRYPTO_SHARED_KEY_SIZE], const uint8_t nonce[_Nonnull CRYPTO_NONCE_SIZE],
+                               const uint8_t *_Nonnull encrypted, size_t length, uint8_t *_Nonnull plain);
+
+/**
+ * @brief Increment the given nonce by 1 in big endian (rightmost byte incremented first).
+ */
+void increment_nonce(uint8_t nonce[_Nonnull CRYPTO_NONCE_SIZE]);
+
+/**
+ * @brief Increment the given nonce by a given number.
+ *
+ * The number should be in host byte order.
+ */
+void increment_nonce_number(uint8_t nonce[_Nonnull CRYPTO_NONCE_SIZE], uint32_t increment);
+
+/**
+ * @brief Fill a key @ref CRYPTO_SYMMETRIC_KEY_SIZE big with random bytes.
+ */
+void new_symmetric_key(const Random *_Nonnull rng, uint8_t key[_Nonnull CRYPTO_SYMMETRIC_KEY_SIZE]);
+
+/**
+ * @brief Locks `length` bytes of memory pointed to by `data`.
+ *
+ * This will attempt to prevent the specified memory region from being swapped
+ * to disk.
+ *
+ * @return true on success.
+ */
+bool crypto_memlock(void *_Nonnull data, size_t length);
+
+/**
+ * @brief Unlocks `length` bytes of memory pointed to by `data`.
+ *
+ * This allows the specified memory region to be swapped to disk.
+ *
+ * This function call has the side effect of zeroing the specified memory region
+ * whether or not it succeeds. Therefore it should only be used once the memory
+ * is no longer in use.
+ *
+ * @return true on success.
+ */
+bool crypto_memunlock(void *_Nonnull data, size_t length);
+
+/**
+ * @brief Generate a random secret HMAC key.
+ */
+void new_hmac_key(const Random *_Nonnull rng, uint8_t key[_Nonnull CRYPTO_HMAC_KEY_SIZE]);
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
+
+#endif /* C_TOXCORE_TOXCORE_CRYPTO_CORE_H */

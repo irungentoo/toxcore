@@ -1,0 +1,161 @@
+name: docker
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# Cancel old PR builds when pushing new commits.
+concurrency:
+  group: docker-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-bootstrap-node:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to DockerHub
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Docker Build
+        run: .github/scripts/tox-bootstrapd-docker local "$CHECK"
+        env:
+          CHECK: "${{ contains(github.event.pull_request.title, 'chore: Release ') && 'sha256sum' || 'echo' }}"
+      - name: Push latest image to DockerHub
+        if: ${{ github.event_name == 'push' }}
+        run: docker push toxchat/bootstrap-node:latest
+      - name: Push versioned image to DockerHub
+        if: ${{ github.event_name == 'push' && contains(github.ref, 'refs/tags/') }}
+        run: docker push toxchat/bootstrap-node:"$(other/print-version)"
+
+  docker-bootstrap-node-websocket:
+    runs-on: ubuntu-latest
+    needs: [docker-bootstrap-node]
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to DockerHub
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: "{{defaultContext}}:other/bootstrap_daemon/websocket"
+          push: ${{ github.event_name == 'push' }}
+          tags: toxchat/bootstrap-node:latest-websocket
+          cache-from: type=registry,ref=toxchat/bootstrap-node:latest-websocket
+          cache-to: type=inline
+
+  docker-clusterfuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to DockerHub
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: "."
+          file: .clusterfuzzlite/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: toxchat/c-toxcore:clusterfuzz
+          cache-from: type=registry,ref=toxchat/c-toxcore:clusterfuzz
+          cache-to: type=inline
+
+  docker-fuzzer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to DockerHub
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          file: testing/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: toxchat/c-toxcore:fuzzer
+          cache-from: type=registry,ref=toxchat/c-toxcore:fuzzer
+          cache-to: type=inline
+
+  docker-esp32:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to DockerHub
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          file: other/docker/esp32/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: toxchat/c-toxcore:esp32
+          cache-from: type=registry,ref=toxchat/c-toxcore:esp32
+          cache-to: type=inline
+
+  docker-windows-mingw:
+    strategy:
+      matrix:
+        bits: [32, 64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to DockerHub
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and store to local Docker daemon
+        uses: docker/build-push-action@v5
+        with:
+          file: other/docker/windows/windows.Dockerfile
+          load: true
+          tags: toxchat/windows:win${{ matrix.bits }}
+          cache-from: type=registry,ref=toxchat/windows:win${{ matrix.bits }}
+          build-args: |
+            SUPPORT_ARCH_i686=${{ matrix.bits == '32' }}
+            SUPPORT_ARCH_x86_64=${{ matrix.bits == '64' }}
+            SUPPORT_TEST=true
+      - name: Push the stored image to Dockerhub
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/build-push-action@v5
+        with:
+          file: other/docker/windows/windows.Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: toxchat/windows:win${{ matrix.bits }}
+          build-args: |
+            SUPPORT_ARCH_i686=${{ matrix.bits == '32' }}
+            SUPPORT_ARCH_x86_64=${{ matrix.bits == '64' }}
+            SUPPORT_TEST=true
+      - name: Cross-compile
+        run: .github/scripts/cmake-win${{ matrix.bits }} script

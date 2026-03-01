@@ -1,0 +1,11 @@
+#!/bin/sh
+
+FILTER="-whitespace"
+FILTER="$FILTER,-build/include_subdir"
+FILTER="$FILTER,-readability/casting"
+FILTER="$FILTER,-runtime/arrays"
+FILTER="$FILTER,-runtime/printf"
+FILTER="$FILTER,-runtime/int"
+FILTER="$FILTER,-build/header_guard"
+
+cpplint --filter="$FILTER" toxav/*.[ch] toxcore/*.[ch] toxencryptsave/*.[ch]

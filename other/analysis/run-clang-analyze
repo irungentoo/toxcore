@@ -1,0 +1,38 @@
+#!/bin/bash
+
+. other/analysis/gen-file.sh
+
+set -e
+
+run() {
+  echo "Running Clang static analyzer in variant '$*'"
+  clang++ --analyze amalgamation.cc \
+    "${CPPFLAGS[@]}" \
+    "$@" \
+    -std=c++20 &
+  local pid=$!
+  local start_time="$(date +%s)"
+  local last_update="$start_time"
+  local timeout=$((30 * 60))
+  local interval=$((5 * 60))
+
+  while kill -0 "$pid" 2>/dev/null; do
+    local current_time="$(date +%s)"
+    if ((current_time - start_time > timeout)); then
+      echo "Timeout reached. Killing process."
+      kill -9 "$pid"
+      wait "$pid"
+      return 1
+    fi
+
+    if ((current_time - last_update > interval)); then
+      echo "Still running..."
+      last_update=$current_time
+    fi
+    sleep 1
+  done
+
+  wait "$pid"
+}
+
+. other/analysis/variants.sh

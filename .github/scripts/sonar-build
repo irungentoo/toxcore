@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -eu
+
+. ".github/scripts/flags-gcc.sh"
+
+cmake --build _build --parallel "$(nproc)" --target install -- -k 0

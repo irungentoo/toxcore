@@ -1,0 +1,99 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+#cc_binary(
+#    name = "cracker",
+#    testonly = 1,
+#    srcs = ["cracker.c"],
+#    copts = ["-fopenmp"],
+#    linkopts = ["-fopenmp"],
+#    deps = [
+#        "//c-toxcore/toxcore:ccompat",
+#        "@libsodium",
+#    ],
+#)
+
+cc_binary(
+    name = "cracker_simple",
+    testonly = 1,
+    srcs = ["cracker_simple.c"],
+    deps = [
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore:ccompat",
+        "@libsodium",
+    ],
+)
+
+cc_binary(
+    name = "create_minimal_savedata",
+    testonly = 1,
+    srcs = [
+        "create_common.h",
+        "create_minimal_savedata.c",
+    ],
+    deps = [
+        "//c-toxcore/toxcore:ccompat",
+        "@libsodium",
+    ],
+)
+
+cc_binary(
+    name = "create_savedata",
+    testonly = 1,
+    srcs = [
+        "create_common.h",
+        "create_savedata.c",
+    ],
+    deps = [
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:tox",
+        "@libsodium",
+    ],
+)
+
+cc_binary(
+    name = "create_bootstrap_keys",
+    testonly = 1,
+    srcs = [
+        "create_bootstrap_keys.c",
+        "create_common.h",
+    ],
+    deps = [
+        "//c-toxcore/toxcore:ccompat",
+        "@libsodium",
+    ],
+)
+
+cc_binary(
+    name = "sign",
+    testonly = 1,
+    srcs = ["sign.c"],
+    copts = ["-w"],
+    deps = [
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore:ccompat",
+        "@libsodium",
+    ],
+)
+
+cc_binary(
+    name = "strkey",
+    testonly = 1,
+    srcs = ["strkey.c"],
+    copts = ["-w"],
+    deps = [
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:tox",
+        "@libsodium",
+    ],
+)
+
+cc_binary(
+    name = "save-generator",
+    testonly = 1,
+    srcs = ["save-generator.c"],
+    deps = [
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:tox",
+    ],
+)

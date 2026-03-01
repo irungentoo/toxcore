@@ -1,0 +1,11 @@
+[build]
+command = """\
+  if cd doxygen-awesome-css; then \
+    git pull --rebase && cd ..; \
+  else \
+    git clone --depth=1 https://github.com/jothepro/doxygen-awesome-css;
+  fi && \
+  sed -i -e 's/^non_null([^)]*) *//;s/^nullable([^)]*) *//' $(find . -name "*.[ch]") && \
+  doxygen docs/Doxyfile \
+  """
+publish = "_docs/html"
