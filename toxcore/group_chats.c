@@ -6002,7 +6002,7 @@ bool handle_gc_lossless_helper(const GC_Session *c, GC_Chat *chat, uint32_t peer
  */
 static bool handle_gc_packet_fragment(const GC_Session *_Nonnull c, GC_Chat *_Nonnull chat, uint32_t peer_number, GC_Connection *_Nonnull gconn,
                                       const uint8_t *_Nullable data, uint16_t length, uint8_t packet_type, uint64_t message_id,
-                                      void *_Nullable userdata)
+                                      const uint8_t *_Nonnull sender_pk, void *_Nullable userdata)
 {
     if (gconn->last_chunk_id != 0 && message_id != gconn->last_chunk_id + 1) {
         return gc_send_message_ack(chat, gconn, gconn->last_chunk_id + 1, GR_ACK_REQ);
@@ -6016,6 +6016,14 @@ static bool handle_gc_packet_fragment(const GC_Session *_Nonnull c, GC_Chat *_No
                          message_id, userdata);
 
     if (frag_ret == -1) {
+        return false;
+    }
+
+    /* peer number can change from peer add operations in packet handlers */
+    peer_number = get_peer_number_of_enc_pk(chat, sender_pk, false);
+    gconn = get_gc_connection(chat, peer_number);
+
+    if (gconn == nullptr) {
         return false;
     }
 
@@ -6091,6 +6099,15 @@ static bool handle_gc_lossless_packet(const GC_Session *_Nonnull c, GC_Chat *_No
 
     const int lossless_ret = gcc_handle_received_message(chat->log, chat->mem, chat->mono_time, gconn, data, (uint16_t) len, packet_type, message_id, direct_conn);
 
+    /* peer number can change from peer add operations in packet handlers */
+    peer_number = get_peer_number_of_enc_pk(chat, sender_pk, false);
+    gconn = get_gc_connection(chat, peer_number);
+
+    if (gconn == nullptr) {
+        mem_delete(chat->mem, data);
+        return false;
+    }
+
     if (packet_type == GP_INVITE_REQUEST && !gconn->handshaked) {  // Both peers sent request at same time
         mem_delete(chat->mem, data);
         return true;
@@ -6120,7 +6137,7 @@ static bool handle_gc_lossless_packet(const GC_Session *_Nonnull c, GC_Chat *_No
     /* handle packet fragment */
     if (lossless_ret == 3) {
         const bool frag_ret = handle_gc_packet_fragment(c, chat, peer_number, gconn, data, (uint16_t)len, packet_type,
-                              message_id, userdata);
+                              message_id, sender_pk, userdata);
         mem_delete(chat->mem, data);
         return frag_ret;
     }
