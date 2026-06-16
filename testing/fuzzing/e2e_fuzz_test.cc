@@ -149,7 +149,8 @@ void TestEndToEnd(Fuzz_Data &input)
     env.fake_clock().advance(1000000000);  // Match legacy behavior
     auto node = env.create_node(33445);
     configure_fuzz_memory_source(env.fake_memory(), input);
-    configure_fuzz_packet_source(*node->endpoint, input);
+    // TODO(Gree-Sky): make api better
+    // configure_fuzz_packet_source(*node->endpoint, input);
     configure_fuzz_random_source(env.fake_random(), input);
 
     // Null system replacement for event comparison
@@ -203,6 +204,11 @@ void TestEndToEnd(Fuzz_Data &input)
 
     assert(error_new == TOX_ERR_NEW_OK);
     assert(error_new_testing == TOX_ERR_NEW_TESTING_OK);
+
+    // HACK: toxcore creates itself a new socket/node.
+    for (auto sockets : node->node->fake_network().get_bound_udp_sockets()) {
+        configure_fuzz_packet_source(*sockets, input);
+    }
 
     tox_events_init(tox);
 
