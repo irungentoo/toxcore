@@ -237,6 +237,7 @@ uint32_t tox_dht_id_size(void);
 
 typedef uint8_t Tox_Dht_Id[TOX_DHT_ID_SIZE];
 
+#ifndef TOX_HIDE_DEPRECATED
 /**
  * @brief The size of a Tox Conference unique id in bytes.
  *
@@ -247,6 +248,7 @@ typedef uint8_t Tox_Dht_Id[TOX_DHT_ID_SIZE];
 uint32_t tox_conference_uid_size(void);
 
 typedef uint8_t Tox_Conference_Uid[TOX_CONFERENCE_UID_SIZE];
+#endif /* TOX_HIDE_DEPRECATED */
 
 /**
  * @brief The size of a Tox Conference unique id in bytes.
