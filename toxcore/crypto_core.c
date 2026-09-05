@@ -300,21 +300,7 @@ int32_t decrypt_data(const Memory *mem,
 
 void increment_nonce(uint8_t nonce[CRYPTO_NONCE_SIZE])
 {
-    /* TODO(irungentoo): use `increment_nonce_number(nonce, 1)` or
-     * sodium_increment (change to little endian).
-     *
-     * NOTE don't use breaks inside this loop.
-     * In particular, make sure, as far as possible,
-     * that loop bounds and their potential underflow or overflow
-     * are independent of user-controlled input (you may have heard of the Heartbleed bug).
-     */
-    uint_fast16_t carry = 1U;
-
-    for (uint32_t i = crypto_box_NONCEBYTES; i != 0; --i) {
-        carry += (uint_fast16_t)nonce[i - 1];
-        nonce[i - 1] = (uint8_t)carry;
-        carry >>= 8;
-    }
+    increment_nonce_number(nonce, 1);
 }
 
 void increment_nonce_number(uint8_t nonce[CRYPTO_NONCE_SIZE], uint32_t increment)
