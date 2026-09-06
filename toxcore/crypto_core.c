@@ -99,29 +99,6 @@ const uint8_t *get_chat_id(const Extended_Public_Key *key)
     return key->sig;
 }
 
-#if !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
-static uint8_t *_Nullable crypto_malloc(const Memory *_Nonnull mem, size_t bytes)
-{
-    uint8_t *ptr = (uint8_t *)mem_balloc(mem, bytes);
-
-    if (ptr != nullptr) {
-        crypto_memlock(ptr, bytes);
-    }
-
-    return ptr;
-}
-
-static void crypto_free(const Memory *_Nonnull mem, uint8_t *_Nullable ptr, size_t bytes)
-{
-    if (ptr != nullptr) {
-        crypto_memzero(ptr, bytes);
-        crypto_memunlock(ptr, bytes);
-    }
-
-    mem_delete(mem, ptr);
-}
-#endif /* !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) */
-
 void crypto_memzero(void *data, size_t length)
 {
 #if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
@@ -256,40 +233,9 @@ int32_t encrypt_data_symmetric(const Memory *mem,
     // Zero MAC to avoid uninitialized memory reads.
     memzero(encrypted + length, crypto_box_MACBYTES);
 #else
-
-    const size_t size_temp_plain = length + crypto_box_ZEROBYTES;
-    const size_t size_temp_encrypted = length + crypto_box_MACBYTES + crypto_box_BOXZEROBYTES;
-
-    uint8_t *temp_plain = crypto_malloc(mem, size_temp_plain);
-    uint8_t *temp_encrypted = crypto_malloc(mem, size_temp_encrypted);
-
-    if (temp_plain == nullptr || temp_encrypted == nullptr) {
-        crypto_free(mem, temp_plain, size_temp_plain);
-        crypto_free(mem, temp_encrypted, size_temp_encrypted);
+    if (crypto_box_easy_afternm(encrypted, plain, length, nonce, shared_key) != 0) {
         return -1;
     }
-
-    // crypto_box_afternm requires the entire range of the output array be
-    // initialised with something. It doesn't matter what it's initialised with,
-    // so we'll pick 0x00.
-    memzero(temp_encrypted, size_temp_encrypted);
-
-    memzero(temp_plain, crypto_box_ZEROBYTES);
-    // Pad the message with 32 0 bytes.
-    memcpy(temp_plain + crypto_box_ZEROBYTES, plain, length);
-
-    if (crypto_box_afternm(temp_encrypted, temp_plain, length + crypto_box_ZEROBYTES, nonce,
-                           shared_key) != 0) {
-        crypto_free(mem, temp_plain, size_temp_plain);
-        crypto_free(mem, temp_encrypted, size_temp_encrypted);
-        return -1;
-    }
-
-    // Unpad the encrypted message.
-    memcpy(encrypted, temp_encrypted + crypto_box_BOXZEROBYTES, length + crypto_box_MACBYTES);
-
-    crypto_free(mem, temp_plain, size_temp_plain);
-    crypto_free(mem, temp_encrypted, size_temp_encrypted);
 #endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
     assert(length < INT32_MAX - crypto_box_MACBYTES);
     return (int32_t)(length + crypto_box_MACBYTES);
@@ -300,7 +246,7 @@ int32_t decrypt_data_symmetric(const Memory *mem,
                                const uint8_t nonce[CRYPTO_NONCE_SIZE],
                                const uint8_t *encrypted, size_t length, uint8_t *plain)
 {
-    if (length <= crypto_box_BOXZEROBYTES || shared_key == nullptr || nonce == nullptr || encrypted == nullptr
+    if (length <= crypto_box_MACBYTES || shared_key == nullptr || nonce == nullptr || encrypted == nullptr
             || plain == nullptr) {
         return -1;
     }
@@ -309,39 +255,9 @@ int32_t decrypt_data_symmetric(const Memory *mem,
     assert(length >= crypto_box_MACBYTES);
     memcpy(plain, encrypted, length - crypto_box_MACBYTES);  // Don't encrypt anything
 #else
-
-    const size_t size_temp_plain = length + crypto_box_ZEROBYTES;
-    const size_t size_temp_encrypted = length + crypto_box_BOXZEROBYTES;
-
-    uint8_t *temp_plain = crypto_malloc(mem, size_temp_plain);
-    uint8_t *temp_encrypted = crypto_malloc(mem, size_temp_encrypted);
-
-    if (temp_plain == nullptr || temp_encrypted == nullptr) {
-        crypto_free(mem, temp_plain, size_temp_plain);
-        crypto_free(mem, temp_encrypted, size_temp_encrypted);
+    if (crypto_box_open_easy_afternm(plain, encrypted, length, nonce, shared_key) != 0) {
         return -1;
     }
-
-    // crypto_box_open_afternm requires the entire range of the output array be
-    // initialised with something. It doesn't matter what it's initialised with,
-    // so we'll pick 0x00.
-    memzero(temp_plain, size_temp_plain);
-
-    memzero(temp_encrypted, crypto_box_BOXZEROBYTES);
-    // Pad the message with 16 0 bytes.
-    memcpy(temp_encrypted + crypto_box_BOXZEROBYTES, encrypted, length);
-
-    if (crypto_box_open_afternm(temp_plain, temp_encrypted, length + crypto_box_BOXZEROBYTES, nonce,
-                                shared_key) != 0) {
-        crypto_free(mem, temp_plain, size_temp_plain);
-        crypto_free(mem, temp_encrypted, size_temp_encrypted);
-        return -1;
-    }
-
-    memcpy(plain, temp_plain + crypto_box_ZEROBYTES, length - crypto_box_MACBYTES);
-
-    crypto_free(mem, temp_plain, size_temp_plain);
-    crypto_free(mem, temp_encrypted, size_temp_encrypted);
 #endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
     assert(length > crypto_box_MACBYTES);
     assert(length < INT32_MAX);
