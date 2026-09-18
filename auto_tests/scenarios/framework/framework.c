@@ -452,11 +452,9 @@ static void *node_thread_wrapper(void *arg)
     node->finished = true;
     s->num_active--;
     uint32_t active = s->num_active;
-    pthread_mutex_unlock(&s->mutex);
 
     tox_node_log(node, "finished script, active nodes remaining: %u", active);
 
-    pthread_mutex_lock(&s->mutex);
     pthread_cond_signal(&s->cond_runner);
 
     while (s->run_started) {
