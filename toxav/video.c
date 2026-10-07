@@ -336,13 +336,17 @@ void vc_kill(VCSession *vc)
 
     vpx_codec_destroy(vc->encoder);
     vpx_codec_destroy(vc->decoder);
-    void *p;
 
+    pthread_mutex_lock(vc->queue_mutex);
+
+    void *p;
     while (rb_read(vc->vbuf_raw, &p)) {
         free(p);
     }
 
     rb_kill(vc->vbuf_raw);
+
+    pthread_mutex_unlock(vc->queue_mutex);
     pthread_mutex_destroy(vc->queue_mutex);
     mem_delete(vc->mem, vc->queue_mutex);
     LOGGER_DEBUG(vc->log, "Terminated video handler: %p", (void *)vc);
