@@ -64,27 +64,45 @@ int main(int argc, char *argv[])
         tox_node_bootstrap(nodes[(i + 1) % NUM_TOXES], nodes[i]);
     }
 
+    struct {
+        uint16_t t1;
+        uint16_t t2;
+    } pairs[NUM_FRIEND_PAIRS];
+
     // Generate friend pairs
     for (int i = 0; i < NUM_FRIEND_PAIRS; ++i) {
-        int t1, t2;
+        bool unique;
         do {
-            t1 = rand() % NUM_TOXES;
-            t2 = rand() % NUM_TOXES;
-        } while (t1 == t2);
+            unique = true;
+            pairs[i].t1 = rand() % NUM_TOXES;
+            pairs[i].t2 = (pairs[i].t1 + rand() % (NUM_TOXES - 1) + 1) % NUM_TOXES;
+
+            // Avoid reciprocal or duplicate pairs
+            for (int j = 0; j < i; ++j) {
+                if ((pairs[j].t1 == pairs[i].t1 && pairs[j].t2 == pairs[i].t2) ||
+                        (pairs[j].t1 == pairs[i].t2 && pairs[j].t2 == pairs[i].t1)) {
+                    unique = false;
+                    break;
+                }
+            }
+        } while (!unique);
+
+        const int t1 = pairs[i].t1;
+        const int t2 = pairs[i].t2;
 
         uint8_t addr[TOX_ADDRESS_SIZE];
         tox_self_get_address(tox_node_get_tox(nodes[t1]), addr);
 
         Tox_Err_Friend_Add err;
         tox_friend_add(tox_node_get_tox(nodes[t2]), addr, (const uint8_t *)FR_MESSAGE, 6, &err);
-        if (err == TOX_ERR_FRIEND_ADD_OK) {
-            states[t1].friend_count++;
-            states[t2].friend_count++;
+        ck_assert(err == TOX_ERR_FRIEND_ADD_OK);
 
-            // Bootstrap off each other
-            tox_node_bootstrap(nodes[t2], nodes[t1]);
-            tox_node_bootstrap(nodes[t1], nodes[t2]);
-        }
+        ++states[t1].friend_count;
+        ++states[t2].friend_count;
+
+        // Bootstrap off each other
+        tox_node_bootstrap(nodes[t2], nodes[t1]);
+        tox_node_bootstrap(nodes[t1], nodes[t2]);
     }
 
     ToxScenarioStatus res = tox_scenario_run(s);
