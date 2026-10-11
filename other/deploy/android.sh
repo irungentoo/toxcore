@@ -2,7 +2,7 @@
 
 set -eu
 
-if [ -n "${CI-}" ]; then
+if [ "${CI-}" != "" ]; then
   sudo apt-get install -y --no-install-recommends ninja-build yasm
 fi
 
@@ -89,6 +89,7 @@ cmake -B _build -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
   -DCMAKE_INSTALL_PREFIX="$PWD/toxcore-android-$ABI" \
   -DCMAKE_PREFIX_PATH="$PREFIX" \
+  -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
   -DENABLE_STATIC=OFF \
   -DENABLE_SHARED=ON \
   -DMUST_BUILD_TOXAV=ON \
