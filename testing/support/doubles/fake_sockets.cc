@@ -186,7 +186,9 @@ int FakeUdpSocket::recvfrom(uint8_t *_Nonnull buf, std::size_t len, IP_Port *_No
 
         auto &p = recv_queue_.front();
         copy_len = std::min(len, p.data.size());
-        std::memcpy(buf, p.data.data(), copy_len);
+        if (copy_len > 0) {
+            std::memcpy(buf, p.data.data(), copy_len);
+        }
         *addr = p.from;
 
         if (recv_observer_) {
