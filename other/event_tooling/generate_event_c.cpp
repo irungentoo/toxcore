@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright © 2023-2026 The TokTok team.
 
-// this file can be used to generate event.c files
+// this file can be used to generate event.c files and the event getter
+// declarations in tox_events.h
 // requires c++17
 
 #include <algorithm>
@@ -9,7 +10,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
-#include <map>
+#include <sstream>
 #include <string>
 #include <variant>
 #include <vector>
@@ -24,7 +25,8 @@ std::string str_toupper(std::string s) {
     return s;
 }
 
-std::string output_folder = "out";
+std::string output_folder = "out/events";
+std::string events_header = "out/tox_events.h";
 
 struct EventTypeTrivial {
     std::string type; // eg uint32_t
@@ -670,10 +672,63 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
     f << "}\n";
 }
 
+// Replaces the event typedefs and getters in tox_events.h, which come before
+// the Tox_Event_Type enum, so the getters are in the same order as the members.
+void generate_event_decls(const std::vector<std::pair<std::string, std::vector<EventType>>>& event_defs) {
+    std::ifstream in(events_header);
+    if (!in.good()) {
+        std::cerr << "error opening file to read " << events_header << "\n";
+        exit(1);
+    }
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+    const std::string header = buffer.str();
+
+    const std::size_t begin = header.find("typedef struct Tox_Event_");
+    const std::size_t end = header.find("typedef enum Tox_Event_Type {");
+    if (begin == std::string::npos || end == std::string::npos || end < begin) {
+        std::cerr << "error: no event declarations in " << events_header << "\n";
+        exit(1);
+    }
+
+    std::stringstream f;
+    for (const auto& [event_name, event_types] : event_defs) {
+        const std::string event_name_l = str_tolower(event_name);
+        const std::string param = "(\n    const Tox_Event_" + event_name + " *_Nonnull " + event_name_l + ");\n";
+        f << "typedef struct Tox_Event_" << event_name << " Tox_Event_" << event_name << ";\n";
+        for (const auto& t : event_types) {
+            std::visit(
+                overloaded{
+                    [&](const EventTypeTrivial& t) {
+                        f << t.type << " tox_event_" << event_name_l << "_get_" << t.name << param;
+                    },
+                    [&](const EventTypeByteRange& t) {
+                        f << "const " << t.type_c_arg << " *_Nullable tox_event_" << event_name_l << "_get_" << t.name_data << param;
+                        f << "uint32_t tox_event_" << event_name_l << "_get_" << t.name_length << param;
+                    },
+                    [&](const EventTypeByteArray& t) {
+                        f << "const uint8_t *_Nonnull tox_event_" << event_name_l << "_get_" << t.name << param;
+                    }
+                },
+                t
+            );
+        }
+        f << "\n";
+    }
+
+    std::ofstream out(events_header);
+    if (!out.good()) {
+        std::cerr << "error opening file to write " << events_header << "\n";
+        exit(1);
+    }
+    out << header.substr(0, begin) << f.str() << header.substr(end);
+}
+
 // c++ generate_event_c.cpp -std=c++17 && ./a.out Friend_Lossy_Packet && diff --color ../../toxcore/events/friend_lossy_packet.c out/friend_lossy_packet.c
 int main(int argc, char** argv) {
     // TODO: json?
-    std::map<std::string, std::vector<EventType>> event_defs {
+    // In tox_events.h order. Each event's members are in its struct and wire order.
+    const std::vector<std::pair<std::string, std::vector<EventType>>> event_defs {
         {
             "Conference_Connected",
             {
@@ -717,14 +772,6 @@ int main(int argc, char** argv) {
                 EventTypeTrivial{"uint32_t", "conference_number"},
                 EventTypeTrivial{"uint32_t", "peer_number"},
                 EventTypeByteRange{"title", "title_length", "length"}, // the latter two are ideally the same
-            }
-        },
-        {
-            "Dht_Nodes_Response",
-            {
-                EventTypeByteArray{"public_key", "TOX_PUBLIC_KEY_SIZE"},
-                EventTypeByteRange{"ip", "ip_length", "ip_length", "char", "uint32_t", true},
-                EventTypeTrivial{"uint16_t", "port"},
             }
         },
         {
@@ -985,15 +1032,26 @@ int main(int argc, char** argv) {
                 EventTypeTrivial{"Tox_Group_Mod_Event", "mod_type"},
             }
         },
+        {
+            "Dht_Nodes_Response",
+            {
+                EventTypeByteArray{"public_key", "TOX_PUBLIC_KEY_SIZE"},
+                EventTypeByteRange{"ip", "ip_length", "ip_length", "char", "uint32_t", true},
+                EventTypeTrivial{"uint16_t", "port"},
+            }
+        },
     };
 
     if (argc < 2) {
         for (const auto& [event, event_types] : event_defs) {
             generate_event_impl(event, event_types, event != "Dht_Nodes_Response");
         }
+        generate_event_decls(event_defs);
     } else {
-        if (event_defs.count(argv[1])) {
-            generate_event_impl(argv[1], event_defs[argv[1]], std::string(argv[1]) != "Dht_Nodes_Response");
+        const auto def = std::find_if(event_defs.begin(), event_defs.end(),
+                                      [&](const auto& d) { return d.first == argv[1]; });
+        if (def != event_defs.end()) {
+            generate_event_impl(def->first, def->second, def->first != "Dht_Nodes_Response");
         } else {
             std::cerr << "error: unknown event " << argv[1] << "\n";
             return 1;

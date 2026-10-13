@@ -29,25 +29,25 @@ uint32_t tox_event_conference_connected_get_conference_number(
     const Tox_Event_Conference_Connected *_Nonnull conference_connected);
 
 typedef struct Tox_Event_Conference_Invite Tox_Event_Conference_Invite;
+uint32_t tox_event_conference_invite_get_friend_number(
+    const Tox_Event_Conference_Invite *_Nonnull conference_invite);
+Tox_Conference_Type tox_event_conference_invite_get_type(
+    const Tox_Event_Conference_Invite *_Nonnull conference_invite);
 const uint8_t *_Nullable tox_event_conference_invite_get_cookie(
     const Tox_Event_Conference_Invite *_Nonnull conference_invite);
 uint32_t tox_event_conference_invite_get_cookie_length(
     const Tox_Event_Conference_Invite *_Nonnull conference_invite);
-Tox_Conference_Type tox_event_conference_invite_get_type(
-    const Tox_Event_Conference_Invite *_Nonnull conference_invite);
-uint32_t tox_event_conference_invite_get_friend_number(
-    const Tox_Event_Conference_Invite *_Nonnull conference_invite);
 
 typedef struct Tox_Event_Conference_Message Tox_Event_Conference_Message;
-const uint8_t *_Nullable tox_event_conference_message_get_message(
-    const Tox_Event_Conference_Message *_Nonnull conference_message);
-uint32_t tox_event_conference_message_get_message_length(
-    const Tox_Event_Conference_Message *_Nonnull conference_message);
-Tox_Message_Type tox_event_conference_message_get_type(
-    const Tox_Event_Conference_Message *_Nonnull conference_message);
 uint32_t tox_event_conference_message_get_conference_number(
     const Tox_Event_Conference_Message *_Nonnull conference_message);
 uint32_t tox_event_conference_message_get_peer_number(
+    const Tox_Event_Conference_Message *_Nonnull conference_message);
+Tox_Message_Type tox_event_conference_message_get_type(
+    const Tox_Event_Conference_Message *_Nonnull conference_message);
+const uint8_t *_Nullable tox_event_conference_message_get_message(
+    const Tox_Event_Conference_Message *_Nonnull conference_message);
+uint32_t tox_event_conference_message_get_message_length(
     const Tox_Event_Conference_Message *_Nonnull conference_message);
 
 typedef struct Tox_Event_Conference_Peer_List_Changed Tox_Event_Conference_Peer_List_Changed;
@@ -55,89 +55,89 @@ uint32_t tox_event_conference_peer_list_changed_get_conference_number(
     const Tox_Event_Conference_Peer_List_Changed *_Nonnull conference_peer_list_changed);
 
 typedef struct Tox_Event_Conference_Peer_Name Tox_Event_Conference_Peer_Name;
-const uint8_t *_Nullable tox_event_conference_peer_name_get_name(
-    const Tox_Event_Conference_Peer_Name *_Nonnull conference_peer_name);
-uint32_t tox_event_conference_peer_name_get_name_length(
-    const Tox_Event_Conference_Peer_Name *_Nonnull conference_peer_name);
 uint32_t tox_event_conference_peer_name_get_conference_number(
     const Tox_Event_Conference_Peer_Name *_Nonnull conference_peer_name);
 uint32_t tox_event_conference_peer_name_get_peer_number(
     const Tox_Event_Conference_Peer_Name *_Nonnull conference_peer_name);
+const uint8_t *_Nullable tox_event_conference_peer_name_get_name(
+    const Tox_Event_Conference_Peer_Name *_Nonnull conference_peer_name);
+uint32_t tox_event_conference_peer_name_get_name_length(
+    const Tox_Event_Conference_Peer_Name *_Nonnull conference_peer_name);
 
 typedef struct Tox_Event_Conference_Title Tox_Event_Conference_Title;
-const uint8_t *_Nullable tox_event_conference_title_get_title(
-    const Tox_Event_Conference_Title *_Nonnull conference_title);
-uint32_t tox_event_conference_title_get_title_length(
-    const Tox_Event_Conference_Title *_Nonnull conference_title);
 uint32_t tox_event_conference_title_get_conference_number(
     const Tox_Event_Conference_Title *_Nonnull conference_title);
 uint32_t tox_event_conference_title_get_peer_number(
     const Tox_Event_Conference_Title *_Nonnull conference_title);
+const uint8_t *_Nullable tox_event_conference_title_get_title(
+    const Tox_Event_Conference_Title *_Nonnull conference_title);
+uint32_t tox_event_conference_title_get_title_length(
+    const Tox_Event_Conference_Title *_Nonnull conference_title);
 
 typedef struct Tox_Event_File_Chunk_Request Tox_Event_File_Chunk_Request;
-uint16_t tox_event_file_chunk_request_get_length(
+uint32_t tox_event_file_chunk_request_get_friend_number(
     const Tox_Event_File_Chunk_Request *_Nonnull file_chunk_request);
 uint32_t tox_event_file_chunk_request_get_file_number(
     const Tox_Event_File_Chunk_Request *_Nonnull file_chunk_request);
-uint32_t tox_event_file_chunk_request_get_friend_number(
-    const Tox_Event_File_Chunk_Request *_Nonnull file_chunk_request);
 uint64_t tox_event_file_chunk_request_get_position(
+    const Tox_Event_File_Chunk_Request *_Nonnull file_chunk_request);
+uint16_t tox_event_file_chunk_request_get_length(
     const Tox_Event_File_Chunk_Request *_Nonnull file_chunk_request);
 
 typedef struct Tox_Event_File_Recv Tox_Event_File_Recv;
+uint32_t tox_event_file_recv_get_friend_number(
+    const Tox_Event_File_Recv *_Nonnull file_recv);
+uint32_t tox_event_file_recv_get_file_number(
+    const Tox_Event_File_Recv *_Nonnull file_recv);
+uint32_t tox_event_file_recv_get_kind(
+    const Tox_Event_File_Recv *_Nonnull file_recv);
+uint64_t tox_event_file_recv_get_file_size(
+    const Tox_Event_File_Recv *_Nonnull file_recv);
 const uint8_t *_Nullable tox_event_file_recv_get_filename(
     const Tox_Event_File_Recv *_Nonnull file_recv);
 uint32_t tox_event_file_recv_get_filename_length(
     const Tox_Event_File_Recv *_Nonnull file_recv);
-uint32_t tox_event_file_recv_get_file_number(
-    const Tox_Event_File_Recv *_Nonnull file_recv);
-uint64_t tox_event_file_recv_get_file_size(
-    const Tox_Event_File_Recv *_Nonnull file_recv);
-uint32_t tox_event_file_recv_get_friend_number(
-    const Tox_Event_File_Recv *_Nonnull file_recv);
-uint32_t tox_event_file_recv_get_kind(
-    const Tox_Event_File_Recv *_Nonnull file_recv);
 
 typedef struct Tox_Event_File_Recv_Chunk Tox_Event_File_Recv_Chunk;
+uint32_t tox_event_file_recv_chunk_get_friend_number(
+    const Tox_Event_File_Recv_Chunk *_Nonnull file_recv_chunk);
+uint32_t tox_event_file_recv_chunk_get_file_number(
+    const Tox_Event_File_Recv_Chunk *_Nonnull file_recv_chunk);
+uint64_t tox_event_file_recv_chunk_get_position(
+    const Tox_Event_File_Recv_Chunk *_Nonnull file_recv_chunk);
 const uint8_t *_Nullable tox_event_file_recv_chunk_get_data(
     const Tox_Event_File_Recv_Chunk *_Nonnull file_recv_chunk);
 uint32_t tox_event_file_recv_chunk_get_data_length(
     const Tox_Event_File_Recv_Chunk *_Nonnull file_recv_chunk);
-uint32_t tox_event_file_recv_chunk_get_file_number(
-    const Tox_Event_File_Recv_Chunk *_Nonnull file_recv_chunk);
-uint32_t tox_event_file_recv_chunk_get_friend_number(
-    const Tox_Event_File_Recv_Chunk *_Nonnull file_recv_chunk);
-uint64_t tox_event_file_recv_chunk_get_position(
-    const Tox_Event_File_Recv_Chunk *_Nonnull file_recv_chunk);
 
 typedef struct Tox_Event_File_Recv_Control Tox_Event_File_Recv_Control;
-Tox_File_Control tox_event_file_recv_control_get_control(
+uint32_t tox_event_file_recv_control_get_friend_number(
     const Tox_Event_File_Recv_Control *_Nonnull file_recv_control);
 uint32_t tox_event_file_recv_control_get_file_number(
     const Tox_Event_File_Recv_Control *_Nonnull file_recv_control);
-uint32_t tox_event_file_recv_control_get_friend_number(
+Tox_File_Control tox_event_file_recv_control_get_control(
     const Tox_Event_File_Recv_Control *_Nonnull file_recv_control);
 
 typedef struct Tox_Event_Friend_Connection_Status Tox_Event_Friend_Connection_Status;
-Tox_Connection tox_event_friend_connection_status_get_connection_status(
-    const Tox_Event_Friend_Connection_Status *_Nonnull friend_connection_status);
 uint32_t tox_event_friend_connection_status_get_friend_number(
+    const Tox_Event_Friend_Connection_Status *_Nonnull friend_connection_status);
+Tox_Connection tox_event_friend_connection_status_get_connection_status(
     const Tox_Event_Friend_Connection_Status *_Nonnull friend_connection_status);
 
 typedef struct Tox_Event_Friend_Lossless_Packet Tox_Event_Friend_Lossless_Packet;
+uint32_t tox_event_friend_lossless_packet_get_friend_number(
+    const Tox_Event_Friend_Lossless_Packet *_Nonnull friend_lossless_packet);
 const uint8_t *_Nullable tox_event_friend_lossless_packet_get_data(
     const Tox_Event_Friend_Lossless_Packet *_Nonnull friend_lossless_packet);
 uint32_t tox_event_friend_lossless_packet_get_data_length(
     const Tox_Event_Friend_Lossless_Packet *_Nonnull friend_lossless_packet);
-uint32_t tox_event_friend_lossless_packet_get_friend_number(
-    const Tox_Event_Friend_Lossless_Packet *_Nonnull friend_lossless_packet);
 
 typedef struct Tox_Event_Friend_Lossy_Packet Tox_Event_Friend_Lossy_Packet;
+uint32_t tox_event_friend_lossy_packet_get_friend_number(
+    const Tox_Event_Friend_Lossy_Packet *_Nonnull friend_lossy_packet);
 const uint8_t *_Nullable tox_event_friend_lossy_packet_get_data(
     const Tox_Event_Friend_Lossy_Packet *_Nonnull friend_lossy_packet);
 uint32_t tox_event_friend_lossy_packet_get_data_length(
-    const Tox_Event_Friend_Lossy_Packet *_Nonnull friend_lossy_packet);
-uint32_t tox_event_friend_lossy_packet_get_friend_number(
     const Tox_Event_Friend_Lossy_Packet *_Nonnull friend_lossy_packet);
 
 typedef struct Tox_Event_Friend_Message Tox_Event_Friend_Message;
@@ -145,17 +145,17 @@ uint32_t tox_event_friend_message_get_friend_number(
     const Tox_Event_Friend_Message *_Nonnull friend_message);
 Tox_Message_Type tox_event_friend_message_get_type(
     const Tox_Event_Friend_Message *_Nonnull friend_message);
-uint32_t tox_event_friend_message_get_message_length(
-    const Tox_Event_Friend_Message *_Nonnull friend_message);
 const uint8_t *_Nullable tox_event_friend_message_get_message(
+    const Tox_Event_Friend_Message *_Nonnull friend_message);
+uint32_t tox_event_friend_message_get_message_length(
     const Tox_Event_Friend_Message *_Nonnull friend_message);
 
 typedef struct Tox_Event_Friend_Name Tox_Event_Friend_Name;
+uint32_t tox_event_friend_name_get_friend_number(
+    const Tox_Event_Friend_Name *_Nonnull friend_name);
 const uint8_t *_Nullable tox_event_friend_name_get_name(
     const Tox_Event_Friend_Name *_Nonnull friend_name);
 uint32_t tox_event_friend_name_get_name_length(
-    const Tox_Event_Friend_Name *_Nonnull friend_name);
-uint32_t tox_event_friend_name_get_friend_number(
     const Tox_Event_Friend_Name *_Nonnull friend_name);
 
 typedef struct Tox_Event_Friend_Read_Receipt Tox_Event_Friend_Read_Receipt;
@@ -165,31 +165,31 @@ uint32_t tox_event_friend_read_receipt_get_message_id(
     const Tox_Event_Friend_Read_Receipt *_Nonnull friend_read_receipt);
 
 typedef struct Tox_Event_Friend_Request Tox_Event_Friend_Request;
-const uint8_t *_Nullable tox_event_friend_request_get_message(
-    const Tox_Event_Friend_Request *_Nonnull friend_request);
 const uint8_t *_Nonnull tox_event_friend_request_get_public_key(
+    const Tox_Event_Friend_Request *_Nonnull friend_request);
+const uint8_t *_Nullable tox_event_friend_request_get_message(
     const Tox_Event_Friend_Request *_Nonnull friend_request);
 uint32_t tox_event_friend_request_get_message_length(
     const Tox_Event_Friend_Request *_Nonnull friend_request);
 
 typedef struct Tox_Event_Friend_Status Tox_Event_Friend_Status;
-Tox_User_Status tox_event_friend_status_get_status(
-    const Tox_Event_Friend_Status *_Nonnull friend_status);
 uint32_t tox_event_friend_status_get_friend_number(
+    const Tox_Event_Friend_Status *_Nonnull friend_status);
+Tox_User_Status tox_event_friend_status_get_status(
     const Tox_Event_Friend_Status *_Nonnull friend_status);
 
 typedef struct Tox_Event_Friend_Status_Message Tox_Event_Friend_Status_Message;
+uint32_t tox_event_friend_status_message_get_friend_number(
+    const Tox_Event_Friend_Status_Message *_Nonnull friend_status_message);
 const uint8_t *_Nullable tox_event_friend_status_message_get_message(
     const Tox_Event_Friend_Status_Message *_Nonnull friend_status_message);
 uint32_t tox_event_friend_status_message_get_message_length(
     const Tox_Event_Friend_Status_Message *_Nonnull friend_status_message);
-uint32_t tox_event_friend_status_message_get_friend_number(
-    const Tox_Event_Friend_Status_Message *_Nonnull friend_status_message);
 
 typedef struct Tox_Event_Friend_Typing Tox_Event_Friend_Typing;
-bool tox_event_friend_typing_get_typing(
-    const Tox_Event_Friend_Typing *_Nonnull friend_typing);
 uint32_t tox_event_friend_typing_get_friend_number(
+    const Tox_Event_Friend_Typing *_Nonnull friend_typing);
+bool tox_event_friend_typing_get_typing(
     const Tox_Event_Friend_Typing *_Nonnull friend_typing);
 
 typedef struct Tox_Event_Self_Connection_Status Tox_Event_Self_Connection_Status;
