@@ -1541,6 +1541,20 @@ static ToxAVCall *call_new(ToxAV *av, Tox_Friend_Number friend_number, Toxav_Err
         call->next = av->calls[av->calls_head];
         av->calls[av->calls_head]->prev = call;
         av->calls_head = friend_number;
+    } else { /* Inserting in a hole */
+        uint32_t i = friend_number - 1;
+
+        while (av->calls[i] == nullptr) {
+            --i;
+        }
+
+        call->prev = av->calls[i];
+        call->next = av->calls[i]->next;
+        call->prev->next = call;
+
+        if (call->next != nullptr) {
+            call->next->prev = call;
+        }
     }
 
     av->calls[friend_number] = call;
