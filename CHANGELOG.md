@@ -1,3 +1,20 @@
+<a name="v0.2.24-rc.3"></a>
+
+## v0.2.24-rc.3 (2026-10-16)
+
+### Release notes
+
+fixes and fixes
+
+#### Bug Fixes
+
+- Improve conference teardown memory management. ([69e3e4f6](https://github.com/TokTok/c-toxcore/commit/69e3e4f61dbe64f2c0f9c3607fb8ee08ccd6185e))
+- e2e fuzzing was setup wrongly and no pkgs where consumed This is because toxcore creates it own new socket/node, not the one created for toxcore. ([89c30b01](https://github.com/TokTok/c-toxcore/commit/89c30b0175d03b29a5e05a624e9c88b9624105fb))
+- **ngc:** stale gconn ptr after realloc ([ea4bab5c](https://github.com/TokTok/c-toxcore/commit/ea4bab5ce88a129cc1ca0434112c86ae5c7b7508))
+- **toxav:**
+  - doubly linked list corruption in `call_new` when reusing friend numbers ([fc4d8629](https://github.com/TokTok/c-toxcore/commit/fc4d8629d7934db7053fd549ae73861c19993126))
+  - hold lock during queue destruction ([13f5dd88](https://github.com/TokTok/c-toxcore/commit/13f5dd88887d56a7856f3c754fe9c51e53c617ea))
+
 <a name="v0.2.24-rc.2"></a>
 
 ## v0.2.24-rc.2 (2026-09-30)
