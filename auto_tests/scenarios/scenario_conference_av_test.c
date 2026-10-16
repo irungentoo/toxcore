@@ -32,6 +32,11 @@ static void on_conference_invite(const Tox_Event_Conference_Invite *event, void 
     ToxNode *self = (ToxNode *)user_data;
     State *state = (State *)tox_node_get_script_ctx(self);
     uint32_t friend_number = tox_event_conference_invite_get_friend_number(event);
+
+    if (state->joined) {
+        return;
+    }
+
     const uint8_t *cookie = tox_event_conference_invite_get_cookie(event);
     size_t length = tox_event_conference_invite_get_cookie_length(event);
 
@@ -92,6 +97,15 @@ static void peer_script(ToxNode *self, void *ctx)
 
     // Wait until joined and everyone is in the group
     WAIT_UNTIL(state->joined);
+
+    // Invite and friend connection order can be unreliable, so we add a fallback here.
+    if (tox_node_get_index(self) < NUM_NODES - 1 && !state->invited_next) {
+        WAIT_UNTIL(tox_node_is_friend_connected(self, 1));
+        Tox_Err_Conference_Invite err;
+        tox_conference_invite(tox_node_get_tox(self), 1, state->group_number, &err);
+        state->invited_next = (err == TOX_ERR_CONFERENCE_INVITE_OK);
+    }
+
     while (tox_node_get_conference_peer_count(self, state->group_number) < (uint32_t)NUM_NODES) {
         tox_scenario_yield(self);
     }
