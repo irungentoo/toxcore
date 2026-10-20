@@ -1751,9 +1751,13 @@ static int handle_filecontrol(Messenger *_Nonnull m, int32_t friendnumber, bool 
     struct File_Transfers *ft = get_file_transfer(outbound, filenumber, &real_filenumber, &m->friendlist[friendnumber]);
 
     if (ft == nullptr) {
-        LOGGER_DEBUG(m->log, "file control (friend %d, file %d): file transfer does not exist; telling the other to kill it",
-                     friendnumber, filenumber);
-        send_file_control_packet(m, friendnumber, !outbound, filenumber, FILECONTROL_KILL, nullptr, 0);
+        /* A kill for a transfer we ended too needs no answer. */
+        if (control_type != FILECONTROL_KILL) {
+            LOGGER_DEBUG(m->log, "file control (friend %d, file %d): file transfer does not exist; telling the other to kill it",
+                         friendnumber, filenumber);
+            send_file_control_packet(m, friendnumber, !outbound, filenumber, FILECONTROL_KILL, nullptr, 0);
+        }
+
         return -1;
     }
 

@@ -422,16 +422,23 @@ TEST_F(MsiTest, StrayPackets)
 {
     std::uint32_t friend_number = 123;
 
-    // PUSH for non-existent call
+    // PUSH for non-existent call is answered with an error.
     std::uint8_t push_pkt[] = {1, 1, 1, 3, 1, 0, 0};
     msi_handle_packet(session, log, friend_number, push_pkt, sizeof(push_pkt));
 
-    // POP for non-existent call
+    ASSERT_EQ(mock.sent_packets.size(), 1u);
+    EXPECT_EQ(mock.sent_to_friends[0], friend_number);
+    // REQU_POP (2) + ID_ERROR (2)
+    EXPECT_EQ(mock.sent_packets[0][2], 2);
+    EXPECT_EQ(mock.sent_packets[0][3], 2);
+
+    mock.sent_packets.clear();
+
+    // POP for non-existent call isn't answered: that call is over at both ends.
     std::uint8_t pop_pkt[] = {1, 1, 2, 0};
     msi_handle_packet(session, log, friend_number, pop_pkt, sizeof(pop_pkt));
 
-    // Error sent back for stray PUSH
-    ASSERT_GE(mock.sent_packets.size(), 1u);
+    EXPECT_TRUE(mock.sent_packets.empty());
 }
 
 TEST_F(MsiTest, KillMultipleCalls)
