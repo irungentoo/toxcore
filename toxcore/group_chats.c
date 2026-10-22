@@ -3452,7 +3452,7 @@ static int handle_gc_nick(const GC_Session *_Nonnull c, GC_Chat *_Nonnull chat, 
     if (length == 0 || length > MAX_GC_NICK_SIZE) {
         GC_Connection *gconn = &peer->gconn;
         gcc_mark_for_deletion(gconn, chat->tcp_conn, GC_EXIT_TYPE_SYNC_ERR, nullptr, 0);
-        LOGGER_WARNING(chat->log, "Invalid nick length for nick: %s (%u)", nick, length);
+        LOGGER_WARNING(chat->log, "Invalid nick length (%u) for peer (id:%u)", length, gc_peer_id_to_int(peer->peer_id));
         return -1;
     }
 
