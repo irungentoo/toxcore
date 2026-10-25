@@ -2088,14 +2088,20 @@ static void handle_friend_invite_packet(Messenger *_Nonnull m, uint32_t friend_n
                 return;
             }
 
-            const int groupnumber = get_group_num(g_c, cookie[1 + sizeof(uint16_t)], cookie + 1 + sizeof(uint16_t) + 1);
+            const uint8_t type = cookie[1 + sizeof(uint16_t)];
+
+            if (type != GROUPCHAT_TYPE_TEXT && type != GROUPCHAT_TYPE_AV) {
+                return;
+            }
+
+            const int groupnumber = get_group_num(g_c, type, cookie + 1 + sizeof(uint16_t) + 1);
 
             const uint8_t *invite_data = cookie + 1;
             const uint16_t invite_length = length - 1;
 
             if (groupnumber == -1) {
                 if (g_c->invite_callback != nullptr) {
-                    g_c->invite_callback(m, friend_number, invite_data[sizeof(uint16_t)], invite_data, invite_length, user_data);
+                    g_c->invite_callback(m, friend_number, type, invite_data, invite_length, user_data);
                 }
 
                 return;
