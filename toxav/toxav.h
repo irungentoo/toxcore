@@ -735,8 +735,8 @@ void toxav_callback_audio_receive_frame(ToxAV *av, toxav_audio_receive_frame_cb 
  * @param width Width of the frame in pixels.
  * @param height Height of the frame in pixels.
  * @param y Luminosity plane. `Size = MAX(width, abs(ystride)) * height`.
- * @param u U chroma plane. `Size = MAX(width/2, abs(ustride)) * (height/2)`.
- * @param v V chroma plane. `Size = MAX(width/2, abs(vstride)) * (height/2)`.
+ * @param u U chroma plane. `Size = MAX((width+1)/2, abs(ustride)) * ((height+1)/2)`.
+ * @param v V chroma plane. `Size = MAX((width+1)/2, abs(vstride)) * ((height+1)/2)`.
  * @param ystride Luminosity plane stride.
  * @param ustride U chroma plane stride.
  * @param vstride V chroma plane stride.
@@ -745,8 +745,8 @@ typedef void toxav_video_receive_frame_cb(
     ToxAV *av, Tox_Friend_Number friend_number,
     uint16_t width, uint16_t height,
     const uint8_t y[/*! max(width, abs(ystride)) * height */],
-    const uint8_t u[/*! max(width/2, abs(ustride)) * (height/2) */],
-    const uint8_t v[/*! max(width/2, abs(vstride)) * (height/2) */],
+    const uint8_t u[/*! max((width+1)/2, abs(ustride)) * ((height+1)/2) */],
+    const uint8_t v[/*! max((width+1)/2, abs(vstride)) * ((height+1)/2) */],
     int32_t ystride, int32_t ustride, int32_t vstride,
     void *user_data);
 
