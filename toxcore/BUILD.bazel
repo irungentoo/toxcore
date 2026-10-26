@@ -1270,6 +1270,7 @@ cc_test(
         ":DHT_test_util",
         ":attributes",
         ":crypto_core",
+        ":group_onion_announce",
         ":logger",
         ":mono_time",
         ":net_crypto",
@@ -1595,8 +1596,10 @@ cc_test(
     size = "small",
     srcs = ["tox_test.cc"],
     deps = [
+        ":Messenger",
         ":attributes",
         ":crypto_core",
+        ":group",
         ":os_random",
         ":tox",
         ":tox_log_level",

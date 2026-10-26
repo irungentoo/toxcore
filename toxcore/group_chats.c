@@ -271,6 +271,10 @@ static uint16_t group_packet_max_packet_size(Net_Packet_Type net_packet_type)
 /** Returns the amount of empty padding a packet of designated length should have. */
 static uint16_t group_packet_padding_length(uint16_t length, uint16_t max_length)
 {
+    if (length >= max_length) {
+        return 0;
+    }
+
     return (max_length - length) % GC_MAX_PACKET_PADDING;
 }
 

@@ -84,6 +84,18 @@ static void alice_script(ToxNode *self, void *ctx)
     toxav_call(av, 0, 48, 4000, &call_err);
     ck_assert(call_err == TOXAV_ERR_CALL_OK);
 
+    // Frames longer than the longest audio frame are invalid, including those
+    // whose length wraps around in a narrower type.
+    WAIT_UNTIL_AV(av, state->state & TOXAV_FRIEND_CALL_STATE_ACCEPTING_A);
+    static const int16_t pcm[960] = {0};
+    Toxav_Err_Send_Frame frame_err;
+    ck_assert(!toxav_audio_send_frame(av, 0, pcm, UINT16_MAX - 3, 1, 48000, &frame_err));
+    ck_assert(frame_err == TOXAV_ERR_SEND_FRAME_INVALID);
+    if (SIZE_MAX > UINT32_MAX) {
+        ck_assert(!toxav_audio_send_frame(av, 0, pcm, (size_t)UINT32_MAX + 1 + 960, 1, 48000, &frame_err));
+        ck_assert(frame_err == TOXAV_ERR_SEND_FRAME_INVALID);
+    }
+
     WAIT_UNTIL_AV(av, state->state & TOXAV_FRIEND_CALL_STATE_FINISHED);
     tox_node_log(self, "Regular AV Call finished (state=%u)", state->state);
 

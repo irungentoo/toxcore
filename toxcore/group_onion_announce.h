@@ -14,6 +14,10 @@
 #include "mem.h"
 #include "onion_announce.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Maximum size of an announce response packet when the GCA extra-data callback
  * is active.
@@ -31,5 +35,9 @@ void gca_onion_init(GC_Announces_List *_Nonnull group_announce, Onion_Announce *
 int create_gca_announce_request(const Memory *_Nonnull mem, const Random *_Nonnull rng, uint8_t *_Nonnull packet, uint16_t max_packet_length, const uint8_t *_Nonnull dest_client_id,
                                 const uint8_t *_Nonnull public_key, const uint8_t *_Nonnull secret_key, const uint8_t *_Nonnull ping_id, const uint8_t *_Nonnull client_id, const uint8_t *_Nonnull data_public_key,
                                 uint64_t sendback_data, const uint8_t *_Nonnull gc_data, uint16_t gc_data_length);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* C_TOXCORE_TOXCORE_GROUP_ONION_ANNOUNCE_H */

@@ -472,6 +472,10 @@ static int handle_announce_request_common(
     uint8_t response_packet_id, uint16_t plain_size, bool want_node_count, uint16_t max_extra_size,
     pack_extra_data_cb *_Nullable pack_extra_data_callback)
 {
+    if (max_extra_size > ONION_RESPONSE_MAX_DATA_SIZE) {
+        return 1;
+    }
+
     const uint8_t *packet_public_key = packet + 1 + CRYPTO_NONCE_SIZE;
     const uint8_t *shared_key = shared_key_cache_lookup(onion_a->shared_keys_recv, packet_public_key);
 
@@ -550,7 +554,7 @@ static int handle_announce_request_common(
         nodes_length = pack_nodes(onion_a->log, &response[nodes_offset], num_nodes * PACKED_NODE_SIZE_IP6, nodes_list,
                                   (uint16_t)num_nodes);
 
-        if (nodes_length <= 0) {
+        if (nodes_length <= 0 || (size_t)nodes_length > num_nodes * PACKED_NODE_SIZE_IP6) {
             LOGGER_WARNING(onion_a->log, "Failed to pack nodes");
             mem_delete(onion_a->mem, response);
             mem_delete(onion_a->mem, plain);
@@ -570,7 +574,7 @@ static int handle_announce_request_common(
                                plain + ONION_MINIMAL_SIZE, length - ANNOUNCE_REQUEST_MIN_SIZE_RECV,
                                response, response_size, offset);
 
-    if (extra_size == -1) {
+    if (extra_size < 0 || extra_size > max_extra_size) {
         mem_delete(onion_a->mem, response);
         mem_delete(onion_a->mem, plain);
         return 1;

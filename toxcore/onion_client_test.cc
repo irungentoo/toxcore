@@ -18,6 +18,7 @@
 #include "DHT_test_util.hh"
 #include "attributes.h"
 #include "crypto_core.h"
+#include "group_onion_announce.h"
 #include "logger.h"
 #include "mono_time.h"
 #include "net_crypto.h"
@@ -614,6 +615,72 @@ TEST_F(OnionClientTest, OnionAnnounceResponse_TooShort)
 
     ASSERT_TRUE(triggered);
     EXPECT_EQ(onion_testonly_get_last_packet_recv(alice.get_onion_client()), initial_recv_time);
+}
+
+// Extra data for announce responses that claims to be of a given size.
+int pack_extra_data(void *_Nonnull object, const Logger *_Nonnull /*logger*/,
+    const Memory *_Nonnull /*mem*/, const Mono_Time *_Nonnull /*mono_time*/,
+    std::uint8_t /*num_nodes*/, std::uint8_t *_Nonnull /*plain*/, std::uint16_t /*plain_size*/,
+    std::uint8_t *_Nonnull /*response*/, std::uint16_t /*response_size*/, std::uint16_t /*offset*/)
+{
+    return *static_cast<int *>(object);
+}
+
+// Whether an announce server answers a group announce request, given how much
+// extra data it makes room for and how much its callback says it wrote.
+bool answers_group_announce(SimulatedEnvironment &env, std::uint16_t max_extra_size, int extra_size)
+{
+    OnionNode bob(env, 33445);
+    WrappedDHT alice(env, 12345);
+    onion_announce_extra_data_callback(
+        bob.get_onion_announce(), max_extra_size, pack_extra_data, &extra_size);
+
+    bool answered = false;
+    alice.node().endpoint->set_recv_observer(
+        [&](const std::vector<std::uint8_t> &data, const IP_Port & /*from*/) {
+            answered = answered || (!data.empty() && data[0] == NET_PACKET_ONION_RECV_3);
+        });
+
+    const std::array<std::uint8_t, ONION_PING_ID_SIZE> ping_id{};
+    const std::array<std::uint8_t, CRYPTO_PUBLIC_KEY_SIZE> client_id{};
+    const std::array<std::uint8_t, CRYPTO_PUBLIC_KEY_SIZE> data_public_key{};
+    const std::array<std::uint8_t, 1> gc_data{};
+    std::vector<std::uint8_t> packet(ONION_ANNOUNCE_REQUEST_MAX_SIZE);
+    const int length = create_gca_announce_request(&alice.node().c_memory, &alice.node().c_random,
+        packet.data(), packet.size(), bob.dht_public_key(), alice.dht_public_key(),
+        alice.dht_secret_key(), ping_id.data(), client_id.data(), data_public_key.data(), 0,
+        gc_data.data(), gc_data.size());
+    if (length <= 0) {
+        ADD_FAILURE() << "failed to create group announce request";
+        return false;
+    }
+    // The return path the onion layer appends.
+    packet.resize(length + ONION_RETURN_3);
+
+    const IP_Port bob_ip = bob.get_ip_port();
+    sendpacket(alice.networking(), &bob_ip, packet.data(), packet.size());
+
+    for (int i = 0; i < 20 && !answered; ++i) {
+        env.advance_time(50);
+        bob.poll();
+        alice.poll();
+    }
+    return answered;
+}
+
+TEST_F(OnionClientTest, AnnounceServerAnswersGroupAnnounce)
+{
+    EXPECT_TRUE(answers_group_announce(env, 100, 0));
+}
+
+TEST_F(OnionClientTest, AnnounceServerRefusesExtraDataLargerThanAResponse)
+{
+    EXPECT_FALSE(answers_group_announce(env, UINT16_MAX, 0));
+}
+
+TEST_F(OnionClientTest, AnnounceServerRefusesMoreExtraDataThanItMadeRoomFor)
+{
+    EXPECT_FALSE(answers_group_announce(env, 100, 101));
 }
 
 TEST_F(OnionClientTest, SharedKeyCacheUseAfterFreeRegression)

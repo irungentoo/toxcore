@@ -1372,6 +1372,10 @@ static int send_dht_dhtpk(const Onion_Client *_Nonnull onion_c, int friend_num, 
         return -1;
     }
 
+    if (DATA_IN_RESPONSE_MIN_SIZE + CRYPTO_NONCE_SIZE + length > MAX_CRYPTO_REQUEST_SIZE) {
+        return -1;
+    }
+
     uint8_t nonce[CRYPTO_NONCE_SIZE];
     random_nonce(onion_c->rng, nonce);
 

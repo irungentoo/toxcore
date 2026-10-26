@@ -20,6 +20,10 @@
 #include "mono_time.h"
 #include "state.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum Groupchat_Type {
     GROUPCHAT_TYPE_TEXT,
     GROUPCHAT_TYPE_AV,
@@ -348,4 +352,9 @@ Group_Chats *_Nullable new_groupchats(const Mono_Time *_Nonnull mono_time, const
 void do_groupchats(Group_Chats *_Nonnull g_c, void *_Nullable userdata);
 /** Free everything related with group chats. */
 void kill_groupchats(Group_Chats *_Nullable g_c);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
 #endif /* C_TOXCORE_TOXCORE_GROUP_H */

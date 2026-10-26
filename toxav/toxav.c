@@ -1070,7 +1070,7 @@ bool toxav_audio_send_frame(ToxAV *_Nonnull av, Tox_Friend_Number friend_number,
         goto RETURN;
     }
 
-    if (channels > 2) {
+    if (channels > 2 || sample_count > AUDIO_MAX_BUFFER_SIZE_PCM16) {
         pthread_mutex_unlock(call->mutex_audio);
         rc = TOXAV_ERR_SEND_FRAME_INVALID;
         goto RETURN;

@@ -8,11 +8,14 @@
 #include <array>
 #include <vector>
 
+#include "Messenger.h"
 #include "attributes.h"
 #include "crypto_core.h"
+#include "group.h"
 #include "tox_log_level.h"
 #include "tox_options.h"
 #include "tox_private.h"
+#include "tox_struct.h"
 
 namespace {
 
@@ -78,6 +81,32 @@ TEST(Tox, BootstrapErrorCodes)
     std::array<std::uint8_t, TOX_PUBLIC_KEY_SIZE> pk;
     tox_bootstrap(tox, "127.0.0.1", 0, pk.data(), &err);
     EXPECT_EQ(err, TOX_ERR_BOOTSTRAP_BAD_PORT);
+
+    tox_kill(tox);
+}
+
+// A conference lossy packet too long to send is rejected before it is put
+// together.
+TEST(Tox, ConferenceLossyPacketTooLongIsRejected)
+{
+    SimulatedEnvironment env{12345};
+    struct Tox_Options *options = tox_options_new(nullptr);
+    ASSERT_NE(options, nullptr);
+    auto node = env.create_node(33545);
+    Tox_Options_Testing testing_opts = {};
+    testing_opts.operating_system = &node->system;
+    Tox *tox = tox_new_testing(options, nullptr, &testing_opts, nullptr);
+    tox_options_free(options);
+    ASSERT_NE(tox, nullptr);
+
+    Tox_Err_Conference_New err;
+    const std::uint32_t conference = tox_conference_new(tox, &err);
+    ASSERT_EQ(err, TOX_ERR_CONFERENCE_NEW_OK);
+
+    const std::vector<std::uint8_t> data(UINT16_MAX);
+    EXPECT_EQ(
+        send_group_lossy_packet(tox->m->conferences_object, conference, data.data(), UINT16_MAX),
+        -1);
 
     tox_kill(tox);
 }

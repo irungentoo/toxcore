@@ -2705,7 +2705,10 @@ int group_action_send(const Group_Chats *g_c, uint32_t groupnumber, const uint8_
  */
 int send_group_lossy_packet(const Group_Chats *g_c, uint32_t groupnumber, const uint8_t *data, uint16_t length)
 {
-    // TODO(irungentoo): length check here?
+    if (1 + sizeof(uint16_t) + sizeof(uint16_t) * 2 + length > MAX_CRYPTO_DATA_SIZE) {
+        return -1;
+    }
+
     Group_c *g = get_group_c(g_c, groupnumber);
 
     if (g == nullptr) {
