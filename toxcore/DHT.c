@@ -1662,11 +1662,10 @@ int dht_delfriend(DHT *dht, const uint8_t *public_key, uint32_t lock_token)
 
     DHT_Friend *const temp = (DHT_Friend *)mem_vrealloc(dht->mem, dht->friends_list, dht->num_friends, sizeof(DHT_Friend));
 
-    if (temp == nullptr) {
-        return -1;
+    if (temp != nullptr) {
+        dht->friends_list = temp;
     }
 
-    dht->friends_list = temp;
     return 0;
 }
 

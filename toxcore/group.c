@@ -658,11 +658,9 @@ static bool delete_frozen(const Memory *_Nonnull mem, Group_c *_Nonnull g, uint3
 
         Group_Peer *const frozen_temp = (Group_Peer *)mem_vrealloc(mem, g->frozen, g->numfrozen, sizeof(Group_Peer));
 
-        if (frozen_temp == nullptr) {
-            return false;
+        if (frozen_temp != nullptr) {
+            g->frozen = frozen_temp;
         }
-
-        g->frozen = frozen_temp;
     }
 
     return true;
@@ -900,11 +898,9 @@ static bool delpeer(Group_Chats *g_c, uint32_t groupnumber, int peer_index, void
 
         Group_Peer *temp = (Group_Peer *)mem_vrealloc(g_c->mem, g->group, g->numpeers, sizeof(Group_Peer));
 
-        if (temp == nullptr) {
-            return false;
+        if (temp != nullptr) {
+            g->group = temp;
         }
-
-        g->group = temp;
     }
 
     if (g_c->peer_list_changed_callback != nullptr) {

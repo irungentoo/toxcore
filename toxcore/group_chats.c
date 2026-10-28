@@ -6628,11 +6628,9 @@ static bool peer_delete(const GC_Session *_Nonnull c, GC_Chat *_Nonnull chat, ui
 
     GC_Peer *tmp_group = (GC_Peer *)mem_vrealloc(chat->mem, chat->group, chat->numpeers, sizeof(GC_Peer));
 
-    if (tmp_group == nullptr) {
-        return false;
+    if (tmp_group != nullptr) {
+        chat->group = tmp_group;
     }
-
-    chat->group = tmp_group;
 
     set_gc_peerlist_checksum(chat);
 
@@ -8147,12 +8145,14 @@ int gc_accept_invite(GC_Session *c, int32_t friend_number, const uint8_t *data, 
     const int peer_id = peer_add(chat, nullptr, invite_chat_pk);
 
     if (peer_id < 0) {
+        group_delete(c, chat);
         return -2;
     }
 
     chat->join_type = HJ_PRIVATE;
 
     if (send_gc_invite_accepted_packet(c->messenger, chat, friend_number) != 0) {
+        group_delete(c, chat);
         return -7;
     }
 

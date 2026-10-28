@@ -1695,6 +1695,7 @@ static bool call_prepare_transmission(ToxAVCall *call)
 
 FAILURE:
     bwc_kill(call->bwc);
+    call->bwc = nullptr;
     rtp_kill(av->log, call->audio_rtp);
     ac_kill(call->audio);
     call->audio_rtp = nullptr;

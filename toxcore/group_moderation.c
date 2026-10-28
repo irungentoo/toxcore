@@ -204,11 +204,9 @@ bool mod_list_remove_index(Moderation *moderation, uint16_t index)
 
     uint8_t **tmp_list = (uint8_t **)mem_vrealloc(moderation->mem, moderation->mod_list, moderation->num_mods, sizeof(uint8_t *));
 
-    if (tmp_list == nullptr) {
-        return false;
+    if (tmp_list != nullptr) {
+        moderation->mod_list = tmp_list;
     }
-
-    moderation->mod_list = tmp_list;
 
     qsort(moderation->mod_list, moderation->num_mods, sizeof(uint8_t *), compare_mod_pointers);
 
