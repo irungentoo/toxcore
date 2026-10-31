@@ -33,20 +33,24 @@ jobs:
     strategy:
       matrix:
         arch: [aarch64, x86_64]
-    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-26.04-arm' || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - name: Install build tools
-        run: sudo apt-get install -y --no-install-recommends ninja-build yasm
       - name: Cache dependencies
         uses: actions/cache@v5
         with:
           path: deps-prefix-linux-${{ matrix.arch }}
-          key: ${{ github.job }}-${{ matrix.arch }}-deps
+          key: ${{ github.job }}-${{ matrix.arch }}-ubuntu-22.04-deps
+      # On the oldest glibc we support, which the library then needs.
       - name: Run build
-        run: other/deploy/linux.sh "${{ matrix.arch }}"
+        run: >-
+          docker run --rm -v "$PWD:/work" -w /work ubuntu:22.04 bash -c
+          "apt-get update &&
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends
+          build-essential ca-certificates cmake curl git ninja-build patch pkg-config yasm &&
+          other/deploy/linux.sh ${{ matrix.arch }}"
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
         with:
