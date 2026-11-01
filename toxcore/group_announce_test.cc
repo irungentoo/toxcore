@@ -95,6 +95,39 @@ TEST_F(Announces, AnnouncesCanTimeOut)
     ASSERT_EQ(gca_->root_announces, nullptr);
 }
 
+TEST_F(Announces, StoresAtMostMaxSavedGroupsUntilTheyTimeOut)
+{
+    advance_clock(100);
+    GC_Public_Announce ann{};
+
+    for (std::uint32_t i = 0; i < GCA_MAX_SAVED_GROUPS; ++i) {
+        ann.chat_public_key[0] = i & 0xff;
+        ann.chat_public_key[1] = i >> 8;
+        ASSERT_NE(gca_add_announce(&c_mem_, mono_time_, gca_, &ann), nullptr);
+    }
+
+    ann.chat_public_key[0] = 0xff;
+    ann.chat_public_key[1] = 0xff;
+    EXPECT_EQ(gca_add_announce(&c_mem_, mono_time_, gca_, &ann), nullptr);
+
+    // Our own announces still get in.
+    ann.chat_public_key[1] = 0xfe;
+    EXPECT_NE(gca_add_self_announce(&c_mem_, mono_time_, gca_, &ann), nullptr);
+
+    ann.chat_public_key[0] = 0;
+    ann.chat_public_key[1] = 0;
+    ann.base_announce.peer_public_key[0] = 0x01;
+    EXPECT_NE(gca_add_announce(&c_mem_, mono_time_, gca_, &ann), nullptr);
+
+    advance_clock(60000);
+    do_gca(mono_time_, gca_);
+    ASSERT_EQ(gca_->root_announces, nullptr);
+
+    ann.chat_public_key[0] = 0xff;
+    ann.chat_public_key[1] = 0xff;
+    EXPECT_NE(gca_add_announce(&c_mem_, mono_time_, gca_, &ann), nullptr);
+}
+
 TEST_F(Announces, AnnouncesGetAndCleanup)
 {
     GC_Public_Announce ann1{};
