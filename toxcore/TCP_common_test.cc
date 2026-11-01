@@ -97,4 +97,66 @@ TEST(TCP_common, PriorityQueueOrderingAndIntegrity)
     logger_kill(logger);
 }
 
+TEST(TCP_common, PriorityQueueIsBoundedUntilDrained)
+{
+    constexpr Network_Funcs mock_funcs = {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        // `send`: nothing goes out until the test makes the socket writable.
+        [](void *obj, Socket sock, const uint8_t *buf, std::size_t len) {
+            (void)sock;
+            (void)buf;
+            return *static_cast<const bool *>(obj) ? static_cast<int>(len) : 0;
+        },
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+    };
+
+    bool writable = false;
+    TCP_Connection con;
+    memset(&con, 0, sizeof(con));
+    con.mem = os_memory();
+    con.rng = os_random();
+    Network ns = {&mock_funcs, &writable};
+    con.ns = &ns;
+
+    Logger *logger = logger_new(con.mem);
+    ASSERT_NE(logger, nullptr);
+
+    memset(con.shared_key, 0x42, sizeof(con.shared_key));
+    memset(con.sent_nonce, 0x12, sizeof(con.sent_nonce));
+
+    uint8_t data[] = "packet";
+
+    for (uint32_t i = 0; i < TCP_MAX_PRIORITY_PACKETS; ++i) {
+        ASSERT_EQ(write_packet_tcp_secure_connection(logger, &con, data, sizeof(data), true), 1);
+    }
+
+    uint8_t nonce[CRYPTO_NONCE_SIZE];
+    memcpy(nonce, con.sent_nonce, sizeof(nonce));
+    EXPECT_EQ(write_packet_tcp_secure_connection(logger, &con, data, sizeof(data), true), 0);
+    EXPECT_EQ(memcmp(nonce, con.sent_nonce, sizeof(nonce)), 0);
+
+    writable = true;
+    EXPECT_EQ(send_pending_data(logger, &con), 0);
+    EXPECT_EQ(con.priority_queue_length, 0u);
+
+    writable = false;
+    EXPECT_EQ(write_packet_tcp_secure_connection(logger, &con, data, sizeof(data), true), 1);
+
+    wipe_priority_list(con.mem, con.priority_queue_start);
+    logger_kill(logger);
+}
+
 }

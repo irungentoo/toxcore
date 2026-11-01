@@ -81,6 +81,7 @@ int send_pending_data(const Logger *logger, TCP_Connection *con)
         p = p->next;
         mem_delete(con->mem, pp->data);
         mem_delete(con->mem, pp);
+        --con->priority_queue_length;
     }
 
     con->priority_queue_start = p;
@@ -127,6 +128,7 @@ static bool add_priority(TCP_Connection *_Nonnull con, const uint8_t *_Nonnull p
     }
 
     con->priority_queue_end = new_list;
+    ++con->priority_queue_length;
     return true;
 }
 
@@ -146,6 +148,11 @@ int write_packet_tcp_secure_connection(const Logger *logger, TCP_Connection *con
 
     if (send_pending_data(logger, con) == -1) {
         if (priority) {
+            // Drop it before encrypting, so it doesn't use up a nonce the peer expects.
+            if (con->priority_queue_length >= TCP_MAX_PRIORITY_PACKETS) {
+                return 0;
+            }
+
             sendpriority = false;
         } else {
             return 0;
