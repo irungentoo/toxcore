@@ -5738,6 +5738,15 @@ static int handle_gc_handshake_request(GC_Chat *_Nonnull chat, const IP_Port *_N
     int peer_number = get_peer_number_of_enc_pk(chat, sender_pk, false);
     const bool is_new_peer = peer_number < 0;
 
+    // Before peer_add, so a handshake flood cannot grow the peer list.
+    if (chat->connection_o_metre >= GC_NEW_PEER_CONNECTION_LIMIT) {
+        chat->block_handshakes = true;
+        LOGGER_DEBUG(chat->log, "Handshake overflow. Blocking handshakes.");
+        return -1;
+    }
+
+    ++chat->connection_o_metre;
+
     if (is_new_peer) {
         peer_number = peer_add(chat, ipp, sender_pk);
 
@@ -5758,14 +5767,6 @@ static int handle_gc_handshake_request(GC_Chat *_Nonnull chat, const IP_Port *_N
             LOGGER_DEBUG(chat->log, "Handshaked peer %d sent a handshake request; re-handshaking", peer_number);
         }
     }
-
-    if (chat->connection_o_metre >= GC_NEW_PEER_CONNECTION_LIMIT) {
-        chat->block_handshakes = true;
-        LOGGER_DEBUG(chat->log, "Handshake overflow. Blocking handshakes.");
-        return -1;
-    }
-
-    ++chat->connection_o_metre;
 
     GC_Connection *gconn = get_gc_connection(chat, peer_number);
 
