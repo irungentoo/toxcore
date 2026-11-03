@@ -131,6 +131,10 @@ typedef struct GC_Connection {
     uint64_t    last_requested_packet_time;  /* The last time we requested a missing packet from this peer */
     uint64_t    last_sent_ping_time;
     uint64_t    last_sync_response;  /* the last time we sent this peer a sync response */
+    uint16_t    requested_roles_checksum;  /* the roles checksum this peer sent when we last asked it for a state sync */
+    bool        roles_checksum_requested;  /* whether we are waiting for the peer to answer that request */
+    uint16_t    synced_roles_checksum;  /* the roles checksum of the last state sync request this peer answered */
+    bool        roles_checksum_synced;  /* whether synced_roles_checksum is set */
     uint8_t     oob_relay_pk[CRYPTO_PUBLIC_KEY_SIZE];
     bool        self_is_closer; /* true if we're "closer" to the chat_id than this peer (uses real pk's) */
 
@@ -432,6 +436,18 @@ int unpack_gc_saved_peers(GC_Chat *_Nonnull chat, const uint8_t *_Nonnull data, 
  * Return -1 if buffer is too small.
  */
 int pack_gc_saved_peers(const GC_Chat *_Nonnull chat, uint8_t *_Nonnull data, uint16_t length, uint16_t *_Nullable processed);
+
+/** @brief Compares the supplied values with our own state and returns the appropriate
+ * sync flags for a sync request.
+ */
+uint16_t gc_make_sync_flags(const GC_Chat *_Nonnull chat, const GC_Connection *_Nonnull gconn, uint16_t peers_checksum, uint16_t peer_count, uint32_t sstate_version, uint32_t screds_version,
+                            uint16_t roles_checksum, uint32_t topic_version, uint16_t topic_checksum);
+
+/** @brief Records that we asked `gconn` for a state sync after it sent us `roles_checksum`. */
+void gc_state_sync_requested(GC_Connection *_Nonnull gconn, uint16_t roles_checksum);
+
+/** @brief Records that `gconn` answered our last state sync request. */
+void gc_state_sync_answered(GC_Connection *_Nonnull gconn);
 
 #ifdef __cplusplus
 } /* extern "C" */

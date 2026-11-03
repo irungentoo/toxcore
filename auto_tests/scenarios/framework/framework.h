@@ -190,6 +190,13 @@ void tox_node_bootstrap(ToxNode *a, ToxNode *b);
 void tox_node_friend_add(ToxNode *a, ToxNode *b);
 
 /**
+ * Drops `percent`% of the UDP packets between `a` and `b`. At 100, they can
+ * reach each other only through other nodes. Call before tox_scenario_run.
+ * Nodes with lossy links can't be reloaded.
+ */
+void tox_scenario_set_link_loss(ToxNode *a, ToxNode *b, uint8_t percent);
+
+/**
  * Reloads a node from its own savedata.
  * This simulates a client restart.
  */

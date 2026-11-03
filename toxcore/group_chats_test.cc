@@ -376,4 +376,33 @@ TEST(UnpackGcSavedPeers, DoesNotOverflowSavedPeersArray)
     logger_kill(log);
 }
 
+// Peers and topic are the same here, so any sync flag we get is GF_STATE.
+uint16_t state_sync_flags(const GC_Chat *chat, const GC_Connection *gconn, uint32_t sstate_version,
+    uint16_t roles_checksum)
+{
+    return gc_make_sync_flags(chat, gconn, chat->peers_checksum, 0, sstate_version,
+        chat->moderation.sanctions_creds.version, roles_checksum, chat->topic_info.version,
+        chat->topic_info.checksum);
+}
+
+// A peer that is connected to different peers than us always sends a different
+// roles checksum, so asking it for the state again doesn't help.
+TEST(GcGetSyncFlags, AsksForTheStateOnceForEachRolesChecksum)
+{
+    auto chat = std::make_unique<GC_Chat>();
+    chat->shared_state.version = 1;
+    GC_Connection gconn{};
+
+    EXPECT_NE(state_sync_flags(chat.get(), &gconn, 1, 5), 0);
+
+    // Keep asking until the peer answers. It may have dropped the request.
+    gc_state_sync_requested(&gconn, 5);
+    EXPECT_NE(state_sync_flags(chat.get(), &gconn, 1, 5), 0);
+
+    gc_state_sync_answered(&gconn);
+    EXPECT_EQ(state_sync_flags(chat.get(), &gconn, 1, 5), 0);
+    EXPECT_NE(state_sync_flags(chat.get(), &gconn, 1, 6), 0);
+    EXPECT_NE(state_sync_flags(chat.get(), &gconn, 2, 5), 0);
+}
+
 }  // namespace

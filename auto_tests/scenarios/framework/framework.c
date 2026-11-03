@@ -9,7 +9,10 @@
 
 #include "../../../testing/misc_tools.h"
 #include "../../../toxcore/tox_struct.h"
+#include "../../../toxcore/crypto_core.h"
 #include "../../../toxcore/network.h"
+#include "../../../toxcore/os_random.h"
+#include "../../../toxcore/tox_private.h"
 
 #define MAX_NODES 128
 
@@ -44,6 +47,9 @@ struct ToxNode {
     bool finished;
     bool offline;
     uint32_t barrier_index;
+    // The node's UDP port, used to find which link a packet is on.
+    uint16_t port;
+    Network net;
     uint64_t last_tick;
     bool seen_events[256];
 };
@@ -65,6 +71,10 @@ struct ToxScenario {
 
     bool run_started;
 
+    uint8_t link_loss[MAX_NODES][MAX_NODES];
+    Network_Funcs net_funcs;
+    const Random *rng;
+
     bool trace_enabled;
     bool event_log_enabled;
 
@@ -81,6 +91,24 @@ static uint64_t get_scenario_clock(void *user_data)
     uint64_t time = s->virtual_clock;
     pthread_mutex_unlock(&s->clock_mutex);
     return time;
+}
+
+static int lossy_sendto(void *obj, Socket sock, const uint8_t *buf, size_t len, const IP_Port *addr)
+{
+    const ToxNode *node = (const ToxNode *)obj;
+    const ToxScenario *s = node->scenario;
+    const uint16_t port = net_ntohs(addr->port);
+
+    for (uint32_t i = 0; i < s->num_nodes; ++i) {
+        const uint8_t loss = s->link_loss[node->index][i];
+
+        if (loss > 0 && s->nodes[i]->port == port && random_range_u32(s->rng, 100) < loss) {
+            return (int)len;
+        }
+    }
+
+    const Network *os = os_network();
+    return os->funcs->sendto(os->obj, sock, buf, len, addr);
 }
 
 static void framework_debug_log(Tox *tox, Tox_Log_Level level, const char *file, uint32_t line,
@@ -165,6 +193,13 @@ ToxScenario *tox_scenario_new(int argc, char *const argv[], uint64_t timeout_ms)
     pthread_cond_init(&s->cond_runner, nullptr);
     pthread_cond_init(&s->cond_nodes, nullptr);
 
+    const Network *os = os_network();
+    ck_assert(os != nullptr);
+    s->net_funcs = *os->funcs;
+    s->net_funcs.sendto = lossy_sendto;
+    s->rng = os_random();
+    ck_assert(s->rng != nullptr);
+
     s->timeout_ms = timeout_ms;
     s->virtual_clock = 1000;
     s->trace_enabled = (getenv("TOX_TRACE") != nullptr);
@@ -174,11 +209,14 @@ ToxScenario *tox_scenario_new(int argc, char *const argv[], uint64_t timeout_ms)
 
 void tox_scenario_free(ToxScenario *s)
 {
+    // Kill all the toxes first, because tox_kill still sends packets to the other nodes.
+    for (uint32_t i = 0; i < s->num_nodes; ++i) {
+        ck_assert(s->nodes[i] != nullptr);
+        tox_kill(s->nodes[i]->tox);
+    }
     for (uint32_t i = 0; i < s->num_nodes; ++i) {
         ToxNode *node = s->nodes[i];
-        ck_assert(node != nullptr);
         tox_dispatch_free(node->dispatch);
-        tox_kill(node->tox);
         tox_options_free(node->options);
         free(node->alias);
         free(node->mirrored_ctx);
@@ -490,9 +528,13 @@ static void *node_thread_wrapper(void *arg)
     return nullptr;
 }
 
-static Tox *create_tox_with_port_retry(Tox_Options *opts, void *log_user_data, Tox_Err_New *out_err)
+static Tox *create_tox_with_port_retry(Tox_Options *opts, ToxNode *node, Tox_Err_New *out_err)
 {
-    tox_options_set_log_user_data(opts, log_user_data);
+    tox_options_set_log_user_data(opts, node);
+
+    Tox_System sys = tox_default_system();
+    sys.ns = &node->net;
+    const Tox_Options_Testing testing = {&sys};
 
     if (tox_options_get_start_port(opts) == 0 && tox_options_get_end_port(opts) == 0) {
         tox_options_set_start_port(opts, TOX_PORT_DEFAULT);
@@ -503,7 +545,7 @@ static Tox *create_tox_with_port_retry(Tox_Options *opts, void *log_user_data, T
     Tox *tox = nullptr;
 
     for (int i = 0; i < 50; ++i) {
-        tox = tox_new(opts, out_err);
+        tox = tox_new_testing(opts, out_err, &testing, nullptr);
 
         if (*out_err != TOX_ERR_NEW_PORT_ALLOC || tcp_port == 0) {
             break;
@@ -532,6 +574,8 @@ ToxNode *tox_scenario_add_node_ex(ToxScenario *s, const char *alias, tox_node_sc
     }
     node->index = s->num_nodes;
     node->scenario = s;
+    node->net.funcs = &s->net_funcs;
+    node->net.obj = node;
     node->script = script;
     node->script_ctx = ctx;
     node->script_ctx_size = ctx_size;
@@ -584,11 +628,21 @@ ToxNode *tox_scenario_add_node_ex(ToxScenario *s, const char *alias, tox_node_sc
     tox_self_get_address(node->tox, node->mirror.address);
     Tox_Err_Get_Port port_err;
     node->mirror.udp_port = tox_self_get_udp_port(node->tox, &port_err);
+    node->port = node->mirror.udp_port;
 
     node->mirror_public = node->mirror;
 
     s->nodes[s->num_nodes++] = node;
     return node;
+}
+
+void tox_scenario_set_link_loss(ToxNode *a, ToxNode *b, uint8_t percent)
+{
+    ToxScenario *s = a->scenario;
+    ck_assert(!s->run_started);
+    ck_assert(percent <= 100);
+    s->link_loss[a->index][b->index] = percent;
+    s->link_loss[b->index][a->index] = percent;
 }
 
 ToxNode *tox_scenario_add_node(ToxScenario *s, const char *alias, tox_node_script_cb *script, void *ctx, size_t ctx_size)
@@ -741,6 +795,9 @@ void tox_node_reload(ToxNode *node)
 {
     ck_assert(node != nullptr);
     ToxScenario *s = node->scenario;
+    for (uint32_t i = 0; i < s->num_nodes; ++i) {
+        ck_assert_msg(s->link_loss[node->index][i] == 0, "a node with lossy links can't be reloaded");
+    }
     pthread_mutex_lock(&s->mutex);
 
     // 1. Save data
