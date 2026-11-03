@@ -272,7 +272,8 @@ static void connect_to_saved_tcp_relays(Friend_Connections *_Nonnull fr_c, int f
     }
 
     for (unsigned i = 0; (i < FRIEND_MAX_STORED_TCP_RELAYS) && (number != 0); ++i) {
-        const uint16_t index = (friend_con->tcp_relay_counter - (i + 1)) % FRIEND_MAX_STORED_TCP_RELAYS;
+        const uint16_t index = (friend_con->tcp_relay_counter % FRIEND_MAX_STORED_TCP_RELAYS + FRIEND_MAX_STORED_TCP_RELAYS - (i + 1))
+                               % FRIEND_MAX_STORED_TCP_RELAYS;
 
         if (!net_family_is_unspec(friend_con->tcp_relays[index].ip_port.ip.family)) {
             if (add_tcp_relay_peer(fr_c->net_crypto, friend_con->crypt_connection_id, &friend_con->tcp_relays[index].ip_port,

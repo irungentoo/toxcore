@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "group_jitter_buffer.h"
+
 #include "../toxcore/ccompat.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/mono_time.h"
@@ -14,151 +16,6 @@
 #include "../toxcore/util.h"
 
 #define GROUP_JBUF_SIZE 6
-#define GROUP_JBUF_DEAD_SECONDS 4
-
-typedef struct Group_Audio_Packet {
-    uint16_t sequnum;
-    uint16_t length;
-    uint8_t *_Nonnull data;
-} Group_Audio_Packet;
-
-typedef struct Group_JitterBuffer {
-    Group_Audio_Packet *_Nullable *_Nonnull queue;
-    uint32_t size;
-    uint32_t capacity;
-    uint16_t bottom;
-    uint16_t top;
-    uint64_t last_queued_time;
-} Group_JitterBuffer;
-
-static void free_audio_packet(Group_Audio_Packet *_Nullable pk)
-{
-    if (pk == nullptr) {
-        return;
-    }
-
-    free(pk->data);
-    free(pk);
-}
-
-static Group_JitterBuffer *_Nullable create_queue(unsigned int capacity)
-{
-    unsigned int size = 1;
-
-    while (size <= capacity) {
-        size *= 2;
-    }
-
-    Group_JitterBuffer *q = (Group_JitterBuffer *)calloc(1, sizeof(Group_JitterBuffer));
-
-    if (q == nullptr) {
-        return nullptr;
-    }
-
-    q->queue = (Group_Audio_Packet **)calloc(size, sizeof(Group_Audio_Packet *));
-
-    if (q->queue == nullptr) {
-        free(q);
-        return nullptr;
-    }
-
-    q->size = size;
-    q->capacity = capacity;
-    return q;
-}
-
-static void clear_queue(Group_JitterBuffer *_Nonnull q)
-{
-    while (q->bottom != q->top) {
-        const size_t idx = q->bottom % q->size;
-        free_audio_packet(q->queue[idx]);
-        q->queue[idx] = nullptr;
-        ++q->bottom;
-    }
-}
-
-static void terminate_queue(Group_JitterBuffer *_Nullable q)
-{
-    if (q == nullptr) {
-        return;
-    }
-
-    clear_queue(q);
-    free(q->queue);
-    free(q);
-}
-
-/** @retval 0 if packet was queued
- * @retval -1 if it wasn't.
- */
-static int queue(Group_JitterBuffer *_Nonnull q, const Mono_Time *_Nonnull mono_time, Group_Audio_Packet *_Nonnull pk)
-{
-    const uint16_t sequnum = pk->sequnum;
-
-    const unsigned int num = sequnum % q->size;
-
-    if (!mono_time_is_timeout(mono_time, q->last_queued_time, GROUP_JBUF_DEAD_SECONDS)) {
-        if ((uint32_t)(sequnum - q->bottom) > (1 << 15)) {
-            /* Drop old packet. */
-            return -1;
-        }
-    }
-
-    if ((uint32_t)(sequnum - q->bottom) > q->size) {
-        clear_queue(q);
-        q->bottom = sequnum - q->capacity;
-        q->queue[num] = pk;
-        q->top = sequnum + 1;
-        q->last_queued_time = mono_time_get(mono_time);
-        return 0;
-    }
-
-    if (q->queue[num] != nullptr) {
-        return -1;
-    }
-
-    q->queue[num] = pk;
-
-    if ((sequnum - q->bottom) >= (q->top - q->bottom)) {
-        q->top = sequnum + 1;
-    }
-
-    q->last_queued_time = mono_time_get(mono_time);
-    return 0;
-}
-
-/**
- * success is:
- * - 0 when there is nothing to dequeue
- * - 1 when there's a good packet
- * - 2 when there's a lost packet
- */
-static Group_Audio_Packet *_Nullable dequeue(Group_JitterBuffer *_Nonnull q, int *_Nonnull success)
-{
-    if (q->top == q->bottom) {
-        *success = 0;
-        return nullptr;
-    }
-
-    const unsigned int num = q->bottom % q->size;
-
-    if (q->queue[num] != nullptr) {
-        Group_Audio_Packet *ret = q->queue[num];
-        q->queue[num] = nullptr;
-        ++q->bottom;
-        *success = 1;
-        return ret;
-    }
-
-    if ((uint32_t)(q->top - q->bottom) > q->capacity) {
-        ++q->bottom;
-        *success = 2;
-        return nullptr;
-    }
-
-    *success = 0;
-    return nullptr;
-}
 
 typedef struct Group_AV {
     const Logger *_Nonnull log;
@@ -265,7 +122,7 @@ static void group_av_peer_new(void *_Nonnull object, Tox_Conference_Number confe
     }
 
     peer_av->mono_time = g_mono_time(group_av->g_c);
-    peer_av->buffer = create_queue(GROUP_JBUF_SIZE);
+    peer_av->buffer = group_jbuf_new(GROUP_JBUF_SIZE);
 
     if (group_peer_set_object(group_av->g_c, conference_number, peer_number, peer_av) == -1) {
         free(peer_av);
@@ -284,7 +141,7 @@ static void group_av_peer_delete(void *_Nullable object, Tox_Conference_Number c
         opus_decoder_destroy(peer_av->audio_decoder);
     }
 
-    terminate_queue(peer_av->buffer);
+    group_jbuf_kill(peer_av->buffer);
     free(peer_object);
 }
 
@@ -304,7 +161,7 @@ static int decode_audio_packet(Group_AV *_Nonnull group_av, Group_Peer_AV *_Nonn
     }
 
     int success;
-    Group_Audio_Packet *pk = dequeue(peer_av->buffer, &success);
+    Group_Audio_Packet *pk = group_jbuf_read(peer_av->buffer, &success);
 
     if (success == 0) {
         return -1;
@@ -319,12 +176,12 @@ static int decode_audio_packet(Group_AV *_Nonnull group_av, Group_Peer_AV *_Nonn
         const int channels = opus_packet_get_nb_channels(pk->data);
 
         if (channels == OPUS_INVALID_PACKET) {
-            free_audio_packet(pk);
+            group_audio_packet_free(pk);
             return -1;
         }
 
         if (channels != 1 && channels != 2) {
-            free_audio_packet(pk);
+            group_audio_packet_free(pk);
             return -1;
         }
 
@@ -339,7 +196,7 @@ static int decode_audio_packet(Group_AV *_Nonnull group_av, Group_Peer_AV *_Nonn
 
             if (rc != OPUS_OK) {
                 LOGGER_ERROR(group_av->log, "Error while starting audio decoder: %s", opus_strerror(rc));
-                free_audio_packet(pk);
+                group_audio_packet_free(pk);
                 return -1;
             }
 
@@ -351,12 +208,12 @@ static int decode_audio_packet(Group_AV *_Nonnull group_av, Group_Peer_AV *_Nonn
         out_audio = (int16_t *)malloc(num_samples * peer_av->decoder_channels * sizeof(int16_t));
 
         if (out_audio == nullptr) {
-            free_audio_packet(pk);
+            group_audio_packet_free(pk);
             return -1;
         }
 
         out_audio_samples = opus_decode(peer_av->audio_decoder, pk->data, pk->length, out_audio, num_samples, 0);
-        free_audio_packet(pk);
+        group_audio_packet_free(pk);
 
         if (out_audio_samples <= 0) {
             free(out_audio);
@@ -376,7 +233,7 @@ static int decode_audio_packet(Group_AV *_Nonnull group_av, Group_Peer_AV *_Nonn
         out_audio = (int16_t *)malloc(peer_av->last_packet_samples * peer_av->decoder_channels * sizeof(int16_t));
 
         if (out_audio == nullptr) {
-            free_audio_packet(pk);
+            group_audio_packet_free(pk);
             return -1;
         }
 
@@ -424,14 +281,14 @@ static int handle_group_audio_packet(void *_Nonnull object, Tox_Conference_Numbe
     pk->data = (uint8_t *)malloc(pk->length);
 
     if (pk->data == nullptr) {
-        free_audio_packet(pk);
+        group_audio_packet_free(pk);
         return -1;
     }
 
     memcpy(pk->data, packet + sizeof(uint16_t), pk->length);
 
-    if (queue(peer_av->buffer, peer_av->mono_time, pk) == -1) {
-        free_audio_packet(pk);
+    if (group_jbuf_write(peer_av->buffer, peer_av->mono_time, pk) == -1) {
+        group_audio_packet_free(pk);
         return -1;
     }
 

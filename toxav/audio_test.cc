@@ -807,4 +807,54 @@ TEST_F(AudioTest, JitterBufferWrapAround)
     ac_kill(ac);
 }
 
+TEST_F(AudioTest, JitterBufferWrapAroundAfterLoss)
+{
+    AudioTestData data;
+    ACSession *ac = ac_new(mono_time, log, 123, AudioTestData::receive_frame, &data);
+    ASSERT_NE(ac, nullptr);
+
+    RtpMock rtp_mock;
+    rtp_mock.auto_forward = false;
+    RTPSession *send_rtp = rtp_new(log, RTP_TYPE_AUDIO, mono_time, RtpMock::send_packet, &rtp_mock,
+        nullptr, nullptr, nullptr, ac, RtpMock::audio_cb);
+    RTPSession *recv_rtp = rtp_new(log, RTP_TYPE_AUDIO, mono_time, RtpMock::send_packet, &rtp_mock,
+        nullptr, nullptr, nullptr, ac, RtpMock::audio_cb);
+    rtp_mock.recv_session = recv_rtp;
+
+    std::uint8_t dummy_data[100] = {0};
+    std::uint32_t net_sr = net_htonl(48000);
+    std::memcpy(dummy_data, &net_sr, 4);
+
+    auto deliver_next = [&]() {
+        rtp_send_data(log, send_rtp, dummy_data, sizeof(dummy_data), false);
+        const std::uint8_t *pkt = rtp_mock.captured_packets.back().data();
+        const std::uint16_t seq = (pkt[3] << 8) | pkt[4];
+        rtp_receive_packet(recv_rtp, pkt, rtp_mock.captured_packets.back().size());
+        rtp_mock.captured_packets.clear();
+        ac_iterate(ac);
+        return seq;
+    };
+
+    // Deliver everything up to and including 65534.
+    while (deliver_next() != 65534) { }
+
+    // Packet 65535 is lost.
+    rtp_send_data(log, send_rtp, dummy_data, sizeof(dummy_data), false);
+    rtp_mock.captured_packets.clear();
+
+    // Packets after the wrap wait for the lost one while it could still arrive,
+    // and are then played as they arrive.
+    for (int i = 0; i < 16; ++i) {
+        data.sample_count = 0;
+        deliver_next();
+        if (i + 1 >= AUDIO_JITTERBUFFER_COUNT) {
+            EXPECT_GT(data.sample_count, 0u) << "packet " << i;
+        }
+    }
+
+    rtp_kill(log, send_rtp);
+    rtp_kill(log, recv_rtp);
+    ac_kill(ac);
+}
+
 }  // namespace

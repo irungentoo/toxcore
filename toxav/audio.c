@@ -413,7 +413,7 @@ static int jbuf_write(const Logger *log, struct JitterBuffer *q, struct RTPMessa
 
     q->queue[num] = m;
 
-    if ((sequnum - q->bottom) >= (q->top - q->bottom)) {
+    if ((uint16_t)(sequnum - q->bottom) >= (uint16_t)(q->top - q->bottom)) {
         q->top = sequnum + 1;
     }
 

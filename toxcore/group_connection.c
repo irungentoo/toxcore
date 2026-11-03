@@ -137,7 +137,7 @@ static bool add_to_send_array(const Logger *_Nonnull log, const Memory *_Nonnull
                               const uint8_t *_Nullable data, uint16_t length, uint8_t packet_type)
 {
     /* check if send_array is full */
-    if ((gconn->send_message_id % GCC_BUFFER_SIZE) == (uint16_t)(gconn->send_array_start - 1)) {
+    if ((gconn->send_message_id % GCC_BUFFER_SIZE) == (gconn->send_array_start + GCC_BUFFER_SIZE - 1) % GCC_BUFFER_SIZE) {
         LOGGER_DEBUG(log, "Send array overflow");
         return false;
     }

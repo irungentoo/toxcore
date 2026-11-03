@@ -1474,6 +1474,22 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "group_connection_test",
+    size = "small",
+    srcs = ["group_connection_test.cc"],
+    deps = [
+        ":Messenger",
+        ":logger",
+        ":mem",
+        ":mono_time",
+        ":os_memory",
+        ":os_random",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "group",
     srcs = ["group.c"],

@@ -8,6 +8,8 @@ libtoxav_la_SOURCES = ../toxav/rtp.h \
                     ../toxav/rtp.c \
                     ../toxav/msi.h \
                     ../toxav/msi.c \
+                    ../toxav/group_jitter_buffer.h \
+                    ../toxav/group_jitter_buffer.c \
                     ../toxav/groupav.h \
                     ../toxav/groupav.c \
                     ../toxav/audio.h \
