@@ -516,10 +516,6 @@ static void iterate_common(ToxAV *_Nonnull av, bool audio)
     int32_t frame_time = IDLE_ITERATION_INTERVAL_MS;
 
     for (ToxAVCall *i = av->calls[av->calls_head]; i != nullptr; i = i->next) {
-        if (!i->active) {
-            continue;
-        }
-
         pthread_mutex_lock(i->toxav_call_mutex);
         pthread_mutex_unlock(av->mutex);
 
@@ -527,22 +523,22 @@ static void iterate_common(ToxAV *_Nonnull av, bool audio)
         Tox_Err_Friend_Query f_con_query_error;
         const bool is_offline = tox_friend_get_connection_status(av->tox, fid, &f_con_query_error) == TOX_CONNECTION_NONE;
 
+        /* A call still ringing ends too, or it would stay forever. */
         if (is_offline) {
-            MSISession *session = i->msi_call->session;
             pthread_mutex_unlock(i->toxav_call_mutex);
-            msi_call_timeout(session, av->log, fid);
+            msi_call_timeout(av->msi, av->log, fid);
             pthread_mutex_lock(av->mutex);
             break;
         }
 
-        if (audio) {
+        if (i->active && audio) {
             ac_iterate(i->audio);
 
             if ((i->msi_call->self_capabilities & MSI_CAP_R_AUDIO) != 0 &&
                     (i->msi_call->peer_capabilities & MSI_CAP_S_AUDIO) != 0) {
                 frame_time = min_s32(ac_get_lp_frame_duration(i->audio), frame_time);
             }
-        } else {
+        } else if (i->active) {
             vc_iterate(i->video);
 
             if ((i->msi_call->self_capabilities & MSI_CAP_R_VIDEO) != 0 &&

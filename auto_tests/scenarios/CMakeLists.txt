@@ -81,6 +81,7 @@ if(BUILD_TOXAV)
   scenario_test(scenario_toxav_basic)
   scenario_test(scenario_toxav_hangup_crossed)
   scenario_test(scenario_toxav_many)
+  scenario_test(scenario_toxav_ringing_offline)
   scenario_test(scenario_conference_av)
 
   if(TARGET libvpx::libvpx)
