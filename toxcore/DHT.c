@@ -2669,37 +2669,129 @@ void kill_dht(DHT *dht)
 #define DHT_STATE_COOKIE_TYPE      0x11ce
 #define DHT_STATE_TYPE_NODES       4
 
+/* equal to our max internal state, times 2 for potentially both ip v4+v6 */
 #define MAX_SAVED_DHT_NODES (((DHT_FAKE_FRIEND_NUMBER * MAX_FRIEND_CLIENTS) + LCLIENT_LIST) * 2)
 
-/** Get the size of the DHT (for saving). */
-uint32_t dht_size(const DHT *dht)
+static bool node_in_client_list(const Client_data *_Nonnull list, uint32_t length, const Node_format *_Nonnull node)
 {
-    uint32_t numv4 = 0;
-    uint32_t numv6 = 0;
+    for (uint32_t i = 0; i < length; ++i) {
+        if (!pk_equal(list[i].public_key, node->public_key)) {
+            continue;
+        }
 
-    for (uint32_t i = 0; i < dht->loaded_num_nodes; ++i) {
-        numv4 += net_family_is_ipv4(dht->loaded_nodes_list[i].ip_port.ip.family) ? 1 : 0;
-        numv6 += net_family_is_ipv6(dht->loaded_nodes_list[i].ip_port.ip.family) ? 1 : 0;
+        if (list[i].assoc4.timestamp != 0 && ipport_equal(&list[i].assoc4.ip_port, &node->ip_port)) {
+            return true;
+        }
+
+        if (list[i].assoc6.timestamp != 0 && ipport_equal(&list[i].assoc6.ip_port, &node->ip_port)) {
+            return true;
+        }
     }
+    return false;
+}
+
+static bool node_in_list(const Node_format *_Nonnull list, uint32_t length, const Node_format *_Nonnull node)
+{
+    for (uint32_t i = 0; i < length; ++i) {
+        if (pk_equal(list[i].public_key, node->public_key) &&
+                ipport_equal(&list[i].ip_port, &node->ip_port)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+typedef void dht_gather_cb(const uint8_t public_key[_Nonnull CRYPTO_PUBLIC_KEY_SIZE], const IP_Port *_Nonnull ipport, void *_Nullable userdata);
+
+/** Calls callback for each entry worth saving */
+static void dht_save_gather(const DHT *dht, dht_gather_cb *_Nonnull callback, void *_Nullable userdata)
+{
+    uint32_t entries = 0;
 
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
-        numv4 += dht->close_clientlist[i].assoc4.timestamp != 0 ? 1 : 0;
-        numv6 += dht->close_clientlist[i].assoc6.timestamp != 0 ? 1 : 0;
+        if (dht->close_clientlist[i].assoc4.timestamp != 0) {
+            callback(dht->close_clientlist[i].public_key, &dht->close_clientlist[i].assoc4.ip_port, userdata);
+            ++entries;
+        }
+        if (dht->close_clientlist[i].assoc6.timestamp != 0) {
+            callback(dht->close_clientlist[i].public_key, &dht->close_clientlist[i].assoc6.ip_port, userdata);
+            ++entries;
+        }
     }
 
     for (uint32_t i = 0; i < DHT_FAKE_FRIEND_NUMBER && i < dht->num_friends; ++i) {
         const DHT_Friend *const fr = &dht->friends_list[i];
 
         for (uint32_t j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
-            numv4 += fr->client_list[j].assoc4.timestamp != 0 ? 1 : 0;
-            numv6 += fr->client_list[j].assoc6.timestamp != 0 ? 1 : 0;
+            if (fr->client_list[j].assoc4.timestamp != 0) {
+                callback(fr->client_list[j].public_key, &fr->client_list[j].assoc4.ip_port, userdata);
+                ++entries;
+            }
+            if (fr->client_list[j].assoc6.timestamp != 0) {
+                callback(fr->client_list[j].public_key, &fr->client_list[j].assoc6.ip_port, userdata);
+                ++entries;
+            }
         }
     }
 
-    const uint32_t size32 = sizeof(uint32_t);
-    const uint32_t sizesubhead = size32 * 2;
+    for (uint32_t i = 0; i < dht->loaded_num_nodes && entries < MAX_SAVED_DHT_NODES; ++i) {
+        /* check for duplicate */
+        if (node_in_client_list(dht->close_clientlist, LCLIENT_LIST, &dht->loaded_nodes_list[i])) {
+            continue;
+        }
+        bool exists = false;
+        for (uint32_t j = 0; j < DHT_FAKE_FRIEND_NUMBER && j < dht->num_friends; ++j) {
+            const DHT_Friend *const fr = &dht->friends_list[j];
+            if (node_in_client_list(fr->client_list, MAX_FRIEND_CLIENTS, &dht->loaded_nodes_list[i])) {
+                exists = true;
+                break;
+            }
+        }
+        if (exists) {
+            continue;
+        }
 
-    return size32 + sizesubhead + packed_node_size(net_family_ipv4()) * numv4 + packed_node_size(net_family_ipv6()) * numv6;
+        /* growing self dedup */
+        if (node_in_list(dht->loaded_nodes_list, i, &dht->loaded_nodes_list[i])) {
+            continue;
+        }
+
+        callback(dht->loaded_nodes_list[i].public_key, &dht->loaded_nodes_list[i].ip_port, userdata);
+        ++entries;
+    }
+}
+
+static void cb_dht_save_size_only(const uint8_t public_key[_Nonnull CRYPTO_PUBLIC_KEY_SIZE], const IP_Port *_Nonnull ipport, void *_Nullable userdata)
+{
+    uint32_t *packed_size = (uint32_t *)userdata;
+    *packed_size += packed_node_size(ipport->ip.family);
+}
+
+/** Get the size of the DHT (for saving). */
+uint32_t dht_size(const DHT *dht)
+{
+    uint32_t nodes_packed_size = 0;
+
+    dht_save_gather(dht, cb_dht_save_size_only, &nodes_packed_size);
+
+    const uint32_t size_global_cookie = sizeof(uint32_t);
+    const uint32_t size_section_header = sizeof(uint32_t) * 2;
+
+    return size_global_cookie + size_section_header + nodes_packed_size;
+}
+
+struct DHT_Save_Gather_Data {
+    Node_format *_Nonnull clients;
+    uint32_t clients_num;
+};
+
+static void cb_dht_save(const uint8_t public_key[_Nonnull CRYPTO_PUBLIC_KEY_SIZE], const IP_Port *_Nonnull ipport, void *_Nullable userdata)
+{
+    struct DHT_Save_Gather_Data *cb_ctx = (struct DHT_Save_Gather_Data *)userdata;
+
+    memcpy(cb_ctx->clients[cb_ctx->clients_num].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    cb_ctx->clients[cb_ctx->clients_num].ip_port = *ipport;
+    ++cb_ctx->clients_num;
 }
 
 /** Save the DHT in data where data is an array of size `dht_size()`. */
@@ -2708,7 +2800,7 @@ void dht_save(const DHT *dht, uint8_t *data)
     host_to_lendian_bytes32(data, DHT_STATE_COOKIE_GLOBAL);
     data += sizeof(uint32_t);
 
-    uint8_t *const old_data = data;
+    uint8_t *const data_start = data;
 
     /* get right offset. we write the actual header later. */
     data = state_write_section_header(data, DHT_STATE_COOKIE_TYPE, 0, 0);
@@ -2720,48 +2812,13 @@ void dht_save(const DHT *dht, uint8_t *data)
         return;
     }
 
-    uint32_t num = 0;
+    struct DHT_Save_Gather_Data cb_ctx = {clients, 0};
+    dht_save_gather(dht, cb_dht_save, &cb_ctx);
 
-    if (dht->loaded_num_nodes > 0) {
-        memcpy(clients, dht->loaded_nodes_list, sizeof(Node_format) * dht->loaded_num_nodes);
-        num += dht->loaded_num_nodes;
-    }
-
-    for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
-        if (dht->close_clientlist[i].assoc4.timestamp != 0) {
-            memcpy(clients[num].public_key, dht->close_clientlist[i].public_key, CRYPTO_PUBLIC_KEY_SIZE);
-            clients[num].ip_port = dht->close_clientlist[i].assoc4.ip_port;
-            ++num;
-        }
-
-        if (dht->close_clientlist[i].assoc6.timestamp != 0) {
-            memcpy(clients[num].public_key, dht->close_clientlist[i].public_key, CRYPTO_PUBLIC_KEY_SIZE);
-            clients[num].ip_port = dht->close_clientlist[i].assoc6.ip_port;
-            ++num;
-        }
-    }
-
-    for (uint32_t i = 0; i < DHT_FAKE_FRIEND_NUMBER && i < dht->num_friends; ++i) {
-        const DHT_Friend *const fr = &dht->friends_list[i];
-
-        for (uint32_t j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
-            if (fr->client_list[j].assoc4.timestamp != 0) {
-                memcpy(clients[num].public_key, fr->client_list[j].public_key, CRYPTO_PUBLIC_KEY_SIZE);
-                clients[num].ip_port = fr->client_list[j].assoc4.ip_port;
-                ++num;
-            }
-
-            if (fr->client_list[j].assoc6.timestamp != 0) {
-                memcpy(clients[num].public_key, fr->client_list[j].public_key, CRYPTO_PUBLIC_KEY_SIZE);
-                clients[num].ip_port = fr->client_list[j].assoc6.ip_port;
-                ++num;
-            }
-        }
-    }
+    const int packed_nodes_length = pack_nodes(dht->log, data, sizeof(Node_format) * cb_ctx.clients_num, clients, cb_ctx.clients_num);
 
     state_write_section_header(
-        old_data, DHT_STATE_COOKIE_TYPE, pack_nodes(dht->log, data, sizeof(Node_format) * num, clients, num),
-        DHT_STATE_TYPE_NODES);
+        data_start, DHT_STATE_COOKIE_TYPE, packed_nodes_length, DHT_STATE_TYPE_NODES);
 
     mem_delete(dht->mem, clients);
 }
