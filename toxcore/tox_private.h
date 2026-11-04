@@ -117,6 +117,18 @@ void tox_callback_friend_lossy_packet_per_pktid(Tox *_Nonnull tox, tox_friend_lo
  */
 void tox_callback_friend_lossless_packet_per_pktid(Tox *_Nonnull tox, tox_friend_lossless_packet_cb *_Nullable callback, uint8_t pktid);
 
+/**
+ * Send a lossless packet with any packet ID, including the IDs toxcore uses
+ * for its own packets.
+ *
+ * `tox_friend_send_lossless_packet` only sends custom packet IDs. Tests use
+ * this function to send packets that a client can't, such as a malformed
+ * conference invite. Otherwise it works the same: the first byte of `data` is
+ * the packet ID.
+ */
+bool tox_friend_send_lossless_packet_any_id(Tox *_Nonnull tox, uint32_t friend_number, const uint8_t *_Nonnull data, size_t length,
+        Tox_Err_Friend_Custom_Packet *_Nullable error);
+
 void tox_set_av_object(Tox *_Nonnull tox, void *_Nullable object);
 void *_Nullable tox_get_av_object(const Tox *_Nonnull tox);
 

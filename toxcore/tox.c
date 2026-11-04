@@ -2748,6 +2748,30 @@ bool tox_friend_send_lossless_packet(Tox *_Nonnull tox, uint32_t friend_number, 
     return ret == 0;
 }
 
+bool tox_friend_send_lossless_packet_any_id(Tox *_Nonnull tox, uint32_t friend_number, const uint8_t *_Nonnull data,
+        size_t length, Tox_Err_Friend_Custom_Packet *_Nullable error)
+{
+    assert(tox != nullptr);
+
+    if (data == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_NULL);
+        return false;
+    }
+
+    if (length == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_EMPTY);
+        return false;
+    }
+
+    tox_lock(tox);
+    const int ret = m_send_lossless_packet(tox->m, friend_number, data, length);
+    tox_unlock(tox);
+
+    set_custom_packet_error(ret, error);
+
+    return ret == 0;
+}
+
 void tox_callback_friend_lossless_packet(Tox *_Nonnull tox, tox_friend_lossless_packet_cb *_Nullable callback)
 {
     assert(tox != nullptr);

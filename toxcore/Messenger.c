@@ -1928,17 +1928,23 @@ void custom_lossless_packet_registerhandler(Messenger *m, m_friend_lossless_pack
 
 int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length)
 {
+    if (m_friend_exists(m, friendnumber) && length > 0 && length <= MAX_CRYPTO_DATA_SIZE
+            && (data[0] < PACKET_ID_RANGE_LOSSLESS_CUSTOM_START || data[0] > PACKET_ID_RANGE_LOSSLESS_CUSTOM_END)
+            && data[0] != PACKET_ID_MSI) {
+        return -3;
+    }
+
+    return m_send_lossless_packet(m, friendnumber, data, length);
+}
+
+int m_send_lossless_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length)
+{
     if (!m_friend_exists(m, friendnumber)) {
         return -1;
     }
 
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE) {
         return -2;
-    }
-
-    if ((data[0] < PACKET_ID_RANGE_LOSSLESS_CUSTOM_START || data[0] > PACKET_ID_RANGE_LOSSLESS_CUSTOM_END)
-            && data[0] != PACKET_ID_MSI) {
-        return -3;
     }
 
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE) {

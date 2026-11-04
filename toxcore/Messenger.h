@@ -712,6 +712,19 @@ void custom_lossless_packet_registerhandler(Messenger *_Nonnull m, m_friend_loss
  */
 int send_custom_lossless_packet(const Messenger *_Nonnull m, int32_t friendnumber, const uint8_t *_Nonnull data, uint32_t length);
 
+/** @brief Sends a lossless packet with any packet ID.
+ *
+ * Unlike `send_custom_lossless_packet`, this doesn't restrict the packet ID
+ * to the custom range.
+ *
+ * @retval -1 if friend invalid.
+ * @retval -2 if length wrong.
+ * @retval -4 if friend offline.
+ * @retval -5 if packet failed to send because of other error.
+ * @retval 0 on success.
+ */
+int m_send_lossless_packet(const Messenger *_Nonnull m, int32_t friendnumber, const uint8_t *_Nonnull data, uint32_t length);
+
 /*** Messenger constructor/destructor/operations. */
 
 typedef enum Messenger_Error {
