@@ -186,4 +186,27 @@ TEST_F(FriendConnectionTest, ConnectTwoNodes)
     EXPECT_TRUE(connected) << "Alice and Bob failed to connect";
 }
 
+TEST(FriendTcpRelays, NewestFirstJustPastSixteenBitCount)
+{
+    Friend_TCP_Relays relays{};
+    IP_Port ip_port{};
+    ip_port.ip.family = net_family_ipv4();
+
+    // A 16-bit count of the added relays wraps around here.
+    const std::uint32_t count = (1 << 16) + 2;
+    for (std::uint32_t id = 0; id < count; ++id) {
+        std::uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE] = {};
+        std::memcpy(public_key, &id, sizeof(id));
+        friend_tcp_relays_add(&relays, &ip_port, public_key);
+    }
+
+    for (std::uint32_t age = 0; age < FRIEND_MAX_STORED_TCP_RELAYS; ++age) {
+        const Node_format *relay = friend_tcp_relays_get(&relays, age);
+        ASSERT_NE(relay, nullptr) << "age " << age;
+        std::uint32_t id;
+        std::memcpy(&id, relay->public_key, sizeof(id));
+        EXPECT_EQ(id, count - 1 - age) << "age " << age;
+    }
+}
+
 }  // namespace

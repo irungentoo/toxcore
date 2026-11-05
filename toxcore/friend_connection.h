@@ -165,6 +165,28 @@ Friend_Conn *_Nullable get_conn(const Friend_Connections *_Nonnull fr_c, int fri
 int friend_conn_get_onion_friendnum(const Friend_Conn *_Nonnull fc);
 const IP_Port *_Nullable friend_conn_get_dht_ip_port(const Friend_Conn *_Nonnull fc);
 
+/* The declarations below are not public, they are exposed only for tests. */
+
+/** @private
+ * The TCP relays most recently added for a friend. A new relay replaces the
+ * oldest.
+ */
+typedef struct Friend_TCP_Relays {
+    Node_format relays[FRIEND_MAX_STORED_TCP_RELAYS];
+    uint16_t next;
+} Friend_TCP_Relays;
+
+/** @private
+ * Adds a relay, and removes any earlier one with the same public key.
+ */
+void friend_tcp_relays_add(Friend_TCP_Relays *_Nonnull relays, const IP_Port *_Nonnull ip_port, const uint8_t public_key[_Nonnull CRYPTO_PUBLIC_KEY_SIZE]);
+
+/** @private
+ * @return the relay added `age` relays before the newest one, or null if it
+ *   was removed or there is none.
+ */
+const Node_format *_Nullable friend_tcp_relays_get(const Friend_TCP_Relays *_Nonnull relays, uint32_t age);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
