@@ -1733,9 +1733,6 @@ static bool unpack_gc_sync_announce(GC_Chat *_Nonnull chat, const uint8_t *_Nonn
         uint32_t added_tcp_relays = 0;
 
         for (uint8_t i = 0; i < announce.tcp_relays_count; ++i) {
-            if (chat->tcp_conn == nullptr) {
-                return false;
-            }
             const int add_tcp_result = add_tcp_relay_connection(chat->tcp_conn, new_gconn->tcp_connection_num,
                                        &announce.tcp_relays[i].ip_port,
                                        announce.tcp_relays[i].public_key);
@@ -1750,9 +1747,6 @@ static bool unpack_gc_sync_announce(GC_Chat *_Nonnull chat, const uint8_t *_Nonn
         }
 
         if (!announce.ip_port_is_set && added_tcp_relays == 0) {
-            if (chat->tcp_conn == nullptr) {
-                return false;
-            }
             gcc_mark_for_deletion(new_gconn, chat->tcp_conn, GC_EXIT_TYPE_DISCONNECTED, nullptr, 0);
             LOGGER_ERROR(chat->log, "Sync error: Invalid peer connection info");
             return false;
@@ -5816,6 +5810,11 @@ static int handle_gc_handshake_request(GC_Chat *_Nonnull chat, const IP_Port *_N
 
     if (!validate_sig_pk(gconn->addr.public_key.enc, public_sig_key)) {
         LOGGER_ERROR(chat->log, "Signature key did not match encryption key.");
+
+        if (is_new_peer) {
+            gcc_mark_for_deletion(gconn, chat->tcp_conn, GC_EXIT_TYPE_DISCONNECTED, nullptr, 0);
+        }
+
         return -1;
     }
 
@@ -8049,15 +8048,15 @@ bool handle_gc_invite_accepted_packet(const GC_Session *c, int friend_number, co
         return false;
     }
 
-    const uint8_t *invite_chat_pk = data + CHAT_ID_SIZE;
-
-    const int peer_number = peer_add(chat, nullptr, invite_chat_pk);
-
     if (!friend_was_invited(m, chat, friend_number)) {
         LOGGER_WARNING(chat->log, "Group invite acceptance from friend %d rejected (not invited or invite buffer overflowed)",
                        friend_number);
         return false;
     }
+
+    const uint8_t *invite_chat_pk = data + CHAT_ID_SIZE;
+
+    const int peer_number = peer_add(chat, nullptr, invite_chat_pk);
 
     GC_Connection *gconn = get_gc_connection(chat, peer_number);
 
@@ -8072,10 +8071,12 @@ bool handle_gc_invite_accepted_packet(const GC_Session *c, int friend_number, co
     if (!has_ip_port) {
         has_ip_port = copy_friend_ip_port_to_gconn(m, friend_number, gconn);
     }
+    // Remember the friend so do_handshakes can get their IP address from the
+    // friend connection if we don't have it yet.
     gconn->friend_number = friend_number;
 
     if (num_tcp_relays == 0 && !has_ip_port) {
-        return false;
+        return true;
     }
 
     uint16_t len = GC_JOIN_DATA_LENGTH;
@@ -8089,14 +8090,14 @@ bool handle_gc_invite_accepted_packet(const GC_Session *c, int friend_number, co
 
         if (tcp_relays_added == 0 && !has_ip_port) {
             LOGGER_ERROR(chat->log, "Got invalid connection info from peer");
-            return false;
+            return true;
         }
 
         const int nodes_len = pack_nodes(chat->log, out_data + len, sizeof(out_data) - len, tcp_relays,
                                          (uint16_t)num_tcp_relays);
 
         if (nodes_len <= 0 && !has_ip_port) {
-            return false;
+            return true;
         }
 
         len += nodes_len;

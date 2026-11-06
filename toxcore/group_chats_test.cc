@@ -26,8 +26,7 @@ namespace {
 
 constexpr uint8_t kGhRequest = 0x00;
 constexpr uint8_t kHsInviteRequest = 0x00;
-// A public chat accepts any join type.
-constexpr uint8_t kHjPublic = 0x01;
+constexpr uint8_t kHjPublic = 0x00;
 
 TEST(GroupHandshakeFlood, DoesNotAddUnboundedPeers)
 {
@@ -64,6 +63,8 @@ TEST(GroupHandshakeFlood, DoesNotAddUnboundedPeers)
     const Random *rng = os_random();
     const Network *ns = os_network();
     const Memory *mem = os_memory();
+    ASSERT_NE(rng, nullptr);
+    ASSERT_NE(ns, nullptr);
     Logger *logger = logger_new(mem);
 
     const Socket sock = net_socket(ns, net_family_ipv4(), TOX_SOCK_DGRAM, TOX_PROTO_UDP);
@@ -133,6 +134,64 @@ TEST(GroupHandshakeFlood, DoesNotAddUnboundedPeers)
 
     kill_sock(ns, sock);
     logger_kill(logger);
+
+    tox_kill(tox);
+}
+
+TEST(GroupInviteAccepted, KeepsTheInvitedPeerUntilItsAddressIsKnown)
+{
+    Tox_Options *opts = tox_options_new(nullptr);
+    ASSERT_NE(opts, nullptr);
+    tox_options_set_local_discovery_enabled(opts, false);
+
+    Tox_Err_New err;
+    Tox *tox = tox_new(opts, &err);
+    tox_options_free(opts);
+    ASSERT_EQ(err, TOX_ERR_NEW_OK);
+    ASSERT_NE(tox, nullptr);
+
+    const Random *rng = os_random();
+    ASSERT_NE(rng, nullptr);
+
+    // A new friend that we have no IP address or TCP relays for.
+    uint8_t friend_pk[TOX_PUBLIC_KEY_SIZE];
+    uint8_t friend_sk[CRYPTO_SECRET_KEY_SIZE];
+    crypto_new_keypair(rng, friend_pk, friend_sk);
+    Tox_Err_Friend_Add ferr;
+    const uint32_t friend_number = tox_friend_add_norequest(tox, friend_pk, &ferr);
+    ASSERT_EQ(ferr, TOX_ERR_FRIEND_ADD_OK);
+
+    const uint8_t group_name[] = "invite";
+    const uint8_t self_name[] = "host";
+    Tox_Err_Group_New gerr;
+    const uint32_t group_number = tox_group_new(tox, TOX_GROUP_PRIVACY_STATE_PRIVATE, group_name,
+        sizeof(group_name) - 1, self_name, sizeof(self_name) - 1, &gerr);
+    ASSERT_EQ(gerr, TOX_ERR_GROUP_NEW_OK);
+
+    GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
+    ASSERT_NE(chat, nullptr);
+    // Record the invite the way tox_group_invite_friend does.
+    chat->saved_invites[0] = static_cast<int32_t>(friend_number);
+
+    uint8_t data[GC_JOIN_DATA_LENGTH];
+    ASSERT_TRUE(tox_group_get_chat_id(tox, group_number, data, nullptr));
+    random_bytes(rng, data + CHAT_ID_SIZE, ENC_PUBLIC_KEY_SIZE);
+
+    const uint32_t peers_before = chat->numpeers;
+    handle_gc_invite_accepted_packet(
+        tox->m->group_handler, static_cast<int>(friend_number), data, sizeof(data));
+    ASSERT_EQ(chat->numpeers, peers_before + 1);
+
+    for (int i = 0; i < 5; ++i) {
+        tox_iterate(tox, nullptr);
+    }
+
+    // The peer stays until do_handshakes can get the friend's IP address.
+    ASSERT_EQ(chat->numpeers, peers_before + 1);
+    const GC_Connection *gconn = get_gc_connection(chat, static_cast<int>(peers_before));
+    ASSERT_NE(gconn, nullptr);
+    EXPECT_FALSE(gconn->pending_delete);
+    EXPECT_EQ(gconn->friend_number, static_cast<int>(friend_number));
 
     tox_kill(tox);
 }

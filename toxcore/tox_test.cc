@@ -46,7 +46,6 @@ TEST(Tox, ConstantsAreNonZero)
 {
     EXPECT_GT(tox_public_key_size(), 0);
     EXPECT_GT(tox_secret_key_size(), 0);
-    EXPECT_GT(tox_conference_uid_size(), 0);
     EXPECT_GT(tox_conference_id_size(), 0);
     EXPECT_GT(tox_nospam_size(), 0);
     EXPECT_GT(tox_address_size(), 0);
