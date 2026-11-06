@@ -12,6 +12,8 @@
 
 #include "../testing/support/public/simulated_environment.hh"
 #include "Messenger.h"
+#include "bin_pack.h"
+#include "bin_unpack.h"
 #include "crypto_core.h"
 #include "group_common.h"
 #include "logger.h"
@@ -265,6 +267,54 @@ TEST_F(GroupInviteAccepted, KeepsTheInvitedPeerUntilItsAddressIsKnown)
     ASSERT_NE(gconn, nullptr);
     EXPECT_FALSE(gconn->pending_delete);
     EXPECT_EQ(gconn->friend_number, static_cast<int>(friend_number_));
+}
+
+TEST(GcGroupLoad, LeavesNoGroupWhenTheSavedStateIsCutShort)
+{
+    Tox_Options *opts = tox_options_new(nullptr);
+    ASSERT_NE(opts, nullptr);
+    tox_options_set_local_discovery_enabled(opts, false);
+
+    Tox_Err_New err;
+    Tox *tox = tox_new(opts, &err);
+    tox_options_free(opts);
+    ASSERT_EQ(err, TOX_ERR_NEW_OK);
+    ASSERT_NE(tox, nullptr);
+
+    const uint8_t group_name[] = "saved";
+    const uint8_t self_name[] = "host";
+    Tox_Err_Group_New gerr;
+    const uint32_t group_number = tox_group_new(tox, TOX_GROUP_PRIVACY_STATE_PRIVATE, group_name,
+        sizeof(group_name) - 1, self_name, sizeof(self_name) - 1, &gerr);
+    ASSERT_EQ(gerr, TOX_ERR_GROUP_NEW_OK);
+
+    GC_Session *c = tox->m->group_handler;
+    const GC_Chat *chat = gc_get_group(c, group_number);
+    ASSERT_NE(chat, nullptr);
+
+    bin_pack_cb *save = [](const void *obj, const Logger *logger, Bin_Pack *bp) {
+        gc_group_save(static_cast<const GC_Chat *>(obj), bp);
+        return true;
+    };
+    bin_unpack_cb *load = [](void *obj, Bin_Unpack *bu) {
+        return gc_group_load(static_cast<GC_Session *>(obj), bu) >= 0;
+    };
+    const uint32_t size = bin_pack_obj_size(save, chat, chat->log);
+    std::vector<uint8_t> saved(size);
+    ASSERT_TRUE(bin_pack_obj(save, chat, chat->log, saved.data(), size));
+
+    const uint32_t groups = gc_count_groups(c);
+    // Loading may move `c->chats`, and `chat` with it.
+    const Memory *mem = chat->mem;
+
+    // Cut the saved state off halfway, and again in the saved peers, which are
+    // loaded last.
+    for (const uint32_t length : {size / 2, size - 2}) {
+        EXPECT_FALSE(bin_unpack_obj(mem, load, c, saved.data(), length));
+        EXPECT_EQ(gc_count_groups(c), groups);
+    }
+
+    tox_kill(tox);
 }
 
 // Fills a saved peer with a fully-formed UDP address and TCP relay so that it

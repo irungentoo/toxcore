@@ -1466,6 +1466,8 @@ cc_test(
     srcs = ["group_chats_test.cc"],
     deps = [
         ":Messenger",
+        ":bin_pack",
+        ":bin_unpack",
         ":crypto_core",
         ":logger",
         ":net",

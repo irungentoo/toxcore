@@ -7565,6 +7565,7 @@ int gc_group_load(GC_Session *c, Bin_Unpack *bu)
 
     if (!gc_load_unpack_group(chat, bu)) {
         LOGGER_ERROR(chat->log, "Failed to unpack group");
+        group_delete(c, chat);
         return -1;
     }
 
@@ -7572,6 +7573,7 @@ int gc_group_load(GC_Session *c, Bin_Unpack *bu)
 
     if (!init_gc_tcp_connection(c, chat)) {
         LOGGER_ERROR(chat->log, "Failed to init tcp connection");
+        group_delete(c, chat);
         return -1;
     }
 
