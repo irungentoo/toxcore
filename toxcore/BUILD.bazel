@@ -1469,6 +1469,7 @@ cc_test(
         ":bin_pack",
         ":bin_unpack",
         ":crypto_core",
+        ":group_announce",
         ":logger",
         ":net",
         ":network",

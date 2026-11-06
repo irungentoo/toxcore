@@ -135,6 +135,8 @@ typedef struct GC_Connection {
     bool        roles_checksum_requested;  /* whether we are waiting for the peer to answer that request */
     uint16_t    synced_roles_checksum;  /* the roles checksum of the last state sync request this peer answered */
     bool        roles_checksum_synced;  /* whether synced_roles_checksum is set */
+    bool        sync_requested;  /* whether we asked this peer for its peers */
+    uint16_t    sync_responses;  /* the sync responses this peer sent since we last asked */
     uint8_t     oob_relay_pk[CRYPTO_PUBLIC_KEY_SIZE];
     bool        self_is_closer; /* true if we're "closer" to the chat_id than this peer (uses real pk's) */
 

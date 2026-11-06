@@ -15,6 +15,7 @@
 #include "bin_pack.h"
 #include "bin_unpack.h"
 #include "crypto_core.h"
+#include "group_announce.h"
 #include "group_common.h"
 #include "logger.h"
 #include "net.h"
@@ -267,6 +268,62 @@ TEST_F(GroupInviteAccepted, KeepsTheInvitedPeerUntilItsAddressIsKnown)
     ASSERT_NE(gconn, nullptr);
     EXPECT_FALSE(gconn->pending_delete);
     EXPECT_EQ(gconn->friend_number, static_cast<int>(friend_number_));
+}
+
+class GroupSyncFlood : public GroupHandshake {
+protected:
+    void SetUp() override
+    {
+        GroupHandshake::SetUp();
+
+        // Anyone can complete the handshake in a public chat.
+        uint8_t peer_pk[ENC_PUBLIC_KEY_SIZE];
+        random_bytes(rng(), peer_pk, sizeof(peer_pk));
+        peer_number_ = peer_add(chat_, nullptr, peer_pk);
+        ASSERT_GT(peer_number_, 0);
+    }
+
+    // Sends sync responses from the peer, each announcing a new peer.
+    void send_sync_responses(int count)
+    {
+        for (int i = 0; i < count; ++i) {
+            GC_Announce announce{};
+            random_bytes(rng(), announce.peer_public_key, ENC_PUBLIC_KEY_SIZE);
+            announce.ip_port_is_set = true;
+            announce.ip_port.ip.family = net_family_ipv4();
+            announce.ip_port.ip.ip.v4 = get_ip4_loopback();
+            announce.ip_port.port = net_htons(33445);
+
+            uint8_t data[GCA_ANNOUNCE_MAX_SIZE];
+            const int len = gca_pack_announce(chat_->log, data, sizeof(data), &announce);
+            ASSERT_GT(len, 0);
+
+            handle_gc_lossless_helper(
+                tox_->m->group_handler, chat_, peer_number_, data, len, GP_SYNC_RESPONSE, nullptr);
+        }
+    }
+
+    int peer_number_ = -1;
+};
+
+TEST_F(GroupSyncFlood, IgnoresSyncResponsesItDidNotRequest)
+{
+    const uint32_t peers_before = chat_->numpeers;
+    send_sync_responses(256);
+    EXPECT_EQ(chat_->numpeers, peers_before);
+}
+
+TEST_F(GroupSyncFlood, AcceptsAtMostThePeerLimitForOneRequest)
+{
+    GC_Connection *gconn = get_gc_connection(chat_, peer_number_);
+    ASSERT_NE(gconn, nullptr);
+    // We only ask confirmed peers to sync.
+    gconn->confirmed = true;
+    gconn->sync_requested = true;
+
+    const uint32_t peers_before = chat_->numpeers;
+    send_sync_responses(256);
+    EXPECT_EQ(chat_->numpeers - peers_before, chat_->shared_state.maxpeers);
 }
 
 TEST(GcGroupLoad, LeavesNoGroupWhenTheSavedStateIsCutShort)
