@@ -126,9 +126,15 @@ static OS_Ev_Registration *_Nullable os_ev_prepare_add(OS_Ev *_Nonnull os_ev, So
     reg->sock = sock;
     reg->events = events;
     reg->data = data;
-    os_ev->regs[os_ev->regs_count] = reg;
 
     return reg;
+}
+
+/** @brief Adds a registration from os_ev_prepare_add once the backend has accepted it. */
+static void os_ev_commit_add(OS_Ev *_Nonnull os_ev, OS_Ev_Registration *_Nonnull reg)
+{
+    os_ev->regs[os_ev->regs_count] = reg;
+    ++os_ev->regs_count;
 }
 
 #ifdef EV_USE_EPOLL
@@ -189,7 +195,7 @@ static bool os_ev_add(void *_Nonnull self, Socket sock, Ev_Events events, void *
 
     LOGGER_DEBUG(os_ev->log, "Added socket %d to epoll (events: %u)", net_socket_to_native(sock), events);
 
-    ++os_ev->regs_count;
+    os_ev_commit_add(os_ev, reg);
     return true;
 }
 
@@ -345,7 +351,7 @@ static bool os_ev_add(void *_Nonnull self, Socket sock, Ev_Events events, void *
 
     LOGGER_DEBUG(os_ev->log, "Added socket %d to AFD (events: %u)", net_socket_to_native(sock), events);
 
-    ++os_ev->regs_count;
+    os_ev_commit_add(os_ev, reg);
 
     return true;
 }
@@ -460,7 +466,7 @@ static bool os_ev_add(void *_Nonnull self, Socket sock, Ev_Events events, void *
 
     LOGGER_DEBUG(os_ev->log, "Added socket %d to poll (events: %u)", net_socket_to_native(sock), events);
 
-    ++os_ev->regs_count;
+    os_ev_commit_add(os_ev, reg);
 
     return true;
 }
