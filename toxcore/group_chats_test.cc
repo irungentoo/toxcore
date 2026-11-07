@@ -135,6 +135,19 @@ TEST_F(GroupHandshake, FloodDoesNotAddUnboundedPeers)
     EXPECT_LT(added, 64u);
 }
 
+TEST_F(GroupHandshake, KeepsAtMostThePeerLimitOfUnconfirmedPeers)
+{
+    const uint32_t peers_before = chat_->numpeers;
+
+    for (int i = 0; i < 2 * chat_->shared_state.maxpeers; ++i) {
+        uint8_t peer_pk[ENC_PUBLIC_KEY_SIZE];
+        random_bytes(rng(), peer_pk, sizeof(peer_pk));
+        peer_add(chat_, nullptr, peer_pk);
+    }
+
+    EXPECT_EQ(chat_->numpeers - peers_before, chat_->shared_state.maxpeers);
+}
+
 TEST_F(GroupHandshake, AddsANewPeer)
 {
     const uint32_t peers_before = chat_->numpeers;

@@ -30,6 +30,9 @@ extern "C" {
 
 #define MAX_INCOMING_CONNECTIONS 256
 
+/** The most clients we relay for at once. Each takes about 12 KiB. */
+#define MAX_ACCEPTED_CONNECTIONS 32768
+
 #define TCP_MAX_BACKLOG MAX_INCOMING_CONNECTIONS
 
 #define ARRAY_ENTRY_SIZE 6

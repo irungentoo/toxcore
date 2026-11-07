@@ -943,6 +943,12 @@ static uint16_t get_gc_confirmed_numpeers(const GC_Chat *_Nonnull chat)
     return count;
 }
 
+/** @brief Returns the group's peer limit, or the default before we know it. */
+static uint16_t get_gc_peer_limit(const GC_Chat *_Nonnull chat)
+{
+    return chat->shared_state.maxpeers > 0 ? chat->shared_state.maxpeers : MAX_GC_PEERS_DEFAULT;
+}
+
 static bool sign_gc_shared_state(GC_Chat *_Nonnull chat);
 static bool broadcast_gc_mod_list(const GC_Chat *_Nonnull chat);
 static bool broadcast_gc_shared_state(const GC_Chat *_Nonnull chat);
@@ -6688,6 +6694,13 @@ int peer_add(GC_Chat *chat, const IP_Port *ipp, const uint8_t *public_key)
 {
     if (get_peer_number_of_enc_pk(chat, public_key, false) != -1) {
         return -2;
+    }
+
+    // Only confirmed peers count towards the peer limit, so limit the
+    // unconfirmed ones too. Joining a full group adds about that many.
+    if (chat->numpeers - get_gc_confirmed_numpeers(chat) >= get_gc_peer_limit(chat)) {
+        LOGGER_DEBUG(chat->log, "Not adding peer: too many unconfirmed peers");
+        return -1;
     }
 
     const GC_Peer_Id peer_id = get_new_peer_id(chat);

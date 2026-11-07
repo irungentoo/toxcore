@@ -203,6 +203,11 @@ static int add_accepted(TCP_Server *_Nonnull tcp_server, const Mono_Time *_Nonnu
         index = -1;
     }
 
+    if (tcp_server->num_accepted_connections >= MAX_ACCEPTED_CONNECTIONS) {
+        LOGGER_DEBUG(tcp_server->logger, "Not accepting connection: too many clients");
+        return -1;
+    }
+
     if (tcp_server->size_accepted_connections == tcp_server->num_accepted_connections) {
         if (alloc_new_connections(tcp_server, 4) == -1) {
             return -1;
