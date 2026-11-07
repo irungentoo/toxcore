@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 
+#include "../testing/support/public/simulated_environment.hh"
 #include "Messenger.h"
 #include "crypto_core.h"
 #include "group_common.h"
@@ -17,9 +18,8 @@
 #include "net.h"
 #include "network.h"
 #include "os_memory.h"
-#include "os_network.h"
-#include "os_random.h"
 #include "tox.h"
+#include "tox_private.h"
 #include "tox_struct.h"
 
 namespace {
@@ -28,65 +28,51 @@ constexpr uint8_t kGhRequest = 0x00;
 constexpr uint8_t kHsInviteRequest = 0x00;
 constexpr uint8_t kHjPublic = 0x00;
 
-TEST(GroupHandshakeFlood, DoesNotAddUnboundedPeers)
-{
-    Tox_Options *opts = tox_options_new(nullptr);
-    ASSERT_NE(opts, nullptr);
-    tox_options_set_local_discovery_enabled(opts, false);
+// Handshakes from new peers go straight into the host's UDP socket.
+class GroupHandshake : public ::testing::Test {
+protected:
+    void SetUp() override
+    {
+        Tox_Options *opts = tox_options_new(nullptr);
+        ASSERT_NE(opts, nullptr);
+        tox_options_set_local_discovery_enabled(opts, false);
 
-    Tox_Err_New err;
-    Tox *tox = tox_new(opts, &err);
-    tox_options_free(opts);
-    ASSERT_EQ(err, TOX_ERR_NEW_OK);
-    ASSERT_NE(tox, nullptr);
+        Tox_Options_Testing testing_opts = {};
+        testing_opts.operating_system = &host_->system;
+        Tox_Err_New err;
+        tox_ = tox_new_testing(opts, &err, &testing_opts, nullptr);
+        tox_options_free(opts);
+        ASSERT_EQ(err, TOX_ERR_NEW_OK);
+        ASSERT_NE(tox_, nullptr);
 
-    const uint8_t group_name[] = "flood";
-    const uint8_t self_name[] = "host";
-    Tox_Err_Group_New gerr;
-    const uint32_t group_number = tox_group_new(tox, TOX_GROUP_PRIVACY_STATE_PUBLIC, group_name,
-        sizeof(group_name) - 1, self_name, sizeof(self_name) - 1, &gerr);
-    ASSERT_EQ(gerr, TOX_ERR_GROUP_NEW_OK);
+        const uint8_t group_name[] = "flood";
+        const uint8_t self_name[] = "host";
+        Tox_Err_Group_New gerr;
+        const uint32_t group_number = tox_group_new(tox_, TOX_GROUP_PRIVACY_STATE_PUBLIC,
+            group_name, sizeof(group_name) - 1, self_name, sizeof(self_name) - 1, &gerr);
+        ASSERT_EQ(gerr, TOX_ERR_GROUP_NEW_OK);
 
-    // A public chat announces its key and address to anyone.
-    GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
-    ASSERT_NE(chat, nullptr);
+        // A public chat announces its key and address to anyone.
+        chat_ = gc_get_group(tox_->m->group_handler, group_number);
+        ASSERT_NE(chat_, nullptr);
+        gc_get_self_public_key(chat_, host_pk_);
 
-    uint8_t host_pk[ENC_PUBLIC_KEY_SIZE];
-    gc_get_self_public_key(chat, host_pk);
+        socket_ = host_->node->get_primary_socket();
+        ASSERT_NE(socket_, nullptr);
 
-    Tox_Err_Get_Port perr;
-    const uint16_t udp_port = tox_self_get_udp_port(tox, &perr);
-    ASSERT_EQ(perr, TOX_ERR_GET_PORT_OK);
+        sender_.ip.family = net_family_ipv4();
+        sender_.ip.ip.v4.uint32 = net_htonl(0x0a000002);
+        sender_.port = net_htons(33446);
+    }
 
-    const uint32_t peers_before = chat->numpeers;
+    void TearDown() override { tox_kill(tox_); }
 
-    const Random *rng = os_random();
-    const Network *ns = os_network();
-    const Memory *mem = os_memory();
-    ASSERT_NE(rng, nullptr);
-    ASSERT_NE(ns, nullptr);
-    Logger *logger = logger_new(mem);
-
-    const Socket sock = net_socket(ns, net_family_ipv4(), TOX_SOCK_DGRAM, TOX_PROTO_UDP);
-    ASSERT_TRUE(sock_valid(sock));
-
-    IP_Port host;
-    host.ip.family = net_family_ipv4();
-    host.ip.ip.v4 = get_ip4_loopback();
-    host.port = net_htons(udp_port);
-
-    Net_Err_Connect cerr;
-    ASSERT_TRUE(net_connect(ns, mem, logger, sock, &host, &cerr));
-
-    constexpr int kFloodCount = 256;
-    for (int i = 0; i < kFloodCount; ++i) {
-        Extended_Public_Key joiner_pk;
-        Extended_Secret_Key joiner_sk;
-        ASSERT_TRUE(create_extended_keypair(&joiner_pk, &joiner_sk, rng));
-
+    void send_request(const Extended_Public_Key &joiner_pk, const Extended_Secret_Key &joiner_sk,
+        const uint8_t *sig_pk)
+    {
         uint8_t session_pk[ENC_PUBLIC_KEY_SIZE];
         uint8_t session_sk[CRYPTO_SECRET_KEY_SIZE];
-        crypto_new_keypair(rng, session_pk, session_sk);
+        crypto_new_keypair(rng(), session_pk, session_sk);
 
         // Without a TCP relay, the UDP source address is enough.
         uint8_t plain[1 + ENC_PUBLIC_KEY_SIZE + SIG_PUBLIC_KEY_SIZE + 1 + 1];
@@ -94,106 +80,178 @@ TEST(GroupHandshakeFlood, DoesNotAddUnboundedPeers)
         plain[n++] = kGhRequest;
         memcpy(plain + n, session_pk, ENC_PUBLIC_KEY_SIZE);
         n += ENC_PUBLIC_KEY_SIZE;
-        memcpy(plain + n, joiner_pk.sig, SIG_PUBLIC_KEY_SIZE);
+        memcpy(plain + n, sig_pk, SIG_PUBLIC_KEY_SIZE);
         n += SIG_PUBLIC_KEY_SIZE;
         plain[n++] = kHsInviteRequest;
         plain[n++] = kHjPublic;
 
         uint8_t nonce[CRYPTO_NONCE_SIZE];
-        random_nonce(rng, nonce);
+        random_nonce(rng(), nonce);
 
         uint8_t cipher[sizeof(plain) + CRYPTO_MAC_SIZE];
-        const int clen
-            = encrypt_data(mem, host_pk, joiner_sk.enc, nonce, plain, sizeof(plain), cipher);
+        const int clen = encrypt_data(
+            &host_->c_memory, host_pk_, joiner_sk.enc, nonce, plain, sizeof(plain), cipher);
         ASSERT_EQ(clen, static_cast<int>(sizeof(cipher)));
 
-        uint8_t packet[1 + ENC_PUBLIC_KEY_SIZE + ENC_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE
-            + sizeof(cipher)];
-        size_t p = 0;
-        packet[p++] = NET_PACKET_GC_HANDSHAKE;
-        memcpy(packet + p, joiner_pk.enc, ENC_PUBLIC_KEY_SIZE);
-        p += ENC_PUBLIC_KEY_SIZE;
-        memcpy(packet + p, host_pk, ENC_PUBLIC_KEY_SIZE);
-        p += ENC_PUBLIC_KEY_SIZE;
-        memcpy(packet + p, nonce, CRYPTO_NONCE_SIZE);
-        p += CRYPTO_NONCE_SIZE;
-        memcpy(packet + p, cipher, sizeof(cipher));
-        p += sizeof(cipher);
+        std::vector<uint8_t> packet;
+        packet.push_back(NET_PACKET_GC_HANDSHAKE);
+        packet.insert(packet.end(), joiner_pk.enc, joiner_pk.enc + ENC_PUBLIC_KEY_SIZE);
+        packet.insert(packet.end(), host_pk_, host_pk_ + ENC_PUBLIC_KEY_SIZE);
+        packet.insert(packet.end(), nonce, nonce + CRYPTO_NONCE_SIZE);
+        packet.insert(packet.end(), cipher, cipher + sizeof(cipher));
+        socket_->push_packet(std::move(packet), sender_);
+    }
 
-        ASSERT_EQ(net_send(ns, logger, sock, packet, p, &host, nullptr), static_cast<int>(p));
+    const Random *rng() const { return &host_->c_random; }
+
+    tox::test::SimulatedEnvironment env_{12345};
+    std::unique_ptr<tox::test::ScopedToxSystem> host_ = env_.create_node(0);
+    Tox *tox_ = nullptr;
+    GC_Chat *chat_ = nullptr;
+    uint8_t host_pk_[ENC_PUBLIC_KEY_SIZE];
+    tox::test::FakeUdpSocket *socket_ = nullptr;
+    IP_Port sender_;
+};
+
+TEST_F(GroupHandshake, FloodDoesNotAddUnboundedPeers)
+{
+    const uint32_t peers_before = chat_->numpeers;
+
+    constexpr int kFloodCount = 256;
+    for (int i = 0; i < kFloodCount; ++i) {
+        Extended_Public_Key joiner_pk;
+        Extended_Secret_Key joiner_sk;
+        ASSERT_TRUE(create_extended_keypair(&joiner_pk, &joiner_sk, rng()));
+        send_request(joiner_pk, joiner_sk, joiner_pk.sig);
 
         if (i % 16 == 15) {
-            tox_iterate(tox, nullptr);
+            tox_iterate(tox_, nullptr);
         }
     }
 
-    tox_iterate(tox, nullptr);
+    tox_iterate(tox_, nullptr);
 
-    const uint32_t added = chat->numpeers - peers_before;
+    const uint32_t added = chat_->numpeers - peers_before;
     EXPECT_LT(added, 64u);
-
-    kill_sock(ns, sock);
-    logger_kill(logger);
-
-    tox_kill(tox);
 }
 
-TEST(GroupInviteAccepted, KeepsTheInvitedPeerUntilItsAddressIsKnown)
+TEST_F(GroupHandshake, AddsANewPeer)
 {
-    Tox_Options *opts = tox_options_new(nullptr);
-    ASSERT_NE(opts, nullptr);
-    tox_options_set_local_discovery_enabled(opts, false);
+    const uint32_t peers_before = chat_->numpeers;
 
-    Tox_Err_New err;
-    Tox *tox = tox_new(opts, &err);
-    tox_options_free(opts);
-    ASSERT_EQ(err, TOX_ERR_NEW_OK);
-    ASSERT_NE(tox, nullptr);
-
-    const Random *rng = os_random();
-    ASSERT_NE(rng, nullptr);
-
-    // A new friend that we have no IP address or TCP relays for.
-    uint8_t friend_pk[TOX_PUBLIC_KEY_SIZE];
-    uint8_t friend_sk[CRYPTO_SECRET_KEY_SIZE];
-    crypto_new_keypair(rng, friend_pk, friend_sk);
-    Tox_Err_Friend_Add ferr;
-    const uint32_t friend_number = tox_friend_add_norequest(tox, friend_pk, &ferr);
-    ASSERT_EQ(ferr, TOX_ERR_FRIEND_ADD_OK);
-
-    const uint8_t group_name[] = "invite";
-    const uint8_t self_name[] = "host";
-    Tox_Err_Group_New gerr;
-    const uint32_t group_number = tox_group_new(tox, TOX_GROUP_PRIVACY_STATE_PRIVATE, group_name,
-        sizeof(group_name) - 1, self_name, sizeof(self_name) - 1, &gerr);
-    ASSERT_EQ(gerr, TOX_ERR_GROUP_NEW_OK);
-
-    GC_Chat *chat = gc_get_group(tox->m->group_handler, group_number);
-    ASSERT_NE(chat, nullptr);
-    // Record the invite the way tox_group_invite_friend does.
-    chat->saved_invites[0] = static_cast<int32_t>(friend_number);
-
-    uint8_t data[GC_JOIN_DATA_LENGTH];
-    ASSERT_TRUE(tox_group_get_chat_id(tox, group_number, data, nullptr));
-    random_bytes(rng, data + CHAT_ID_SIZE, ENC_PUBLIC_KEY_SIZE);
-
-    const uint32_t peers_before = chat->numpeers;
-    handle_gc_invite_accepted_packet(
-        tox->m->group_handler, static_cast<int>(friend_number), data, sizeof(data));
-    ASSERT_EQ(chat->numpeers, peers_before + 1);
+    Extended_Public_Key joiner_pk;
+    Extended_Secret_Key joiner_sk;
+    ASSERT_TRUE(create_extended_keypair(&joiner_pk, &joiner_sk, rng()));
+    send_request(joiner_pk, joiner_sk, joiner_pk.sig);
 
     for (int i = 0; i < 5; ++i) {
-        tox_iterate(tox, nullptr);
+        tox_iterate(tox_, nullptr);
+    }
+
+    EXPECT_EQ(chat_->numpeers, peers_before + 1);
+}
+
+TEST_F(GroupHandshake, DropsANewPeerWithTheWrongSignatureKey)
+{
+    const uint32_t peers_before = chat_->numpeers;
+
+    Extended_Public_Key joiner_pk;
+    Extended_Secret_Key joiner_sk;
+    ASSERT_TRUE(create_extended_keypair(&joiner_pk, &joiner_sk, rng()));
+    Extended_Public_Key other_pk;
+    Extended_Secret_Key other_sk;
+    ASSERT_TRUE(create_extended_keypair(&other_pk, &other_sk, rng()));
+    send_request(joiner_pk, joiner_sk, other_pk.sig);
+
+    for (int i = 0; i < 5; ++i) {
+        tox_iterate(tox_, nullptr);
+    }
+
+    EXPECT_EQ(chat_->numpeers, peers_before);
+}
+
+class GroupInviteAccepted : public ::testing::Test {
+protected:
+    void SetUp() override
+    {
+        Tox_Options *opts = tox_options_new(nullptr);
+        ASSERT_NE(opts, nullptr);
+        tox_options_set_local_discovery_enabled(opts, false);
+
+        Tox_Options_Testing testing_opts = {};
+        testing_opts.operating_system = &host_->system;
+        Tox_Err_New err;
+        tox_ = tox_new_testing(opts, &err, &testing_opts, nullptr);
+        tox_options_free(opts);
+        ASSERT_EQ(err, TOX_ERR_NEW_OK);
+        ASSERT_NE(tox_, nullptr);
+
+        const Random *rng = &host_->c_random;
+
+        // A new friend that we have no IP address or TCP relays for.
+        uint8_t friend_pk[TOX_PUBLIC_KEY_SIZE];
+        uint8_t friend_sk[CRYPTO_SECRET_KEY_SIZE];
+        crypto_new_keypair(rng, friend_pk, friend_sk);
+        Tox_Err_Friend_Add ferr;
+        friend_number_ = tox_friend_add_norequest(tox_, friend_pk, &ferr);
+        ASSERT_EQ(ferr, TOX_ERR_FRIEND_ADD_OK);
+
+        const uint8_t group_name[] = "invite";
+        const uint8_t self_name[] = "host";
+        Tox_Err_Group_New gerr;
+        const uint32_t group_number = tox_group_new(tox_, TOX_GROUP_PRIVACY_STATE_PRIVATE,
+            group_name, sizeof(group_name) - 1, self_name, sizeof(self_name) - 1, &gerr);
+        ASSERT_EQ(gerr, TOX_ERR_GROUP_NEW_OK);
+
+        chat_ = gc_get_group(tox_->m->group_handler, group_number);
+        ASSERT_NE(chat_, nullptr);
+
+        ASSERT_TRUE(tox_group_get_chat_id(tox_, group_number, data_, nullptr));
+        random_bytes(rng, data_ + CHAT_ID_SIZE, ENC_PUBLIC_KEY_SIZE);
+    }
+
+    void TearDown() override { tox_kill(tox_); }
+
+    bool accept()
+    {
+        return handle_gc_invite_accepted_packet(
+            tox_->m->group_handler, static_cast<int>(friend_number_), data_, sizeof(data_));
+    }
+
+    tox::test::SimulatedEnvironment env_{12345};
+    std::unique_ptr<tox::test::ScopedToxSystem> host_ = env_.create_node(0);
+    Tox *tox_ = nullptr;
+    GC_Chat *chat_ = nullptr;
+    uint32_t friend_number_ = 0;
+    uint8_t data_[GC_JOIN_DATA_LENGTH];
+};
+
+TEST_F(GroupInviteAccepted, IgnoresAFriendWeDidNotInvite)
+{
+    const uint32_t peers_before = chat_->numpeers;
+    EXPECT_FALSE(accept());
+    EXPECT_EQ(chat_->numpeers, peers_before);
+}
+
+TEST_F(GroupInviteAccepted, KeepsTheInvitedPeerUntilItsAddressIsKnown)
+{
+    // Record the invite the way tox_group_invite_friend does.
+    chat_->saved_invites[0] = static_cast<int32_t>(friend_number_);
+
+    const uint32_t peers_before = chat_->numpeers;
+    accept();
+    ASSERT_EQ(chat_->numpeers, peers_before + 1);
+
+    for (int i = 0; i < 5; ++i) {
+        tox_iterate(tox_, nullptr);
     }
 
     // The peer stays until do_handshakes can get the friend's IP address.
-    ASSERT_EQ(chat->numpeers, peers_before + 1);
-    const GC_Connection *gconn = get_gc_connection(chat, static_cast<int>(peers_before));
+    ASSERT_EQ(chat_->numpeers, peers_before + 1);
+    const GC_Connection *gconn = get_gc_connection(chat_, static_cast<int>(peers_before));
     ASSERT_NE(gconn, nullptr);
     EXPECT_FALSE(gconn->pending_delete);
-    EXPECT_EQ(gconn->friend_number, static_cast<int>(friend_number));
-
-    tox_kill(tox);
+    EXPECT_EQ(gconn->friend_number, static_cast<int>(friend_number_));
 }
 
 // Fills a saved peer with a fully-formed UDP address and TCP relay so that it
