@@ -261,7 +261,6 @@ void tox_events_handle_file_recv(
     tox_event_file_recv_set_kind(file_recv, kind);
     tox_event_file_recv_set_file_size(file_recv, file_size);
     if (!tox_event_file_recv_set_filename(file_recv, state->mem, filename, filename_length)) {
-        tox_event_file_recv_free(file_recv, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

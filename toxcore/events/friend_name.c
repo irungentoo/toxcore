@@ -213,7 +213,6 @@ void tox_events_handle_friend_name(
 
     tox_event_friend_name_set_friend_number(friend_name, friend_number);
     if (!tox_event_friend_name_set_name(friend_name, state->mem, name, length)) {
-        tox_event_friend_name_free(friend_name, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

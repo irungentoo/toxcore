@@ -231,7 +231,6 @@ void tox_events_handle_conference_invite(
     tox_event_conference_invite_set_friend_number(conference_invite, friend_number);
     tox_event_conference_invite_set_type(conference_invite, type);
     if (!tox_event_conference_invite_set_cookie(conference_invite, state->mem, cookie, length)) {
-        tox_event_conference_invite_free(conference_invite, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

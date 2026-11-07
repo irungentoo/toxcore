@@ -245,7 +245,6 @@ void tox_events_handle_file_recv_chunk(
     tox_event_file_recv_chunk_set_file_number(file_recv_chunk, file_number);
     tox_event_file_recv_chunk_set_position(file_recv_chunk, position);
     if (!tox_event_file_recv_chunk_set_data(file_recv_chunk, state->mem, data, length)) {
-        tox_event_file_recv_chunk_free(file_recv_chunk, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

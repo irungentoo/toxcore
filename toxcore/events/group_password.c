@@ -213,7 +213,6 @@ void tox_events_handle_group_password(
 
     tox_event_group_password_set_group_number(group_password, group_number);
     if (!tox_event_group_password_set_password(group_password, state->mem, password, password_length)) {
-        tox_event_group_password_free(group_password, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

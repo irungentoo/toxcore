@@ -262,7 +262,6 @@ void tox_events_handle_group_private_message(
     tox_event_group_private_message_set_peer_id(group_private_message, peer_id);
     tox_event_group_private_message_set_message_type(group_private_message, message_type);
     if (!tox_event_group_private_message_set_message(group_private_message, state->mem, message, message_length)) {
-        tox_event_group_private_message_free(group_private_message, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

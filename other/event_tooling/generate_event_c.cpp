@@ -618,7 +618,6 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
                 [&](const EventTypeByteRange& t) {
                     f << "    if (!tox_event_" << event_name_l << "_set_" << t.name_data << "(" << event_name_l << ", state->mem, ";
                     f << t.name_data << ", " << t.name_length_cb << ")) {\n";
-                    f << "        tox_event_" << event_name_l << "_free(" << event_name_l << ", state->mem);\n";
                     f << "        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;\n";
                     f << "        return;\n";
                     f << "    }\n";

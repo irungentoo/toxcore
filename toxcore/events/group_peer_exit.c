@@ -296,12 +296,10 @@ void tox_events_handle_group_peer_exit(
     tox_event_group_peer_exit_set_peer_id(group_peer_exit, peer_id);
     tox_event_group_peer_exit_set_exit_type(group_peer_exit, exit_type);
     if (!tox_event_group_peer_exit_set_name(group_peer_exit, state->mem, name, name_length)) {
-        tox_event_group_peer_exit_free(group_peer_exit, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
     if (!tox_event_group_peer_exit_set_part_message(group_peer_exit, state->mem, part_message, part_message_length)) {
-        tox_event_group_peer_exit_free(group_peer_exit, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

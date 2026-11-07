@@ -213,7 +213,6 @@ void tox_events_handle_friend_lossless_packet(
 
     tox_event_friend_lossless_packet_set_friend_number(friend_lossless_packet, friend_number);
     if (!tox_event_friend_lossless_packet_set_data(friend_lossless_packet, state->mem, data, length)) {
-        tox_event_friend_lossless_packet_free(friend_lossless_packet, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

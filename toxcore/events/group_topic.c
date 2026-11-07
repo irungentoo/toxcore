@@ -229,7 +229,6 @@ void tox_events_handle_group_topic(
     tox_event_group_topic_set_group_number(group_topic, group_number);
     tox_event_group_topic_set_peer_id(group_topic, peer_id);
     if (!tox_event_group_topic_set_topic(group_topic, state->mem, topic, topic_length)) {
-        tox_event_group_topic_free(group_topic, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

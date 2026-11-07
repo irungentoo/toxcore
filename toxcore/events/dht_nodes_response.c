@@ -230,7 +230,6 @@ void tox_events_handle_dht_nodes_response(
 
     tox_event_dht_nodes_response_set_public_key(dht_nodes_response, public_key);
     if (!tox_event_dht_nodes_response_set_ip(dht_nodes_response, state->mem, ip, ip_length)) {
-        tox_event_dht_nodes_response_free(dht_nodes_response, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

@@ -262,12 +262,10 @@ void tox_events_handle_group_invite(
 
     tox_event_group_invite_set_friend_number(group_invite, friend_number);
     if (!tox_event_group_invite_set_invite_data(group_invite, state->mem, invite_data, invite_data_length)) {
-        tox_event_group_invite_free(group_invite, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
     if (!tox_event_group_invite_set_group_name(group_invite, state->mem, group_name, group_name_length)) {
-        tox_event_group_invite_free(group_invite, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

@@ -231,7 +231,6 @@ void tox_events_handle_friend_message(
     tox_event_friend_message_set_friend_number(friend_message, friend_number);
     tox_event_friend_message_set_type(friend_message, type);
     if (!tox_event_friend_message_set_message(friend_message, state->mem, message, length)) {
-        tox_event_friend_message_free(friend_message, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

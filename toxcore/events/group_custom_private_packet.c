@@ -229,7 +229,6 @@ void tox_events_handle_group_custom_private_packet(
     tox_event_group_custom_private_packet_set_group_number(group_custom_private_packet, group_number);
     tox_event_group_custom_private_packet_set_peer_id(group_custom_private_packet, peer_id);
     if (!tox_event_group_custom_private_packet_set_data(group_custom_private_packet, state->mem, data, data_length)) {
-        tox_event_group_custom_private_packet_free(group_custom_private_packet, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }

@@ -229,7 +229,6 @@ void tox_events_handle_conference_title(
     tox_event_conference_title_set_conference_number(conference_title, conference_number);
     tox_event_conference_title_set_peer_number(conference_title, peer_number);
     if (!tox_event_conference_title_set_title(conference_title, state->mem, title, length)) {
-        tox_event_conference_title_free(conference_title, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
