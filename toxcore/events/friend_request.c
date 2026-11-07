@@ -148,23 +148,21 @@ void tox_event_friend_request_free(Tox_Event_Friend_Request *friend_request, con
     mem_delete(mem, friend_request);
 }
 
-static Tox_Event_Friend_Request *_Nullable tox_events_add_friend_request(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_friend_request(Tox_Events_State *_Nonnull state, Tox_Event_Friend_Request *_Nonnull friend_request)
 {
-    Tox_Event_Friend_Request *const friend_request = tox_event_friend_request_new(mem);
-
-    if (friend_request == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_friend_request_free(friend_request, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_FRIEND_REQUEST;
     event.data.friend_request = friend_request;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_friend_request_free(friend_request, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_friend_request_free(friend_request, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return friend_request;
 }
 
 bool tox_event_friend_request_unpack(
@@ -181,22 +179,6 @@ bool tox_event_friend_request_unpack(
     return tox_event_friend_request_unpack_into(*event, bu);
 }
 
-static Tox_Event_Friend_Request *_Nullable tox_event_friend_request_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Friend_Request *friend_request = tox_events_add_friend_request(state->events, state->mem);
-
-    if (friend_request == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return friend_request;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -208,17 +190,21 @@ void tox_events_handle_friend_request(
     const uint8_t *message, size_t length,
     Tox_Events_State *state)
 {
-    Tox_Event_Friend_Request *friend_request = tox_event_friend_request_alloc(tox_events_alloc(state));
+    Tox_Event_Friend_Request *friend_request = tox_event_friend_request_new(state->mem);
 
     if (friend_request == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
     tox_event_friend_request_set_public_key(friend_request, public_key);
     if (!tox_event_friend_request_set_message(friend_request, state->mem, message, length)) {
+        tox_event_friend_request_free(friend_request, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
+
+    tox_events_add_friend_request(tox_events_alloc(state), friend_request);
 }
 
 void tox_events_handle_friend_request_dispatch(Tox *tox, const Tox_Event_Friend_Request *event, void *user_data)

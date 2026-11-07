@@ -111,23 +111,21 @@ void tox_event_group_peer_limit_free(Tox_Event_Group_Peer_Limit *group_peer_limi
     mem_delete(mem, group_peer_limit);
 }
 
-static Tox_Event_Group_Peer_Limit *_Nullable tox_events_add_group_peer_limit(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_group_peer_limit(Tox_Events_State *_Nonnull state, Tox_Event_Group_Peer_Limit *_Nonnull group_peer_limit)
 {
-    Tox_Event_Group_Peer_Limit *const group_peer_limit = tox_event_group_peer_limit_new(mem);
-
-    if (group_peer_limit == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_group_peer_limit_free(group_peer_limit, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_GROUP_PEER_LIMIT;
     event.data.group_peer_limit = group_peer_limit;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_group_peer_limit_free(group_peer_limit, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_group_peer_limit_free(group_peer_limit, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return group_peer_limit;
 }
 
 bool tox_event_group_peer_limit_unpack(
@@ -144,22 +142,6 @@ bool tox_event_group_peer_limit_unpack(
     return tox_event_group_peer_limit_unpack_into(*event, bu);
 }
 
-static Tox_Event_Group_Peer_Limit *_Nullable tox_event_group_peer_limit_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Group_Peer_Limit *group_peer_limit = tox_events_add_group_peer_limit(state->events, state->mem);
-
-    if (group_peer_limit == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return group_peer_limit;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -171,14 +153,17 @@ void tox_events_handle_group_peer_limit(
     uint32_t peer_limit,
     Tox_Events_State *state)
 {
-    Tox_Event_Group_Peer_Limit *group_peer_limit = tox_event_group_peer_limit_alloc(tox_events_alloc(state));
+    Tox_Event_Group_Peer_Limit *group_peer_limit = tox_event_group_peer_limit_new(state->mem);
 
     if (group_peer_limit == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
     tox_event_group_peer_limit_set_group_number(group_peer_limit, group_number);
     tox_event_group_peer_limit_set_peer_limit(group_peer_limit, peer_limit);
+
+    tox_events_add_group_peer_limit(tox_events_alloc(state), group_peer_limit);
 }
 
 void tox_events_handle_group_peer_limit_dispatch(Tox *tox, const Tox_Event_Group_Peer_Limit *event, void *user_data)

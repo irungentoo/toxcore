@@ -159,23 +159,21 @@ void tox_event_group_topic_free(Tox_Event_Group_Topic *group_topic, const Memory
     mem_delete(mem, group_topic);
 }
 
-static Tox_Event_Group_Topic *_Nullable tox_events_add_group_topic(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_group_topic(Tox_Events_State *_Nonnull state, Tox_Event_Group_Topic *_Nonnull group_topic)
 {
-    Tox_Event_Group_Topic *const group_topic = tox_event_group_topic_new(mem);
-
-    if (group_topic == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_group_topic_free(group_topic, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_GROUP_TOPIC;
     event.data.group_topic = group_topic;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_group_topic_free(group_topic, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_group_topic_free(group_topic, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return group_topic;
 }
 
 bool tox_event_group_topic_unpack(
@@ -192,22 +190,6 @@ bool tox_event_group_topic_unpack(
     return tox_event_group_topic_unpack_into(*event, bu);
 }
 
-static Tox_Event_Group_Topic *_Nullable tox_event_group_topic_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Group_Topic *group_topic = tox_events_add_group_topic(state->events, state->mem);
-
-    if (group_topic == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return group_topic;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -220,18 +202,22 @@ void tox_events_handle_group_topic(
     const uint8_t *topic, size_t topic_length,
     Tox_Events_State *state)
 {
-    Tox_Event_Group_Topic *group_topic = tox_event_group_topic_alloc(tox_events_alloc(state));
+    Tox_Event_Group_Topic *group_topic = tox_event_group_topic_new(state->mem);
 
     if (group_topic == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
     tox_event_group_topic_set_group_number(group_topic, group_number);
     tox_event_group_topic_set_peer_id(group_topic, peer_id);
     if (!tox_event_group_topic_set_topic(group_topic, state->mem, topic, topic_length)) {
+        tox_event_group_topic_free(group_topic, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
+
+    tox_events_add_group_topic(tox_events_alloc(state), group_topic);
 }
 
 void tox_events_handle_group_topic_dispatch(Tox *tox, const Tox_Event_Group_Topic *event, void *user_data)

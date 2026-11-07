@@ -545,17 +545,16 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
     f << "    mem_delete(mem, " << event_name_l << ");\n}\n\n";
 
     // add
-    f << "static Tox_Event_" << event_name << " *_Nullable tox_events_add_" << event_name_l << "(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)\n{\n";
-    f << "    Tox_Event_" << event_name << " *const " << event_name_l << " = tox_event_" << event_name_l << "_new(mem);\n\n";
-    f << "    if (" << event_name_l << " == nullptr) {\n";
-    f << "        return nullptr;\n    }\n\n";
+    f << "static void tox_events_add_" << event_name_l << "(Tox_Events_State *_Nonnull state, Tox_Event_" << event_name << " *_Nonnull " << event_name_l << ")\n{\n";
+    f << "    if (state->events == nullptr) {\n";
+    f << "        tox_event_" << event_name_l << "_free(" << event_name_l << ", state->mem);\n";
+    f << "        return;\n    }\n\n";
     f << "    Tox_Event event;\n";
     f << "    event.type = TOX_EVENT_" << event_name_u << ";\n";
     f << "    event.data." << event_name_l << " = " << event_name_l << ";\n\n";
-    f << "    if (!tox_events_add(events, &event)) {\n";
-    f << "        tox_event_" << event_name_l << "_free(" << event_name_l << ", mem);\n";
-    f << "        return nullptr;\n    }\n";
-    f << "    return " << event_name_l << ";\n}\n\n";
+    f << "    if (!tox_events_add(state->events, &event)) {\n";
+    f << "        tox_event_" << event_name_l << "_free(" << event_name_l << ", state->mem);\n";
+    f << "        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;\n    }\n}\n\n";
 
     // unpack
     f << "bool tox_event_" << event_name_l << "_unpack(\n";
@@ -564,15 +563,7 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
     f << "    assert(*event == nullptr);\n";
     f << "    *event = tox_event_" << event_name_l << "_new(mem);\n\n";
     f << "    if (*event == nullptr) {\n        return false;\n    }\n\n";
-    f << "    return tox_event_" << event_name_l << "_unpack_into(*event, bu);\n}\n\n";
-
-    // alloc
-    f << "static Tox_Event_" << event_name << " *_Nullable tox_event_" << event_name_l << "_alloc(Tox_Events_State *_Nonnull state)\n{\n";
-    f << "    if (state->events == nullptr) {\n        return nullptr;\n    }\n\n";
-    f << "    Tox_Event_" << event_name << " *" << event_name_l << " = tox_events_add_" << event_name_l << "(state->events, state->mem);\n\n";
-    f << "    if (" << event_name_l << " == nullptr) {\n";
-    f << "        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;\n        return nullptr;\n    }\n\n";
-    f << "    return " << event_name_l << ";\n}\n";
+    f << "    return tox_event_" << event_name_l << "_unpack_into(*event, bu);\n}\n";
 
 
     f << R"(
@@ -606,8 +597,10 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
     }
 
     f << "    Tox_Events_State *state)\n{\n";
-    f << "    Tox_Event_" << event_name << " *" << event_name_l << " = tox_event_" << event_name_l << "_alloc(tox_events_alloc(state));\n\n";
-    f << "    if (" << event_name_l << " == nullptr) {\n        return;\n    }\n\n";
+    // Only a complete event goes into the list.
+    f << "    Tox_Event_" << event_name << " *" << event_name_l << " = tox_event_" << event_name_l << "_new(state->mem);\n\n";
+    f << "    if (" << event_name_l << " == nullptr) {\n";
+    f << "        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;\n        return;\n    }\n\n";
 
     for (const auto& t : event_types) {
         std::visit(
@@ -618,6 +611,7 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
                 [&](const EventTypeByteRange& t) {
                     f << "    if (!tox_event_" << event_name_l << "_set_" << t.name_data << "(" << event_name_l << ", state->mem, ";
                     f << t.name_data << ", " << t.name_length_cb << ")) {\n";
+                    f << "        tox_event_" << event_name_l << "_free(" << event_name_l << ", state->mem);\n";
                     f << "        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;\n";
                     f << "        return;\n";
                     f << "    }\n";
@@ -629,6 +623,7 @@ void generate_event_impl(const std::string& event_name, const std::vector<EventT
             t
         );
     }
+    f << "\n    tox_events_add_" << event_name_l << "(tox_events_alloc(state), " << event_name_l << ");\n";
     f << "}\n";
 
     f << "\nvoid tox_events_handle_" << event_name_l << "_dispatch(Tox *tox, const Tox_Event_" << event_name << " *event, void *user_data)\n{\n";

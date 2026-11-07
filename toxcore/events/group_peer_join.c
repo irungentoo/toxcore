@@ -111,23 +111,21 @@ void tox_event_group_peer_join_free(Tox_Event_Group_Peer_Join *group_peer_join, 
     mem_delete(mem, group_peer_join);
 }
 
-static Tox_Event_Group_Peer_Join *_Nullable tox_events_add_group_peer_join(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_group_peer_join(Tox_Events_State *_Nonnull state, Tox_Event_Group_Peer_Join *_Nonnull group_peer_join)
 {
-    Tox_Event_Group_Peer_Join *const group_peer_join = tox_event_group_peer_join_new(mem);
-
-    if (group_peer_join == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_group_peer_join_free(group_peer_join, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_GROUP_PEER_JOIN;
     event.data.group_peer_join = group_peer_join;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_group_peer_join_free(group_peer_join, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_group_peer_join_free(group_peer_join, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return group_peer_join;
 }
 
 bool tox_event_group_peer_join_unpack(
@@ -144,22 +142,6 @@ bool tox_event_group_peer_join_unpack(
     return tox_event_group_peer_join_unpack_into(*event, bu);
 }
 
-static Tox_Event_Group_Peer_Join *_Nullable tox_event_group_peer_join_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Group_Peer_Join *group_peer_join = tox_events_add_group_peer_join(state->events, state->mem);
-
-    if (group_peer_join == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return group_peer_join;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -171,14 +153,17 @@ void tox_events_handle_group_peer_join(
     uint32_t peer_id,
     Tox_Events_State *state)
 {
-    Tox_Event_Group_Peer_Join *group_peer_join = tox_event_group_peer_join_alloc(tox_events_alloc(state));
+    Tox_Event_Group_Peer_Join *group_peer_join = tox_event_group_peer_join_new(state->mem);
 
     if (group_peer_join == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
     tox_event_group_peer_join_set_group_number(group_peer_join, group_number);
     tox_event_group_peer_join_set_peer_id(group_peer_join, peer_id);
+
+    tox_events_add_group_peer_join(tox_events_alloc(state), group_peer_join);
 }
 
 void tox_events_handle_group_peer_join_dispatch(Tox *tox, const Tox_Event_Group_Peer_Join *event, void *user_data)

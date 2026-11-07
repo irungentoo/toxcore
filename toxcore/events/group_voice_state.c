@@ -113,23 +113,21 @@ void tox_event_group_voice_state_free(Tox_Event_Group_Voice_State *group_voice_s
     mem_delete(mem, group_voice_state);
 }
 
-static Tox_Event_Group_Voice_State *_Nullable tox_events_add_group_voice_state(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_group_voice_state(Tox_Events_State *_Nonnull state, Tox_Event_Group_Voice_State *_Nonnull group_voice_state)
 {
-    Tox_Event_Group_Voice_State *const group_voice_state = tox_event_group_voice_state_new(mem);
-
-    if (group_voice_state == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_group_voice_state_free(group_voice_state, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_GROUP_VOICE_STATE;
     event.data.group_voice_state = group_voice_state;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_group_voice_state_free(group_voice_state, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_group_voice_state_free(group_voice_state, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return group_voice_state;
 }
 
 bool tox_event_group_voice_state_unpack(
@@ -146,22 +144,6 @@ bool tox_event_group_voice_state_unpack(
     return tox_event_group_voice_state_unpack_into(*event, bu);
 }
 
-static Tox_Event_Group_Voice_State *_Nullable tox_event_group_voice_state_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Group_Voice_State *group_voice_state = tox_events_add_group_voice_state(state->events, state->mem);
-
-    if (group_voice_state == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return group_voice_state;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -173,14 +155,17 @@ void tox_events_handle_group_voice_state(
     Tox_Group_Voice_State voice_state,
     Tox_Events_State *state)
 {
-    Tox_Event_Group_Voice_State *group_voice_state = tox_event_group_voice_state_alloc(tox_events_alloc(state));
+    Tox_Event_Group_Voice_State *group_voice_state = tox_event_group_voice_state_new(state->mem);
 
     if (group_voice_state == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
     tox_event_group_voice_state_set_group_number(group_voice_state, group_number);
     tox_event_group_voice_state_set_voice_state(group_voice_state, voice_state);
+
+    tox_events_add_group_voice_state(tox_events_alloc(state), group_voice_state);
 }
 
 void tox_events_handle_group_voice_state_dispatch(Tox *tox, const Tox_Event_Group_Voice_State *event, void *user_data)

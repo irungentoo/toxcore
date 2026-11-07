@@ -141,23 +141,21 @@ void tox_event_group_moderation_free(Tox_Event_Group_Moderation *group_moderatio
     mem_delete(mem, group_moderation);
 }
 
-static Tox_Event_Group_Moderation *_Nullable tox_events_add_group_moderation(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_group_moderation(Tox_Events_State *_Nonnull state, Tox_Event_Group_Moderation *_Nonnull group_moderation)
 {
-    Tox_Event_Group_Moderation *const group_moderation = tox_event_group_moderation_new(mem);
-
-    if (group_moderation == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_group_moderation_free(group_moderation, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_GROUP_MODERATION;
     event.data.group_moderation = group_moderation;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_group_moderation_free(group_moderation, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_group_moderation_free(group_moderation, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return group_moderation;
 }
 
 bool tox_event_group_moderation_unpack(
@@ -174,22 +172,6 @@ bool tox_event_group_moderation_unpack(
     return tox_event_group_moderation_unpack_into(*event, bu);
 }
 
-static Tox_Event_Group_Moderation *_Nullable tox_event_group_moderation_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Group_Moderation *group_moderation = tox_events_add_group_moderation(state->events, state->mem);
-
-    if (group_moderation == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return group_moderation;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -203,9 +185,10 @@ void tox_events_handle_group_moderation(
     Tox_Group_Mod_Event mod_type,
     Tox_Events_State *state)
 {
-    Tox_Event_Group_Moderation *group_moderation = tox_event_group_moderation_alloc(tox_events_alloc(state));
+    Tox_Event_Group_Moderation *group_moderation = tox_event_group_moderation_new(state->mem);
 
     if (group_moderation == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
@@ -213,6 +196,8 @@ void tox_events_handle_group_moderation(
     tox_event_group_moderation_set_source_peer_id(group_moderation, source_peer_id);
     tox_event_group_moderation_set_target_peer_id(group_moderation, target_peer_id);
     tox_event_group_moderation_set_mod_type(group_moderation, mod_type);
+
+    tox_events_add_group_moderation(tox_events_alloc(state), group_moderation);
 }
 
 void tox_events_handle_group_moderation_dispatch(Tox *tox, const Tox_Event_Group_Moderation *event, void *user_data)

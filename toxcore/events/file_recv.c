@@ -187,23 +187,21 @@ void tox_event_file_recv_free(Tox_Event_File_Recv *file_recv, const Memory *mem)
     mem_delete(mem, file_recv);
 }
 
-static Tox_Event_File_Recv *_Nullable tox_events_add_file_recv(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_file_recv(Tox_Events_State *_Nonnull state, Tox_Event_File_Recv *_Nonnull file_recv)
 {
-    Tox_Event_File_Recv *const file_recv = tox_event_file_recv_new(mem);
-
-    if (file_recv == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_file_recv_free(file_recv, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_FILE_RECV;
     event.data.file_recv = file_recv;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_file_recv_free(file_recv, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_file_recv_free(file_recv, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return file_recv;
 }
 
 bool tox_event_file_recv_unpack(
@@ -220,22 +218,6 @@ bool tox_event_file_recv_unpack(
     return tox_event_file_recv_unpack_into(*event, bu);
 }
 
-static Tox_Event_File_Recv *_Nullable tox_event_file_recv_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_File_Recv *file_recv = tox_events_add_file_recv(state->events, state->mem);
-
-    if (file_recv == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return file_recv;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -250,9 +232,10 @@ void tox_events_handle_file_recv(
     const uint8_t *filename, size_t filename_length,
     Tox_Events_State *state)
 {
-    Tox_Event_File_Recv *file_recv = tox_event_file_recv_alloc(tox_events_alloc(state));
+    Tox_Event_File_Recv *file_recv = tox_event_file_recv_new(state->mem);
 
     if (file_recv == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
@@ -261,9 +244,12 @@ void tox_events_handle_file_recv(
     tox_event_file_recv_set_kind(file_recv, kind);
     tox_event_file_recv_set_file_size(file_recv, file_size);
     if (!tox_event_file_recv_set_filename(file_recv, state->mem, filename, filename_length)) {
+        tox_event_file_recv_free(file_recv, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
+
+    tox_events_add_file_recv(tox_events_alloc(state), file_recv);
 }
 
 void tox_events_handle_file_recv_dispatch(Tox *tox, const Tox_Event_File_Recv *event, void *user_data)

@@ -1637,6 +1637,7 @@ cc_test(
     srcs = ["tox_events_test.cc"],
     deps = [
         ":crypto_core",
+        ":mem",
         ":tox",
         "//c-toxcore/testing/support",
         "@com_google_googletest//:gtest",

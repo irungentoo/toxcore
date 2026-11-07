@@ -189,23 +189,21 @@ void tox_event_group_message_free(Tox_Event_Group_Message *group_message, const 
     mem_delete(mem, group_message);
 }
 
-static Tox_Event_Group_Message *_Nullable tox_events_add_group_message(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_group_message(Tox_Events_State *_Nonnull state, Tox_Event_Group_Message *_Nonnull group_message)
 {
-    Tox_Event_Group_Message *const group_message = tox_event_group_message_new(mem);
-
-    if (group_message == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_group_message_free(group_message, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_GROUP_MESSAGE;
     event.data.group_message = group_message;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_group_message_free(group_message, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_group_message_free(group_message, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return group_message;
 }
 
 bool tox_event_group_message_unpack(
@@ -222,22 +220,6 @@ bool tox_event_group_message_unpack(
     return tox_event_group_message_unpack_into(*event, bu);
 }
 
-static Tox_Event_Group_Message *_Nullable tox_event_group_message_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Group_Message *group_message = tox_events_add_group_message(state->events, state->mem);
-
-    if (group_message == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return group_message;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -252,9 +234,10 @@ void tox_events_handle_group_message(
     uint32_t message_id,
     Tox_Events_State *state)
 {
-    Tox_Event_Group_Message *group_message = tox_event_group_message_alloc(tox_events_alloc(state));
+    Tox_Event_Group_Message *group_message = tox_event_group_message_new(state->mem);
 
     if (group_message == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
@@ -262,10 +245,13 @@ void tox_events_handle_group_message(
     tox_event_group_message_set_peer_id(group_message, peer_id);
     tox_event_group_message_set_message_type(group_message, message_type);
     if (!tox_event_group_message_set_message(group_message, state->mem, message, message_length)) {
+        tox_event_group_message_free(group_message, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
     tox_event_group_message_set_message_id(group_message, message_id);
+
+    tox_events_add_group_message(tox_events_alloc(state), group_message);
 }
 
 void tox_events_handle_group_message_dispatch(Tox *tox, const Tox_Event_Group_Message *event, void *user_data)

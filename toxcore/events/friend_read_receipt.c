@@ -111,23 +111,21 @@ void tox_event_friend_read_receipt_free(Tox_Event_Friend_Read_Receipt *friend_re
     mem_delete(mem, friend_read_receipt);
 }
 
-static Tox_Event_Friend_Read_Receipt *_Nullable tox_events_add_friend_read_receipt(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_friend_read_receipt(Tox_Events_State *_Nonnull state, Tox_Event_Friend_Read_Receipt *_Nonnull friend_read_receipt)
 {
-    Tox_Event_Friend_Read_Receipt *const friend_read_receipt = tox_event_friend_read_receipt_new(mem);
-
-    if (friend_read_receipt == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_friend_read_receipt_free(friend_read_receipt, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_FRIEND_READ_RECEIPT;
     event.data.friend_read_receipt = friend_read_receipt;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_friend_read_receipt_free(friend_read_receipt, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_friend_read_receipt_free(friend_read_receipt, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return friend_read_receipt;
 }
 
 bool tox_event_friend_read_receipt_unpack(
@@ -144,22 +142,6 @@ bool tox_event_friend_read_receipt_unpack(
     return tox_event_friend_read_receipt_unpack_into(*event, bu);
 }
 
-static Tox_Event_Friend_Read_Receipt *_Nullable tox_event_friend_read_receipt_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Friend_Read_Receipt *friend_read_receipt = tox_events_add_friend_read_receipt(state->events, state->mem);
-
-    if (friend_read_receipt == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return friend_read_receipt;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -171,14 +153,17 @@ void tox_events_handle_friend_read_receipt(
     uint32_t message_id,
     Tox_Events_State *state)
 {
-    Tox_Event_Friend_Read_Receipt *friend_read_receipt = tox_event_friend_read_receipt_alloc(tox_events_alloc(state));
+    Tox_Event_Friend_Read_Receipt *friend_read_receipt = tox_event_friend_read_receipt_new(state->mem);
 
     if (friend_read_receipt == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
     tox_event_friend_read_receipt_set_friend_number(friend_read_receipt, friend_number);
     tox_event_friend_read_receipt_set_message_id(friend_read_receipt, message_id);
+
+    tox_events_add_friend_read_receipt(tox_events_alloc(state), friend_read_receipt);
 }
 
 void tox_events_handle_friend_read_receipt_dispatch(Tox *tox, const Tox_Event_Friend_Read_Receipt *event, void *user_data)

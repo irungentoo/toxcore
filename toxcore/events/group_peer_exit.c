@@ -223,23 +223,21 @@ void tox_event_group_peer_exit_free(Tox_Event_Group_Peer_Exit *group_peer_exit, 
     mem_delete(mem, group_peer_exit);
 }
 
-static Tox_Event_Group_Peer_Exit *_Nullable tox_events_add_group_peer_exit(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_group_peer_exit(Tox_Events_State *_Nonnull state, Tox_Event_Group_Peer_Exit *_Nonnull group_peer_exit)
 {
-    Tox_Event_Group_Peer_Exit *const group_peer_exit = tox_event_group_peer_exit_new(mem);
-
-    if (group_peer_exit == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_group_peer_exit_free(group_peer_exit, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_GROUP_PEER_EXIT;
     event.data.group_peer_exit = group_peer_exit;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_group_peer_exit_free(group_peer_exit, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_group_peer_exit_free(group_peer_exit, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return group_peer_exit;
 }
 
 bool tox_event_group_peer_exit_unpack(
@@ -256,22 +254,6 @@ bool tox_event_group_peer_exit_unpack(
     return tox_event_group_peer_exit_unpack_into(*event, bu);
 }
 
-static Tox_Event_Group_Peer_Exit *_Nullable tox_event_group_peer_exit_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Group_Peer_Exit *group_peer_exit = tox_events_add_group_peer_exit(state->events, state->mem);
-
-    if (group_peer_exit == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return group_peer_exit;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -286,9 +268,10 @@ void tox_events_handle_group_peer_exit(
     const uint8_t *part_message, size_t part_message_length,
     Tox_Events_State *state)
 {
-    Tox_Event_Group_Peer_Exit *group_peer_exit = tox_event_group_peer_exit_alloc(tox_events_alloc(state));
+    Tox_Event_Group_Peer_Exit *group_peer_exit = tox_event_group_peer_exit_new(state->mem);
 
     if (group_peer_exit == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
@@ -296,13 +279,17 @@ void tox_events_handle_group_peer_exit(
     tox_event_group_peer_exit_set_peer_id(group_peer_exit, peer_id);
     tox_event_group_peer_exit_set_exit_type(group_peer_exit, exit_type);
     if (!tox_event_group_peer_exit_set_name(group_peer_exit, state->mem, name, name_length)) {
+        tox_event_group_peer_exit_free(group_peer_exit, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
     if (!tox_event_group_peer_exit_set_part_message(group_peer_exit, state->mem, part_message, part_message_length)) {
+        tox_event_group_peer_exit_free(group_peer_exit, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
+
+    tox_events_add_group_peer_exit(tox_events_alloc(state), group_peer_exit);
 }
 
 void tox_events_handle_group_peer_exit_dispatch(Tox *tox, const Tox_Event_Group_Peer_Exit *event, void *user_data)

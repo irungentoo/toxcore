@@ -161,23 +161,21 @@ void tox_event_dht_nodes_response_free(Tox_Event_Dht_Nodes_Response *dht_nodes_r
     mem_delete(mem, dht_nodes_response);
 }
 
-static Tox_Event_Dht_Nodes_Response *_Nullable tox_events_add_dht_nodes_response(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_dht_nodes_response(Tox_Events_State *_Nonnull state, Tox_Event_Dht_Nodes_Response *_Nonnull dht_nodes_response)
 {
-    Tox_Event_Dht_Nodes_Response *const dht_nodes_response = tox_event_dht_nodes_response_new(mem);
-
-    if (dht_nodes_response == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_dht_nodes_response_free(dht_nodes_response, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_DHT_NODES_RESPONSE;
     event.data.dht_nodes_response = dht_nodes_response;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_dht_nodes_response_free(dht_nodes_response, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_dht_nodes_response_free(dht_nodes_response, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return dht_nodes_response;
 }
 
 bool tox_event_dht_nodes_response_unpack(
@@ -194,22 +192,6 @@ bool tox_event_dht_nodes_response_unpack(
     return tox_event_dht_nodes_response_unpack_into(*event, bu);
 }
 
-static Tox_Event_Dht_Nodes_Response *_Nullable tox_event_dht_nodes_response_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Dht_Nodes_Response *dht_nodes_response = tox_events_add_dht_nodes_response(state->events, state->mem);
-
-    if (dht_nodes_response == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return dht_nodes_response;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -222,18 +204,22 @@ void tox_events_handle_dht_nodes_response(
     uint16_t port,
     Tox_Events_State *state)
 {
-    Tox_Event_Dht_Nodes_Response *dht_nodes_response = tox_event_dht_nodes_response_alloc(tox_events_alloc(state));
+    Tox_Event_Dht_Nodes_Response *dht_nodes_response = tox_event_dht_nodes_response_new(state->mem);
 
     if (dht_nodes_response == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
     tox_event_dht_nodes_response_set_public_key(dht_nodes_response, public_key);
     if (!tox_event_dht_nodes_response_set_ip(dht_nodes_response, state->mem, ip, ip_length)) {
+        tox_event_dht_nodes_response_free(dht_nodes_response, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
     tox_event_dht_nodes_response_set_port(dht_nodes_response, port);
+
+    tox_events_add_dht_nodes_response(tox_events_alloc(state), dht_nodes_response);
 }
 
 void tox_events_handle_dht_nodes_response_dispatch(Tox *tox, const Tox_Event_Dht_Nodes_Response *event, void *user_data)

@@ -145,23 +145,21 @@ void tox_event_friend_status_message_free(Tox_Event_Friend_Status_Message *frien
     mem_delete(mem, friend_status_message);
 }
 
-static Tox_Event_Friend_Status_Message *_Nullable tox_events_add_friend_status_message(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_friend_status_message(Tox_Events_State *_Nonnull state, Tox_Event_Friend_Status_Message *_Nonnull friend_status_message)
 {
-    Tox_Event_Friend_Status_Message *const friend_status_message = tox_event_friend_status_message_new(mem);
-
-    if (friend_status_message == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_friend_status_message_free(friend_status_message, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_FRIEND_STATUS_MESSAGE;
     event.data.friend_status_message = friend_status_message;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_friend_status_message_free(friend_status_message, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_friend_status_message_free(friend_status_message, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return friend_status_message;
 }
 
 bool tox_event_friend_status_message_unpack(
@@ -178,22 +176,6 @@ bool tox_event_friend_status_message_unpack(
     return tox_event_friend_status_message_unpack_into(*event, bu);
 }
 
-static Tox_Event_Friend_Status_Message *_Nullable tox_event_friend_status_message_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Friend_Status_Message *friend_status_message = tox_events_add_friend_status_message(state->events, state->mem);
-
-    if (friend_status_message == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return friend_status_message;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -205,17 +187,21 @@ void tox_events_handle_friend_status_message(
     const uint8_t *message, size_t length,
     Tox_Events_State *state)
 {
-    Tox_Event_Friend_Status_Message *friend_status_message = tox_event_friend_status_message_alloc(tox_events_alloc(state));
+    Tox_Event_Friend_Status_Message *friend_status_message = tox_event_friend_status_message_new(state->mem);
 
     if (friend_status_message == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
     tox_event_friend_status_message_set_friend_number(friend_status_message, friend_number);
     if (!tox_event_friend_status_message_set_message(friend_status_message, state->mem, message, length)) {
+        tox_event_friend_status_message_free(friend_status_message, state->mem);
         state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
+
+    tox_events_add_friend_status_message(tox_events_alloc(state), friend_status_message);
 }
 
 void tox_events_handle_friend_status_message_dispatch(Tox *tox, const Tox_Event_Friend_Status_Message *event, void *user_data)

@@ -139,23 +139,21 @@ void tox_event_file_chunk_request_free(Tox_Event_File_Chunk_Request *file_chunk_
     mem_delete(mem, file_chunk_request);
 }
 
-static Tox_Event_File_Chunk_Request *_Nullable tox_events_add_file_chunk_request(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_file_chunk_request(Tox_Events_State *_Nonnull state, Tox_Event_File_Chunk_Request *_Nonnull file_chunk_request)
 {
-    Tox_Event_File_Chunk_Request *const file_chunk_request = tox_event_file_chunk_request_new(mem);
-
-    if (file_chunk_request == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_file_chunk_request_free(file_chunk_request, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_FILE_CHUNK_REQUEST;
     event.data.file_chunk_request = file_chunk_request;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_file_chunk_request_free(file_chunk_request, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_file_chunk_request_free(file_chunk_request, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return file_chunk_request;
 }
 
 bool tox_event_file_chunk_request_unpack(
@@ -172,22 +170,6 @@ bool tox_event_file_chunk_request_unpack(
     return tox_event_file_chunk_request_unpack_into(*event, bu);
 }
 
-static Tox_Event_File_Chunk_Request *_Nullable tox_event_file_chunk_request_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_File_Chunk_Request *file_chunk_request = tox_events_add_file_chunk_request(state->events, state->mem);
-
-    if (file_chunk_request == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return file_chunk_request;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -201,9 +183,10 @@ void tox_events_handle_file_chunk_request(
     size_t length,
     Tox_Events_State *state)
 {
-    Tox_Event_File_Chunk_Request *file_chunk_request = tox_event_file_chunk_request_alloc(tox_events_alloc(state));
+    Tox_Event_File_Chunk_Request *file_chunk_request = tox_event_file_chunk_request_new(state->mem);
 
     if (file_chunk_request == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
@@ -211,6 +194,8 @@ void tox_events_handle_file_chunk_request(
     tox_event_file_chunk_request_set_file_number(file_chunk_request, file_number);
     tox_event_file_chunk_request_set_position(file_chunk_request, position);
     tox_event_file_chunk_request_set_length(file_chunk_request, length);
+
+    tox_events_add_file_chunk_request(tox_events_alloc(state), file_chunk_request);
 }
 
 void tox_events_handle_file_chunk_request_dispatch(Tox *tox, const Tox_Event_File_Chunk_Request *event, void *user_data)

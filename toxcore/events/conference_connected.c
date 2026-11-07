@@ -92,23 +92,21 @@ void tox_event_conference_connected_free(Tox_Event_Conference_Connected *confere
     mem_delete(mem, conference_connected);
 }
 
-static Tox_Event_Conference_Connected *_Nullable tox_events_add_conference_connected(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_conference_connected(Tox_Events_State *_Nonnull state, Tox_Event_Conference_Connected *_Nonnull conference_connected)
 {
-    Tox_Event_Conference_Connected *const conference_connected = tox_event_conference_connected_new(mem);
-
-    if (conference_connected == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_conference_connected_free(conference_connected, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_CONFERENCE_CONNECTED;
     event.data.conference_connected = conference_connected;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_conference_connected_free(conference_connected, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_conference_connected_free(conference_connected, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return conference_connected;
 }
 
 bool tox_event_conference_connected_unpack(
@@ -125,22 +123,6 @@ bool tox_event_conference_connected_unpack(
     return tox_event_conference_connected_unpack_into(*event, bu);
 }
 
-static Tox_Event_Conference_Connected *_Nullable tox_event_conference_connected_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Conference_Connected *conference_connected = tox_events_add_conference_connected(state->events, state->mem);
-
-    if (conference_connected == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return conference_connected;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -151,13 +133,16 @@ void tox_events_handle_conference_connected(
     uint32_t conference_number,
     Tox_Events_State *state)
 {
-    Tox_Event_Conference_Connected *conference_connected = tox_event_conference_connected_alloc(tox_events_alloc(state));
+    Tox_Event_Conference_Connected *conference_connected = tox_event_conference_connected_new(state->mem);
 
     if (conference_connected == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
     tox_event_conference_connected_set_conference_number(conference_connected, conference_number);
+
+    tox_events_add_conference_connected(tox_events_alloc(state), conference_connected);
 }
 
 void tox_events_handle_conference_connected_dispatch(Tox *tox, const Tox_Event_Conference_Connected *event, void *user_data)

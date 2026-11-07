@@ -10,6 +10,9 @@
 #include <vector>
 
 #include "crypto_core.h"
+#include "events/events_alloc.h"
+#include "mem.h"
+#include "tox_event.h"
 #include "tox_private.h"
 
 namespace {
@@ -75,6 +78,28 @@ TEST(ToxEvents, DealsWithHugeMsgpackArrays)
     auto node = env.create_node(33445);
     std::vector<std::uint8_t> data{0xdd, 0xff, 0xff, 0xff, 0xff};
     EXPECT_EQ(tox_events_load(&node->system, data.data(), data.size()), nullptr);
+}
+
+// A failed copy of a message leaves no half-made event in the list.
+TEST(ToxEvents, FailedFieldCopyAddsNoEvent)
+{
+    SimulatedEnvironment env{12345};
+    constexpr std::size_t kLength = 101;
+    env.fake_memory().set_failure_injector([](std::size_t size) { return size == kLength; });
+    const Memory mem = env.fake_memory().c_memory();
+    Tox_Events_State state = {TOX_ERR_EVENTS_ITERATE_OK, &mem, nullptr};
+
+    const std::array<std::uint8_t, kLength> message{};
+    tox_events_handle_friend_message(0, TOX_MESSAGE_TYPE_NORMAL, message.data(), 1, &state);
+    ASSERT_EQ(state.error, TOX_ERR_EVENTS_ITERATE_OK);
+    ASSERT_EQ(tox_events_get_size(state.events), 1);
+
+    tox_events_handle_friend_message(
+        0, TOX_MESSAGE_TYPE_NORMAL, message.data(), message.size(), &state);
+    EXPECT_EQ(state.error, TOX_ERR_EVENTS_ITERATE_MALLOC);
+    EXPECT_EQ(tox_events_get_size(state.events), 1);
+
+    tox_events_free(state.events);
 }
 
 }  // namespace

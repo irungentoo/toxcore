@@ -94,23 +94,21 @@ void tox_event_self_connection_status_free(Tox_Event_Self_Connection_Status *sel
     mem_delete(mem, self_connection_status);
 }
 
-static Tox_Event_Self_Connection_Status *_Nullable tox_events_add_self_connection_status(Tox_Events *_Nonnull events, const Memory *_Nonnull mem)
+static void tox_events_add_self_connection_status(Tox_Events_State *_Nonnull state, Tox_Event_Self_Connection_Status *_Nonnull self_connection_status)
 {
-    Tox_Event_Self_Connection_Status *const self_connection_status = tox_event_self_connection_status_new(mem);
-
-    if (self_connection_status == nullptr) {
-        return nullptr;
+    if (state->events == nullptr) {
+        tox_event_self_connection_status_free(self_connection_status, state->mem);
+        return;
     }
 
     Tox_Event event;
     event.type = TOX_EVENT_SELF_CONNECTION_STATUS;
     event.data.self_connection_status = self_connection_status;
 
-    if (!tox_events_add(events, &event)) {
-        tox_event_self_connection_status_free(self_connection_status, mem);
-        return nullptr;
+    if (!tox_events_add(state->events, &event)) {
+        tox_event_self_connection_status_free(self_connection_status, state->mem);
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
     }
-    return self_connection_status;
 }
 
 bool tox_event_self_connection_status_unpack(
@@ -127,22 +125,6 @@ bool tox_event_self_connection_status_unpack(
     return tox_event_self_connection_status_unpack_into(*event, bu);
 }
 
-static Tox_Event_Self_Connection_Status *_Nullable tox_event_self_connection_status_alloc(Tox_Events_State *_Nonnull state)
-{
-    if (state->events == nullptr) {
-        return nullptr;
-    }
-
-    Tox_Event_Self_Connection_Status *self_connection_status = tox_events_add_self_connection_status(state->events, state->mem);
-
-    if (self_connection_status == nullptr) {
-        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
-        return nullptr;
-    }
-
-    return self_connection_status;
-}
-
 /*****************************************************
  *
  * :: event handler
@@ -153,13 +135,16 @@ void tox_events_handle_self_connection_status(
     Tox_Connection connection_status,
     Tox_Events_State *state)
 {
-    Tox_Event_Self_Connection_Status *self_connection_status = tox_event_self_connection_status_alloc(tox_events_alloc(state));
+    Tox_Event_Self_Connection_Status *self_connection_status = tox_event_self_connection_status_new(state->mem);
 
     if (self_connection_status == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
         return;
     }
 
     tox_event_self_connection_status_set_connection_status(self_connection_status, connection_status);
+
+    tox_events_add_self_connection_status(tox_events_alloc(state), self_connection_status);
 }
 
 void tox_events_handle_self_connection_status_dispatch(Tox *tox, const Tox_Event_Self_Connection_Status *event, void *user_data)
